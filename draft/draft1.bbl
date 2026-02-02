@@ -1,0 +1,185 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global/global}
+    \entry{usda_h2a_checklist}{online}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=80fd38d05f96523b89762870eb63ab35}{%
+           family={{United States Department of Agriculture}},
+           familyi={U\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Farmers.gov}%
+      }
+      \strng{namehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{fullhash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{fullhashraw}{80fd38d05f96523b89762870eb63ab35}
+      \strng{bibnamehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authorbibnamehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authornamehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authorfullhash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authorfullhashraw}{80fd38d05f96523b89762870eb63ab35}
+      \field{extraname}{1}
+      \field{sortinit}{U}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{extradate}{1}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{url}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Build a timeline around your H-2A hiring needs by answering a few short questions. Get a checklist of requirements, fees, and forms needed to apply.}
+      \field{langid}{english}
+      \field{title}{Create {{Your H-2A Visa Checklist}}}
+      \field{urlday}{12}
+      \field{urlmonth}{7}
+      \field{urlyear}{2025}
+      \field{urldateera}{ce}
+      \verb{file}
+      \verb C:\Users\churn_5stexhd\Zotero\storage\63S7E9FQ\checklist.html
+      \endverb
+      \verb{urlraw}
+      \verb https://www.farmers.gov/working-with-us/h2a-visa-program/checklist
+      \endverb
+      \verb{url}
+      \verb https://www.farmers.gov/working-with-us/h2a-visa-program/checklist
+      \endverb
+      \warn{\item online entry 'usda_h2a_checklist' (h2a_paper.bib): Invalid format '2020-07-24T10:52:12-0400' of date field 'date' - ignoring}
+    \endentry
+    \entry{usda_h2a_info}{online}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=80fd38d05f96523b89762870eb63ab35}{%
+           family={{United States Department of Agriculture}},
+           familyi={U\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Farmers.gov}%
+      }
+      \strng{namehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{fullhash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{fullhashraw}{80fd38d05f96523b89762870eb63ab35}
+      \strng{bibnamehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authorbibnamehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authornamehash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authorfullhash}{80fd38d05f96523b89762870eb63ab35}
+      \strng{authorfullhashraw}{80fd38d05f96523b89762870eb63ab35}
+      \field{extraname}{2}
+      \field{sortinit}{U}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{extradate}{2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{url}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{The H-2A temporary agricultural workers program, or H-2A visa program, helps American farmers fill employment gaps by hiring workers from other countries.}
+      \field{langid}{english}
+      \field{title}{H-{{2A Visa Program For Temporary Workers}}}
+      \field{urlday}{12}
+      \field{urlmonth}{7}
+      \field{urlyear}{2025}
+      \field{urldateera}{ce}
+      \verb{file}
+      \verb C:\Users\churn_5stexhd\Zotero\storage\95E23GXJ\h2a-visa-program.html
+      \endverb
+      \verb{urlraw}
+      \verb https://www.farmers.gov/working-with-us/h2a-visa-program
+      \endverb
+      \verb{url}
+      \verb https://www.farmers.gov/working-with-us/h2a-visa-program
+      \endverb
+      \warn{\item online entry 'usda_h2a_info' (h2a_paper.bib): Invalid format '2020-07-08T11:21:52-0400' of date field 'date' - ignoring}
+    \endentry
+    \entry{dol_aewr}{online}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=5473ccb488bb6f537ed5420702070a57}{%
+           family={{United States Department of Labor}},
+           familyi={U\bibinitperiod}}}%
+      }
+      \strng{namehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{fullhash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{fullhashraw}{5473ccb488bb6f537ed5420702070a57}
+      \strng{bibnamehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authorbibnamehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authornamehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authorfullhash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authorfullhashraw}{5473ccb488bb6f537ed5420702070a57}
+      \field{extraname}{1}
+      \field{sortinit}{U}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{extradate}{1}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{url}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{H-{{2A Adverse Effect Wage Rates}} ({{AEWRs}}) | {{Flag}}.Dol.Gov}
+      \field{urlday}{12}
+      \field{urlmonth}{7}
+      \field{urlyear}{2025}
+      \field{urldateera}{ce}
+      \verb{file}
+      \verb C:\Users\churn_5stexhd\Zotero\storage\NFF7NJQ9\adverse-effect-wage-rates.html
+      \endverb
+      \verb{urlraw}
+      \verb https://flag.dol.gov/wage-data/adverse-effect-wage-rates#range
+      \endverb
+      \verb{url}
+      \verb https://flag.dol.gov/wage-data/adverse-effect-wage-rates#range
+      \endverb
+    \endentry
+    \entry{dol_h2a_info}{online}{}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=5473ccb488bb6f537ed5420702070a57}{%
+           family={{United States Department of Labor}},
+           familyi={U\bibinitperiod}}}%
+      }
+      \strng{namehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{fullhash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{fullhashraw}{5473ccb488bb6f537ed5420702070a57}
+      \strng{bibnamehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authorbibnamehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authornamehash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authorfullhash}{5473ccb488bb6f537ed5420702070a57}
+      \strng{authorfullhashraw}{5473ccb488bb6f537ed5420702070a57}
+      \field{extraname}{2}
+      \field{sortinit}{U}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{extradate}{2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{url}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{H-{{2A Temporary Certification}} for {{Agriculture Workers}} | {{Flag}}.Dol.Gov}
+      \field{urlday}{12}
+      \field{urlmonth}{7}
+      \field{urlyear}{2025}
+      \field{urldateera}{ce}
+      \verb{file}
+      \verb C:\Users\churn_5stexhd\Zotero\storage\I9H3KFZJ\h-2a.html
+      \endverb
+      \verb{urlraw}
+      \verb https://flag.dol.gov/programs/h-2a
+      \endverb
+      \verb{url}
+      \verb https://flag.dol.gov/programs/h-2a
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

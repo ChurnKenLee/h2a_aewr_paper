@@ -1,0 +1,119 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.18.4"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1ff16ef73f6846b9c4cd4203df234684",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "9e8592322391668bb7e87d225b8bc990",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "cefdfe6dfe7c5844d29dd699afecd3bd",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "9b0fa8d9af3a7c369ea625d76d65a8c7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "1c78b637cf677a050de6508b91a042a7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "d59f10d2161ef1103b9ffce6d9d5ab6f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "Loading files for year 2000.\nLoading files for year 2001.\nLoading files for year 2002.\nLoading files for year 1997.\nLoading files for year 1998.\nLoading files for year 1999.\nLoading files for year 2003.\nLoading files for year 2004.\nLoading files for year 2005.\nLoading files for year 2006.\nLoading files for year 2007.\nLoading files for year 2008.\nLoading files for year 2009.\nLoading files for year 2010.\nLoading files for year 2011.\nLoading files for year 2012.\nLoading files for year 2013.\nLoading files for year 2014.\nLoading files for year 2015.\nLoading files for year 2016.\nLoading files for year 2017.\nLoading files for year 2018.\nLoading files for year 2019.\nLoading files for year 2020.\nLoading files for year 2021.\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Xref",
+      "code_hash": "c6bb1c26a21434802d75646ac484d6f6",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": null,
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

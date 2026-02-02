@@ -1,0 +1,125 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.19.2"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "447005b0cecc789c657a753b90dc1d3d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "7daf55c7b0c42133b0b867c957644a75",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "c1a20fe199d9009916e97635096a2304",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "6d84987b8bbaa01f486f2026a41a44dc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "9b67213866dd7b4d7778c3ca18eeb9c2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "be53233ad33ae1b09b6a356791a45cc9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "Parsing file 00-2547, for year 2000.\nParsing file 01-19298, for year 2001.\nParsing file 02-12376, for year 2002.\nParsing file 03-4500, for year 2003.\nParsing file 04-4731, for year 2004.\nParsing file 2010-3078, for year 2010.\nParsing file 2011-32842, for year 2012.\nParsing file 2011-4419, for year 2011.\nParsing file 2013-00117, for year 2013.\nParsing file 2013-31555, for year 2014.\nParsing file 2014-29746, for year 2015.\nParsing file 2015-32114, for year 2016.\nParsing file 2016-30928, for year 2017.\nParsing file 2017-27528, for year 2018.\nParsing file 2018-28030, for year 2019.\nParsing file 2019-27410, for year 2020.\nParsing file 2021-03752, for year 2021.\nParsing file 2021-27119, for year 2022.\nParsing file 2022-27332, for year 2023.\nParsing file 2023-27435, for year 2024.\nParsing file 95-2964, for year 1995.\nParsing file 96-2714, for year 1996.\nParsing file 97-3095, for year 1997.\nParsing file 98-4051, for year 1998.\nParsing file 99-3269, for year 1999.\nParsing file E5-824, for year 2005.\nParsing file E6-3841, for year 2006.\nParsing file E7-2859, for year 2007.\nParsing file E8-3567, for year 2008.\nParsing file E9-12434, for year 2009.\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Xref",
+      "code_hash": "e5ec6e6f09da507de6ce5539d7c68c5b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "eff7d5dba32b4da32d9a67a519434d3f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='SFPL-0' random-id='a2250c5e-3d93-3d60-d4a8-4071b173cb63'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;6.72&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;01&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;6.50&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;05&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;6.74&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;04&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;7.27&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;06&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;7.04&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;08&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;7.68&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;09&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;7.04&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;10&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;7.25&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;12&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;6.72&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;13&#92;&quot;},{&#92;&quot;year&#92;&quot;:&#92;&quot;2000&#92;&quot;,&#92;&quot;aewr&#92;&quot;:&#92;&quot;9.38&#92;&quot;,&#92;&quot;state_fips_code&#92;&quot;:&#92;&quot;15&#92;&quot;}]&quot;' data-total-rows='1470' data-total-columns='3' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;year&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;aewr&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;state_fips_code&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "NxyI",
+      "code_hash": null,
+      "outputs": [],
+      "console": []
+    }
+  ]
+}

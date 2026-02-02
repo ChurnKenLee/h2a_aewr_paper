@@ -1,0 +1,45 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.19.2"
+  },
+  "cells": [
+    {
+      "id": "MJUe",
+      "code_hash": "6ca2b17eac59b1fdd60c91338c965e7a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"census-of-agriculture-binaries\">Census of Agriculture binaries</h1></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hbol",
+      "code_hash": "cda64189cee0de600cbf078c2409a80f",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "16d8a1bbb2897ca5b418f3e61b6d218f",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "5915ec1552301946e73ccbb989edd953",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "6a4dca6ff08d2fc839cb7de619d0fd2f",
+      "outputs": [],
+      "console": []
+    }
+  ]
+}

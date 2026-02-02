@@ -1,0 +1,253 @@
+\documentclass[14pt]{article}
+\usepackage[usenames,dvips]{color}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\doublespacing
+\usepackage{parskip}
+\usepackage{placeins,float,setspace,amsfonts,comment,amsmath,amssymb,amsxtra,graphicx,ifthen,pstricks-add,ushort,enumerate,mathrsfs,hyperref,textcomp,bbm,pdflscape, threeparttable,footmisc}
+\usepackage{subcaption}
+\usepackage{authblk}
+\usepackage{booktabs}
+\hypersetup{colorlinks=true, anchorcolor=webbrown, citecolor=webbrown, filecolor=webbrown, linkcolor=webbrown, menucolor=webbrown, urlcolor=webbrown, citebordercolor=1 0 0, menubordercolor=1 0 0, urlbordercolor=1 0 0, runbordercolor=1 0 0}
+\definecolor{webbrown}{rgb}{.6,0,0}
+\definecolor{ChadBlue}{rgb}{.1,.1,.5}  
+\definecolor{ChadGreen}{rgb}{0,.4,0}    % Dark Green
+
+\usepackage[style=authoryear, backend=biber]{biblatex}
+\bibliography{h2a_paper.bib}
+
+\author[1]{David J. Bier}
+\author[2]{Philip Hoxie}
+\author[3]{Churn Ken Lee}
+\affil[1]{CATO Institute}
+\affil[2,3]{UC San Diego - Department of Economics}
+
+\title{H-2A program Adverse Effect Wage Rate and program usage}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+Specialty crop farming (i.e., fruits, tree nuts, vegetables, and horticulture) is incredibly labor intensive as many of the crops require manual handling, and thus require large numbers of workers working in the field.
+This is opposed to farming field crops like barley and weed, which has been mechanized in the U.S.
+However, hiring field workers from the domestic labor pool is notoriously difficult, given the long work hours and unpleasant work conditions.
+Hence, farmers in the US rely heavily on hiring temporary seasonal farm workers via the H-2A guest worker program.
+The H-2A program is unique in that it is the only US migrant worker program that is uncapped, and annual usage of the program has increased from \~80,000 workers in 2008 to \~350,000 workers in 2022, as shown in figure \ref{fig:ts_h2a_workers_certified}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\paperwidth]{"../Output/fig_line_ts_h2a_workers_certified.png"}
+    \caption{Number of workers certified annually via the H-2A program from 2008 to 2022}
+    \label{fig:ts_h2a_workers_certified}
+\end{figure}
+
+
+This is in spite of the fact that H-2A workers are significantly more expensive to hire than domestic workers.
+Estimates range from \$11,000 to \$15,000 per worker of additional costs over hiring a domestic worker, exclusive of the wages paid to the workers.
+Farmers then have to pay their workers (both domestic and H-2A) at least the Adverse Effect Wage Rate (AEWR), a government-mandated minimum wage for H-2A workers.
+The AEWR is set at a regional level by the Department of Labor (DOL) with the stated goal of preventing the hiring of guest workers from depressing the wages of domestic farmworkers.
+Because these regions often encompass multiple states, the AEWR creates a setting where adjacent farms on opposite sides of a state border can face substantially different minimum wages for the same type of labor.
+This paper asks a fundamental policy question: What is the causal effect of the AEWR on farmers' utilization of the H-2A program?
+Understanding this elasticity is critical for policymakers who must balance the goals of providing farmers with a stable workforce and protecting the wages of domestic workers.
+To identify this causal effect, we employ a border discontinuity design (BDD). We focus on pairs of counties that are contiguous and lie on opposite sides of a state border that also marks a boundary between two AEWR regions. The core assumption of our design is that counties within a border pair share similar local labor market conditions, soil types, climate, and access to markets. The primary factor that differs sharply between them is the state-level regulatory environment, most notably the AEWR. This quasi-experimental variation allows us to isolate the effect of the wage mandate from other confounding factors that typically plague studies of minimum wage effects.
+Using administrative data on H-2A certifications that is published publicly by the DOL, we find a significant and negative relationship between the AEWR and H-2A program usage. Our estimates suggest that a $1\%$ higher mandated minimum wage led to a $x\%$ reduction in the number of certified H-2A positions.
+
+We plan to extend this research by examining the downstream effects of these labor supply shocks.
+Specifically, if a higher AEWR reduces access to H-2A labor, how do farmers adapt?
+Do they shift their production away from labor-intensive specialty crops towards less labor-intensive field crops?
+Do these shifts in production affect local or regional crop prices?
+
+This paper contributes to several strands of literature. First, we provide...
+
+\section{H-2A agricultural guest worker program}
+
+\subsection{Background of the program}
+
+The Bracero program, which was the forerunner to the H-2A program, was created in 1942 to fill labor shortages due to the war.
+The program allowed migrant workers, mostly Mexicans, to temporarily work in the U.S. agricultural industry.
+The program was terminated in 1964, and was succeeded by the H-2A guest worker program which was created as part of the Immigration Reform and Control Act of 1986.
+The act also created the H-1B and H-2B guest worker programs.
+The H-2A program is unique in that it is the only U.S. guest worker program that does not have a quota, and as such usage of the program has increased from \~60,000 in the mid-2000s to \~500,000 in 2024 today.
+The H-2A program requires employers to complete an expensive multi-step certification process, involving multiple state and federal agencies.
+The positions filled via the H-2A program has to be full-time, in the agricultural sector, and seasonal in nature.
+Note that this traditionally excludes many jobs involving animal husbandry due to their year-round nature.
+
+\subsection{H-2A hiring process}
+
+The U.S. Department of Agriculture (USDA) and Department of Labor (DOL) provides information to prospective employers who wish to utilize the program \parencite{usda_h2a_checklist,dol_h2a_info}, and I provide a summary of the process for a standard (non-expedited) application.
+This process begins about 3 months before the actual start of work.
+\begin{enumerate}
+    \item The farmer first submits a job order to their state's State Workforce Agency (SWA), which notifies the SWA of the nature of the future H-2A application and requests an inspection of the housing provided by the employer.
+    The SWA, once it accepts the job order, begins domestic recruitment for the job order.
+    \item The farmer simultaneously applies for labor certification with the Department of Labor's Office of Foreign Labor Certification (OFLC)
+    \item Once the labor certification application is accepted by the OFLC, the farmer has to begin domestic recruitment for the H-2A positions.
+    The OFLC provides instructions to the farmer for this process.
+    Domestic recruitment may involve:
+    \begin{itemize}
+        \item Posting newspaper ads for the positions in a local newspaper that serves the area around the worksite
+        \item Contacting previously hired domestic workers who were not previously fired for cause or abandoned the job, offering them a position
+        \item Advertising the position in a maximum of three other states in the region or where they expect to hire (domestic) workers
+    \end{itemize}
+    The farmer has to interview all domestic applicants and accept every eligible applicant.
+    They also have to maintain a report that includes details of every applicant and contacted former worker, and an explanation of why any given applicant was not hired.
+    \item Once domestic recruitment has been completed and housing has been inspected by the SWA, the farmer can then apply for final determination of their labor certification with the OFLC
+    \item After the farmer obtains a labor certification, they can then submit a petition to the United States Citizenship and Immigration Services (USCIS) informing them of the guest workers the farmer intends to hire.
+    \item Once approved by USCIS, these guest workers will travel to their U.S. consulates to apply for a visa.
+    \item Once the workers obtain a visa, they can then travel to the U.S. to reach their worksite.
+\end{enumerate}
+
+Farmers who use the program must pay for the travel costs incurred by the guest workers during this application process, provide or pay for lodgings, provide transportation for their workers' commute to their worksite and for weekly grocery runs, and all associated application fees.
+This alone incurs anywhere between \$10,000 to \$14,000 + weekly travel costs per worker hired using the H-2A program \parencite{usda_h2a_info}.
+
+\subsection{The Adverse Effect Wage Rate}
+
+The Adverse Effect Wage Rate (AEWR) is set by the Department of Labor, and serves as a wage floor for workers hired via the H-2A program.
+The AEWR is intended to prevent the hiring of H-2A workers from depressing the wages of domestic farmworkers.
+Farmers have to include information on the wages they intend to pay the workers they hire via the H-2A program, and this wage rate has to equal or exceed the AEWR, the agreed-upon collective bargaining wage, or the federal or state statutory minimum wage, whichever is highest.
+In practice, the AEWR is typically the relevant wage floor due to the way it is calculated.
+The DOL calculates the AEWR for different regions in the U.S. based primarily on wage data from the USDA's Farm Labor Survey (FLS), and, for occupations or regions not adequately covered by the FLS, the Bureau of Labor Statistics' Occupational Employment and Wage Statistics (OEWS).
+These rates are updated and published annually in the Federal Register and on the Department of Labor's website, near the beginning of the year.
+The AEWR is calculated three different ways depending on the nature of the occupation, and I provide a summary of the DOL's methodology \parencite{dol_aewr}.
+
+For non-range workers that work in field or livestock occupations, the AEWR is set as an hourly rate, and is calculated from the average wage rates reported for all such such occupations, combined, in the FLS.
+These occupations are listed by their SOC codes,
+\begin{itemize}
+    \item 45-2041 - Graders and Sorters, Agricultural Products.
+    \item 45-2091 - Agricultural Equipment Operators.
+    \item 45-2092 - Farmworkers and Laborers, Crop, Nursery, and Greenhouse.
+    \item 45-2093 - Farmworkers, Farm, Ranch, and Aquacultural Animals.
+    \item 53-7064 - Packers and Packagers, Hand.
+    \item 45-2099 - Agricultural Workers, All Other.
+\end{itemize}
+, and they comprise the overwhelming majority of H-2A applications.
+The AEWR that applies to these occupations is the relevant wage rate for our research.
+Henceforth, discussion of the AEWR will refer to this rate unless otherwise specified.
+If any given region or state does not have coverage by the FLS for these occupations, the average wage rates from the state or national OEWS for these occupations, combined, is used instead.
+In practice, this only applies to the District of Columbia, Alaska, and U.S. Territories.
+The regional structure of the non-range field and livestock occupation AEWR is shown in figure \ref{fig:map_aewr_2023}. 
+They range from about \$19 per hour on the West Coast, to about \$14 per hour in the Southeastern Region.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\paperwidth]{"../Output/aewr_region_border_counties_map_2023.png"}
+    \caption{The Adverse Effect Wage Rate in 2023, with border counties highlighted}
+    \label{fig:map_aewr_2023}
+\end{figure}
+
+For all other non-range occupations not already covered, e.g., logging, trucking, and supervisors, the AEWR is set at the state and occupation level.
+This AEWR in any given state-occupation is simply the mean hourly wage as reported in the OEWS report for that state and SOC code.
+If the state OEWS is not available, the national OEWS is used instead.
+In the event that a worker's tasks encompass multiple SOCs, the highest wage rate of those SOCs apply.
+
+For range and animal herding occupations, the AEWR is calculated as a monthly salary, and applies nationally to all workers in this category.
+Each year's AEWR is the previous year's AEWR inflated by the Bureau of Labor Statistics' Employment Cost Index.
+The Employment Cost Index is an analogue of the the Producer Price Index or Consumer Price Index, but applied to a fixed ``basket'' of labor, and measures the hourly cost of hiring labor for US employers, inclusive of benefits.
+This inflated AEWR is then carried forward into the calculation for next year's AEWR for range and animal herding occupations.
+This category of occupations was quite recently added to the H-2A program in 2016, and for that year the monthly AEWR was simply defined as \$7.25 (the federal minimum hourly wage), multiplied by 48 hours, and then multiplied by 4.333 weeks per month.
+This number is then multiplied by 0.8 for 2016, and multiplied by 1 for 2017, and inflated using the index thereafter.
+
+\section{Data sources}
+
+\subsection{H-2A program usage}
+
+The DOL's Office of Foreign Labor Certification (OFLC) posts disclosure files on H-2A program performance data on their website every year.
+The primary data source consists of H-2A disclosure files from fiscal years 2008 through 2022.
+These files contain detailed information on every H-2A application received in that year, and include the employer's name and address, the number of workers requested, the nature of the job, worksite addresses, job start and end dates, negotiated hourly wage rates, weekly work hours, and sometimes the relevant crops.
+The biggest challenge here is in assigning counties to worksites correctly.
+This is because, prior to 2017, the OFLC only had worksite location data by city, ZIP code, and state.
+The OFLC only included county information beginning in 2017.
+This is not even considering errors in data entry or transcription.
+Hence, I used a multi-tiered approach for matching entries that I cannot directly match on county names.
+In order of matching priority, from highest to lowest:
+\begin{enumerate}
+    \item Direct matching with ZIP codes:
+    The vast majority of entries include ZIP code information.
+    The U.S. Census Bureau provides crosswalks from ZIP codes to counties.
+    Some ZIP codes map to multiple counties, and for those cases I treat the entries as containing multiple counties.
+    I describe further below how I handle entries with multiple counties.
+    \item Direct Matching with place names:
+    For entries with reported county names but no ZIP codes, I can just match counties directly.
+    For entries with reported city names but no reported county (mostly entries prior to 2017), the county can be assigned using U.S. Census Bureau files that provide names for all incorporated places within every county.
+    These places would include cities, town, boroughs, and villages.
+    A modified procedure was implemented for New England states, where ``towns'', equivalent to cities and towns in other states, often serve as the primary unit of local government instead of counties, and thus county information is omitted.
+    In these cases, the worksite "county" entries, which frequently contain town names, were matched with Census place names.
+    \item Fuzzy String Matching: For worksites that could not be directly matched using either place or county names, a fuzzy string matching approach was used.
+    When county names are available, I first try fuzzy string matching with county names in the Census county file, and select the best match.
+    This takes care of typographical errors in the reported county names.
+    For entries without county names, I calculate string similarity scores between worksite city names reported in the H-2A data and all place names in the Census data contained within the same state.
+    I chose string similarity algorithms and score cutoff thresholds in every individual application manually, choosing one that seemed to minimize false positives while capturing legitimate variations in place names in each context.
+    \item Google Places API: For the remaining unmatched locations, I utilize Google's Places API as a geocoding solution.
+    These are mostly worksites that are located in unincorporated areas, or reported wity unusual place names, e.g., landmarks, crossroads, etc.
+    This involved a two-step process.
+    First, the ``Find Place'' endpoint was queried with the reported worksite city and state to obtain a unique location ID.
+    Second, the ``Place Details'' endpoint was queried with the location ID to retrieve the full address components, including the county name.
+\end{enumerate}
+
+The cleaned and geocoded entries were then aggregated to the county-year level.
+For entries with multiple counties, either because the matched location span multiple counties, or the employer reports multiple worksites for the same workers, I split the man-hours and workers evenly across all the counties within the entry.
+To account for employment periods spanning across calendar years, the number of workers and man-hours for these applications were weighted by the proportion of the contract period falling within each calendar year.
+
+The final dataset includes the following aggregated variables for each county-year:
+\begin{itemize}
+    \item Total number of H-2A workers requested
+    \item Total number of H-2A workers certified
+    \item Total requested man-hours
+    \item Total certified man-hours
+    \item Total number of applications
+\end{itemize}
+
+\subsection{Adverse Effect Wage Rates (AEWR)}
+
+We collect historical AEWR values from annual notices published the Department of Labor in the Federal Register.
+I first search for a list of all notices published by the Department of Labor in the Federal Register that contain the keywords "labor certification process" and "adverse effect wage rates".
+I then wrote a script to download the PDF files of the relevant pages in the Federal Register.
+The AEWRs are published in a consistent format within the yearly notices, so we can automate the process of extracting the tables and compiling the AEWRs into a dataset that has every state and year.
+
+\subsection{Crop acreage}
+
+To measure land use patterns, we draw on two USDA National Agricultural Statistics Service (NASS) sources.
+The first is the Census of Agriculture, conducted every five years (in years ending in '2' and '7').
+It provides county-level data on the acreage of hundreds of specific crops.
+The second is the Cropland Collaborative Research Outcomes System (CroplandCROS) project.
+This is a project that classifies every 30x30 meter parcel of land in the U.S. by usage and crop type, and publishes the data in their Cropland Data Layer (CDL) product.
+Each parcel of land corresponds to a single pixel in the CDL.
+I then assign each pixel to a county, and then aggregate the pixels by county-crop-year.
+
+\subsection{Crop prices and yields}
+We obtain state-level annual crop prices and annual national-level yields from annual agricultural surveys conducted by NASS.
+While county-level prices and yields would be ideal, they are not systematically available for specialty crops.
+
+\subsection{Occupational Employment and Wage Statistics (OEWS)}
+
+The Occupational Employment and Wage Statistics (OEWS) program of the BLS produces estimates of employment and wages for \~830 occupations across the U.S., by industry and locality.
+The program surveys every non-farm establishment registered with State Workforce Agencies (SWAs), which excludes most of the agricultural sector.
+However, the survey does include establishments that fall under NAICS 1151 - Support Activities for Crop Production, which includes establishments engaged in farm labor contracting.
+Note that the DOL uses OEWS estimates to calculate the AEWR for localities and occupations not adequately covered by the FLS.
+The estimates are available at the OEWS Metropolitan and Nonmetropolitan Area level, and geographic crosswalks are provided so we can produce estimates at the county level.
+I calculate the estimates at the county level using the mean of the estimates available within each county by OEWS locality, weighted by the employment estimates.
+The occupations we are interested in are the same occupations included in the FLS, which are SOC codes
+\begin{itemize}
+    \item 45-2041 - Graders and Sorters, Agricultural Products.
+    \item 45-2091 - Agricultural Equipment Operators.
+    \item 45-2092 - Farmworkers and Laborers, Crop, Nursery, and Greenhouse.
+    \item 45-2093 - Farmworkers, Farm, Ranch, and Aquacultural Animals.
+    \item 53-7064 - Packers and Packagers, Hand.
+    \item 45-2099 - Agricultural Workers, All Other.
+\end{itemize}
+We can also construct an AEWR wage equivalent by calculating the mean wage for these occupations, which is the same procedure used by the DOL.
+
+\subsection{Sample construction}
+Our geographic sample consists of all U.S. county pairs that straddle a state border.
+We then restrict this sample to only those border pairs where the two states fall into different AEWR regions, resulting in a discontinuity in the mandated AEWR across the county border.
+Our final dataset is structured at the county-year level for all counties in these "treated" and "untreated" county pairs.
+
+\section{Empirical design}
+
+
+\section{Results}
+
+
+\printbibliography
+
+\end{document}

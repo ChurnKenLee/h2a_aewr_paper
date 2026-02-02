@@ -1,0 +1,18 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'draft1.blg'
+[157] biber-MSWIN64:342> INFO - === 
+[205] Biber.pm:421> INFO - Reading 'draft1.bcf'
+[336] Biber.pm:1002> INFO - Found 4 citekeys in bib section 0
+[348] Biber.pm:4487> INFO - Processing section 0
+[357] Biber.pm:4678> INFO - Looking for bibtex file 'h2a_paper.bib' for section 0
+[433] bibtex.pm:1713> INFO - LaTeX decoding ...
+[447] bibtex.pm:1519> INFO - Found BibTeX data source 'h2a_paper.bib'
+[489] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[489] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[489] Biber.pm:4307> INFO - Sorting list 'nyt/global//global/global/global' of type 'entry' with template 'nyt' and locale 'en-US'
+[489] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[497] bbl.pm:676> INFO - Writing 'draft1.bbl' with encoding 'UTF-8'
+[499] bbl.pm:779> INFO - Output to draft1.bbl
+[499] Biber.pm:132> WARN - online entry 'usda_h2a_checklist' (h2a_paper.bib): Invalid format '2020-07-24T10:52:12-0400' of date field 'date' - ignoring
+[499] Biber.pm:132> WARN - online entry 'usda_h2a_info' (h2a_paper.bib): Invalid format '2020-07-08T11:21:52-0400' of date field 'date' - ignoring
+[499] Biber.pm:134> INFO - WARNINGS: 2

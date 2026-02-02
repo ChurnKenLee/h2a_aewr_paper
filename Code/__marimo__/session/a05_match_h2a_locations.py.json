@@ -1,0 +1,495 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.18.4"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "23fdfef70f9eec1488919fc94ecd9a3d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "f86c68a1b8aa61a388cf2c68ddb1d6b5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "032027f24a87ee7c53a508f0d7d1a0e1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "e75741439d393bc27b5bf00e4160b61b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "01869e88329c7abbe76c58ce4875b488",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "69d0f29dd1c47ef080fd520b4e62f19b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "490bc18c3ec25d0d1a8d02ba2ecd2ac2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "99ca5cd86a36ba87a903604091f60bdb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "b5057e5d5bf2af184007b98687937938",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "97fc6e5300306bbfde1cc87f9152774b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "ff52cb4cbdb0cf4ced9bf72d6ce77f3b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "d7894ecd54b0a5802e5b72c37d4fa68d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Add FIPS codes using worksite location information</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "450c9f597160834b809beee98e1d19a4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "40f29c7838da3d7d167c6abfc67cf2ec",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Given input location information (city, county, state, ZIP), we want to write a function that finds FIPS codes</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "744a4a960c857fa7c43884f832c71b7b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "8eed8631bf20804970b0322c2ccd80ae",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "ccdaf17f9664c1759abc561eac39e9e7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "9d56b2218294798c9b09c7961af6b429",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "c95af0d5290329a1b90169209ced0e9b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "5ad26c6aba3208473cdb45b15709f76d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "7bea7275e2183eabd95706f0c7ed1224",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "9d24a8ce0562dcad3c5a78a49d760333",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "b99b14b120c52362ca09191939942b01",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "784a30480907c3b19a89421f48a4a47d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Pvdt-0' random-id='2f20e0d2-2511-fb17-93ad-bf92dade6c2c'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;&#92;&quot;:2,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;DELEON&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;TX&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;DELEON&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;TX&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;48001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ANDERSON&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;48289&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:88.88888888888889,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;LEONA&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;48001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ELKHART&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:4,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;DILLION&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MT&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;DILLION&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;MT&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;30001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;BEAVERHEAD&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;30001&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:83.33333333333334,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;DILLON&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;30001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ARGENTA&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:34,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;WELLINGTON&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;WY&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;WELLINGTON&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;WY&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;56001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ALBANY&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;56007&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:87.5,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;ARLINGTON&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;56001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ALBANY&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:38,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;TENSLEEP&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;WY&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;TENSLEEP&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;WY&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;56001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ALBANY&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;56043&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:87.5,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;TEN SLEEP&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;56001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ALBANY&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:43,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;DUPONT&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;LA&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;DUPONT&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;LA&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;22001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ACADIA&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;22055&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:80.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;DUSON&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;22001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;BASILE&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:65,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;PRICE&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;ND&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;PRICE&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;ND&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;38001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ADAMS&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;38017&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:75.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;ERIE&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;38001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;BUCYRUS&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:76,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;STANDFORD&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;KY&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;STANDFORD&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;KY&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;21001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ADAIR&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;21137&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:87.5,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;STANFORD&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;21001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;COLUMBIA&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:80,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;FT. SUMMER&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;NM&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;FT. SUMMER&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;NM&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;35001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;BERNALILLO&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;35011&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:77.77777777777779,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;FORT SUMNER&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;35001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ALBUQUERQUE&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:92,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;STREET&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MD&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;STREET&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;MD&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;24001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ALLEGANY&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;24047&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:80.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;GIRDLETREE&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;24001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;BARRELVILLE&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:94,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;YOSEMITE&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;KY&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;YOSEMITE&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;KY&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;21001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ADAIR&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;21139&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:66.66666666666667,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;SMITHLAND&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;21001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;COLUMBIA&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;}]&quot;' data-total-rows='1452' data-total-columns='21' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;worksite_city&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_county&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_state&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_zip&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;xcity&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;xcounty&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;xstate&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;xzip&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;county_list&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_addfips&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_census_zip&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_fuzzy_county&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fuzzy_county_score&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;fuzzy_county_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_fuzzy_city&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fuzzy_city_score&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;fuzzy_city_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_fuzzy_ne&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fuzzy_ne_score&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;fuzzy_ne_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;final_fips&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[[&quot;&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZBYS",
+      "code_hash": "69304cf1a0e714f6612e61bab35fbfe6",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ZBYS-0' random-id='44687e66-05e5-8934-3cba-9b68a4a210e2'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;&#92;&quot;:1,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;NORTH DAKOTA&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;ND&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;38001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ADAMS&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;38001&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:0.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;BUCYRUS&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;38001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;BUCYRUS&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:6,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;TEXAS&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;TX&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;48001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ANDERSON&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;48001&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:0.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;ELKHART&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;48001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ELKHART&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:7,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MINNESOTA&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;MN&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;27001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;AITKIN&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;27001&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:0.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;AITKIN&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;27001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;AITKIN&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:8,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;CARVER&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MASSACHUSETTS&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;2330&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;CARVER&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;MA&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;2330&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;25001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;BARNSTABLE&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;25025&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:80.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;REVERE&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;25001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;BARNSTABLE&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:14,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;CALIFORNIA&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;CA&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;06001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ALAMEDA&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;06001&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:0.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;ALAMEDA&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;06001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ALAMEDA&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:24,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;ARKANSAS&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;AR&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;05001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ARKANSAS&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;05001&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:0.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;ALMYRA&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;05001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;ALMYRA&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:60,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;SOUTH DAKOTA&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;SD&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;46003&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;AURORA&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;46003&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:0.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;AURORA CENTER&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;46003&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;AURORA CENTER&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:92,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;BORDER&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;IDAHO&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;82254&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;BORDER&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;ID&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;82254&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;16001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ADA&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;16017&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:75.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;DOVER&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;16001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;AVIMOR&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:156,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:NaN,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:NaN,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:NaN,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;},{&#92;&quot;&#92;&quot;:260,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;KILGORE&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;IDAHO&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;53423&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xcity&#92;&quot;:&#92;&quot;KILGORE&#92;&quot;,&#92;&quot;xcounty&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;xstate&#92;&quot;:&#92;&quot;ID&#92;&quot;,&#92;&quot;xzip&#92;&quot;:&#92;&quot;53423&#92;&quot;,&#92;&quot;county_list&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_addfips&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_census_zip&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips_from_fuzzy_county&#92;&quot;:&#92;&quot;16001&#92;&quot;,&#92;&quot;fuzzy_county_score&#92;&quot;:0.0,&#92;&quot;fuzzy_county_name&#92;&quot;:&#92;&quot;ADA&#92;&quot;,&#92;&quot;fips_from_fuzzy_city&#92;&quot;:&#92;&quot;16023&#92;&quot;,&#92;&quot;fuzzy_city_score&#92;&quot;:75.0,&#92;&quot;fuzzy_city_name&#92;&quot;:&#92;&quot;MOORE&#92;&quot;,&#92;&quot;fips_from_fuzzy_ne&#92;&quot;:&#92;&quot;16001&#92;&quot;,&#92;&quot;fuzzy_ne_score&#92;&quot;:0.0,&#92;&quot;fuzzy_ne_name&#92;&quot;:&#92;&quot;AVIMOR&#92;&quot;,&#92;&quot;final_fips&#92;&quot;:&#92;&quot;&#92;&quot;}]&quot;' data-total-rows='1092' data-total-columns='21' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;worksite_city&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_state&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_zip&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_county&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;xcity&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;xcounty&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;xstate&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;xzip&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;county_list&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_addfips&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_census_zip&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_fuzzy_county&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fuzzy_county_score&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;fuzzy_county_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_fuzzy_city&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fuzzy_city_score&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;fuzzy_city_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fips_from_fuzzy_ne&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fuzzy_ne_score&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;fuzzy_ne_name&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;final_fips&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[[&quot;&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "aLJB",
+      "code_hash": "445584e0a0de2ebfad61d162964b9b18",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nHfw",
+      "code_hash": "2bec6d9cee06ea6af16a35d01d0d025d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"use-gemini-places-api-to-get-matches-for-the-unmatched-locations-then-come-back-here-and-use-them-to-fill-in-the-missing-fips\">Use Gemini + Places API to get matches for the unmatched locations, then come back here and use them to fill in the missing FIPS</h1></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "xXTn",
+      "code_hash": "52a4c39d1aecb0a471825aea4067775d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "AjVT",
+      "code_hash": "085be3b694bae5b3dddc078911028b1e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "pHFh",
+      "code_hash": "157eead8b516773e6d848541cd4b203d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "NCOB",
+      "code_hash": "2b095f02ad3429b303dab16446b96670",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "aqbW",
+      "code_hash": "fd6c764679d236720277797c4ef92556",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TRpd",
+      "code_hash": "cd66f51c3ab7aaa320a31ac680ea6b37",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TXez",
+      "code_hash": "5a95ff0ab679f7ebf8b3acce71057f6f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "dNNg",
+      "code_hash": "a10cf91a79519a88995e4496f6c03ec4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "yCnT",
+      "code_hash": "f1aa78e6da464a848e80aabe08153840",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "wlCL",
+      "code_hash": "c13543c6c5bb9ee5419bd20cc0650053",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='wlCL-0' random-id='c2801d20-0bb7-523a-5558-647fed3b8f8a'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;&#92;&quot;:122582,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20265-835437&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;BENITO MARTINEZ JR.&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;AVON PARK&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;FL&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;33825&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;14&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;11.71&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;AVON PARK&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;FL&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-20&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-02-15&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;14&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;36&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;33825&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-20&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-02-15&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;HIGHLANDS&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;Y&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;14&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;12055,12105&#92;&quot;},{&#92;&quot;&#92;&quot;:122583,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20260-827678&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;WESTERN RANGE ASSOCIATION&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;TWIN FALLS&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;ID&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;83301&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;1682.33&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;MONTH&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;CRAIG&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;CO&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-02&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-03-31&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;81625&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-02&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-03-31&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;MOFFAT&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;ASSOCIATION - JOINT EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;08081,08107&#92;&quot;},{&#92;&quot;&#92;&quot;:122584,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20260-827308&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;ALLEN RANCHES LLC&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;HOTCHKISS&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;CO&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;81419&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;3&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;1682.33&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;MONTH&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;HOTCHKISS&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;CO&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-12-01&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-01-31&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;3&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;81419&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-12-01&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-01-31&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;DELTA&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;ASSOCIATION - AGENT&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;3&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;08029&#92;&quot;},{&#92;&quot;&#92;&quot;:122585,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20260-826330&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;STEVEN EDGE&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;CONWAY&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;SC&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;29526&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;2&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;11.71&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;CONWAY &#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;SC&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-15&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-04-30&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;2&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;48&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;29526&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-15&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-04-30&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;HORRY&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;2&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;45051&#92;&quot;},{&#92;&quot;&#92;&quot;:122586,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20259-823987&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - WITHDRAWN&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;FLOYD FREY&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;HARLEM&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;MT&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;59526&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;13.62&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;HARLEM&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MT&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-26&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-02-28&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;2&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;37.5&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;59526&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-26&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-02-28&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;BLAINE&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;2&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;30005&#92;&quot;},{&#92;&quot;&#92;&quot;:122587,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20259-823882&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - WITHDRAWN&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;TERENCE E MANAS&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;UTICA&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;SD&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;57067&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;14.99&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;UTICA&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;SD&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-25&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-03-01&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;37.5&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;57067&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-25&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-03-01&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;YANKTON&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;46135&#92;&quot;},{&#92;&quot;&#92;&quot;:122588,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20258-821801&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;WESTERN RANGE ASSOCIATION&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;TWIN FALLS&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;ID&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;83301&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;3&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;1682.33&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;MONTH&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;MONTE VISTA&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;CO&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-01&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-04-30&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;3&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;81151&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-01&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-04-30&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;RIO GRANDE&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;ASSOCIATION - JOINT EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;3&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;08021,08023&#92;&quot;},{&#92;&quot;&#92;&quot;:122589,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20258-821682&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;SIGNET BUILDERS, INC.&#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;AUSTIN&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;TX&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;78737&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;12&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;14.58&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;MALCOM&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;IA&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-09-28&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-01-15&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;12&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;45&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;50157&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-09-28&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-01-15&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;POWESHIEK&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;Y&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;12&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;19157&#92;&quot;},{&#92;&quot;&#92;&quot;:122590,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20258-821487&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - CERTIFICATION&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;JON P. WIGGINS &#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;CADILLAC&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;MI&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;49601&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;6&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;14.4&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;LAKE CITY&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MI&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-10-10&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2020-11-30&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;6&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;35&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;49601&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-10-10&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2020-11-30&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;MISSAUKEE&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;13&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;26085,26113,26165&#92;&quot;},{&#92;&quot;&#92;&quot;:122591,&#92;&quot;case_number&#92;&quot;:&#92;&quot;H-300-20258-820949&#92;&quot;,&#92;&quot;case_status&#92;&quot;:&#92;&quot;DETERMINATION ISSUED - WITHDRAWN&#92;&quot;,&#92;&quot;certification_begin_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;certification_end_date&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;employer_name&#92;&quot;:&#92;&quot;SW &amp; CREW &#92;&quot;,&#92;&quot;employer_city&#92;&quot;:&#92;&quot;HAVRE&#92;&quot;,&#92;&quot;employer_state&#92;&quot;:&#92;&quot;MT&#92;&quot;,&#92;&quot;employer_postal_code&#92;&quot;:&#92;&quot;59501&#92;&quot;,&#92;&quot;nbr_workers_certified&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;wage_rate&#92;&quot;:&#92;&quot;13.62&#92;&quot;,&#92;&quot;wage_unit&#92;&quot;:&#92;&quot;HOUR&#92;&quot;,&#92;&quot;worksite_city&#92;&quot;:&#92;&quot;HAVRE&#92;&quot;,&#92;&quot;worksite_state&#92;&quot;:&#92;&quot;MT&#92;&quot;,&#92;&quot;organization_flag&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fiscal_year&#92;&quot;:&#92;&quot;2020&#92;&quot;,&#92;&quot;requested_begin_date&#92;&quot;:&#92;&quot;2020-11-15&#92;&quot;,&#92;&quot;requested_end_date&#92;&quot;:&#92;&quot;2021-02-15&#92;&quot;,&#92;&quot;nbr_workers_requested&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;number_of_hours&#92;&quot;:&#92;&quot;48&#92;&quot;,&#92;&quot;worksite_zip&#92;&quot;:&#92;&quot;59501&#92;&quot;,&#92;&quot;primary_sub&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;job_begin_date&#92;&quot;:&#92;&quot;2020-11-15&#92;&quot;,&#92;&quot;job_end_date&#92;&quot;:&#92;&quot;2021-02-15&#92;&quot;,&#92;&quot;worksite_county&#92;&quot;:&#92;&quot;HILL&#92;&quot;,&#92;&quot;type_of_employer_application&#92;&quot;:&#92;&quot;INDIVIDUAL EMPLOYER&#92;&quot;,&#92;&quot;h2a_labor_contractor&#92;&quot;:&#92;&quot;N&#92;&quot;,&#92;&quot;nbr_workers_needed&#92;&quot;:&#92;&quot;1&#92;&quot;,&#92;&quot;ag_association_or_agency&#92;&quot;:&#92;&quot;&#92;&quot;,&#92;&quot;fips&#92;&quot;:&#92;&quot;30005,30041&#92;&quot;}]&quot;' data-total-rows='92363' data-total-columns='29' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;case_number&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;case_status&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;certification_begin_date&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;certification_end_date&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;employer_name&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;employer_city&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;employer_state&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;employer_postal_code&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;nbr_workers_certified&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;wage_rate&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;wage_unit&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_city&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_state&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;organization_flag&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;fiscal_year&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;requested_begin_date&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;requested_end_date&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;nbr_workers_requested&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;number_of_hours&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_zip&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;primary_sub&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;job_begin_date&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;job_end_date&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;worksite_county&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;type_of_employer_application&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;h2a_labor_contractor&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;nbr_workers_needed&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;ag_association_or_agency&quot;,[&quot;string&quot;,&quot;string&quot;]],[&quot;fips&quot;,[&quot;string&quot;,&quot;object&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[[&quot;&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nZEd",
+      "code_hash": null,
+      "outputs": [],
+      "console": []
+    }
+  ]
+}
