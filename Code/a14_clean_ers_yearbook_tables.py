@@ -1,7 +1,7 @@
 import marimo
 
-__generated_with = "0.18.4"
-app = marimo.App()
+__generated_with = "0.19.7"
+app = marimo.App(width="full")
 
 
 @app.cell
@@ -57,6 +57,11 @@ def _(fruit_df, pd, vegetable_df_1):
     # Concat and export as binary
     crop_df = pd.concat([fruit_df, vegetable_df_1])[['year_value', 'year_unit', 'variable', 'commodity_element', 'market_segment', 'geographic_extent', 'value', 'unit']]
     crop_df.to_parquet('../binaries/ers_yearbooks.parquet', index=False)
+    return
+
+
+@app.cell
+def _():
     return
 
 
