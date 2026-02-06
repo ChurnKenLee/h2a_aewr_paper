@@ -6,19 +6,24 @@ library(janitor)
 
 rm(list = ls())
 
-rma_sob <- read_parquet(here("binaries", "rma_sob.parquet"))
+cov <- read_parquet(here("binaries", "rma_sob_cov.parquet"))
 
-crops <- rma_sob %>% 
+crops <- cov %>% 
   distinct(commodity_name)
 
-insurance_plans <- rma_sob %>% 
+insurance_plans <- cov %>% 
   distinct(insurance_plan_name_abbreviation)
 
-coverage_categories <- rma_sob %>% 
+coverage_categories <- cov %>% 
   distinct(coverage_category)
 
-delivery_types <- rma_sob %>% 
+delivery_types <- cov %>% 
   distinct(delivery_type)
 
-quantity_types <- rma_sob %>% 
+quantity_types <- cov %>% 
   distinct(quantity_type)
+
+tpu <- read_parquet(here("binaries", "rma_sob_tpu.parquet"))
+
+
+
