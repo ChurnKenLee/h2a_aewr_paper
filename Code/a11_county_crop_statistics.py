@@ -1,7 +1,7 @@
 import marimo
 
-__generated_with = "0.19.7"
-app = marimo.App()
+__generated_with = "0.19.9"
+app = marimo.App(width="full")
 
 
 @app.cell
@@ -11,6 +11,7 @@ def _():
     import numpy as np
     from bs4 import BeautifulSoup
     import re
+
     return BeautifulSoup, Path, pd, re
 
 
@@ -127,6 +128,7 @@ def _(county_crop_df_1):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

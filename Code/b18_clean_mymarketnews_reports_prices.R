@@ -14,7 +14,7 @@ rm(list = ls())
 terminal_market_list <- list()
 shipping_point_list <- list()
 
-for (year in 2004:2006) {
+for (year in 2004:2004) {
   terminal_market_filename <- paste0("mymarketnews_terminal_market_reports_", year, ".parquet")
   print(terminal_market_filename)
   terminal_market <- read_parquet(here("binaries", terminal_market_filename))

@@ -71,65 +71,98 @@ qs_survey_crops <- qs_survey_crops %>%
 qs_census_obs <- qs_census_crops %>%
   group_by(group_desc, commodity_desc, class_desc, prodn_practice_desc, util_practice_desc) %>%
   summarize(
-    n_area_obs_census = sum(is_area),
-    n_prod_obs_census = sum(is_production),
-    n_yield_obs_census = sum(is_yield)
+    n_area_obs = sum(is_area),
+    n_prod_obs = sum(is_production),
+    n_yield_obs = sum(is_yield)
   ) %>%
   ungroup()
 
 qs_survey_obs <- qs_survey_crops %>%
   group_by(group_desc, commodity_desc, class_desc, prodn_practice_desc, util_practice_desc) %>%
   summarize(
-    n_area_obs_survey = sum(is_area),
-    n_prod_obs_survey = sum(is_production),
-    n_yield_obs_survey = sum(is_yield),
-    n_price_obs_survey = sum(is_price)
+    n_area_obs = sum(is_area),
+    n_prod_obs = sum(is_production),
+    n_yield_obs = sum(is_yield),
+    n_price_obs = sum(is_price)
   ) %>%
   ungroup()
 
-# Choose crop cats/subcats to extract by number of observations
-crops_obs <- qs_survey_obs %>% 
-  full_join(qs_census_obs) %>% 
+beans <- qs_census_crops %>% filter(commodity_desc == "BEANS")
+beans %>% write_csv(here("beans.csv"))
+
+qs_census_obs <- qs_census_obs %>% 
   arrange(group_desc, commodity_desc, class_desc, prodn_practice_desc, util_practice_desc) %>% 
   mutate(across(where(is.numeric), ~replace_na(.x, 0)))
 
-# Sum of observations across categories in census and survey
-crops_obs <- crops_obs %>% 
-  mutate(n_census_obs = n_area_obs_census + n_prod_obs_census + n_yield_obs_census) %>% 
-  mutate(n_survey_obs = n_area_obs_survey + n_prod_obs_survey + n_yield_obs_survey + n_price_obs_survey)
+qs_survey_obs <- qs_survey_obs %>% 
+  arrange(group_desc, commodity_desc, class_desc, prodn_practice_desc, util_practice_desc) %>% 
+  mutate(across(where(is.numeric), ~replace_na(.x, 0)))
 
-# We drop crops that have 0 census observations
-crops_obs <- crops_obs %>% 
-  filter(n_census_obs > 0)
+# Define the target observation type we want to have maximum coverage
+qs_census_obs <- qs_census_obs %>% 
+  mutate(n_obs = n_area_obs + n_prod_obs + n_yield_obs)
 
-# Within each commodity, look at crop with highest census obs
+qs_survey_obs <- qs_survey_obs %>% 
+  mutate(n_obs = n_price_obs)
+  # mutate(n_obs = n_area_obs + n_prod_obs + n_yield_obs + n_price_obs)
+
+# We drop crops that have 0 observations in desired categories
+qs_census_obs <- qs_census_obs %>% 
+  filter(n_obs != 0)
+
+qs_survey_obs <- qs_survey_obs %>% 
+  filter(n_obs != 0)
+
+# Within each commodity, look at crop with highest obs count in category we care about
 # If that crop is also universal, use that as selected obs for that commodity
-commodity_max <- crops_obs %>% 
+census_commodity_max <- qs_census_obs %>% 
   group_by(group_desc, commodity_desc) %>% 
-  mutate(commodity_max = max(n_census_obs)) %>% 
+  mutate(commodity_max = max(n_obs)) %>% 
   ungroup() %>% 
-  filter(n_census_obs == commodity_max) %>% 
+  filter(n_obs == commodity_max) %>% 
   filter(class_desc == "ALL CLASSES") %>% 
   filter(prodn_practice_desc == "ALL PRODUCTION PRACTICES") %>% 
   filter(util_practice_desc == "ALL UTILIZATION PRACTICES") %>% 
   mutate(commodity_max_is_universal = TRUE) %>% 
   select(group_desc, commodity_desc, commodity_max_is_universal)
 
-crops_obs <- crops_obs %>% 
-  left_join(commodity_max)
+survey_commodity_max <- qs_survey_obs %>% 
+  group_by(group_desc, commodity_desc) %>% 
+  mutate(commodity_max = max(n_obs)) %>% 
+  ungroup() %>% 
+  filter(n_obs == commodity_max) %>% 
+  filter(class_desc == "ALL CLASSES") %>% 
+  filter(prodn_practice_desc == "ALL PRODUCTION PRACTICES") %>% 
+  filter(util_practice_desc == "ALL UTILIZATION PRACTICES") %>% 
+  mutate(commodity_max_is_universal = TRUE) %>% 
+  select(group_desc, commodity_desc, commodity_max_is_universal)
+
+qs_census_obs <- qs_census_obs %>% 
+  left_join(census_commodity_max)
+
+qs_survey_obs <- qs_survey_obs %>% 
+  left_join(survey_commodity_max)
 
 # For remainder, choose crop with max obs within class, filter further after
-class_max <- crops_obs %>% 
+census_class_max <- qs_census_obs %>% 
   filter(is.na(commodity_max_is_universal)) %>% 
   group_by(group_desc, commodity_desc, class_desc) %>% 
-  mutate(class_max = max(n_census_obs)) %>% 
+  mutate(class_max = max(n_obs)) %>% 
   ungroup() %>% 
-  filter(n_census_obs == class_max)
+  filter(n_obs == class_max)
+
+survey_class_max <- qs_survey_obs %>% 
+  filter(is.na(commodity_max_is_universal)) %>% 
+  group_by(group_desc, commodity_desc, class_desc) %>% 
+  mutate(class_max = max(n_obs)) %>% 
+  ungroup() %>% 
+  filter(n_obs == class_max)
 
 # Drop commodity-class'es that are duplicative
+# Census:
 # For non-HORTICULTURE, we only want to include IN THE OPEN and ALL PRODUCTION PRACTICES
 # This drops most of the observations from the organics supplementary census
-class_max <- class_max %>% 
+census_class_max <- census_class_max %>% 
   mutate(keep_this = case_when(
     group_desc != "HORTICULTURE" & prodn_practice_desc == "ALL PRODUCTION PRACTICES" ~ TRUE,
     group_desc != "HORTICULTURE" & prodn_practice_desc == "IN THE OPEN" ~ TRUE,
@@ -137,6 +170,9 @@ class_max <- class_max %>%
     .default = FALSE
   )) %>% 
   filter(keep_this)
+
+# Survey:
+# 
 
 # Further perform adjustment
 # HAY has best ALL CLASSES
