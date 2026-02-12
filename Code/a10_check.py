@@ -33,7 +33,7 @@ def _(Path):
 
 @app.cell
 def _(binary_path, pd, year):
-    exact_df = pd.read_parquet(binary_path / f'county_crop_pixel_count_{year}_test.parquet')
+    exact_df = pd.read_parquet(binary_path / f'county_crop_pixel_count_{year}_exactextract.parquet')
     exact_df = exact_df.rename(
         columns={
             'GEOID':'fips',
