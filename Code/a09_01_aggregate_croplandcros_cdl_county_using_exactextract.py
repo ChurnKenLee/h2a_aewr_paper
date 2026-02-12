@@ -22,8 +22,9 @@ def _():
 
 @app.cell
 def _(Path):
-    cdl_path = Path(__file__).parent.parent / 'Data' / 'croplandcros_cdl'
-    return (cdl_path,)
+    project_path = Path(__file__).parent.parent
+    cdl_path = project_path / 'Data' / 'croplandcros_cdl'
+    return cdl_path, project_path
 
 
 @app.cell
@@ -40,10 +41,10 @@ def _(cdl_path, rio):
 
 
 @app.cell
-def _(Path, cdl_files, gpd, rio):
+def _(cdl_files, gpd, project_path, rio):
     # Reproject county shapefile to match CDL CRS
     # Read county border vector file
-    county_shapefile_path = Path(__file__).parent.parent / 'Data' / 'county_shapefile' / 'tl_2023_us_county' / 'tl_2023_us_county.shp'
+    county_shapefile_path = project_path / 'Data' / 'county_shapefile' / 'tl_2023_us_county' / 'tl_2023_us_county.shp'
     county_borders = gpd.read_file(county_shapefile_path)
 
     # 3. Open rasters and ensure CRS match
@@ -73,7 +74,7 @@ def _(Path, cdl_files, gpd, rio):
 
 
 @app.cell
-def _(cdl_files, pd, pl):
+def _(cdl_files, pd, pl, project_path):
     # We open all years simultaneously and pass them as a list
     # exactextract will compute weights once and apply to all bands (years)
     print('Starting extraction (this may take a while for CONUS)...')
@@ -87,8 +88,8 @@ def _(cdl_files, pd, pl):
     #     output='pandas'
     # )
 
-    # results.to_parquet('temp.parquet')
-    results = pd.read_parquet('temp.parquet')
+    # results.to_parquet(project_path / 'binaries' / 'temp_exactextract.parquet')
+    results = pd.read_parquet(project_path / 'binaries' / 'temp_exactextract.parquet')
     results = pl.from_pandas(results)
 
     print('Finished extracting')
@@ -123,7 +124,7 @@ def _(results, unpivot_to_long_metric):
 
 
 @app.cell
-def _(Path, df_counts, df_fracs, df_unique, pl):
+def _(df_counts, df_fracs, df_unique, pl, project_path):
     # Join them back together on GEOID and Year
     # Using a join ensures that 2008 count matches 2008 unique
     long_df = df_counts.join(
@@ -141,8 +142,8 @@ def _(Path, df_counts, df_fracs, df_unique, pl):
     )
 
     # Export as parquet
-    binary_file_path = Path(__file__).parent.parent / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
-    long_df.write_parquet(binary_file_path )
+    binary_file_path = project_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
+    long_df.write_parquet(binary_file_path)
     return
 
 
