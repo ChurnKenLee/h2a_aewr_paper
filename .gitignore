@@ -65,5 +65,9 @@ Data Int/
 Literature/
 Output/
 
-# LaTeX build files
-draft/
+# LaTeX auxiliary files
+draft/*
+!draft/*.tex
+!draft/*.pdf
+!draft/*.bib
+
