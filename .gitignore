@@ -1,0 +1,69 @@
+# ==========================================
+# PYTHON (uv venv)
+# ==========================================
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+
+# DO NOT ignore uv.lock or pyproject.toml
+!uv.lock
+!pyproject.toml
+
+# ==========================================
+# MARIMO
+# ==========================================
+**/__marimo__/
+
+# ==========================================
+# R
+# ==========================================
+# RStudio/Positron project files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Positron / VS Code specific
+.vscode/
+.positron/
+
+# ==========================================
+# PROJECT SPECIFIC
+# ==========================================
+# Data
+data/
+binaries/
+*.dta
+*.csv
+*.xlsx
+*.xls
+*.sav
+*.sas7bdat
+*.parquet
+*.zip
+*.gz
+
+# Processed binaries
+files_for_phil/
+binaries/
+
+# Large intermediate crosswalks
+code/json/
+
+# API keys
+.env
+.env.example
+tools/
+
+# PDFs
+papers/
+
+# Phil's folders
+Data Int/
+Literature/
+Output/
+
+# LaTeX build files
+draft/
