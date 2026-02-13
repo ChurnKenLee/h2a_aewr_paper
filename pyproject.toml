@@ -33,6 +33,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "pydantic-ai>=1.47.0",
     "pyprojroot>=0.3.0",
+    "python-dotenv>=1.2.1",
     "python-lsp-ruff>=2.3.0",
     "python-lsp-server>=1.14.0",
     "rapidfuzz>=3.13.0",
