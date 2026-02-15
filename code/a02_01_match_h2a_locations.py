@@ -27,6 +27,14 @@ def _():
     return json, load_workbook, mo, pl, pyprojroot, rapidfuzz, us
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Extract all H-2A performance files and Census location crosswalks
+    """)
+    return
+
+
 @app.cell
 def _(pyprojroot):
     root_path = pyprojroot.find_root(criterion='pyproject.toml')
@@ -172,319 +180,6 @@ def _():
         2024:'H-2A_Addendum_B_Employment_Record_FY2024_Q4.xlsx'
     }
     return add_b_filenames_dict, h2a_filenames_dict
-
-
-@app.cell
-def _():
-    # h2a_dtype_dict = {}
-
-    # h2a_dtype_dict['2008'] = {
-    #     'CASE_NO':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'CERTIFICATION_BEGIN_DATE':'string',
-    #     'CERTIFICATION_END_DATE':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'ALIEN_WORK_CITY':'string',
-    #     'ALIEN_WORK_STATE':'string',
-    #     'ORGANIZATION_FLAG':'string'
-    # }
-
-    # h2a_dtype_dict['2009'] = {
-    #     'CASE_NO':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'CERTIFICATION_BEGIN_DATE':'string',
-    #     'CERTIFICATION_END_DATE':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'ALIEN_WORK_CITY':'string',
-    #     'ALIEN_WORK_STATE':'string',
-    #     'ORGANIZATION_FLAG':'string'
-    # }
-
-    # h2a_dtype_dict['2010'] = h2a_dtype_dict['2009']
-
-    # h2a_dtype_dict['2011'] = {
-    #     'CASE_NO':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_REQUESTED':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'CERTIFICATION_BEGIN_DATE':'string',
-    #     'CERTIFICATION_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'ALIEN_WORK_CITY':'string',
-    #     'ALIEN_WORK_STATE':'string',
-    #     'ORGANIZATION_FLAG':'string'
-    # }
-
-    # h2a_dtype_dict['2012'] = h2a_dtype_dict['2011']
-
-    # h2a_dtype_dict['2013'] = {
-    #     'CASE_NO':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'CERTIFICATION_BEGIN_DATE':'string',
-    #     'CERTIFICATION_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'ALIEN_WORK_CITY':'string',
-    #     'ALIEN_WORK_STATE':'string',
-    #     'ORGANIZATION_FLAG':'string'
-    # }
-
-    # h2a_dtype_dict['2014'] = {
-    #     'CASE_NO':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'CERTIFICATION_BEGIN_DATE':'string',
-    #     'CERTIFICATION_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'WORKSITE_LOCATION_CITY':'string',
-    #     'WORKSITE_LOCATION_STATE':'string',
-    #     'ORGANIZATION_FLAG':'string'
-    # }
-
-    # h2a_dtype_dict['2015'] = {
-    #     'CASE_NUMBER':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_REQUESTED':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'CERTIFICATION_BEGIN_DATE':'string',
-    #     'CERTIFICATION_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'ORGANIZATION_FLAG':'string'
-    # }
-
-    # h2a_dtype_dict['2016'] = {
-    #     'CASE_NUMBER':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_REQUESTED':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'JOB_START_DATE':'string',
-    #     'JOB_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'ORGANIZATION_FLAG':'string',
-    #     'PRIMARY/SUB':'string',
-    # }
-
-    # h2a_dtype_dict['2017'] = {
-    #     'CASE_NUMBER':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_REQUESTED':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'JOB_START_DATE':'string', 
-    #     'JOB_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_COUNTY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'ORGANIZATION_FLAG':'string',
-    #     'PRIMARY/SUB':'string'
-    # }
-
-    # h2a_dtype_dict['2018'] = {
-    #     'CASE_NO':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_REQUESTED':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'JOB_START_DATE':'string', 
-    #     'JOB_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_COUNTY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'ORGANIZATION_FLAG':'string',
-    #     'PRIMARY_SUB':'string'
-    # }
-
-    # h2a_dtype_dict['2019'] = {
-    #     'CASE_NUMBER':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'NBR_WORKERS_REQUESTED':'string',
-    #     'NBR_WORKERS_CERTIFIED':'string',
-    #     'REQUESTED_START_DATE_OF_NEED':'object',
-    #     'REQUESTED_END_DATE_OF_NEED':'object',
-    #     'JOB_START_DATE':'string', 
-    #     'JOB_END_DATE':'string',
-    #     'BASIC_NUMBER_OF_HOURS':'string',
-    #     'BASIC_RATE_OF_PAY':'string',
-    #     'BASIC_UNIT_OF_PAY':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_COUNTY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'ORGANIZATION_FLAG':'string',
-    #     'PRMARY/SUB':'string'
-    # }
-
-    # h2a_dtype_dict['2020'] = {
-    #     'CASE_NUMBER':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'TOTAL_WORKERS_NEEDED':'string',
-    #     'TOTAL_WORKERS_H2A_REQUESTED':'string',
-    #     'TOTAL_WORKERS_H2A_CERTIFIED':'string',
-    #     'REQUESTED_BEGIN_DATE':'string',
-    #     'REQUESTED_END_DATE':'string',
-    #     'EMPLOYMENT_BEGIN_DATE':'string',
-    #     'EMPLOYMENT_END_DATE':'string',
-    #     'ANTICIPATED_NUMBER_OF_HOURS':'string',
-    #     'WAGE_OFFER':'string',
-    #     'PER':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_COUNTY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'TYPE_OF_EMPLOYER_APPLICATION':'string',
-    #     'H2A_LABOR_CONTRACTOR':'string'
-    # }
-
-    # h2a_dtype_dict['2021'] = h2a_dtype_dict['2020']
-    # h2a_dtype_dict['2022'] = h2a_dtype_dict['2020']
-    # h2a_dtype_dict['2023'] = h2a_dtype_dict['2020']
-
-    # h2a_dtype_dict['2024'] = {
-    #     'CASE_NUMBER':'string',
-    #     'CASE_STATUS':'string',
-    #     'EMPLOYER_NAME':'string',
-    #     'EMPLOYER_CITY':'string',
-    #     'EMPLOYER_STATE':'string',
-    #     'EMPLOYER_POSTAL_CODE':'string',
-    #     'TOTAL_WORKERS_NEEDED':'string',
-    #     'TOTAL_WORKERS_H2A_REQUESTED':'string',
-    #     'TOTAL_WORKERS_H2A_CERTIFIED':'string',
-    #     'REQUESTED_BEGIN_DATE':'string',
-    #     'REQUESTED_END_DATE':'string',
-    #     'EMPLOYMENT_BEGIN_DATE':'string',
-    #     'EMPLOYMENT_END_DATE':'string',
-    #     'ANTICIPATED_NUMBER_OF_HOURS':'string',
-    #     'WAGE_OFFER':'string',
-    #     'PER':'string',
-    #     'WORKSITE_CITY':'string',
-    #     'WORKSITE_COUNTY':'string',
-    #     'WORKSITE_STATE':'string',
-    #     'WORKSITE_POSTAL_CODE':'string',
-    #     'TYPE_OF_EMPLOYER_APPLICATION':'string',
-    #     'AG_ASSN_OR_AGENCY_STATUS':'string',
-    #     'H2A_LABOR_CONTRACTOR':'string'
-    # }
-
-    # def analyze_schema_diffs(dtype_dict):
-    #     years = sorted(dtype_dict.keys())
-
-    #     for i in range(len(years)):
-    #         curr_year = years[i]
-    #         curr_schema = dtype_dict[curr_year]
-
-    #         print(f"\n--- {curr_year} ---")
-
-    #         if i == 0:
-    #             print(f"Initial State: {len(curr_schema)} columns")
-    #             continue
-
-    #         prev_year = years[i-1]
-    #         prev_schema = dtype_dict[prev_year]
-
-    #         # Check if they are identical
-    #         if curr_schema == prev_schema:
-    #             print(f"Identical to {prev_year}")
-    #             continue
-
-    #         # Find differences
-    #         curr_keys = set(curr_schema.keys())
-    #         prev_keys = set(prev_schema.keys())
-
-    #         added = curr_keys - prev_keys
-    #         removed = prev_keys - curr_keys
-    #         common = curr_keys & prev_keys
-    #         changed_type = {k for k in common if curr_schema[k] != prev_schema[k]}
-
-    #         if added: print(f"  Added:   {sorted(list(added))}")
-    #         if removed: print(f"  Removed: {sorted(list(removed))}")
-    #         if changed_type:
-    #             for k in changed_type:
-    #                 print(f"Type Change: {k} ({prev_schema[k]} -> {curr_schema[k]})")
-
-    # analyze_schema_diffs(h2a_dtype_dict)
-    return
 
 
 @app.cell
@@ -721,6 +416,30 @@ def _():
 
 
 @app.cell
+def _(mo, pl):
+    # Define a function that reads the Excel files using polars, with Marimo caching for speedy code iteration
+    @mo.persistent_cache
+    def read_h2a_excel(path, cols, schema, rename_map):
+        df = pl.read_excel(
+            source=path,
+            columns=cols,
+            schema_overrides=schema,
+            engine='calamine'
+        )
+
+        df = df.with_columns(
+            pl.col(pl.Date).dt.to_string(),
+            pl.col(pl.String).fill_null(""),
+        ).rename(
+            mapping=rename_map, strict=False
+        )
+
+        return df
+
+    return (read_h2a_excel,)
+
+
+@app.cell
 def _(
     add_b_cols_dict,
     add_b_filenames_dict,
@@ -731,6 +450,7 @@ def _(
     h2a_path,
     h2a_rename_dict,
     pl,
+    read_h2a_excel,
     schema_dict,
 ):
     # Read the H-2A performance data files
@@ -738,21 +458,11 @@ def _(
     for _y in range(2008, 2025):
         _path = h2a_path / h2a_filenames_dict[_y]
         print(f'Reading H-2A for year {_y}')
-        _df = pl.read_excel(
-            source=_path,
-            columns=cols_dict[_y],
-            schema_overrides=schema_dict[_y],
-            engine='calamine'
-        )
+        _df = read_h2a_excel(_path, cols_dict[_y], schema_dict[_y], h2a_rename_dict)
 
         _df = _df.with_columns(
-            pl.col(pl.Date).dt.to_string(),
-            pl.col(pl.String).fill_null(""),
             fiscal_year=_y
-        ).rename(
-            mapping=h2a_rename_dict, strict=False
         )
-
         h2a_df = pl.concat(items=[h2a_df, _df], how='diagonal')
 
     # Same with Addendum B files
@@ -761,91 +471,28 @@ def _(
     for _y in range(2020, 2025):
         _path = h2a_path / add_b_filenames_dict[_y]
         print(f'Reading Addendum B for year {_y}')
-        _df = pl.read_excel(
-            source=_path,
-            columns=add_b_cols_dict[_y],
-            schema_overrides=add_b_schema_dict[_y],
-            engine='calamine'
-        )
+        _df = read_h2a_excel(_path, add_b_cols_dict[_y], add_b_schema_dict[_y], add_b_rename_dict)
 
         _df = _df.with_columns(
-            pl.col(pl.Date).dt.to_string(),
-            pl.col(pl.String).fill_null(""),
             fiscal_year=_y
-        ).rename(
-            mapping=add_b_rename_dict, strict=False
         )
 
         add_b_df = pl.concat(items=[add_b_df, _df], how='diagonal')
     return add_b_df, h2a_df
 
 
-@app.cell
-def _():
-    # # Function that reads lists of H-2A disclosure files and returns a dict of all dataframes
-    # def read_h2a_excel_files(year_filename_dict, year_list, year_dtype_dict):
-    #     h2a_df_dict = {}
-    #     for y in year_list:
-    #         year = str(y)
-    #         filename = year_filename_dict[year]
-    #         print(filename)
-    #         dtype_dict = year_dtype_dict[year]
-    #         col_list = list(dtype_dict.keys())
-    #         h2a_df_dict[year] = pd.read_excel('../Data/h2a/' + filename, dtype=dtype_dict, usecols=col_list, parse_dates=False, na_filter=False)
-
-    #     return h2a_df_dict
-
-    # # Process H-2A files
-    # years_to_load = list(range(2008, 2025))
-    # _h2a_df_dict_read = read_h2a_excel_files(h2a_filenames_dict, years_to_load, h2a_dtype_dict)
-
-    # # Pickle
-    # with open("json/h2a_pickle", "wb") as _fp:
-    #     pickle.dump(_h2a_df_dict_read, _fp)
-
-    # # Process Addendum B files
-    # add_b_years_to_load = list(range(2020, 2025))
-    # _add_b_df_dict_read = read_h2a_excel_files(add_b_filenames_dict, add_b_years_to_load, add_b_dtype_dict)
-
-    # # Pickle
-    # with open("json/h2a_add_b_pickle", "wb") as _fp:
-    #     pickle.dump(_add_b_df_dict_read, _fp)
-
-    # with open("json/h2a_pickle", "rb") as _fp:
-    #     h2a_df_dict = pickle.load(_fp)
-
-    # with open("json/h2a_add_b_pickle", "rb") as _fp:
-    #     add_b_df_dict = pickle.load(_fp)
-
-    # # Define function that concatenates all years together
-    # def concatenate_h2a_years(h2a_df_dict, h2a_rename_dict):
-    #     h2a_all_years_df = pd.DataFrame()
-    #     for year, df in h2a_df_dict.items():
-    #         df = df.rename(columns=h2a_rename_dict)
-    #         df['fiscal_year'] = int(year)
-
-    #         # Concatenate
-    #         h2a_all_years_df = pd.concat([h2a_all_years_df, df], ignore_index=True, sort=False)
-
-    #     # Standardize NAs, convert all to string, remove time from dates
-    #     h2a_df = h2a_all_years_df.fillna(value='')
-    #     h2a_df = h2a_df.astype("string")
-
-    #     for columns in h2a_df.columns:
-    #         h2a_df[columns] = h2a_df[columns].str.replace(' 00:00:00', '', regex=False)
-    #         h2a_df[columns] = h2a_df[columns].str.upper()
-
-    #     return h2a_df
-
-    # h2a_df = concatenate_h2a_years(h2a_df_dict, h2a_rename_dict)
-    # add_b_df = concatenate_h2a_years(add_b_df_dict, add_b_rename_dict)
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Add FIPS codes using worksite location information
+    """)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Add FIPS codes using worksite location information
+    Given input location information (city, county, state, ZIP), we want to write functions that finds FIPS codes
     """)
     return
 
@@ -857,15 +504,20 @@ def _(add_b_df, h2a_df):
     add_b_worksite_locations = add_b_df[['worksite_city', 'worksite_state', 'worksite_zip']]
     h2a_worksite_locations = h2a_worksite_locations.drop_duplicates()
     add_b_worksite_locations = add_b_worksite_locations.drop_duplicates()
+
+    # Set of unique worksite locations
+    h2a_worksite_locations = (
+        h2a_df.select(
+            ['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip']
+        ).unique()
+    )
+    add_b_worksite_locations = (
+        add_b_df.select(
+            ['worksite_city', 'worksite_state', 'worksite_zip']
+        )
+        .unique()
+    )
     return add_b_worksite_locations, h2a_worksite_locations
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    Given input location information (city, county, state, ZIP), we want to write a function that finds FIPS codes
-    """)
-    return
 
 
 @app.cell
@@ -942,15 +594,6 @@ def add_fips_using_census_zip(df, zip_col, state_col, name_of_new_fips_col, zip_
     df[name_of_new_fips_col] = df[zip_col].map(zip_to_fips_dict)
     df = df.fillna(value='')
 
-    # Sanity check by matching states
-    # fips_to_state_dict = dict(zip(check_df['fips'], check_df['state']))
-    # df['state_check'] = df[name_of_new_fips_col].map(fips_to_state_dict)
-
-    # Null out FIPS where state does not match
-    # df.loc[df['state_check'] != df[state_col], name_of_new_fips_col] = ''
-    # Note that this also nulls out zipcodes that match to multiple county FIPS
-
-    # df = df.drop(columns=['state_check'])
     return df
 
 
