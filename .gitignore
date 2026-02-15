@@ -7,6 +7,9 @@ __pycache__/
 *$py.class
 .python-version
 
+# API keys (IMPORTANT!)
+.env
+
 # DO NOT ignore uv.lock or pyproject.toml
 !uv.lock
 !pyproject.toml
@@ -53,9 +56,6 @@ binaries/
 
 # Large intermediate crosswalks
 code/json/
-
-# API keys
-.env
 
 # PDFs
 papers/

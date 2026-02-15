@@ -141,15 +141,10 @@ def _():
 
 
 @app.cell
-def _():
-    # Extract from NASS Census archives
-    # year_list = [2002, 2007, 2012, 2017, 2022]
-    # for year in year_list:
-    #     census_archive_path = f'../Data/census_of_agriculture/qs.census{year}.txt.gz'
-    #     parquet_output_path = f'../binaries/census_of_agriculture_{year}.parquet'
-    #     print(f'Exporting year {year}')
-    #     _df = pd.read_csv(census_archive_path, compression = 'gzip', sep = '\t', skiprows=0, header=0, dtype=quickstats_pd_type_dict, parse_dates=['LOAD_TIME'])
-    #     _df.to_parquet(parquet_output_path)
+def _(pl, root_path):
+    test = pl.read_parquet(root_path / 'binaries' / 'qs_census_crops.parquet')
+    test['COMMODITY_DESC'].value_counts(sort=True)
+    test.filter(pl.col('COMMODITY_DESC') == 'CHICKPEAS')
     return
 
 
@@ -182,30 +177,6 @@ def _(nass_qs_list, pl, quickstats_pl_type_dict, root_path):
                 survey_df.write_parquet(
                     root_path / 'binaries' / f'qs_survey_{qs_type}.parquet'
                 )
-    return
-
-
-@app.cell
-def _():
-    # # Export as binaries
-    # quickstats_folder = Path("../Data/quickstats")
-    # for qs_type in nass_qs_list:
-    #     for file_path in quickstats_folder.iterdir():
-    #         file_name = file_path.name
-    #         if qs_type in file_name:
-    #             print(file_path)
-    #             _df = pd.read_csv(file_path, compression = 'gzip', sep = '\t', skiprows=0, header=0, dtype=quickstats_pd_type_dict, parse_dates=['LOAD_TIME'])
-
-    #             _census_df = _df[_df['SOURCE_DESC'] == 'CENSUS']
-    #             _survey_df = _df[_df['SOURCE_DESC'] == 'SURVEY']
-    #             # Export fixed parquet
-    #             _census_df.to_parquet(f"../binaries/qs_census_{qs_type}.parquet")
-    #             _survey_df.to_parquet(f"../binaries/qs_survey_{qs_type}.parquet")
-    return
-
-
-@app.cell
-def _():
     return
 
 

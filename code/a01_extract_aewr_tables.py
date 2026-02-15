@@ -10,34 +10,47 @@ def _():
     import re
     import time
     from pathlib import Path
+    import pyprojroot
     import numpy as np
-    import pandas as pd
+    import polars as pl
     import pdfplumber
     import requests
     import us
 
-    return Path, pd, pdfplumber, re, us
+    return Path, pdfplumber, pl, pyprojroot, re, us
 
 
 @app.cell
-def _(pd):
+def _(pyprojroot):
+    root_path = pyprojroot.find_root(criterion='pyproject.toml')
+    aewr_path = root_path / 'data' / 'aewr'
+    return aewr_path, root_path
+
+
+@app.cell
+def _(Path, aewr_path, pl):
     # List of CFR documents matching search criterion
-    cfr_csv = pd.read_csv(
-        "../Data/aewr/documents_matching_labor_certification_process_adverse_effect_wage_rates_from_labor_department_and_of_type_notice.csv"
+    cfr_csv = (
+        pl.read_csv(
+            aewr_path / 'documents_matching_labor_certification_process_adverse_effect_wage_rates_from_labor_department_and_of_type_notice.csv'
+        )
     )
-    return
+
+    # Save all Federal Register PDFs matching search criterion
+    Path(aewr_path / 'pdf').mkdir(parents=True, exist_ok=True)
+    pdf_path = aewr_path / 'pdf'
+    return (pdf_path,)
 
 
 @app.cell
 def _():
-    # # Save all Federal Register PDFs matching search criterion
-    # Path("../Data/aewr/pdf/").mkdir(parents=True, exist_ok=True)
-
-    # for index, row in cfr_csv.iterrows():
+    # # Make requests to CFR archive
+    # for row in cfr_csv.iter_rows(named=True):
     #     document_number = row['document_number'].strip()
     #     url_string = row['pdf_url']
+    #     print(f'Getting doc {document_number} from {url_string}')
     #     response = requests.get(url_string) # URL of the CFR document in pdf format
-    #     pdf_file = Path(f"../Data/aewr/pdf/{document_number}.pdf")
+    #     pdf_file = Path(pdf_path / f'{document_number}.pdf')
     #     pdf_file.write_bytes(response.content)
     #     time.sleep(1) # Pause for 1 second between each pdf download
     return
@@ -57,66 +70,17 @@ def _():
 
 
 @app.cell
-def _():
+def _(us):
     # 50 states minus Alaska
-    state_names = [
-        "Alabama",
-        "Arkansas",
-        "Arizona",
-        "California",
-        "Colorado",
-        "Connecticut",
-        "Delaware",
-        "Florida",
-        "Georgia",
-        "Hawaii",
-        "Iowa",
-        "Idaho",
-        "Illinois",
-        "Indiana",
-        "Kansas",
-        "Kentucky",
-        "Louisiana",
-        "Massachusetts",
-        "Maryland",
-        "Maine",
-        "Michigan",
-        "Minnesota",
-        "Missouri",
-        "Mississippi",
-        "Montana",
-        "North Carolina",
-        "North Dakota",
-        "Nebraska",
-        "New Hampshire",
-        "New Jersey",
-        "New Mexico",
-        "Nevada",
-        "New York",
-        "Ohio",
-        "Oklahoma",
-        "Oregon",
-        "Pennsylvania",
-        "Rhode Island",
-        "South Carolina",
-        "South Dakota",
-        "Tennessee",
-        "Texas",
-        "Utah",
-        "Virginia",
-        "Vermont",
-        "Washington",
-        "Wisconsin",
-        "West Virginia",
-        "Wyoming",
-    ]
+    state_names = [_s.name for _s in us.STATES if _s.name != 'Alaska']
     return (state_names,)
 
 
 @app.cell
-def _(Path, pdfplumber, re, state_names, x0, x1, x2, x3, y0, y1):
+def _(pdf_path, pdfplumber, re, state_names, x0, x1, x2, x3, y0, y1):
     rows_list = []  # List of rows (as dictionaries) to be converted to dataframe
-    for file in Path("../Data/aewr/pdf/").iterdir():
+
+    for file in pdf_path.iterdir():
         # Read all pdf files in directory
         file_type = file.suffix
         if file_type != ".pdf":
@@ -221,22 +185,24 @@ def _(Path, pdfplumber, re, state_names, x0, x1, x2, x3, y0, y1):
 
 
 @app.cell
-def _(pd, rows_list, us):
+def _(aewr_path, pl, root_path, rows_list, us):
     # Concatenate all rows into a dataframe
-    df = pd.DataFrame(rows_list)
+    aewr_df = pl.from_dicts(rows_list)
+
+    # Dict for mapping from state names to FIPS
+    name_fips_dict = us.states.mapping('name', 'fips')
 
     # Add state FIPS code and export
-    df["state_fips"] = df["state_name"].map(us.states.mapping("name", "fips"))
-    df = df.rename(columns={"state_fips": "state_fips_code"})
-    df = df.drop(columns=["state_name"])
-    df.to_csv("../Data/aewr/state_year_aewr.csv", index=False)
-    df.to_parquet("../files_for_phil/aewr.parquet", index=False)
-    return (df,)
-
-
-@app.cell
-def _(df):
-    df
+    aewr_df = (
+        aewr_df
+            .with_columns(
+                pl.col('state_name')
+                    .replace(name_fips_dict)
+                    .alias('state_fips_code')
+            )
+    )
+    aewr_df.write_csv(aewr_path / 'state_year_aewr.csv')
+    aewr_df.write_parquet(root_path / 'files_for_phil' / 'aewr.parquet')
     return
 
 
