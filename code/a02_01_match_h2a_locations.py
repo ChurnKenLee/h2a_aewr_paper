@@ -10,10 +10,8 @@ def _():
     from pathlib import Path
     import pyprojroot
     import polars as pl
-    from openpyxl import load_workbook
     import numpy as np
     import json
-    from itertools import islice
     import re
     import addfips
     import requests
@@ -23,8 +21,9 @@ def _():
     import us
     import pickle
     import rapidfuzz
+    from functools import partial
 
-    return json, load_workbook, mo, pl, pyprojroot, rapidfuzz, us
+    return Path, addfips, json, mo, pl, pyprojroot, rapidfuzz, re, us
 
 
 @app.cell(hide_code=True)
@@ -64,41 +63,74 @@ def _(root_path):
 
 
 @app.cell
-def _(census_code_path, pl, read_census_file):
+def _(re):
+    # Strip suffixes from locality names for fuzzy string matching later
+    place_suffixes = [
+        ' CITY',
+        ' TOWN',
+        ' VILLAGE',
+        ' CDP',
+        ' MUNICIPALITY',
+        ' BOROUGH',
+        ' TOWNSHIP',
+        ' CENSUS AREA',
+        ' CENSUS DESIGNATED PLACE',
+        ' COUNTY',
+        ' PARISH'
+    ]
+
+    # Construct the regex pattern: (?:suffix1|suffix2|...)$
+    # re.escape is used to handle suffixes with special characters like '.'
+    place_suffix_pattern = f'(?:{'|'.join(re.escape(s) for s in place_suffixes)})$'
+    return (place_suffix_pattern,)
+
+
+@app.cell
+def _(census_code_path, pl, place_suffix_pattern, read_census_file):
     # Census county names
     census_county = read_census_file(census_code_path / 'national_county2020.txt')
     census_county = (
         census_county
             .with_columns(
-                (pl.col("STATEFP") + pl.col("COUNTYFP")).alias('fips')
+                (pl.col('STATEFP') + pl.col('COUNTYFP')).alias('fips')
             )
-            .select([
-                pl.col("STATE").alias("state"),
-                pl.col("COUNTYNAME").alias("county"),
-                pl.col("fips")
-            ])
-            .filter(pl.col("county") != "")
+            .select(
+                [
+                    pl.col('STATE').alias('state'),
+                    pl.col('COUNTYNAME').alias('county'),
+                    pl.col('fips')
+                ]
+            )
+            .filter(
+                pl.col('county') != ''
+            ).with_columns(
+                pl.col('county').str.replace_all(place_suffix_pattern, '')
+            )
     )
     return (census_county,)
 
 
 @app.cell
-def _(census_code_path, pl, read_census_file):
+def _(census_code_path, pl, place_suffix_pattern, read_census_file):
     # Census counties aggregated to Census places
     census_placebycounty = read_census_file(census_code_path / 'national_place_by_county2020.txt')
     census_place_agg = (
         census_placebycounty
             .with_columns(
-                (pl.col("STATEFP") + pl.col("COUNTYFP")).alias('fips')
+                (pl.col('STATEFP') + pl.col('COUNTYFP')).alias('fips')
             )
-            .group_by(["STATE", "COUNTYNAME", "PLACENAME"])
-            .agg(pl.col("fips").str.join(","))
-            .filter(pl.col("PLACENAME") != "")
-            .rename({
-                "STATE": "state", 
-                "COUNTYNAME": "county", 
-                "PLACENAME": "place"
-            })
+            .group_by(['STATE', 'COUNTYNAME', 'PLACENAME'])
+            .agg(pl.col('fips').str.join(','))
+            .filter(pl.col('PLACENAME') != '')
+            .rename(
+                {
+                    'STATE': 'state',
+                    'COUNTYNAME': 'county',
+                    'PLACENAME': 'place'
+                }
+            ).with_columns(
+                pl.col('place').str.replace_all(place_suffix_pattern, '')
+            )
     )
     return (census_place_agg,)
 
@@ -109,16 +141,51 @@ def _(census_code_path, pl, read_census_file):
     census_zip = read_census_file(census_code_path / 'tab20_zcta520_county20_natl.txt')
     census_zip_agg = (
         census_zip
-            .group_by("GEOID_ZCTA5_20")
-            .agg(pl.col("GEOID_COUNTY_20").str.join(",")
+            .group_by('GEOID_ZCTA5_20')
+            .agg(pl.col('GEOID_COUNTY_20').str.join(',')
                 )
-            .filter(pl.col("GEOID_ZCTA5_20") != "")
-            .rename({
-                "GEOID_ZCTA5_20": "zip",
-                "GEOID_COUNTY_20": "fips"
-        })
+            .filter(pl.col('GEOID_ZCTA5_20') != '')
+            .rename(
+                {
+                    'GEOID_ZCTA5_20': 'zip',
+                    'GEOID_COUNTY_20': 'fips'
+                }
+            )
     )
     return (census_zip_agg,)
+
+
+@app.cell
+def _(pl):
+    # Helper to create a state-based lookup with parallel lists
+    def create_ref_lookup(df, name_col):
+        lookup = {}
+        # Group by state and get lists of names and fips
+        grouped = df.group_by(
+            'state'
+        ).agg(
+            [
+                pl.col(name_col).alias('names'),
+                pl.col('fips')
+            ]
+        ).to_dicts()
+    
+        for row in grouped:
+            lookup[row['state']] = {
+                'names': row['names'],
+                'fips': row['fips']
+            }
+        return lookup
+
+    return (create_ref_lookup,)
+
+
+@app.cell
+def _(census_county, census_place_agg, create_ref_lookup):
+    # Create state-based maps for rapidfuzz to match
+    census_county_ref_map = create_ref_lookup(census_county, "county")
+    census_place_ref_map = create_ref_lookup(census_place_agg, "place")
+    return census_county_ref_map, census_place_ref_map
 
 
 @app.cell
@@ -429,7 +496,7 @@ def _(mo, pl):
 
         df = df.with_columns(
             pl.col(pl.Date).dt.to_string(),
-            pl.col(pl.String).fill_null(""),
+            pl.col(pl.String).fill_null(''),
         ).rename(
             mapping=rename_map, strict=False
         )
@@ -484,7 +551,7 @@ def _(
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Add FIPS codes using worksite location information
+    # Add FIPS codes using worksite location information with local data
     """)
     return
 
@@ -498,13 +565,7 @@ def _(mo):
 
 
 @app.cell
-def _(add_b_df, h2a_df):
-    # Set of unique worksite locations we need to find counties for
-    h2a_worksite_locations = h2a_df[['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip']]
-    add_b_worksite_locations = add_b_df[['worksite_city', 'worksite_state', 'worksite_zip']]
-    h2a_worksite_locations = h2a_worksite_locations.drop_duplicates()
-    add_b_worksite_locations = add_b_worksite_locations.drop_duplicates()
-
+def _(add_b_df, h2a_df, pl):
     # Set of unique worksite locations
     h2a_worksite_locations = (
         h2a_df.select(
@@ -517,122 +578,147 @@ def _(add_b_df, h2a_df):
         )
         .unique()
     )
+    # For Addendum B, we need to add the non-existent county column
+    add_b_worksite_locations = add_b_worksite_locations.with_columns(pl.lit("").alias('worksite_county'))
     return add_b_worksite_locations, h2a_worksite_locations
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    These are the sets of functions that are used to perform local matching of FIPS
+    """)
+    return
+
+
 @app.cell
-def _():
-    # Write a function that fixes typos in county name and explodes county names
+def _(pl):
+    # Expand multi-county entries
     def clean_county_explode(df, county_col, state_col):
+        # Replace separators and explode
+        df = df.with_columns(
+            pl.col(county_col)
+            .str.replace_all(' AND ', ',', literal=True)
+            .str.replace_all(' & ', ',', literal=True)
+            .str.replace_all('/', ',', literal=True)
+            .str.split(',')
+            .alias('county_list')
+        ).explode('county_list')
 
-        # Replace separators with commas
-        for sep in [' AND ', ' & ', '/']:
-            df[county_col] = df[county_col].str.replace(sep, ',')
+        # Clean whitespace and suffixes
+        df = df.with_columns(
+            pl.col('county_list').str.strip_chars()
+        ).with_columns(
+            pl.col('county_list')
+            .str.replace_all(' COUNTY', '', literal=True)
+            .str.replace_all(' COUNTIES', '', literal=True)
+            .str.replace_all(' PARISH', '', literal=True)
+            .str.replace_all(' PARRISH', '', literal=True)
+        )
 
-        # Explode
-        df['county_list'] = df[county_col].str.split(',')
-        df_exploded = df.explode('county_list').reset_index(drop=True)
-
-        # Remove whitespacess
-        df_exploded['county_list'] = df_exploded['county_list'].str.strip()
-
-        # Strip suffixes from names
-        for suffix in [' COUNTY', ' COUNTIES', ' PARISH', ' PARRISH']:
-            df_exploded['county_list'] = df_exploded['county_list'].str.replace(suffix, '')
-
-        # Fix common typos for Lousiana counties
-        la_typo_dict = {
-            'ST\\.\\w':'ST. ',
-            'NORTH\\. ':'NORTH ',
-            'SOUTH\\. ':'SOUTH ',
-            'EAST\\. ':'EAST ',
-            'WEST\\. ':'WEST ',
-            'BATON ROGUE':'BATON ROUGE',
-            'JEFF DAVIS':'JEFFERSON DAVIS',
-            'IBERIAL':'IBERIA'
+        # Fix Louisiana typos using a series of replaces (native Polars is faster than a loop)
+        # Only apply where state is LA
+        la_typos = {
+            'ST\\.\\w': 'ST. ',
+            'NORTH\\. ': 'NORTH ',
+            'SOUTH\\. ': 'SOUTH ',
+            'EAST\\. ': 'EAST ',
+            'WEST\\. ': 'WEST ',
+            'BATON ROGUE': 'BATON ROUGE',
+            'JEFF DAVIS': 'JEFFERSON DAVIS',
+            'IBERIAL': 'IBERIA'
         }
+    
+        df = df.with_columns(
+            pl.when(pl.col(state_col) == 'LA')
+            .then(pl.col('county_list').str.replace_many(la_typos))
+            .otherwise(pl.col('county_list'))
+            .alias('county_list')
+        )
 
-        for typo, fix in la_typo_dict.items():
-            df_exploded.loc[df_exploded[state_col] == 'LA', 'county_list'] = df_exploded[df_exploded[state_col] == 'LA']['county_list'].str.replace(typo, fix, regex=True)
-
-        return df_exploded
-
-    # Cleans ZIP codes, mostly by removing trailing 4 digits for ZIP+4 codes
-    def clean_zip(df, zip_col):
-
-        # Remove period from ZIP codes
-        df[zip_col] = df[zip_col].str.replace('.', '', regex=False)
-
-        # Remove the 4 extra trailing digits after hyphen from ZIP codes
-        df[zip_col] = df[zip_col].str.split('-').str[0]
-
-        # Pad with 0s from the left
-        # df['zip'] = df['zip'].str.pad(width=5, side='left', fillchar='0')
+        # Fill nulls
+        df = df.with_columns(
+            pl.col(pl.String).fill_null('')
+        )
 
         return df
 
-    return clean_county_explode, clean_zip
+    return (clean_county_explode,)
 
 
-@app.function
-# Function that add FIPS using addfips
-def add_fips_using_addfips(df, county_col, state_col, name_of_new_fips_col):
-    import addfips
-    af = addfips.AddFIPS()
-    df[name_of_new_fips_col] = df.apply(lambda x: af.get_county_fips(x[county_col], state=x[state_col]), axis=1)
-    df = df.fillna(value='')
+@app.cell
+def _(pl):
+    # Cleans ZIP codes, mostly by removing trailing 4 digits for ZIP+4 codes
+    def clean_zip(df, zip_col):
+        zip5 = df.with_columns(
+            pl.col(zip_col)
+            .str.replace_all('.', '', literal=True)
+            .str.split('-').list.get(0)
+            .alias(zip_col)
+        )
+        return zip5
 
-    return df
+    return (clean_zip,)
 
 
-@app.function
-# A function that add FIPS using ZIP and census ZIP to county crosswalk; also does a sanity check by matching states
-def add_fips_using_census_zip(df, zip_col, state_col, name_of_new_fips_col, zip_fips_df, check_df):
-    zip_to_fips_dict = dict(zip(zip_fips_df['zip'], zip_fips_df['fips']))
+@app.cell
+def _(addfips, pl):
+    # Define a custom AddFIPS function that operates on a polars dataframe
+    def add_fips_using_addfips(df, county_col, state_col, target_col):
+        # Instantiate the library ONCE here
+        af = addfips.AddFIPS()
+    
+        # The 'row' object passed from pl.struct is a dictionary
+        return df.with_columns(
+            pl.struct(
+                [county_col, state_col]
+            ).map_elements(
+                lambda row: af.get_county_fips(county=row[county_col], state=row[state_col]) or '',
+                return_dtype=pl.String
+            ).alias(target_col)
+        )
 
-    # Match ZIP codes to FIPS
-    df[name_of_new_fips_col] = df[zip_col].map(zip_to_fips_dict)
-    df = df.fillna(value='')
-
-    return df
+    return (add_fips_using_addfips,)
 
 
 @app.cell
 def _(rapidfuzz):
-    # Function for fuzzy string matching
-    def fuzz_search(df, df_match_col, df_state_col, df_fips_col, state, name_to_match):
-
-        # Search only within the same state
-        state_df = df[df[df_state_col] == state]
-
-        # Strip place suffixes from names
-        place_suffixes = [' CITY', ' TOWN', ' VILLAGE', ' CDP', ' MUNICIPALITY', ' BOROUGH', ' TOWNSHIP', ' CENSUS AREA', ' CENSUS DESIGNATED PLACE', ' COUNTY', ' PARISH']
-        for suffix in place_suffixes:
-            state_df[df_match_col] = state_df[df_match_col].str.replace(suffix, '', regex=False)
-
-        # Get match score
-        state_df['score'] = state_df[df_match_col].apply(lambda _x: rapidfuzz.fuzz.partial_ratio_alignment(_x, name_to_match, processor = rapidfuzz.utils.default_process).score)
-        state_df = state_df.sort_values('score')
-
-        # Get highest scoring match
-        state_df = state_df.sort_values('score')
-        max_score_row = state_df[state_df['score'] == state_df['score'].max()].reset_index()
-
-        # Check if there is a match
-        if len(max_score_row) >= 1:
-            fips = str(max_score_row[df_fips_col][0])
-            score = str(max_score_row['score'][0])
-            census_name = max_score_row[df_match_col][0]
-            return (fips, score, census_name)  # Best match
+    # Uses rapidfuzz.process.extractOne and name maps to quickly find locality with best name match
+    def fuzz_search(state, query, ref_map):
+        # Sanity checks
+        if not state or not query or state not in ref_map:
+            return ("", 0.0, "")
+    
+        state_data = ref_map[state]
+        choices = state_data["names"]
+    
+        # Rapidfuzz handles strings directly now
+        # processor=utils.default_process handles lowercasing/stripping/whitespace
+        match = rapidfuzz.process.extractOne(
+            query, 
+            choices, 
+            processor=rapidfuzz.utils.default_process, 
+            scorer=rapidfuzz.fuzz.partial_ratio
+        )
+    
+        if match:
+            # match is (found_string, score, index)
+            _, score, index = match
+            best_fips = state_data["fips"][index]
+            best_name = state_data["names"][index]
+            return (str(best_fips), float(score), str(best_name))
+    
         else:
-            return ('', '', '')
+            return ("", 0.0, "")
 
     return (fuzz_search,)
 
 
 @app.cell
 def _(us):
-    # Function cleans state names using the US package and returns 2 character abbreviations; returns empty string if no match; DC is included
+    # Function cleans state names using the US package and returns 2 character abbreviations
+    # Returns empty string if no match; DC is included
+    # Needed for using fuzzy match function because Census sources use abbreviations
     def clean_state_to_abbr(input):
         if input == '':
             return ''
@@ -646,226 +732,222 @@ def _(us):
         # US package lookup can handle names, abbreviations, FIPs
         state_obj = us.states.lookup(str(input).strip())
 
-        return state_obj.abbr if state_obj else ''
+        if state_obj:
+            return state_obj.abbr
+        else: 
+            return ''
 
     return (clean_state_to_abbr,)
 
 
 @app.cell
 def _(
-    census_county,
-    census_place_agg,
+    add_fips_using_addfips,
+    census_county_ref_map,
+    census_place_ref_map,
     clean_county_explode,
     clean_state_to_abbr,
     clean_zip,
     fuzz_search,
-    pd,
+    mo,
+    pl,
 ):
-    # Define wrapper function that takes input location dataframe and returns dataframe with possible matched FIPS codes
-    def assign_best_fips(df, county_col, city_col, state_col, zip_col, zip_fips_df, state_fips_df, place_fips_df, fuzzy_score):
+    # Apply functions in sequence to an input dataframe and produce dataframe with matched FIPS
+    @mo.persistent_cache
+    def add_fips_with_addfips_and_fuzzy_matching(df, county_col, city_col, state_col, zip_col, census_zip_df, census_county_map, census_place_map):
+        # Initialize helper columns
+        df = df.with_columns([
+            pl.col(city_col).alias('xcity'),
+            pl.col(county_col).alias('xcounty'),
+            pl.col(state_col).map_elements(clean_state_to_abbr, return_dtype=pl.String).alias('xstate'),
+            pl.col(zip_col).alias('xzip')
+        ])
 
-        # Locations are defined by worksite_city, worksite_county, worksite_state, worksite_zip
-        # We will be operating on a new set of columns instead to preserve the original location identifiers
-        df['xcity'] = df[city_col]
-        df['xcounty'] = df[county_col]
-        df['xstate'] = df[state_col].apply(lambda _x: clean_state_to_abbr(_x))
-        df['xzip'] = df[zip_col]
+        df = clean_county_explode(df, 'xcounty', 'xstate')
+        df = clean_zip(df, 'xzip')
 
-        # Explode by counties, clean ZIP codes
-        df_exploded = clean_county_explode(df, 'xcounty', 'xstate')
-        df_exploded = clean_zip(df_exploded, 'xzip')
+        # 1. Match via addfips
+        df = add_fips_using_addfips(df, 'county_list', 'xstate', 'fips_from_addfips')
 
-        # Add FIPS with addfips
-        df_exploded_with_addfips = add_fips_using_addfips(df_exploded, 'county_list', 'xstate', 'fips_from_addfips')
-
-        # Add FIPS with census ZIP to county crosswalk
-        df_exploded_with_addfips_zip = add_fips_using_census_zip(df_exploded_with_addfips, 'xzip', 'xstate', 'fips_from_census_zip', zip_fips_df, state_fips_df)
-
-        # Use fuzzy string matching for remaining unmatched rows
-        # Grab the columns we want to do fuzzy matching on
-        df_exploded_addfips_zip_unmatched = df_exploded_with_addfips_zip[(df_exploded_with_addfips_zip['fips_from_addfips'] == '') & (df_exploded_with_addfips_zip['fips_from_census_zip'] == '')]
-        df_exploded_addfips_zip_unmatched = df_exploded_addfips_zip_unmatched[['xcity', 'county_list', 'xstate', 'xzip']]
-
-        # Perform fuzzy string matching for county names
-        county_name_fuzzy_match_df = df_exploded_addfips_zip_unmatched.apply(
-        lambda _x: fuzz_search(
-            census_county,
-            'county',
-            'state',
-            'fips',
-            _x['xstate'],
-            _x['county_list']
-        ),
-        axis=1,
-        result_type='expand'
-        )
-
-        county_name_fuzzy_match_df = county_name_fuzzy_match_df[[0, 1, 2]]
-        county_name_fuzzy_match_df = county_name_fuzzy_match_df.rename(columns={0:'fips_from_fuzzy_county', 1:'fuzzy_county_score', 2:'fuzzy_county_name'})
-
-        # Merge fuzzy matched county names back to unmatched dataframe
-        df_exploded_addfips_zip_unmatched = df_exploded_addfips_zip_unmatched.merge(county_name_fuzzy_match_df, left_index=True, right_index=True, how='left')
-
-        # Perform fuzzy string matching for city names
-        city_name_fuzzy_match_df = df_exploded_addfips_zip_unmatched.apply(
-        lambda _x: fuzz_search(
-            census_place_agg,
-            'place',
-            'state',
-            'fips',
-            _x['xstate'],
-            _x['xcity']
-        ),
-        axis=1,
-        result_type='expand'
-        )
-
-        city_name_fuzzy_match_df = city_name_fuzzy_match_df[[0, 1, 2]]
-        city_name_fuzzy_match_df = city_name_fuzzy_match_df.rename(columns={0:'fips_from_fuzzy_city', 1:'fuzzy_city_score', 2:'fuzzy_city_name'})
-
-        # Merge fuzzy matched city names back to unmatched dataframe
-        df_exploded_addfips_zip_unmatched = df_exploded_addfips_zip_unmatched.merge(city_name_fuzzy_match_df, left_index=True, right_index=True, how='left')
-
-        # New England has to be matched again as they put place names in their county field
-        ne_states = ['CT', 'ME', 'MA', 'NH', 'RI', 'VT']
-        ne_fuzzy_match_df = df_exploded_addfips_zip_unmatched.apply(
-            lambda _x: fuzz_search(
-                census_place_agg,
-                'place',
-                'state',
-                'fips',
-                _x['xstate'],
-                _x['county_list']
+        # 2. Match via Census ZIP (Join instead of Map)
+        df = df.join(
+            census_zip_df.select(
+                [
+                    pl.col("zip").alias("xzip"),
+                    pl.col("fips").alias("fips_from_census_zip")
+                ]
             ),
-            axis=1,
-            result_type='expand'
-            )
-
-        ne_fuzzy_match_df = ne_fuzzy_match_df[[0, 1, 2]]
-        ne_fuzzy_match_df = ne_fuzzy_match_df.rename(columns={0:'fips_from_fuzzy_ne', 1:'fuzzy_ne_score', 2:'fuzzy_ne_name'})
-
-        # Add NE fuzzy matches to unmatched dataframe
-        df_exploded_addfips_zip_unmatched = df_exploded_addfips_zip_unmatched.merge(ne_fuzzy_match_df, left_index=True, right_index=True, how='left')
-
-        # Add all 3 fuzzy matches back to original matched dataframe
-        df_exploded_with_addfips_zip_fuzzy = df_exploded_with_addfips_zip.merge(df_exploded_addfips_zip_unmatched, on = ['xcity', 'county_list', 'xstate', 'xzip'], how='left')
-
-        # Convert score columns to numeric
-        score_columns = ['fuzzy_county_score', 'fuzzy_city_score', 'fuzzy_ne_score']
-        for col in score_columns:
-            df_exploded_with_addfips_zip_fuzzy[col] = pd.to_numeric(df_exploded_with_addfips_zip_fuzzy[col], errors='coerce')
-
-        # Apply FIPS selection and validation function to rows of matched FIPS
-        df_exploded_with_addfips_zip_fuzzy['final_fips'] = df_exploded_with_addfips_zip_fuzzy.apply(
-            lambda _x: pick_best_fips(
-                _x,
-                'fips_from_addfips',
-                'fips_from_census_zip',
-                'fips_from_fuzzy_county',
-                'fuzzy_county_score',
-                'fips_from_fuzzy_city',
-                'fuzzy_city_score',
-                'fips_from_fuzzy_ne',
-                'fuzzy_ne_score',
-                'xstate',
-                80
-            ),
-            axis=1
+            on="xzip",
+            how="left"
+        ).with_columns(
+            pl.col("fips_from_census_zip").fill_null("")
         )
 
-        return df_exploded_with_addfips_zip_fuzzy
+        # 3. Fuzzy Matching
+        # Apply fuzzy logic
+        df = df.with_columns([
+            pl.struct(["county_list", "xstate"])
+                .map_elements(
+                    lambda x: fuzz_search(x['xstate'], x['county_list'], census_county_ref_map),
+                    return_dtype=pl.Object
+                ).alias("county_fuzzy_raw"),
+            pl.struct(["xcity", "xstate"])
+                .map_elements(
+                    lambda x: fuzz_search(x['xstate'], x['xcity'], census_place_ref_map),
+                    return_dtype=pl.Object
+                ).alias("city_fuzzy_raw"),
+            pl.struct(["county_list", "xstate"])
+                .map_elements(
+                    lambda x: fuzz_search(x['xstate'], x['county_list'], census_place_ref_map),
+                    return_dtype=pl.Object
+                ).alias("ne_fuzzy_raw")
+        ])
+        # Expand the fuzzy results into individual columns
+        df = df.with_columns([
+            pl.col("county_fuzzy_raw").map_elements(lambda x: x[0], return_dtype=pl.String).alias("fips_from_fuzzy_county"),
+            pl.col("county_fuzzy_raw").map_elements(lambda x: x[1], return_dtype=pl.Float64).alias("fuzzy_county_score"),
+            pl.col("city_fuzzy_raw").map_elements(lambda x: x[0], return_dtype=pl.String).alias("fips_from_fuzzy_city"),
+            pl.col("city_fuzzy_raw").map_elements(lambda x: x[1], return_dtype=pl.Float64).alias("fuzzy_city_score"),
+            pl.col("ne_fuzzy_raw").map_elements(lambda x: x[0], return_dtype=pl.String).alias("fips_from_fuzzy_ne"),
+            pl.col("ne_fuzzy_raw").map_elements(lambda x: x[1], return_dtype=pl.Float64).alias("fuzzy_ne_score"),
+        ]).drop(["county_fuzzy_raw", "city_fuzzy_raw", "ne_fuzzy_raw"])
 
-    return (assign_best_fips,)
+        return df
 
-
-@app.function
-# Function that validates and picks the best FIPS code for each row
-def pick_best_fips(row, county_name_fips, zip_fips, fuzzy_county_name_fips, fuzzy_county_name_score, fuzzy_city_name_fips, fuzzy_city_name_score, fuzzy_ne_name_fips, fuzzy_ne_name_score, state_col, fuzzy_score):
-    # Priority order:
-    #1. Census ZIP to county crosswalk
-    if row[zip_fips] != '':
-        return row[zip_fips]
-    #2. addfips county name match
-    elif row[county_name_fips] != '':
-        return row[county_name_fips]
-    # Special case: New England states - if fuzzy NE score is high, use it
-    if row[state_col] in ['CT', 'ME', 'MA', 'NH', 'RI', 'VT'] and row[fuzzy_ne_name_fips] != '' and (row[fuzzy_ne_name_score] > fuzzy_score + 10):
-        return row[fuzzy_ne_name_fips]
-    #3. Fuzzy county name and fuzzy city name both have high scores and agree
-    elif (row[fuzzy_county_name_fips] != '') and (row[fuzzy_city_name_fips] != '') and (row[fuzzy_county_name_fips] == row[fuzzy_city_name_fips]) and (row[fuzzy_county_name_score] > fuzzy_score) and (row[fuzzy_city_name_score] > fuzzy_score):
-        return row[fuzzy_county_name_fips]
-    #4. Fuzzy county name and fuzzy city name both have high scores but disagree
-    elif (row[fuzzy_county_name_fips] != '') and (row[fuzzy_city_name_fips] != '') and (row[fuzzy_county_name_fips] != row[fuzzy_city_name_fips]) and (row[fuzzy_county_name_score] > fuzzy_score) and (row[fuzzy_city_name_score] > fuzzy_score):
-        # Pick the one with higher score with higher threshold
-        if row[fuzzy_county_name_score] >= row[fuzzy_city_name_score] and (row[fuzzy_county_name_score] > (fuzzy_score + 5)):
-            return row[fuzzy_county_name_fips]
-        elif row[fuzzy_county_name_score] < row[fuzzy_city_name_score] and (row[fuzzy_city_name_score] > (fuzzy_score + 5)):
-            return row[fuzzy_city_name_fips]
-    #5. Fuzzy county name match only
-    elif row[fuzzy_county_name_fips] != '' and (row[fuzzy_county_name_score] > fuzzy_score + 10):
-        return row[fuzzy_county_name_fips]
-    #6. Fuzzy city name match only
-    elif row[fuzzy_city_name_fips] != '' and (row[fuzzy_city_name_score] > fuzzy_score + 10):
-        return row[fuzzy_city_name_fips]
-    else:
-        return ''
+    return (add_fips_with_addfips_and_fuzzy_matching,)
 
 
 @app.cell
-def _(
-    assign_best_fips,
-    census_county,
-    census_place_agg,
-    census_zip_agg,
-    h2a_worksite_locations,
-):
-    # Match FIPS for H-2A worksites
-    h2a_worksite_locations_added_fips = assign_best_fips(h2a_worksite_locations, 'worksite_county', 'worksite_city', 'worksite_state', 'worksite_zip', census_zip_agg, census_county, census_place_agg, 80)
-    return (h2a_worksite_locations_added_fips,)
+def _(pl):
+    def pick_best_fips(df, fuzzy_threshold):
+        # 4. Define FIPS selection logic
+    
+        df = df.with_columns(pl
+            .when(pl.col("fips_from_census_zip") != "")
+            .then(pl.col("fips_from_census_zip"))
+            .when(pl.col("fips_from_addfips") != "")
+            .then(pl.col("fips_from_addfips"))
+            # New England puts county name in city column so has extra match check
+            .when(
+                (pl.col("xstate").is_in(['CT', 'ME', 'MA', 'NH', 'RI', 'VT'])) & 
+                (pl.col("fips_from_fuzzy_ne") != "") & 
+                (pl.col("fuzzy_ne_score") > (fuzzy_threshold + 10))
+            )
+            .then(pl.col("fips_from_fuzzy_ne"))
+            # Use lower threshold fuzzy match result if matches agree
+            .when(
+                (pl.col("fips_from_fuzzy_county") != "") & 
+                (pl.col("fips_from_fuzzy_city") != "") & 
+                (pl.col("fips_from_fuzzy_county") == pl.col("fips_from_fuzzy_city")) & 
+                (pl.col("fuzzy_county_score") > fuzzy_threshold) & 
+                (pl.col("fuzzy_city_score") > fuzzy_threshold)
+            )
+            .then(pl.col("fips_from_fuzzy_county"))
+            # Use higher threshold for fuzzy match result if matches disagree
+            .when(
+                (pl.col("fips_from_fuzzy_county") != "") & 
+                (pl.col("fips_from_fuzzy_city") != "") & 
+                (pl.col("fuzzy_county_score") > fuzzy_threshold + 5) & 
+                (pl.col("fuzzy_city_score") > fuzzy_threshold) &
+                (pl.col("fuzzy_county_score") > pl.col("fuzzy_city_score"))
+            )
+            .then(pl.col("fips_from_fuzzy_county"))
+            .when(
+                (pl.col("fips_from_fuzzy_county") != "") & 
+                (pl.col("fips_from_fuzzy_city") != "") & 
+                (pl.col("fuzzy_county_score") > fuzzy_threshold) & 
+                (pl.col("fuzzy_city_score") > fuzzy_threshold + 5) &
+                (pl.col("fuzzy_city_score") > pl.col("fuzzy_county_score"))
+            )
+            .then(pl.col("fips_from_fuzzy_city"))
+            # Use highest threshold for singular fuzzy matches
+            .when(
+                (pl.col("fips_from_fuzzy_county") != "") &
+                (pl.col("fuzzy_county_score") > fuzzy_threshold + 10)
+            )
+            .then(pl.col("fips_from_fuzzy_county"))
+            .when(
+                (pl.col("fips_from_fuzzy_city") != "") &
+                (pl.col("fuzzy_city_score") > fuzzy_threshold + 10)
+            )
+            .then(pl.col("fips_from_fuzzy_city"))
+            .otherwise(pl.lit(""))
+            .alias("final_fips")
+        )
+
+        return df
+
+    return (pick_best_fips,)
 
 
 @app.cell
 def _(
     add_b_worksite_locations,
-    assign_best_fips,
-    census_county,
-    census_place_agg,
+    add_fips_with_addfips_and_fuzzy_matching,
+    census_county_ref_map,
+    census_place_ref_map,
     census_zip_agg,
+    h2a_worksite_locations,
+    pick_best_fips,
 ):
-    # For Addendum B, we need to add the non-existent county column
-    add_b_worksite_locations['worksite_county'] = ''
-    add_b_worksite_locations_added_fips = assign_best_fips(add_b_worksite_locations, 'worksite_county', 'worksite_city', 'worksite_state', 'worksite_zip', census_zip_agg, census_county, census_place_agg, 80)
-    return (add_b_worksite_locations_added_fips,)
+    # Match FIPS for H-2A worksites
+    h2a_worksite_locations_added_fips = add_fips_with_addfips_and_fuzzy_matching(
+        h2a_worksite_locations,
+        'worksite_county', 'worksite_city', 'worksite_state', 'worksite_zip',
+        census_zip_agg, census_county_ref_map, census_place_ref_map
+    )
+    h2a_worksite_locations_added_fips = pick_best_fips(h2a_worksite_locations_added_fips, 80)
+
+    add_b_worksite_locations_added_fips = add_fips_with_addfips_and_fuzzy_matching(
+        add_b_worksite_locations,
+        'worksite_county', 'worksite_city', 'worksite_state', 'worksite_zip',
+        census_zip_agg, census_county_ref_map, census_place_ref_map
+    )
+    add_b_worksite_locations_added_fips = pick_best_fips(add_b_worksite_locations_added_fips, 80)
+    return (
+        add_b_worksite_locations_added_fips,
+        h2a_worksite_locations_added_fips,
+    )
 
 
 @app.cell
-def _(h2a_worksite_locations_added_fips):
-    h2a_worksite_locations_added_fips[h2a_worksite_locations_added_fips['final_fips'] == '']
+def _(h2a_worksite_locations_added_fips, pl):
+    h2a_worksite_locations_added_fips.filter(pl.col('final_fips') == '')
     return
 
 
 @app.cell
-def _(add_b_worksite_locations_added_fips):
-    add_b_worksite_locations_added_fips[add_b_worksite_locations_added_fips['final_fips'] == '']
+def _(add_b_worksite_locations_added_fips, pl):
+    add_b_worksite_locations_added_fips.filter(pl.col('final_fips') == '')
     return
 
 
 @app.cell
-def _(add_b_worksite_locations_added_fips, h2a_worksite_locations_added_fips):
-    # Export both sets of unmatched locations
-    def export_unmatched_locations(df):
-        unmatched_df = df[df['final_fips'] == '']
-        unmatched_df = unmatched_df[['xcity', 'xstate', 'xzip', 'county_list']]
-        unmatched_df = unmatched_df.drop_duplicates()
-        unmatched_df = unmatched_df.rename(columns = {'xcity':'city', 'xstate':'state', 'xzip':'zip', 'county_list':'county'}).reset_index(drop=True)
-        return unmatched_df
-
-    export_df = export_unmatched_locations(h2a_worksite_locations_added_fips)
-    export_df.to_csv("json/unmatched_h2a_locations.csv", index=False)
-
-    export_df = export_unmatched_locations(add_b_worksite_locations_added_fips)
-    export_df.to_csv("json/unmatched_add_b_locations.csv", index=False)
-    return
+def _(
+    Path,
+    add_b_worksite_locations_added_fips,
+    h2a_worksite_locations_added_fips,
+    pl,
+    root_path,
+):
+    # Export unmatched
+    def export_unmatched_locations_pl(df, filename):
+        (
+            df
+            .filter(pl.col('final_fips') == "")
+            .select([
+                pl.col('xcity').alias('city'),
+                pl.col('xstate').alias('state'),
+                pl.col('xzip').alias('zip'),
+                pl.col('county_list').alias('county')
+            ])
+            .unique()
+            .write_csv(filename)
+        )
+    json_path = root_path / 'code' / 'json'
+    export_unmatched_locations_pl(h2a_worksite_locations_added_fips, Path(json_path / 'unmatched_h2a_locations.csv'))
+    export_unmatched_locations_pl(add_b_worksite_locations_added_fips,  Path(json_path / 'unmatched_add_b_locations.csv'))
+    return (json_path,)
 
 
 @app.cell
@@ -877,13 +959,14 @@ def _(mo):
 
 
 @app.cell
-def _(json, pd):
+def _(Path, json, json_path, pl, root_path):
     # Load mappings we obtained
-    with open('json/placeid_address_components_mapping_json.json') as _fp:
+    with open(Path(json_path / 'placeid_address_components_mapping_json.json')) as _fp:
         placeid_address_components_map = json.load(_fp)
 
-    h2a_placeid = pd.read_parquet("../binaries/h2a_location_placeids.parquet")
-    add_b_placeid = pd.read_parquet("../binaries/add_b_location_placeids.parquet")
+    binary_path = root_path / 'binaries'
+    h2a_placeid = pl.read_parquet(binary_path / 'h2a_location_placeids.parquet')
+    add_b_placeid = pl.read_parquet(binary_path / 'add_b_location_placeids.parquet')
     return add_b_placeid, h2a_placeid, placeid_address_components_map
 
 
@@ -1049,8 +1132,8 @@ def _(
 @app.cell
 def _(add_b_with_fips_df, h2a_with_fips_df):
     # Export binary
-    h2a_with_fips_df.to_parquet("../binaries/h2a_with_fips.parquet", index=False)
-    add_b_with_fips_df.to_parquet("../binaries/h2a_addendum_b_with_fips.parquet", index=False)
+    h2a_with_fips_df.to_parquet('../binaries/h2a_with_fips.parquet', index=False)
+    add_b_with_fips_df.to_parquet('../binaries/h2a_addendum_b_with_fips.parquet', index=False)
     return
 
 

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.7"
+__generated_with = "0.19.11"
 app = marimo.App(width="full")
 
 
@@ -15,6 +15,7 @@ def _():
     from typing import Optional, List, get_args, get_origin
     from pydantic import BaseModel, Field
     import time
+
     return (
         BaseModel,
         Field,
@@ -169,6 +170,7 @@ def _(json, pd):
         with open(jsonl_file_path, "w") as f:
             for req in jsonl_entries_list:
                 f.write(json.dumps(req) + "\n")
+
     return (write_batch_request_jsonl,)
 
 
@@ -194,6 +196,7 @@ def _(client, types):
 
         print(f"Uploaded file: {uploaded_file.name}")
         return uploaded_file
+
     return (upload_jsonl_using_files_api,)
 
 
@@ -211,6 +214,7 @@ def _(client):
 
         print(f"Initiated batch job: {file_batch_job.name}")
         return file_batch_job
+
     return (initiate_genai_batch,)
 
 
@@ -260,6 +264,7 @@ def _(client, time):
         print(f"Results string written to {output_file_name}")
 
         return batch_job
+
     return (poll_genai_job,)
 
 
@@ -455,6 +460,7 @@ def _(CleanedLocation, ValidationError, json, pd):
         combined_results = pd.DataFrame(all_cleaned_locations).replace({'null':''})
 
         return combined_results
+
     return (parse_results,)
 
 
