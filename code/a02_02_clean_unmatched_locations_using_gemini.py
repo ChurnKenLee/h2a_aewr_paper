@@ -7,8 +7,10 @@ app = marimo.App(width="full")
 @app.cell
 def _():
     from pathlib import Path
+    import pyprojroot
+    import dotenv, os
     import json
-    import pandas as pd
+    import polars as pl
     from google import genai
     from google.genai import types
     from google.genai._transformers import process_schema
@@ -20,24 +22,26 @@ def _():
         BaseModel,
         Field,
         Optional,
+        Path,
+        dotenv,
         genai,
         get_args,
         get_origin,
         json,
-        pd,
+        os,
+        pl,
+        pyprojroot,
         time,
         types,
     )
 
 
 @app.cell
-def _():
-    # Read Gemini API key
-    with open("../tools/google_aistudio_api_key.txt") as _f:
-        lines = _f.readlines()
-
-    gemini_api_key = lines[0]
-    return (gemini_api_key,)
+def _(dotenv, os, pyprojroot):
+    root_path = pyprojroot.find_root(criterion='pyproject.toml')
+    dotenv.load_dotenv()
+    gemini_api_key = os.getenv('GOOGLE_GEMINI_API_KEY')
+    return gemini_api_key, root_path
 
 
 @app.cell
@@ -109,7 +113,7 @@ def _(BaseModel, Field, Optional, get_args, get_origin):
         }
 
     genai_schema = to_gemini_schema(CleanedLocation)
-    return CleanedLocation, genai_schema
+    return (CleanedLocation,)
 
 
 @app.cell
@@ -171,7 +175,7 @@ def _(json, pd):
             for req in jsonl_entries_list:
                 f.write(json.dumps(req) + "\n")
 
-    return (write_batch_request_jsonl,)
+    return
 
 
 @app.cell
@@ -197,7 +201,7 @@ def _(client, types):
         print(f"Uploaded file: {uploaded_file.name}")
         return uploaded_file
 
-    return (upload_jsonl_using_files_api,)
+    return
 
 
 @app.cell
@@ -215,7 +219,7 @@ def _(client):
         print(f"Initiated batch job: {file_batch_job.name}")
         return file_batch_job
 
-    return (initiate_genai_batch,)
+    return
 
 
 @app.cell
@@ -265,20 +269,21 @@ def _(client, time):
 
         return batch_job
 
-    return (poll_genai_job,)
+    return
 
 
 @app.cell
-def _(pd):
+def _(Path, pl, root_path):
     # Chunk up input dataframe
     # Must add ID to track original rows for merging with cleaned output
+    json_path = root_path / 'code' / 'json'
     # Start with H-2A data
-    h2a_df = pd.read_csv("json/unmatched_h2a_locations.csv")
-    h2a_df_copy = h2a_df.copy()
-    h2a_df_copy['original_id'] = range(len(h2a_df_copy))
+    h2a_df = pl.read_csv(json_path / "unmatched_h2a_locations.csv")
+    h2a_df_copy = h2a_df.clone()
+    h2a_df_copy = h2a_df_copy .with_row_index(name="original_id")
 
     # Batch specs
-    h2a_jsonl_file_path = "json/clean_h2a_locations_request.jsonl"
+    h2a_jsonl_file_path = Path(json_path / "clean_h2a_locations_request.jsonl")
     batch_rows = 20
 
     # Upload specs
@@ -290,68 +295,28 @@ def _(pd):
 
     # Retrieval specs
     sleep_duration = 10
-    h2a_output_file_name = "json/cleaned_h2a_locations_response_string.txt"
-    return (
-        batch_rows,
-        h2a_df_copy,
-        h2a_job_display_name,
-        h2a_jsonl_file_path,
-        h2a_output_file_name,
-        h2a_upload_display_name,
-        model_id,
-        sleep_duration,
-    )
-
-
-@app.cell
-def _(
-    batch_rows,
-    genai_schema,
-    h2a_df_copy,
-    h2a_jsonl_file_path,
-    write_batch_request_jsonl,
-):
-    write_batch_request_jsonl(h2a_df_copy, 'original_id', genai_schema, h2a_jsonl_file_path, batch_rows)
-    return
-
-
-@app.cell
-def _(
-    h2a_jsonl_file_path,
-    h2a_upload_display_name,
-    upload_jsonl_using_files_api,
-):
-    h2a_upload = upload_jsonl_using_files_api(h2a_jsonl_file_path, h2a_upload_display_name)
-    return (h2a_upload,)
-
-
-@app.cell
-def _(h2a_job_display_name, h2a_upload, initiate_genai_batch, model_id):
-    h2a_batch_job = initiate_genai_batch(h2a_upload.name, model_id, h2a_job_display_name)
-    return (h2a_batch_job,)
-
-
-@app.cell
-def _(h2a_batch_job, h2a_output_file_name, poll_genai_job, sleep_duration):
-    finished_h2a_batch_job = poll_genai_job(h2a_batch_job.name, sleep_duration, h2a_output_file_name)
-    return
+    h2a_output_file_name = Path(json_path / "cleaned_h2a_locations_response_string.txt")
+    return h2a_df_copy, json_path
 
 
 @app.cell
 def _():
-    # client.batches.cancel(name=)
+    # write_batch_request_jsonl(h2a_df_copy, 'original_id', genai_schema, h2a_jsonl_file_path, batch_rows)
+    # h2a_upload = upload_jsonl_using_files_api(h2a_jsonl_file_path, h2a_upload_display_name)
+    # h2a_batch_job = initiate_genai_batch(h2a_upload.name, model_id, h2a_job_display_name)
+    # finished_h2a_batch_job = poll_genai_job(h2a_batch_job.name, sleep_duration, h2a_output_file_name)
     return
 
 
 @app.cell
-def _(pd):
+def _(json_path, pl):
     # Repeat with Addendum B data
-    add_b_df = pd.read_csv("json/unmatched_add_b_locations.csv")
-    add_b_df_copy = add_b_df.copy()
-    add_b_df_copy['original_id'] = range(len(add_b_df_copy))
+    add_b_df = pl.read_csv(json_path / "unmatched_add_b_locations.csv")
+    add_b_df_copy = add_b_df.clone()
+    add_b_df_copy = add_b_df_copy.with_row_index(name='original_id')
 
     # Batch specs
-    add_b_jsonl_file_path = "json/clean_add_b_locations_request.jsonl"
+    add_b_jsonl_file_path = json_path / "clean_add_b_locations_request.jsonl"
     # batch_rows = 20
 
     # Upload specs
@@ -363,58 +328,21 @@ def _(pd):
 
     # Retrieval specs
     # sleep_duration = 10
-    add_b_output_file_name = "json/cleaned_add_b_locations_response_string.txt"
-    return (
-        add_b_df_copy,
-        add_b_job_display_name,
-        add_b_jsonl_file_path,
-        add_b_output_file_name,
-        add_b_upload_display_name,
-    )
-
-
-@app.cell
-def _(
-    add_b_df_copy,
-    add_b_jsonl_file_path,
-    batch_rows,
-    genai_schema,
-    write_batch_request_jsonl,
-):
-    write_batch_request_jsonl(add_b_df_copy, 'original_id', genai_schema, add_b_jsonl_file_path, batch_rows)
-    return
-
-
-@app.cell
-def _(
-    add_b_jsonl_file_path,
-    add_b_upload_display_name,
-    upload_jsonl_using_files_api,
-):
-    add_b_upload = upload_jsonl_using_files_api(add_b_jsonl_file_path, add_b_upload_display_name)
-    return (add_b_upload,)
-
-
-@app.cell
-def _(add_b_job_display_name, add_b_upload, initiate_genai_batch, model_id):
-    add_b_batch_job = initiate_genai_batch(add_b_upload.name, model_id, add_b_job_display_name)
-    return (add_b_batch_job,)
-
-
-@app.cell
-def _(add_b_batch_job, add_b_output_file_name, poll_genai_job, sleep_duration):
-    finished_add_b_batch_job = poll_genai_job(add_b_batch_job.name, sleep_duration, add_b_output_file_name)
-    return
+    add_b_output_file_name = json_path / "cleaned_add_b_locations_response_string.txt"
+    return (add_b_df_copy,)
 
 
 @app.cell
 def _():
-    # client.batches.cancel(name=)
+    # write_batch_request_jsonl(add_b_df_copy, 'original_id', genai_schema, add_b_jsonl_file_path, batch_rows)
+    # add_b_upload = upload_jsonl_using_files_api(add_b_jsonl_file_path, add_b_upload_display_name)
+    # add_b_batch_job = initiate_genai_batch(add_b_upload.name, model_id, add_b_job_display_name)
+    # finished_add_b_batch_job = poll_genai_job(add_b_batch_job.name, sleep_duration, add_b_output_file_name)
     return
 
 
 @app.cell
-def _(CleanedLocation, ValidationError, json, pd):
+def _(CleanedLocation, ValidationError, json, pl):
     # Define a function to merge results together into a coherent dataframe
     def parse_results(response_string_file):
         all_cleaned_locations = []
@@ -457,31 +385,56 @@ def _(CleanedLocation, ValidationError, json, pd):
                     print(f"Validation error for ID {loc_dict.get('original_id')}: {e}")
 
         # Change null to ''
-        combined_results = pd.DataFrame(all_cleaned_locations).replace({'null':''})
-
+        combined_results = pl.DataFrame(all_cleaned_locations).with_columns(
+            pl.selectors.string().str.replace_all("null", "")
+    )
         return combined_results
 
     return (parse_results,)
 
 
 @app.cell
-def _(parse_results):
-    h2a_results_df = parse_results("json/cleaned_h2a_locations_response_string.txt")
-    add_b_results_df = parse_results("json/cleaned_add_b_locations_response_string.txt")
+def _(Path, json_path, parse_results):
+    h2a_results_df = parse_results(Path(json_path / "cleaned_h2a_locations_response_string.txt"))
+    add_b_results_df = parse_results(Path(json_path / "cleaned_add_b_locations_response_string.txt"))
     return add_b_results_df, h2a_results_df
 
 
 @app.cell
-def _(add_b_df_copy, add_b_results_df, h2a_df_copy, h2a_results_df, pd):
-    h2a_with_suggestions = pd.merge(h2a_df_copy, h2a_results_df, how = 'outer', on = 'original_id', suffixes = ['', '_suggested'])
-    h2a_with_suggestions = h2a_with_suggestions.rename(columns = {'zipcode': 'zip_suggested', 'confidence':'suggestion_confidence'})
-    h2a_with_suggestions = h2a_with_suggestions.drop(columns = ['original_id']).reset_index(drop=True)
-    h2a_with_suggestions.to_csv("json/unmatched_h2a_with_suggestions.csv", index=False)
+def _(Path, h2a_df_copy, h2a_results_df, json_path):
+    h2a_with_suggestions = h2a_df_copy.join(
+        h2a_results_df,
+        on='original_id',
+        how='left',
+        suffix='_suggested'
+    ).rename(
+        mapping={
+            'zipcode': 'zip_suggested',
+            'confidence':'suggestion_confidence'}
+    ).drop('original_id')
+    h2a_with_suggestions.write_csv(Path(json_path / 'unmatched_h2a_with_suggestions.csv'))
+    return
 
-    add_b_with_suggestions = pd.merge(add_b_df_copy, add_b_results_df, how = 'outer', on = 'original_id', suffixes = ['', '_suggested'])
-    add_b_with_suggestions = add_b_with_suggestions.rename(columns = {'zipcode': 'zip_suggested', 'confidence':'suggestion_confidence'})
-    add_b_with_suggestions = add_b_with_suggestions.drop(columns = ['original_id']).reset_index(drop=True)
-    add_b_with_suggestions.to_csv("json/unmatched_add_b_with_suggestions.csv", index=False)
+
+@app.cell
+def _(Path, add_b_df_copy, add_b_results_df, json_path):
+    add_b_with_suggestions = add_b_df_copy.join(
+        add_b_results_df,
+        on='original_id',
+        how='left',
+        suffix='_suggested'
+    ).rename(
+        mapping={
+            'zipcode': 'zip_suggested',
+            'confidence':'suggestion_confidence'}
+    ).drop('original_id')
+    add_b_with_suggestions.write_csv(Path(json_path / 'unmatched_add_b_with_suggestions.csv'))
+    return
+
+
+@app.cell
+def _(client):
+    client.close()
     return
 
 

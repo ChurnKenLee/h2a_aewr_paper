@@ -1,14 +1,17 @@
 import marimo
 
-__generated_with = "0.19.7"
+__generated_with = "0.19.11"
 app = marimo.App(width="full")
 
 
 @app.cell
 def _():
+    import marimo as mo
     from pathlib import Path
+    import pyprojroot
+    import dotenv, os
     import json
-    import pandas as pd
+    import polars as pl
     from google import genai
     from google.genai import types
     from google.genai._transformers import process_schema
@@ -21,166 +24,208 @@ def _():
     import us
     from ratelimit import limits, sleep_and_retry
     import pickle
+
     return (
         MessageToJson,
+        dotenv,
         json,
         limits,
-        pd,
+        mo,
+        os,
         pickle,
+        pl,
         places_v1,
+        pyprojroot,
         sleep_and_retry,
         us,
     )
 
 
 @app.cell
-def _():
-    with open("../tools/google_places_api_key.txt") as _f:
-        _line = _f.readlines()
-    api_key = _line[0]
-    return (api_key,)
+def _(dotenv, os, pyprojroot):
+    root_path = pyprojroot.find_root(criterion='pyproject.toml')
+    dotenv.load_dotenv()
+    api_key = os.getenv('GOOGLE_PLACES_API_KEY')
+
+    binary_path = root_path / 'binaries'
+    json_path = root_path / 'code' / 'json'
+    return api_key, binary_path, json_path
 
 
 @app.cell
 def _(us):
-    # Function converts state abbreviations to names
-    def state_abbr_to_name(input):
-        if input == '':
+    def state_abbr_to_name(val):
+        if val is None or val == '':
             return ''
-
-        # Include DC
-        if str(input).upper() == 'DC':
+    
+        val_str = str(val).strip()
+    
+        if val_str.upper() == 'DC':
             return 'District of Columbia'
 
-        # US package lookup can handle names, abbreviations, FIPs
-        state_obj = us.states.lookup(str(input).strip())
+        state_obj = us.states.lookup(val_str)
+        if state_obj:
+            return state_obj.name
+        else:
+            return ''
 
-        return state_obj.name if state_obj else ''
     return (state_abbr_to_name,)
 
 
 @app.cell
-def _(api_key, pd, places_v1, state_abbr_to_name):
-    # Load cleaned unmatched locations
-    h2a_df = pd.read_csv("json/unmatched_h2a_with_suggestions.csv", dtype = str).fillna('')
-    add_b_df = pd.read_csv("json/unmatched_add_b_with_suggestions.csv", dtype = str).fillna('')
+def _(pl, state_abbr_to_name):
+    # This mimics: ', '.join([x for x in columns if x != ''])
+    def concat_location(city_col, county_col, state_col):
+        concat_df = pl.concat_list(
+            [city_col, county_col, state_col]
+        ).list.eval(
+            pl.element().filter(
+                (pl.element() != "") & (pl.element().is_not_null())
+            )
+        ).list.join(", ")
+    
+        return concat_df
 
-    # Define the names we want to use to query
-    # Add full names for states
-    h2a_df['state_name'] = h2a_df['state'].apply(lambda _x: state_abbr_to_name(_x))
-    h2a_df['state_name_suggested'] = h2a_df['state_suggested'].apply(lambda _x: state_abbr_to_name(_x))
-    add_b_df['state_name'] = add_b_df['state'].apply(lambda _x: state_abbr_to_name(_x))
-    add_b_df['state_name_suggested'] = add_b_df['state_suggested'].apply(lambda _x: state_abbr_to_name(_x))
+    # Function applies clean name and concat to df
+    def process_df(df):
+        clean_names_df = df.with_columns([
+            # Apply the state lookup
+            pl.col("state").map_elements(state_abbr_to_name, return_dtype=pl.String).alias("state_name"),
+            pl.col("state_suggested").map_elements(state_abbr_to_name, return_dtype=pl.String).alias("state_name_suggested"),
+        ]).with_columns([
+            # Concatenate columns
+            concat_location(pl.col("city"), pl.col("county"), pl.col("state_name"))
+                .alias("original_location_name"),
+            concat_location(pl.col("city_suggested"), pl.col("county_suggested"), pl.col("state_name_suggested"))
+                .alias("suggested_location_name"),
+        ])
 
-    # Contatenate location name elements
-    h2a_df['original_location_name'] = h2a_df[['city', 'county', 'state_name']].apply(lambda _x: ', '.join(_x[_x!='']), axis=1)
-    h2a_df['suggested_location_name'] = h2a_df[['city_suggested', 'county_suggested', 'state_name_suggested']].apply(lambda _x: ', '.join(_x[_x!='']), axis=1)
+        return clean_names_df
 
-    add_b_df['original_location_name'] = add_b_df[['city', 'county', 'state_name']].apply(lambda _x: ', '.join(_x[_x!='']), axis=1)
-    add_b_df['suggested_location_name'] = add_b_df[['city_suggested', 'county_suggested', 'state_name_suggested']].apply(lambda _x: ', '.join(_x[_x!='']), axis=1)
+    return
 
-    # Rate limit our queries manually
-    client = places_v1.PlacesClient(client_options={"api_key": api_key})
-    def rate_limited_queries(queries, qpm):
-        response_list = []
-        delay = 60/qpm + 0.01
 
-        # The field mask has to be passed in the call
-        for query in queries:
-
-            # Skip invalid requests
-            if query == '':
-                response_list.append([])
-                continue
-            if ',' not in query:
-                response_list.append([])
-                continue
-
-            # Create request
-            request = places_v1.SearchTextRequest(text_query=query)
-
-            # The field mask has to be passed in the call
-            response = client.search_text(
-                    request = request, 
-                    metadata = [("x-goog-fieldmask", "places.id")]
-                )
-            placeid_candidates = [place.id for place in response.places]
-            response_list.append(placeid_candidates)
-
-        return response_list
-
-    h2a_original_locations_list = list(h2a_df['original_location_name'])
-    h2a_original_locations_candidate_list = rate_limited_queries(h2a_original_locations_list, 600)
-    h2a_df['original_location_placeid'] = h2a_original_locations_candidate_list
-
-    h2a_suggested_locations_list = list(h2a_df['suggested_location_name'])
-    h2a_suggested_locations_candidate_list = rate_limited_queries(h2a_suggested_locations_list, 600)
-    h2a_df['suggested_location_placeid'] = h2a_suggested_locations_candidate_list
-
-    add_b_original_locations_list = list(add_b_df['original_location_name'])
-    add_b_original_locations_candidate_list = rate_limited_queries(add_b_original_locations_list, 600)
-    add_b_df['original_location_placeid'] = add_b_original_locations_candidate_list
-
-    add_b_suggested_locations_list = list(add_b_df['suggested_location_name'])
-    add_b_suggested_locations_candidate_list = rate_limited_queries(add_b_suggested_locations_list, 600)
-    add_b_df['suggested_location_placeid'] = add_b_suggested_locations_candidate_list
-
-    # Save Place ID suggestions
-    h2a_df.to_parquet("../binaries/h2a_location_placeids.parquet")
-    add_b_df.to_parquet("../binaries/add_b_location_placeids.parquet")
-    return add_b_df, h2a_df
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Get Place ID
+    """)
+    return
 
 
 @app.cell
-def _(pd):
+def _():
+    # # Load cleaned unmatched locations, clean state names, and concat place names to get location name
+    # h2a_df = pl.read_csv(json_path / "unmatched_h2a_with_suggestions.csv", infer_schema=False).fill_null('')
+    # add_b_df = pl.read_csv(json_path / "unmatched_add_b_with_suggestions.csv", infer_schema=False).fill_null('')
+    # h2a_df = process_df(h2a_df)
+    # add_b_df = process_df(add_b_df)
+
+    # def rate_limited_queries(queries, qpm):
+    #     response_list = []
+    #     # Calculate delay in seconds
+    #     delay = (60 / qpm) + 0.01
+
+    #     for query in queries:
+    #         # Polars might pass None for null values, so check for truthiness
+    #         if not query or ',' not in query:
+    #             response_list.append([])
+    #             continue
+
+    #         # Create request
+    #         request = places_v1.SearchTextRequest(text_query=query)
+
+    #         # Call API
+    #         response = client.search_text(
+    #             request=request, 
+    #             metadata=[("x-goog-fieldmask", "places.id")]
+    #         )
+        
+    #         placeid_candidates = [place.id for place in response.places]
+    #         response_list.append(placeid_candidates)
+        
+    #         # Actually sleep to respect the rate limit
+    #         time.sleep(delay)
+
+    #     return response_list
+
+    # # --- Process h2a_df ---
+    # h2a_original_locations_list = h2a_df["original_location_name"].to_list()
+    # h2a_original_locations_candidate_list = rate_limited_queries(h2a_original_locations_list, 600)
+    # h2a_suggested_locations_list = h2a_df["suggested_location_name"].to_list()
+    # h2a_suggested_locations_candidate_list = rate_limited_queries(h2a_suggested_locations_list, 600)
+    # h2a_df = h2a_df.with_columns([
+    #     pl.Series(
+    #         name="original_location_placeid", 
+    #         values=h2a_original_locations_candidate_list
+    #     ),
+    #     pl.Series(
+    #         name="suggested_location_placeid", 
+    #         values=h2a_suggested_locations_candidate_list
+    #     )
+    # ])
+
+    # # --- Process add_b_df ---
+    # add_b_original_locations_list = add_b_df["original_location_name"].to_list()
+    # add_b_original_locations_candidate_list = rate_limited_queries(add_b_original_locations_list, 600)
+    # add_b_suggested_locations_list = add_b_df["suggested_location_name"].to_list()
+    # add_b_suggested_locations_candidate_list = rate_limited_queries(add_b_suggested_locations_list, 600)
+    # add_b_df = add_b_df.with_columns([
+    #     pl.Series(
+    #         name="original_location_placeid", 
+    #         values=add_b_original_locations_candidate_list
+    #     ),
+    #     pl.Series(
+    #         name="suggested_location_placeid", 
+    #         values=add_b_suggested_locations_candidate_list
+    #     )
+    # ])
+
+    # # # Save to Parquet using Polars write method
+    # # h2a_df.write_parquet(binary_path / "h2a_location_placeids.parquet")
+    # # add_b_df.write_parquet(binary_path / "add_b_location_placeids.parquet")
+    return
+
+
+@app.cell
+def _(binary_path, pl):
     # Read Place ID suggestions
-    h2a_df = pd.read_parquet("../binaries/h2a_location_placeids.parquet")
-    add_b_df = pd.read_parquet("../binaries/add_b_location_placeids.parquet")
+    h2a_df = pl.read_parquet(binary_path / "h2a_location_placeids.parquet")
+    add_b_df = pl.read_parquet(binary_path / "add_b_location_placeids.parquet")
+
+    # Define the operation as an expression to reuse it
+    def add_common_id_cols(df: pl.DataFrame) -> pl.DataFrame:
+        df_with_common_id = df.with_columns(
+            common_placeid = pl.col("original_location_placeid").list.set_intersection("suggested_location_placeid")
+        ).with_columns(
+            has_common_placeid = pl.col("common_placeid").list.len() > 0
+        )
+        return df_with_common_id
+
+    # Apply to your DataFrames
+    h2a_df = add_common_id_cols(h2a_df)
+    add_b_df = add_common_id_cols(add_b_df)
     return add_b_df, h2a_df
 
 
-@app.function
-def get_common_elements(list1, list2):
-    # Convert lists to sets and find the intersection
-    common = set(list1) & set(list2)
-    # Convert back to a list
-    return list(common)
-
-
 @app.cell
-def _(add_b_df, h2a_df):
-    h2a_df['common_placeid'] = h2a_df.apply(lambda _x: get_common_elements(_x['original_location_placeid'], _x['suggested_location_placeid']), axis=1)
-    add_b_df['common_placeid'] = add_b_df.apply(lambda _x: get_common_elements(_x['original_location_placeid'], _x['suggested_location_placeid']), axis=1)
+def _(add_b_df, h2a_df, pl):
+    # Create a list of the Series we want to extract and flatten
+    series_to_combine = [
+        h2a_df["original_location_placeid"].explode(),
+        h2a_df["suggested_location_placeid"].explode(),
+        add_b_df["original_location_placeid"].explode(),
+        add_b_df["suggested_location_placeid"].explode()
+    ]
+
+    # Concatenate them, remove nulls/None, and get unique values
+    placeid_list = (
+        pl.concat(series_to_combine)
+        .drop_nulls()
+        .unique()
+        .to_list()
+    )
     return
-
-
-@app.cell
-def _(add_b_df, h2a_df):
-    h2a_df['has_common_placeid'] = h2a_df['common_placeid'].astype('bool')
-    add_b_df['has_common_placeid'] = add_b_df['common_placeid'].astype('bool')
-    return
-
-
-@app.cell
-def _(add_b_df, h2a_df):
-    # Get all Place IDs we need to match to address components
-    def put_placeid_in_list(df_col):
-        list_of_placeids = []
-        for placeid_list in df_col:
-            if placeid_list.any():
-                for placeid in placeid_list:
-                    list_of_placeids.append(placeid)
-            else:
-                continue
-        return list_of_placeids
-
-    h2a_original_placeid_list = put_placeid_in_list(h2a_df['original_location_placeid'])
-    h2a_suggested_placeid_list = put_placeid_in_list(h2a_df['suggested_location_placeid'])
-    add_b_original_placeid_list = put_placeid_in_list(add_b_df['original_location_placeid'])
-    add_b_suggested_placeid_list = put_placeid_in_list(add_b_df['suggested_location_placeid'])
-    placeid_list = h2a_original_placeid_list + h2a_suggested_placeid_list + add_b_original_placeid_list + add_b_suggested_placeid_list
-    placeid_list = list(set(placeid_list)) # We want only unique Place IDs; no sense making duplicate calls
-    return (placeid_list,)
 
 
 @app.cell
@@ -208,34 +253,35 @@ def _(api_key, limits, places_v1, sleep_and_retry):
         )
 
         return response
-    return (get_address_components_from_placeid,)
 
-
-@app.cell
-def _(get_address_components_from_placeid, pickle, placeid_list):
-    placeid_address_components_dict = {}
-
-    for _placeid in placeid_list:
-        _response = get_address_components_from_placeid(_placeid)
-        placeid_address_components_dict[_placeid] = _response
-
-    # Pickle results
-    with open("json/placeid_address_components_mapping_pickle.pickle", "wb") as _fp:
-        pickle.dump(placeid_address_components_dict, _fp)
     return
 
 
 @app.cell
-def _(MessageToJson, json, pickle):
+def _():
+    # placeid_address_components_dict = {}
+
+    # for _placeid in placeid_list:
+    #     _response = get_address_components_from_placeid(_placeid)
+    #     placeid_address_components_dict[_placeid] = _response
+
+    # # Pickle results
+    # with open(json_path / "placeid_address_components_mapping_pickle.pickle", "wb") as _fp:
+    #     pickle.dump(placeid_address_components_dict, _fp)
+    return
+
+
+@app.cell
+def _(MessageToJson, json, json_path, pickle):
     # Store mappings as JSON as well for stability
-    with open("json/placeid_address_components_mapping_pickle.pickle", "rb") as _fp:
+    with open(json_path / "placeid_address_components_mapping_pickle.pickle", "rb") as _fp:
         placeid_address_components_dict_loaded = pickle.load(_fp)
 
     placeid_address_components_dict_json = {}
     for _placeid, _response in placeid_address_components_dict_loaded.items():
         placeid_address_components_dict_json[_placeid] = MessageToJson(_response._pb) # Convert protocol response to JSON for writing to JSON file
 
-    with open("json/placeid_address_components_mapping_json.json", 'w') as _fp:
+    with open(json_path / "placeid_address_components_mapping_json.json", 'w') as _fp:
         json.dump(placeid_address_components_dict_json, _fp)
     return
 
