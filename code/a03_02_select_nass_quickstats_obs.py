@@ -276,6 +276,27 @@ def _(json, summary_t, t):
 
 
 @app.cell
+def _(dspy):
+    class IdentifyCanonicalCrops(dspy.Signature):
+        """
+        Identify canonical crop definitions for a specific commodity within a sector group.
+    
+        Context: You are looking at {commodity} in the {group} sector. 
+        Be aware that the same commodity in a different group (e.g., Horticulture vs Vegetables) 
+        is a different agricultural product with different units and practices.
+    
+        PRIORITY: PRICE coverage is the most important metric.
+        """
+        group = dspy.InputField(desc="The group_desc (e.g., VEGETABLES, FIELD CROPS)")
+        commodity = dspy.InputField(desc="The commodity_desc (e.g., TOMATOES, CORN)")
+    
+        canonical_definitions = dspy.OutputField(desc="JSON list of valid (class, prod, util) definitions.")
+        reasoning = dspy.OutputField(desc="Why these were chosen based on Price/Yield coverage.")
+
+    return
+
+
+@app.cell
 def _(find_price_anchors, get_hierarchy_exploration):
     get_hierarchy_exploration(commodity = "BEANS")
     find_price_anchors(commodity = "BEANS")
