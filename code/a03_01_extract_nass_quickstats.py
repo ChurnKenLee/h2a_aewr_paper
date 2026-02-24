@@ -8,7 +8,7 @@
 
 import marimo
 
-__generated_with = "0.19.11"
+__generated_with = "0.20.2"
 app = marimo.App(width="full")
 
 
@@ -37,7 +37,8 @@ def _(mo):
 @app.cell
 def _(pyprojroot):
     root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    return (root_path,)
+    binary_path = root_path/'binaries'
+    return binary_path, root_path
 
 
 @app.cell
@@ -87,7 +88,7 @@ def _(pl):
 
 
 @app.cell
-def _(pl, quickstats_pl_type_dict, root_path):
+def _(binary_path, pl, quickstats_pl_type_dict, root_path):
     nass_qs_list = [
         'animals_products',
         'crops',
@@ -118,14 +119,14 @@ def _(pl, quickstats_pl_type_dict, root_path):
                     pl.col('source_desc') == 'CENSUS'
                 )
                 census_df.write_parquet(
-                    root_path / 'binaries' / f'qs_census_{qs_type}.parquet'
+                    binary_path/f'qs_census_{qs_type}.parquet'
                 )
 
                 survey_df = df.filter(
                     pl.col('source_desc') == 'SURVEY'
                 )
                 survey_df.write_parquet(
-                    root_path / 'binaries' / f'qs_survey_{qs_type}.parquet'
+                    binary_path/f'qs_survey_{qs_type}.parquet'
                 )
     return
 

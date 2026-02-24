@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.9"
+__generated_with = "0.20.2"
 app = marimo.App(width="full")
 
 
@@ -8,6 +8,8 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
+    import pyprojroot
+    import dotenv, os
     import polars as pl
     import polars.selectors as cs
     import pandas as pd
@@ -17,14 +19,14 @@ def _():
     from exactextract import exact_extract, operation
     import time
 
-    return Path, cs, gpd, pd, pl, rio
+    return cs, gpd, pd, pl, pyprojroot, rio
 
 
 @app.cell
-def _(Path):
-    project_path = Path(__file__).parent.parent
-    cdl_path = project_path / 'Data' / 'croplandcros_cdl'
-    return cdl_path, project_path
+def _(pyprojroot):
+    root_path = pyprojroot.find_root(criterion='pyproject.toml')
+    cdl_path = root_path / 'data' / 'croplandcros_cdl'
+    return cdl_path, root_path
 
 
 @app.cell
@@ -41,10 +43,10 @@ def _(cdl_path, rio):
 
 
 @app.cell
-def _(cdl_files, gpd, project_path, rio):
+def _(cdl_files, gpd, rio, root_path):
     # Reproject county shapefile to match CDL CRS
     # Read county border vector file
-    county_shapefile_path = project_path / 'Data' / 'county_shapefile' / 'tl_2023_us_county' / 'tl_2023_us_county.shp'
+    county_shapefile_path = root_path / 'data' / 'county_shapefile' / 'tl_2023_us_county' / 'tl_2023_us_county.shp'
     county_borders = gpd.read_file(county_shapefile_path)
 
     # 3. Open rasters and ensure CRS match
@@ -74,7 +76,7 @@ def _(cdl_files, gpd, project_path, rio):
 
 
 @app.cell
-def _(cdl_files, pd, pl, project_path):
+def _(cdl_files, pd, pl, root_path):
     # We open all years simultaneously and pass them as a list
     # exactextract will compute weights once and apply to all bands (years)
     print('Starting extraction (this may take a while for CONUS)...')
@@ -89,7 +91,7 @@ def _(cdl_files, pd, pl, project_path):
     # )
 
     # results.to_parquet(project_path / 'binaries' / 'temp_exactextract.parquet')
-    results = pd.read_parquet(project_path / 'binaries' / 'temp_exactextract.parquet')
+    results = pd.read_parquet(root_path / 'binaries' / 'temp_exactextract.parquet')
     results = pl.from_pandas(results)
 
     print('Finished extracting')
@@ -124,7 +126,7 @@ def _(results, unpivot_to_long_metric):
 
 
 @app.cell
-def _(df_counts, df_fracs, df_unique, pl, project_path):
+def _(df_counts, df_fracs, df_unique, pl, root_path):
     # Join them back together on GEOID and Year
     # Using a join ensures that 2008 count matches 2008 unique
     long_df = df_counts.join(
@@ -142,7 +144,7 @@ def _(df_counts, df_fracs, df_unique, pl, project_path):
     )
 
     # Export as parquet
-    binary_file_path = project_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
+    binary_file_path = root_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
     long_df.write_parquet(binary_file_path)
     return
 
