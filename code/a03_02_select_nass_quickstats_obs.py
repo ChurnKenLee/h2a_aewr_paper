@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.11"
+__generated_with = "0.20.2"
 app = marimo.App(width="full")
 
 
@@ -13,6 +13,7 @@ def _():
     import ibis
     import ibis.selectors as s
     from ibis import _
+    import polars as pl
     import dspy
     from pydantic import BaseModel, Field
     from typing import List
@@ -29,6 +30,7 @@ def _():
         json,
         mo,
         os,
+        pl,
         pyprojroot,
         time,
         tqdm,
@@ -391,9 +393,121 @@ def _(
             # Optional: Sleep to handle rate limits
             time.sleep(5)
 
-    # Final Save
+    # Save the responses
     with open(mapping_file, 'w') as f:
         json.dump(master_results, f, indent=4)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Now extract the rows we want and export binaries
+    """)
+    return
+
+
+@app.cell
+def _(json, mapping_file, pl):
+    # NASS crop definitions
+    with open(mapping_file, 'r') as _f:
+        nass_obs_selection_json = json.load(_f)
+    nass_obs_selection = pl.from_dicts(list(nass_obs_selection_json.values())) # Unpack JSON in pl df
+    nass_obs_selection = (nass_obs_selection
+        .drop('reasoning') # shares same name with column inside definitions
+        .unnest('output') # output only has 1 item inside: definitions of crops selected
+        .explode('definitions') # definitions has multiple entries, each definition is a selected crop
+        .unnest('definitions') # each crop has multiple elements within each definition (class, prodn, util)
+        .rename(mapping={
+            'task_key':'nass_id',
+            'group':'group_desc',
+            'commodity':'commodity_desc',
+            'reasoning':'nass_reasoning',
+            'semantic_label':'nass_semantic_label'
+        }))
+    return (nass_obs_selection,)
+
+
+@app.cell
+def _(census_crops, nass_obs_selection, survey_crops):
+    census_selected_crops = census_crops.to_polars()
+    census_selected_crops = census_selected_crops.join(
+        nass_obs_selection,
+        how='inner',
+        on=['group_desc',
+            'commodity_desc',
+            'class_desc',
+            'prodn_practice_desc',
+            'util_practice_desc']
+    )
+
+    survey_selected_crops = survey_crops.to_polars()
+    survey_selected_crops = survey_selected_crops.join(
+        nass_obs_selection,
+        how='inner',
+        on=['group_desc',
+            'commodity_desc',
+            'class_desc',
+            'prodn_practice_desc',
+            'util_practice_desc']
+    )
+    return census_selected_crops, survey_selected_crops
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Need to add cropland asset data for legacy pipeline reasons for now
+    """)
+    return
+
+
+@app.cell
+def _(binary_path, census_selected_crops, pl, survey_selected_crops):
+    census_economics = pl.read_parquet(binary_path / "qs_census_economics.parquet")
+    census_economics = (census_economics
+        .filter(
+            (pl.col("freq_desc") == "ANNUAL") & 
+            (pl.col("agg_level_desc").is_in(["NATIONAL", "STATE", "COUNTY"]))
+        )
+        .with_columns(
+            pl.when(pl.col("value") == "(Z)") # "(Z)" means less than 0.5
+                .then(pl.lit(0.0))
+                .otherwise(
+                    pl.col("value")
+                        .str.replace_all(",", "")
+                        .cast(pl.Float64, strict=False)
+                )
+                .alias("value")
+        )
+        .filter(pl.col("value").is_not_null())
+    )
+
+    # 3. Create Cropland Subset
+    census_cropland = (census_economics
+        .filter(
+            (pl.col("commodity_desc").is_in(["FARM OPERATIONS", "AG LAND"])) &
+            (pl.col("short_desc") == "AG LAND, CROPLAND - ACRES") &
+            (pl.col("domain_desc") == "TOTAL")
+        )
+        .with_columns(
+            pl.lit('cropland_asset').alias('observation_type')
+        ))
+
+    # Convert from categorical to string for concatenating
+    census_cropland = census_cropland.with_columns(
+        pl.col(pl.Categorical).cast(pl.String)
+    )
+
+    # Combine and export
+    # Note that polars' handling of categoricals/enums are non-standard and R cannot parse it
+    # So we keep all categoricals as strings for exporting
+    # Since the parquet file is massively reduced in size, should not blow up memory usage in R
+    qs_census_selected_obs = pl.concat([census_selected_crops, census_cropland], how="diagonal")
+    qs_survey_selected_obs = survey_selected_crops
+
+    qs_census_selected_obs.write_parquet(binary_path / "qs_census_selected_obs.parquet")
+    qs_survey_selected_obs.write_parquet(binary_path / "qs_survey_selected_obs.parquet")
     return
 
 
