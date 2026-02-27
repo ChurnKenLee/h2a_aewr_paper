@@ -10,9 +10,6 @@ def _():
     from pathlib import Path
     import pyprojroot
     import dotenv, os
-    import ibis
-    import ibis.selectors as s
-    from ibis import _
     import polars as pl
     import pdfplumber
     import dspy
@@ -22,10 +19,21 @@ def _():
     import tqdm
     from itertools import islice
     import time
-    import tempfile
-    import duckdb
+    import copy
 
-    return Path, dspy, json, mo, os, pl, pyprojroot
+    return (
+        BaseModel,
+        Field,
+        Path,
+        copy,
+        dspy,
+        json,
+        mo,
+        os,
+        pl,
+        pyprojroot,
+        tqdm,
+    )
 
 
 @app.cell
@@ -119,6 +127,10 @@ def _(binary_path, df_results, nass_obs_selection):
         how='left',
         on=['nass_id']
     )
+    nass_cdl_xwalk = nass_cdl_xwalk.select([
+        'group_desc', 'commodity_desc', 'class_desc', 'prodn_practice_desc', 'util_practice_desc',
+        'cdl_code', 'cdl_name'
+    ])
     nass_cdl_xwalk.write_parquet(binary_path / 'nass_cdl_crosswalk.parquet')
     return (nass_cdl_xwalk,)
 
@@ -170,7 +182,8 @@ def _(binary_path, pl):
     qs_survey_crops = pl.read_parquet(binary_path / 'qs_survey_selected_obs.parquet')
     # Drop stats we don't care about
     qs_survey_crops = qs_survey_crops.filter(
-        pl.col('observation_type') != ''
+        pl.col('observation_type') != '',
+        ~pl.col('value').is_null()
     )
     return (qs_survey_crops,)
 
@@ -287,7 +300,7 @@ def _(json, pl, qs_survey_crops, root_path):
     basis_map = {k: v["basis"] for k, v in mapping.items() if v["string_type"] == "unit_desc"}
 
     # 4. Apply the mapping to generate the new harmonized columns
-    df_extracted_units = qs_survey_crops.with_columns(
+    qs_extracted_units = qs_survey_crops.with_columns(
         # Extract the true dimension from observation_type
         dimension = pl.col("observation_type").replace_strict(obs_type_map),
     
@@ -297,113 +310,13 @@ def _(json, pl, qs_survey_crops, root_path):
         area_unit = pl.col("unit_desc").replace_strict(area_unit_map),
         basis = pl.col("unit_desc").replace_strict(basis_map)
     )
-    df_extracted_units
-    return (df_extracted_units,)
+    qs_extracted_units
+    return (qs_extracted_units,)
 
 
 @app.cell
 def _():
-    return
-
-
-@app.cell
-def _(df_extracted_units, nass_cdl_xwalk):
-    # The Pivot Operation
-    wide_panel = df_extracted_units.pivot(
-        on="observation_type",
-        index=["year",
-               "state_ansi",
-               "nass_id",
-               'group_desc',
-               'commodity_desc',
-               'class_desc',
-               'prodn_practice_desc',
-               'util_practice_desc'
-              ], # The unique row keys
-        values=[
-            "value",
-            "money_unit", 
-            "weight_unit", 
-            "area_unit", 
-            "basis",
-            "unit_desc"
-        ],
-        aggregate_function="first" # Ensures we take the specific record's metadata
-    )
-    wide_panel = wide_panel.join(
-        nass_cdl_xwalk,
-        how='left',
-        on=[
-            "nass_id",
-            'group_desc',
-            'commodity_desc',
-            'class_desc',
-            'prodn_practice_desc',
-            'util_practice_desc'
-        ]
-    )
-    return (wide_panel,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    Harmonize unit names so that we can correctly identify when the units match
-    """)
-    return
-
-
-@app.cell
-def _(pl, wide_panel):
-    unit_cols = wide_panel.select([
-        "money_unit_yield",
-        "money_unit_production",
-        "money_unit_area",
-        "money_unit_price",
-        "weight_unit_yield",
-        "weight_unit_production",
-        "weight_unit_area",
-        "weight_unit_price",
-        "area_unit_yield",
-        "area_unit_production",
-        "area_unit_area",
-        "area_unit_price"
-    ])
-
-    money_units = unit_cols.select([
-        pl.col("^money_.*$")
-    ]).unpivot()
-
-    weight_units = unit_cols.select([
-        pl.col("^weight_.*$")
-    ]).unpivot()
-
-    area_units = unit_cols.select([
-        pl.col("^area_.*$")
-    ]).unpivot()
-    return area_units, money_units, weight_units
-
-
-@app.cell
-def _(money_units):
-    money_units.select('value').unique().drop_nulls()
-    return
-
-
-@app.cell
-def _(weight_units):
-    weight_units.select('value').unique().drop_nulls()
-    return
-
-
-@app.cell
-def _(area_units):
-    area_units.select('value').unique().drop_nulls()
-    return
-
-
-@app.cell
-def _():
+    # Want to harmonize differing spellings of common unit names for easier comparison
     # These are dict mappings into common unit names
     area_unit_common_name = {
       "ACRES WHERE TAPS SET": "Acre",
@@ -452,191 +365,378 @@ def _(
     area_unit_common_name,
     money_unit_common_name,
     pl,
+    qs_extracted_units,
     weight_unit_common_name,
-    wide_panel,
 ):
-    # Replace unit names with common ones
-    wide_panel_common_unit_name = wide_panel.with_columns(
-        pl.col("^weight_.*$").replace(weight_unit_common_name),
-        pl.col("^area_.*$").replace(area_unit_common_name),
-        pl.col("^money_.*$").replace(money_unit_common_name)
+    qs_harmonized_unit_name = qs_extracted_units.with_columns(
+        pl.col("area_unit").replace(area_unit_common_name).alias('area_unit'),
+        pl.col("weight_unit").replace(weight_unit_common_name).alias('weight_unit'),
+        pl.col("money_unit").replace(money_unit_common_name).alias('money_unit'),
     )
-    return (wide_panel_common_unit_name,)
+    qs_harmonized_unit_name
+    return (qs_harmonized_unit_name,)
 
 
 @app.cell
-def _(pl, root_path):
-    usda_crop_weight = pl.read_json(root_path/'code'/'json'/'usda_crop_weight.json')
-    nass_crop_weight_mapping = pl.read_json(root_path/'code'/'json'/'nass_crop_weight_mapping.json')
-    nass_crop_weight = nass_crop_weight_mapping.join(
-        usda_crop_weight,
-        on=[
-            'Category',
-            'Crop'
-        ],
-        how='left'
+def _(pl, qs_harmonized_unit_name):
+    # Identify unique Crop-Unit pairs from your harmonized dataframe
+    unique_pairs = (qs_harmonized_unit_name
+        .select(['commodity_desc', "weight_unit"])
+        .unique()
+        .filter(pl.col("weight_unit").is_not_null())
     )
-    return
+    return (unique_pairs,)
+
+
+@app.cell
+def _(BaseModel, Field):
+    # Define pydantic output structure
+    class WeightConversionOutput(BaseModel):
+        # This ensures a clean list of integers
+        conversion_factor: float = Field(description="Multiplier to convert given unit into pounds.")
+
+        # This captures the 'Why' for auditing
+        reasoning: str = Field(description="Brief justification for the conversion multiplier chosen.")
+
+    return (WeightConversionOutput,)
+
+
+@app.cell
+def _(WeightConversionOutput, dspy):
+    # Define DSpy signature
+    class AgUnitConversion(dspy.Signature):
+        """
+        Look up the standard USDA/NASS conversion factor to convert a specific agricultural commodity unit into Pounds (LBS).
+        If USDA/NASS conversion factor is not available there may be state legislation that defines the conversion factor.
+        Use standard test weights (e.g., Corn Bushel = 56 lbs, Wheat Bushel = 60 lbs).
+        """
+        crop_name = dspy.InputField(desc="The NASS commodity name (e.g., CORN, APPLES, PEACHES)")
+        unit_name = dspy.InputField(desc="The harmonized unit name (e.g., Bushel, Basket, Barrel, Box)")
+
+        output: WeightConversionOutput = dspy.OutputField()
+
+    analyzer = dspy.ChainOfThought(AgUnitConversion)
+    return (analyzer,)
 
 
 @app.cell
 def _():
-    standard_units = [
-        'Acre',
-        'Square Foot',
-        'Pound',
-        'Bale',
-        'Hundredweight',
-        'Ton'
-    ]
-
-    def evaluate_unit_harmony(row):
-        """
-        Evaluates bi-directional unit consistency across the 4-way pivot.
-        Returns flags indicating if conversion is needed for each linkage.
-        """
-    
-        def check_link(unit_a, unit_b):
-            # Case 0: Data is sparse
-            if (unit_a is None) or (unit_b is None):
-                return "no_unit_comparison"
-        
-            # Case 1: Direct unit match
-            if unit_a == unit_b:
-                return "ok"
-        
-            # Case 2: Weight-to-weight adjustment using standard units
-            if unit_a in standard_units and unit_b in standard_units:
-                return "weight_adjust"
-            
-            # Case 3: Colloquial mismatch (requires fallback to AvgWeightLbs)
-            return "use_colloquial_conversion"
-
-        # Case 1: Price ($/weight) vs Production (weight)
-        price_prod_harmony = check_link(
-            row["weight_unit_price"], row["weight_unit_production"]
-        )
-
-        if row["money_unit_production"] == 'Dollar':
-            price_prod_harmony = "production_already_in_dollars"
-
-        # Case 2: Area (acres) vs Yield (weight/area)
-        area_yield_harmony = check_link(
-            row["area_unit_area"], row["area_unit_yield"]
-        )
-
-        # Case 3: Yield (weight/area) vs Price ($/weight)
-        yield_price_harmony = check_link(
-            row["weight_unit_yield"], row["weight_unit_price"]
-        )
-    
-        return {
-            "price_prod_status": price_prod_harmony,
-            "area_yield_status": area_yield_harmony,
-            "yield_price_status": yield_price_harmony,
-            # Flag if ANY link requires the USDA Colloquial Fallback
-            "requires_colloquial_conversion": (
-                price_prod_harmony == "use_colloquial_conversion" or 
-                area_yield_harmony == "use_colloquial_conversion" or 
-                yield_price_harmony == "use_colloquial_conversion"
-            )
-        }
-
-    return (evaluate_unit_harmony,)
-
-
-@app.cell
-def _(evaluate_unit_harmony, wide_panel_common_unit_name):
-    test_row = wide_panel_common_unit_name.row(index=10, named=True)
-    evaluate_unit_harmony(test_row)
+    # test_commodity='ORANGES'
+    # test_unit="Box"
+    # prediction = analyzer(crop_name=test_commodity, unit_name=test_unit)
+    # prediction
     return
 
 
 @app.cell
-def _(evaluate_unit_harmony, pl, wide_panel_common_unit_name):
-    # Evaluate harmonization needs and execute
-    wide_panel_harmony_report = wide_panel_common_unit_name.with_columns(
-        pl.struct([
-            "value_price", "value_production", "value_yield", "value_area",
-            "weight_unit_price", "weight_unit_production", "weight_unit_yield",
-            "area_unit_price", "area_unit_production", "area_unit_yield", "area_unit_area",
-            "money_unit_production"
-        ]).map_elements(evaluate_unit_harmony, return_dtype=pl.Struct([
-            pl.Field("price_prod_status", pl.Utf8),
-            pl.Field("area_yield_status", pl.Utf8),
-            pl.Field("yield_price_status", pl.Utf8),
-            pl.Field("requires_colloquial_conversion", pl.Boolean)
-        ])).alias("harmony_report")
-    ).unnest("harmony_report")
-    return (wide_panel_harmony_report,)
-
-
-@app.cell
-def _(pl, wide_panel_harmony_report):
-    # What are these crops that need a colloquial map?
-    needs_colloquial_map = (wide_panel_harmony_report
-        .filter(
-            pl.col('requires_colloquial_conversion')
-        ).select([
-            "nass_id",
-            'group_desc', 'commodity_desc', 'class_desc', 'prodn_practice_desc', 'util_practice_desc',
-            "weight_unit_price", "weight_unit_production", "weight_unit_yield",
-            'nass_semantic_label', 'cdl_name'
-        ])
-        .unique())
-    needs_colloquial_map
-    return
-
-
-@app.cell
-def _(pl, wide_panel_harmony_report):
-    # Conversion factors to pound (weight) and acre (area)
-    # Note: Bale is standardized to 480lbs (NASS standard in this dataset)
-    unit_base_conversion_factor = {
+def _(Path, json, json_path, unique_pairs):
+    # Unambiguous constants to skip LLM calls
+    static_weights = {
         "Pound": 1.0,
-        "Hundredweight": 100.0,
         "Ton": 2000.0,
-        "Bale": 480.0,
-        "Acre": 1.0,
-        "Square Foot": 1.0 / 43560.0
+        "Hundredweight": 100.0,
+        "Bale": 480.0  # Per NASS standard for Cotton 480lb bales here
     }
 
-    # Colloquial conversion factors needed
-    # Maple syrup is fine as is because it uses gallons
-    # Sorghum: 1 bushel = 56 lbs
-    # Apple: 1 bushel = 40 lbs
-    # Cranberries: 1 barrel = 100 lbs
-    # Peaches: 1 bushel = 50 lbs
+    # Storage for results
+    conversion_results = []
+    checkpoint_path = Path(json_path / "ag_unit_conversions.jsonl")
 
-    # Define a helper function to do both mappings
-    def get_conversion_factor(unit_col_name: str):
-        return (
-            pl.when(pl.col("commodity_desc") == "SORGHUM", pl.col(unit_col_name) == "Bushel").then(56.0)
-            .when(pl.col("commodity_desc") == "APPLES", pl.col(unit_col_name) == "Bushel").then(40.0)
-            .when(pl.col("commodity_desc") == "PEACHES", pl.col(unit_col_name) == "Bushel").then(50.0)
-            .when(pl.col("commodity_desc") == "CRANBERRIES", pl.col(unit_col_name) == "Barrel").then(100.0)
-            .otherwise(
-                pl.col(unit_col_name).replace_strict(unit_base_conversion_factor, default=1.0)
-            )
-        )
+    # Load existing results if restarting an incomplete run
+    existing_keys = set()
+    if checkpoint_path.exists():
+        with open(checkpoint_path, "r") as _f:
+            for line in _f:
+                data = json.loads(line)
+                existing_keys.add((data['commodity_desc'], data['weight_unit']))
+                conversion_results.append(data)
 
-    wide_panel_harmonized_unit_values = wide_panel_harmony_report.with_columns([
-        # Map factors for weights using the helper logic
-        get_conversion_factor("weight_unit_price").alias("f_weight_price"),
-        get_conversion_factor("weight_unit_production").alias("f_weight_prod"),
-        get_conversion_factor("weight_unit_yield").alias("f_weight_yield"),
+    # Convert unique_pairs to list of dicts for iteration
+    pairs_to_process = unique_pairs.to_dicts()
+    return (
+        checkpoint_path,
+        conversion_results,
+        existing_keys,
+        pairs_to_process,
+        static_weights,
+    )
+
+
+@app.cell
+def _(
+    analyzer,
+    checkpoint_path,
+    conversion_results,
+    existing_keys,
+    json,
+    pairs_to_process,
+    static_weights,
+    tqdm,
+):
+    print(f"Processing {len(pairs_to_process)} unique crop-unit pairs...")
+
+    for pair in tqdm.tqdm(pairs_to_process):
+        commodity = pair['commodity_desc']
+        unit = pair['weight_unit']
     
-        # Map factors for area
-        pl.col("area_unit_area").replace_strict(unit_base_conversion_factor, default=1.0).alias("f_area_area"),
-        pl.col("area_unit_yield").replace_strict(unit_base_conversion_factor, default=1.0).alias("f_area_yield"),
-    ])
+        # 1. Skip if already processed in a previous run
+        if (commodity, unit) in existing_keys:
+            print(f"{commodity}-{unit} already processed")
+            continue
+        
+        # 2. Handle static conversions, bypass LLM
+        if unit in static_weights:
+            print(f"{commodity}-{unit} is in standard weight unit")
+            result = {
+                "commodity_desc": commodity,
+                "weight_unit": unit,
+                "conversion_factor": static_weights[unit],
+                "reasoning": "Static constant weight defined in pipeline logic.",
+                "source": "static"
+            }
+    
+        # 3. Handle LLM Conversions
+        else:
+            print(f"Processing {commodity}-{unit}")
+            try:
+                # Call your DSPy analyzer
+                pred = analyzer(crop_name=commodity, unit_name=unit)
+            
+                # Extract values from the pydantic output
+                result = {
+                    "commodity_desc": commodity,
+                    "weight_unit": unit,
+                    "conversion_factor": float(pred.output.conversion_factor),
+                    "reasoning": pred.output.reasoning,
+                    "source": "llm_dspy"
+                }
+            except Exception as e:
+                print(f"Error processing {commodity}-{unit}: {e}")
+                continue # Skip and move to next
 
-    wide_panel_harmonized_unit_values
+        # 4. Store and Checkpoint
+        conversion_results.append(result)
+        with open(checkpoint_path, "a") as _f:
+            _f.write(json.dumps(result) + "\n")
     return
 
 
 @app.cell
+def _(conversion_results, pl, qs_harmonized_unit_name):
+    # Convert final list to Polars DataFrame and join back to NASS
+    unit_conversion_lookup = pl.DataFrame(conversion_results)
+    qs_final_standardized = (qs_harmonized_unit_name
+        .join(unit_conversion_lookup, on=["commodity_desc", "weight_unit"], how="left")
+        .with_columns(
+            pl.when( # Price (weight in denominator): Divide by factor
+                (pl.col("observation_type") == "price") & 
+                (~pl.col('conversion_factor').is_null())
+            ).then(pl.col("value") / pl.col("conversion_factor"))
+            .when( # Yield: multiply by factor
+                (pl.col("observation_type") == "yield") & 
+                (~pl.col('conversion_factor').is_null())
+            ).then(pl.col("value") * pl.col("conversion_factor"))
+            .when( # Non $ production : multiply by factor
+                (pl.col("observation_type") == "production") & 
+                (~pl.col('conversion_factor').is_null())
+            ).then(pl.col("value") * pl.col("conversion_factor"))
+            .when( # Area in sq ft, mostly horticulture, mushrooms
+                (pl.col("observation_type")=='area') & 
+                (pl.col('area_unit')=='Square Foot')
+            ).then(pl.col('value') / 43560)
+            .when( # Acreage in acres already
+                (pl.col("observation_type") == 'area') & 
+                (pl.col("area_unit") == 'Acre')
+            ).then(pl.col('value')*1)
+            .when( # Production in dollar terms already
+                (pl.col("observation_type") == 'production') & 
+                (pl.col("money_unit") == 'Dollar') &
+                (pl.col('weight_unit').is_null())
+            ).then(pl.col('value')*1)
+            .otherwise(pl.lit(999999))
+            .alias('standardized_value')
+        ))
+    return (qs_final_standardized,)
+
+
+@app.cell
+def _(nass_cdl_xwalk, pl, qs_final_standardized):
+    # Every case is taken care of
+    qs_final_standardized.drop('source_desc','domain_desc','domaincat_desc','cv_%').filter(pl.col('standardized_value') == 999999)
+
+    # Update unit labels
+    qs_cleaned = (qs_final_standardized
+        .filter(pl.col("standardized_value") != 999999)
+        .drop_nulls(subset=["standardized_value"])
+        # Standardize the unit labels for the final time
+        .with_columns(
+            pl.when(pl.col("weight_unit").is_not_null()).then(pl.lit("Pound"))
+            .when(pl.col("area_unit").is_not_null()).then(pl.lit("Acre"))
+            .when(pl.col("money_unit") == "Dollar").then(pl.lit("USD"))
+            .otherwise(pl.lit("Unknown"))
+            .alias("physical_dimension")
+        )
+    )
+
+    # Add CDL code and crop
+    qs_cleaned = qs_cleaned.join(
+        nass_cdl_xwalk,
+        how='left',
+        on=[
+            "group_desc", "commodity_desc", 'class_desc', 'prodn_practice_desc', 'util_practice_desc', 
+        ]
+    )
+    return (qs_cleaned,)
+
+
+@app.cell
 def _():
+    # NASS crop identifier
+    # Every operation must respect these 8 columns to preserve dimensional and economic integrity.
+    nass_identity = [
+        "group_desc",
+        "commodity_desc", 
+        "class_desc", 
+        "prodn_practice_desc", 
+        "util_practice_desc"
+    ]
+
+    # The Geographic/Temporal identifier (note CDL crop as a category we are aggregating into)
+    geo_time_key = ["year", "state_ansi", "cdl_code"]
+
+    # The pivoting key
+    pivot_index = nass_identity + geo_time_key
+    return nass_identity, pivot_index
+
+
+@app.cell
+def _(pivot_index, pl, qs_cleaned):
+    qs_state_only = qs_cleaned.filter(
+        pl.col("agg_level_desc") == "STATE",
+        ~pl.col('commodity_desc').str.contains('TOTALS')
+    )
+    # Calculate Revenue for every state-year
+    qs_state_revenue = (qs_state_only
+        .with_columns(
+            obs_key = pl.when((pl.col("observation_type") == "production") & (pl.col("physical_dimension") == "USD"))
+                        .then(pl.lit("prod_v")) # prod value in $ already
+                        .when(pl.col("observation_type") == "production")
+                        .then(pl.lit("prod_q")) # prod in weights
+                        .otherwise(pl.col("observation_type"))
+        )
+        .pivot(
+            index=pivot_index,
+            on="obs_key",
+            values="standardized_value",
+            aggregate_function="mean"
+        )
+        .with_columns(
+            # Revenue is the anchor for the Portfolio Weight
+            revenue = pl.coalesce([
+                pl.col("prod_v"),
+                pl.col("price") * pl.col("prod_q")
+            ])
+        )
+        .drop_nulls(subset=["revenue"])
+    )
+    return (qs_state_revenue,)
+
+
+@app.cell
+def _(nass_identity, pl, qs_state_revenue):
+    # Calculate Portfolio Weights using the State-level Population revenue
+    state_rev_weights = (qs_state_revenue
+        .with_columns(
+            w = pl.col("revenue") / pl.col("revenue").sum().over(["year", "state_ansi", "cdl_code"])
+        )
+        .select(["year", "state_ansi", "cdl_code"] + nass_identity + ["w", "price", "revenue"])
+    )
+    return (state_rev_weights,)
+
+
+@app.cell
+def _(copy, pivot_index, pl, qs_cleaned):
+    qs_national_only = qs_cleaned.filter(
+        pl.col("agg_level_desc") == "NATIONAL",
+        ~pl.col('commodity_desc').str.contains('TOTALS')
+    )
+    national_pivot_index = copy.deepcopy(pivot_index)
+    national_pivot_index.remove('state_ansi')
+    # Calculate Revenue for every state-year
+    qs_national_revenue = (qs_national_only
+        .with_columns(
+            obs_key = pl.when((pl.col("observation_type") == "production") & (pl.col("physical_dimension") == "USD"))
+                        .then(pl.lit("prod_v")) # prod value in $ already
+                        .when(pl.col("observation_type") == "production")
+                        .then(pl.lit("prod_q")) # prod in weights
+                        .otherwise(pl.col("observation_type"))
+        )
+        .pivot(
+            index=national_pivot_index,
+            on="obs_key",
+            values="standardized_value",
+            aggregate_function="mean"
+        )
+        .with_columns(
+            # Revenue is the anchor for the Portfolio Weight
+            revenue = pl.coalesce([
+                pl.col("prod_v"),
+                pl.col("price") * pl.col("prod_q")
+            ])
+        )
+        .drop_nulls(subset=["revenue"])
+    )
+    qs_national_revenue
+    return (qs_national_revenue,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Construct state-CDL-year index, by weighted aggregation of NASS crops
+    """)
+    return
+
+
+@app.cell
+def _(nass_identity, pl, qs_cleaned, qs_national_revenue, state_rev_weights):
+    synthetic_state = (qs_cleaned
+        .filter(pl.col("agg_level_desc") == "STATE")
+        .join(state_rev_weights, on=["year", "state_ansi", "cdl_code"] + nass_identity)
+        .with_columns([
+            (pl.col("price") * pl.col("w")).alias("p_w"),
+            (pl.col("standardized_value").filter(pl.col("observation_type") == "yield") * pl.col("w")).alias("y_w")
+        ])
+        .group_by(["year", "state_ansi", "cdl_code"])
+        .agg([
+            pl.sum("p_w").alias("price_state_syn"),
+            pl.sum("y_w").alias("yield_state_syn")
+        ])
+    )
+
+    # If a specific state is missing a price/yield signal for a crop it grows, 
+    # we use the National average basket for that CDL category.
+
+    # First, calculate national revenue weights (w_nat)
+    national_weights = (qs_national_revenue
+        .with_columns(
+            w_nat = pl.col("revenue") / pl.col("revenue").sum().over(["year", "cdl_code"])
+        )
+    )
+
+    synthetic_national = (qs_cleaned
+        .filter(pl.col("agg_level_desc") == "NATIONAL")
+        .join(national_weights, on=["year", "cdl_code"] + nass_identity)
+        .with_columns([
+            (pl.col("price") * pl.col("w_nat")).alias("p_w"),
+            (pl.col("standardized_value").filter(pl.col("observation_type") == "yield") * pl.col("w_nat")).alias("y_w")
+        ])
+        .group_by(["year", "cdl_code"])
+        .agg([
+            pl.sum("p_w").alias("price_nat_syn"),
+            pl.sum("y_w").alias("yield_nat_syn")
+        ])
+    )
     return
 
 
