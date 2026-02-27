@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.9"
+__generated_with = "0.20.2"
 app = marimo.App(width="full")
 
 
@@ -38,7 +38,7 @@ def _(BeautifulSoup, cdl_path, re):
     for _year in range(2008, 2025):
         year_cdl_path = cdl_path / f'{_year}_30m_cdls'
         metadata_path = list(year_cdl_path.glob('*.htm'))
-    
+
         with open(metadata_path[0]) as fp:
             soup = BeautifulSoup(fp, features='html.parser')  # Extract table
             # The categorization codes for the crop types are in tables that are in preformatted blocks of text
@@ -48,7 +48,7 @@ def _(BeautifulSoup, cdl_path, re):
         for line in cat_table.splitlines():
             # Regex match number enclosed in double quotes
             crop_code_present = re.search(r'"(\d+)".*', line) is not None
-        
+
             crop_code_dict = {}
             if crop_code_present:
                 crop_code_dict = {}

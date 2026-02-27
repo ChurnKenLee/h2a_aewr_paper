@@ -52,7 +52,7 @@ def _(dspy, os, pyprojroot):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Load CDL code NASS crosswalk, CDL acreage, NASS survey prices
+    # Load CDL code NASS crosswalk, NASS survey prices
     """)
     return
 
@@ -133,40 +133,6 @@ def _(binary_path, df_results, nass_obs_selection):
     ])
     nass_cdl_xwalk.write_parquet(binary_path / 'nass_cdl_crosswalk.parquet')
     return (nass_cdl_xwalk,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    CDL pixel counts previously aggregated using exactextract
-    """)
-    return
-
-
-@app.cell
-def _(binary_path, pl):
-    # CroplandCROS CDL acreage aggregated to the county-year-crop level
-    cdl_acres = pl.read_parquet(binary_path / 'county_crop_pixel_count_2008_2024_exactextract.parquet')
-    # 1 acre ~ 4047m2
-    cdl_acres = cdl_acres.with_columns(
-        crop_acre = pl.col('crop_pixel_count')/4047
-    )
-    cdl_acres = (cdl_acres
-        .select([
-            'GEOID',
-            'year',
-            'crop_code',
-            'crop_acre'
-        ])
-        .rename({
-            'GEOID':'fips',
-            'crop_code':'cdl_code',
-            'crop_acre':'cdl_acre'
-        })
-        .with_columns(
-            pl.col("fips").str.slice(0, 2).alias("state_fips")
-        ))
-    return
 
 
 @app.cell(hide_code=True)
@@ -303,7 +269,7 @@ def _(json, pl, qs_survey_crops, root_path):
     qs_extracted_units = qs_survey_crops.with_columns(
         # Extract the true dimension from observation_type
         dimension = pl.col("observation_type").replace_strict(obs_type_map),
-    
+
         # Extract base units and qualitative basis from unit_desc
         money_unit = pl.col("unit_desc").replace_strict(money_unit_map),
         weight_unit = pl.col("unit_desc").replace_strict(weight_unit_map),
@@ -478,12 +444,12 @@ def _(
     for pair in tqdm.tqdm(pairs_to_process):
         commodity = pair['commodity_desc']
         unit = pair['weight_unit']
-    
+
         # 1. Skip if already processed in a previous run
         if (commodity, unit) in existing_keys:
             print(f"{commodity}-{unit} already processed")
             continue
-        
+
         # 2. Handle static conversions, bypass LLM
         if unit in static_weights:
             print(f"{commodity}-{unit} is in standard weight unit")
@@ -494,14 +460,14 @@ def _(
                 "reasoning": "Static constant weight defined in pipeline logic.",
                 "source": "static"
             }
-    
+
         # 3. Handle LLM Conversions
         else:
             print(f"Processing {commodity}-{unit}")
             try:
                 # Call your DSPy analyzer
                 pred = analyzer(crop_name=commodity, unit_name=unit)
-            
+
                 # Extract values from the pydantic output
                 result = {
                     "commodity_desc": commodity,
@@ -611,12 +577,13 @@ def _():
 
 @app.cell
 def _(pivot_index, pl, qs_cleaned):
+    # State NASS crop price, production, yield
     qs_state_only = qs_cleaned.filter(
         pl.col("agg_level_desc") == "STATE",
         ~pl.col('commodity_desc').str.contains('TOTALS')
     )
     # Calculate Revenue for every state-year
-    qs_state_revenue = (qs_state_only
+    qs_state_wide = (qs_state_only
         .with_columns(
             obs_key = pl.when((pl.col("observation_type") == "production") & (pl.col("physical_dimension") == "USD"))
                         .then(pl.lit("prod_v")) # prod value in $ already
@@ -630,32 +597,18 @@ def _(pivot_index, pl, qs_cleaned):
             values="standardized_value",
             aggregate_function="mean"
         )
-        .with_columns(
-            # Revenue is the anchor for the Portfolio Weight
-            revenue = pl.coalesce([
-                pl.col("prod_v"),
-                pl.col("price") * pl.col("prod_q")
-            ])
-        )
-        .drop_nulls(subset=["revenue"])
-    )
-    return (qs_state_revenue,)
+        .rename({
+            "yield": "y_state",
+            "price": "p_state",
+            "prod_v": "v_state",
+            "prod_q": "q_state"
+        }))
+    return (qs_state_wide,)
 
 
 @app.cell
-def _(nass_identity, pl, qs_state_revenue):
-    # Calculate Portfolio Weights using the State-level Population revenue
-    state_rev_weights = (qs_state_revenue
-        .with_columns(
-            w = pl.col("revenue") / pl.col("revenue").sum().over(["year", "state_ansi", "cdl_code"])
-        )
-        .select(["year", "state_ansi", "cdl_code"] + nass_identity + ["w", "price", "revenue"])
-    )
-    return (state_rev_weights,)
-
-
-@app.cell
-def _(copy, pivot_index, pl, qs_cleaned):
+def _(copy, nass_identity, pivot_index, pl, qs_cleaned):
+    # National crop price, production, yield
     qs_national_only = qs_cleaned.filter(
         pl.col("agg_level_desc") == "NATIONAL",
         ~pl.col('commodity_desc').str.contains('TOTALS')
@@ -663,7 +616,7 @@ def _(copy, pivot_index, pl, qs_cleaned):
     national_pivot_index = copy.deepcopy(pivot_index)
     national_pivot_index.remove('state_ansi')
     # Calculate Revenue for every state-year
-    qs_national_revenue = (qs_national_only
+    qs_national_wide = (qs_national_only
         .with_columns(
             obs_key = pl.when((pl.col("observation_type") == "production") & (pl.col("physical_dimension") == "USD"))
                         .then(pl.lit("prod_v")) # prod value in $ already
@@ -677,66 +630,99 @@ def _(copy, pivot_index, pl, qs_cleaned):
             values="standardized_value",
             aggregate_function="mean"
         )
+        .rename({
+            "yield": "y_national",
+            "price": "p_national",
+            "prod_v": "v_national",
+            "prod_q": "q_national"
+        })
+        .select(["year", "cdl_code"] + nass_identity + ["y_national", "p_national", "v_national", "q_national"])
+    )
+    return (qs_national_wide,)
+
+
+@app.cell
+def _(nass_identity, pl, qs_national_wide, qs_state_wide):
+    # Calculate state crop revenue
+    qs_state_revenue = (qs_state_wide
+        .join(
+            qs_national_wide.drop("cdl_code"),
+            on=nass_identity + ["year"],
+            how="left"
+        )
+        # Fill gaps for P, Y, and Q/V using National data
+        .with_columns([
+            pl.coalesce([pl.col("p_state"), pl.col("p_national")]).alias("eff_p"),
+            pl.coalesce([pl.col("y_state"), pl.col("y_national")]).alias("eff_y"),
+            pl.col("q_state").alias("eff_q"),
+            pl.col("v_state").alias("eff_v"),
+        ])
+        # Calculate Revenue: (Value in USD) OR (Price * Quantity)
         .with_columns(
-            # Revenue is the anchor for the Portfolio Weight
             revenue = pl.coalesce([
-                pl.col("prod_v"),
-                pl.col("price") * pl.col("prod_q")
+                pl.col("eff_v"),
+                pl.col("eff_p") * pl.col("eff_q")
             ])
         )
-        .drop_nulls(subset=["revenue"])
     )
-    qs_national_revenue
-    return (qs_national_revenue,)
+    return (qs_state_revenue,)
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    # Construct state-CDL-year index, by weighted aggregation of NASS crops
-    """)
+@app.cell
+def _(binary_path, pl, qs_state_revenue):
+    # State synthetic CDL
+    state_synthetic_cdl = (qs_state_revenue
+        # Filter for crops where we have the scaler (revenue) and the CDL inputs we are scaling on (yield, price)
+        .drop_nulls(subset=["revenue", "eff_p", "eff_y"])
+        # Calculate Weight (w)
+        .with_columns(
+            w = pl.col("revenue") / pl.col("revenue").sum().over(["year", "state_ansi", "cdl_code"])
+        )
+        # Aggregate to create synthetic CDL price and yield
+        .with_columns([
+            (pl.col("eff_p") * pl.col("w")).alias("p_w"),
+            (pl.col("eff_y") * pl.col("w")).alias("y_w")
+        ])
+        .group_by(["year", "state_ansi", "cdl_code"])
+        .agg([
+            pl.sum("p_w").alias("p_syn_state"),
+            pl.sum("y_w").alias("y_syn_state")
+        ])
+    )
+    state_synthetic_cdl.write_parquet(binary_path / 'cdl_price_yield_synthetic_state.parquet')
     return
 
 
 @app.cell
-def _(nass_identity, pl, qs_cleaned, qs_national_revenue, state_rev_weights):
-    synthetic_state = (qs_cleaned
-        .filter(pl.col("agg_level_desc") == "STATE")
-        .join(state_rev_weights, on=["year", "state_ansi", "cdl_code"] + nass_identity)
-        .with_columns([
-            (pl.col("price") * pl.col("w")).alias("p_w"),
-            (pl.col("standardized_value").filter(pl.col("observation_type") == "yield") * pl.col("w")).alias("y_w")
-        ])
-        .group_by(["year", "state_ansi", "cdl_code"])
-        .agg([
-            pl.sum("p_w").alias("price_state_syn"),
-            pl.sum("y_w").alias("yield_state_syn")
-        ])
-    )
-
-    # If a specific state is missing a price/yield signal for a crop it grows, 
-    # we use the National average basket for that CDL category.
-
-    # First, calculate national revenue weights (w_nat)
-    national_weights = (qs_national_revenue
+def _(binary_path, pl, qs_national_wide):
+    # If a CDL in a state truly has no state-level production data, we fallback to using national synthetic CDL values
+    national_synthetic_cdl = (qs_national_wide
         .with_columns(
-            w_nat = pl.col("revenue") / pl.col("revenue").sum().over(["year", "cdl_code"])
+            revenue_nat = pl.coalesce([
+                pl.col("v_national"),
+                pl.col("p_national") * pl.col("q_national")
+            ])
         )
-    )
-
-    synthetic_national = (qs_cleaned
-        .filter(pl.col("agg_level_desc") == "NATIONAL")
-        .join(national_weights, on=["year", "cdl_code"] + nass_identity)
+        .drop_nulls(subset=["revenue_nat", "p_national", "y_national"])
+        .with_columns(
+            w_nat = pl.col("revenue_nat") / pl.col("revenue_nat").sum().over(["year", "cdl_code"])
+        )
         .with_columns([
-            (pl.col("price") * pl.col("w_nat")).alias("p_w"),
-            (pl.col("standardized_value").filter(pl.col("observation_type") == "yield") * pl.col("w_nat")).alias("y_w")
+            (pl.col("p_national") * pl.col("w_nat")).alias("p_w_nat"),
+            (pl.col("y_national") * pl.col("w_nat")).alias("y_w_nat")
         ])
         .group_by(["year", "cdl_code"])
         .agg([
-            pl.sum("p_w").alias("price_nat_syn"),
-            pl.sum("y_w").alias("yield_nat_syn")
+            pl.sum("p_w_nat").alias("p_syn_nat"),
+            pl.sum("y_w_nat").alias("y_syn_nat")
         ])
     )
+    national_synthetic_cdl.write_parquet(binary_path / 'cdl_price_yield_synthetic_national.parquet')
+    return
+
+
+@app.cell
+def _():
     return
 
 
