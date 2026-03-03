@@ -821,7 +821,7 @@ fixest_model_dd_simple$nobs
 
 fixest_model_ddd_simple <- feols(
   h2a_cert_share_farm_workers_2011_start_year ~ aewr_state_ag_ppi_l1 *
-    high_h2a_share_75_inverse *
+    high_h2a_share_75 *
     postdummy +
     ln_pop_census +
     emp_pop_ratio |
@@ -837,20 +837,20 @@ fixest_model_ddd_event <- feols(
   h2a_cert_share_farm_workers_2011_start_year ~
     aewr_state_ag_ppi_l1 *
     yeardummy_2008 *
-    high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2009 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2010 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2012 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2013 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2014 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2015 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2016 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2017 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2018 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2019 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2020 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2021 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2022 * high_h2a_share_75_inverse +
+    high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2009 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2010 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2012 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2013 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2014 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2015 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2016 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2017 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2018 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2019 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2020 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2021 * high_h2a_share_75 +
+    aewr_state_ag_ppi_l1 * yeardummy_2022 * high_h2a_share_75 +
     ln_pop_census +
     emp_pop_ratio |
     county_fe + year_fe,
@@ -877,57 +877,6 @@ wald(
     "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2022"
   ),
   vcov = ~statefips
-)
-
-# Use etable() to export fixest_model_dd_simple and fixest_model_ddd_simple
-table_1 <- etable(
-  fixest_model_dd_simple,
-  fixest_model_ddd_simple,
-  tex = TRUE,
-  title = "The Effect of the AEWR Wage Premium on H-2A Utilization",
-  headers = c("Standard DD", "Triple Difference (DDD)"),
-  dict = c(
-    "h2a_cert_share_farm_workers_2011_start_year" = "Normalized H-2A program usage",
-    "aewr_state_ag_ppi_l1" = "Adjusted lagged AEWR",
-    "postdummy" = "Post",
-    "high_h2a_share_75" = "High H-2A usage pre-2011",
-    "ln_pop_census" = "Log population",
-    "emp_pop_ratio" = "Employment-to-pop Ratio"
-  ),
-  signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
-  file = paste0(folder_output, "table_1_main_results.tex"),
-  replace = TRUE
-)
-
-# Generate Event Study coefficients
-# Exporting the dynamic model to show pre-trends
-table_2 <- etable(
-  fixest_model_ddd_event,
-  tex = TRUE,
-  title = "Event Study Coefficients (Base Year = 2011)",
-  # We add ":yeardummy" so it ONLY keeps the triple interactions dropping all the standalone baseline effects
-  keep = "%aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy",
-  dict = c(
-    "aewr_state_ag_ppi_l1" = "Adjusted lagged AEWR",
-    "high_h2a_share_75" = "High H-2A usage pre-2011",
-    "yeardummy_2008" = "2008",
-    "yeardummy_2009" = "2009",
-    "yeardummy_2010" = "2010",
-    "yeardummy_2012" = "2012",
-    "yeardummy_2013" = "2013",
-    "yeardummy_2014" = "2014",
-    "yeardummy_2015" = "2015",
-    "yeardummy_2016" = "2016",
-    "yeardummy_2017" = "2017",
-    "yeardummy_2018" = "2018",
-    "yeardummy_2019" = "2019",
-    "yeardummy_2020" = "2020",
-    "yeardummy_2021" = "2021",
-    "yeardummy_2022" = "2022"
-  ),
-  signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
-  file = paste0(folder_output, "table_2_event_study.tex"),
-  replace = TRUE
 )
 
 # graph it
@@ -1042,8 +991,6 @@ ggsave(
   ),
   device = "png"
 )
-
-## DDD figure exploration
 
 ## Exhibit 11: Event studies for H2A use, wages, employment, prices ---------
 

@@ -31,7 +31,7 @@ def _(pyprojroot):
     binary_path = root_path / 'binaries'
     json_path = root_path / 'code' / 'json'
     cdl_path = root_path / 'data' / 'croplandcros_cdl'
-    return (binary_path,)
+    return binary_path, root_path
 
 
 @app.cell(hide_code=True)
@@ -221,7 +221,7 @@ def _(bilateral_links, county_cdl_panel, math, pl):
 
 
 @app.cell
-def _(backward_chain, base_anchor, binary_path, forward_chain, pl):
+def _(backward_chain, base_anchor, binary_path, forward_chain, pl, root_path):
     # Combine and exponentiate
     chained_fisher = (
         pl.concat([
@@ -233,8 +233,16 @@ def _(backward_chain, base_anchor, binary_path, forward_chain, pl):
             pl.col("log_index").exp().alias("fisher_index")
         )
         .sort(["fips", "year"])
+        .drop('log_index')
     )
     chained_fisher.write_parquet(binary_path / 'price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet')
+    chained_fisher.write_parquet(root_path / "files_for_phil" / 'price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet')
+    return (chained_fisher,)
+
+
+@app.cell
+def _(chained_fisher):
+    chained_fisher
     return
 
 

@@ -35,20 +35,24 @@ library(tidylog, warn.conflicts = FALSE)
 
 source(paste0(folder_do, "H2A Pull Min Wages.R"), echo = TRUE)
 
-## Load files from Ken
+## Load files from Ken 
 
 # source(paste0(folder_do, "Read Parquet.R"), echo = TRUE)
 
-## Clean
+## Clean 
 
 source(paste0(folder_do, "H2A Clean and Load.R"), echo = TRUE)
 
-## Build Dataset
+## Build Dataset 
 
 source(paste0(folder_do, "H2A Build Dataset.R"), echo = TRUE)
 
-## Analysis Figs and Tables
+## Analysis Figs and Tables 
 
 ## DDD + Figs ##
 
 source(paste0(folder_do, "H2A Analysis Figs and Tables.R"), echo = TRUE)
+
+
+
+

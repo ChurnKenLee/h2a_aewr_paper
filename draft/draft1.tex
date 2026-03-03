@@ -2,6 +2,7 @@
 \usepackage[usenames,dvips]{color}
 \usepackage[margin=1in]{geometry}
 \usepackage{setspace}
+\usepackage{graphicx}
 \doublespacing
 \usepackage{parskip}
 \usepackage{placeins,float,setspace,amsfonts,comment,amsmath,amssymb,amsxtra,graphicx,ifthen,pstricks-add,ushort,enumerate,mathrsfs,hyperref,textcomp,bbm,pdflscape, threeparttable,footmisc}
@@ -30,29 +31,50 @@
 
 \section{Introduction}
 \label{sec:introduction}
+\subsection{Question}
 
-Specialty crop farming (i.e., fruits, tree nuts, vegetables, and horticulture) is incredibly labor intensive as many of the crops require manual handling, and thus require large numbers of workers working in the field.
-This is opposed to farming field crops like barley and weed, which has been mechanized in the U.S.
+What is the causal effect of changes in the AEWR (minimum wage paid to H-2A workers) on farmers' utilization of the H-2A program?
+
+\subsection{Answer}
+
+We find that a \$1 increase in the AEWR causes a 3.5\% decrease in the number of certified H-2A positions.
+
+\subsection{Empirical strategy}
+
+The AEWR is set at the regional level.
+Our unit of observation is counties.
+Our independent variable is the difference between the AEWR and state minimum wages.
+Our dependent variable is the number of H-2A positions certified in any given county.
+We use a triple differences-in-difference setup.
+Our treatment period are the years post-2011, when there was a large increase in the AEWR.
+Our first difference compares counties that experienced a relatively larger increase in AEWR to counties that experienced smaller increases.
+Our second difference compares counties with high vs low pre-existing usage of H-2A workers.
+Given how the program operates, we expect most of the adjustment to happen on the extensive margin, i.e., farms switching from using domestic labor to using H-2A labor, so we should expect counties with a higher capacity to adjust, or counties with low pre-existing usage, to be ``high exposure'' counties.
+
+\subsection{Why you should care}
+
+\subsubsection{Food prices}
+Both the Biden and now the Trump administration have been fighting for years to have AEWR determination procedure changed, to have lower AEWRs.
+The process has led to multiple lawsuits from farmworkers' unions that have produced injunctions that have blocked policy changes.
+There is a recognition that the AEWR and the H-2A program more broadly is important to the health of the US agriculture industry, and thus on food prices.
+
+\subsubsection{Size}
+H-2A program is by far the largest migrant labor program in the US, with around 400 thousand workers requested in 2025 alone. Compare with the large amount of ink spilled on the H-1B program, with an annual cap of 25,000 workers.
+The US agricultural sector is increasingly shifting production to higher value specialty crops (i.e., fruits, tree nuts, vegetables, and horticulture).
+Specialty crop farming is incredibly labor intensive as many of the crops require manual handling, and thus require large numbers of workers working in the field.
 However, hiring field workers from the domestic labor pool is notoriously difficult, given the long work hours and unpleasant work conditions.
 Hence, farmers in the US rely heavily on hiring temporary seasonal farm workers via the H-2A guest worker program.
-The H-2A program is unique in that it is the only US migrant worker program that is uncapped, and annual usage of the program has increased from \~80,000 workers in 2008 to \~350,000 workers in 2022, as shown in figure \ref{fig:ts_h2a_workers_certified}.
+The H-2A program is unique in that it is the only US migrant worker program that is uncapped, and annual usage of the program has increased from \~80,000 workers in 2008 to \~384,900 workers in 2024, as shown in figure \ref{fig:ts_h2a_workers_certified}.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.5\paperwidth]{"../Output/fig_line_ts_h2a_workers_certified.png"}
-    \caption{Number of workers certified annually via the H-2A program from 2008 to 2022}
+    \caption{Number of workers certified annually via the H-2A program from 2008 to 2024}
     \label{fig:ts_h2a_workers_certified}
 \end{figure}
 
-
 This is in spite of the fact that H-2A workers are significantly more expensive to hire than domestic workers.
-Estimates range from \$11,000 to \$15,000 per worker of additional costs over hiring a domestic worker, exclusive of the wages paid to the workers.
-Farmers then have to pay their workers (both domestic and H-2A) at least the Adverse Effect Wage Rate (AEWR), a government-mandated minimum wage for H-2A workers.
+Even excluding the higher statutory minimum wage paid to H-2A workers (the Adverse Effect Wage Rate), H-2A workers cost an additional \$11,000 to \$15,000 per worker per year due to housing and transport requirements.
 The AEWR is set at a regional level by the Department of Labor (DOL) with the stated goal of preventing the hiring of guest workers from depressing the wages of domestic farmworkers.
-Because these regions often encompass multiple states, the AEWR creates a setting where adjacent farms on opposite sides of a state border can face substantially different minimum wages for the same type of labor.
-This paper asks a fundamental policy question: What is the causal effect of the AEWR on farmers' utilization of the H-2A program?
-Understanding this elasticity is critical for policymakers who must balance the goals of providing farmers with a stable workforce and protecting the wages of domestic workers.
-To identify this causal effect, we employ a border discontinuity design (BDD). We focus on pairs of counties that are contiguous and lie on opposite sides of a state border that also marks a boundary between two AEWR regions. The core assumption of our design is that counties within a border pair share similar local labor market conditions, soil types, climate, and access to markets. The primary factor that differs sharply between them is the state-level regulatory environment, most notably the AEWR. This quasi-experimental variation allows us to isolate the effect of the wage mandate from other confounding factors that typically plague studies of minimum wage effects.
-Using administrative data on H-2A certifications that is published publicly by the DOL, we find a significant and negative relationship between the AEWR and H-2A program usage. Our estimates suggest that a $1\%$ higher mandated minimum wage led to a $x\%$ reduction in the number of certified H-2A positions.
 
 We plan to extend this research by examining the downstream effects of these labor supply shocks.
 Specifically, if a higher AEWR reduces access to H-2A labor, how do farmers adapt?
@@ -97,9 +119,6 @@ This process begins about 3 months before the actual start of work.
     \item Once approved by USCIS, these guest workers will travel to their U.S. consulates to apply for a visa.
     \item Once the workers obtain a visa, they can then travel to the U.S. to reach their worksite.
 \end{enumerate}
-
-Farmers who use the program must pay for the travel costs incurred by the guest workers during this application process, provide or pay for lodgings, provide transportation for their workers' commute to their worksite and for weekly grocery runs, and all associated application fees.
-This alone incurs anywhere between \$10,000 to \$14,000 + weekly travel costs per worker hired using the H-2A program \parencite{usda_h2a_info}.
 
 \subsection{The Adverse Effect Wage Rate}
 
@@ -146,6 +165,13 @@ The Employment Cost Index is an analogue of the the Producer Price Index or Cons
 This inflated AEWR is then carried forward into the calculation for next year's AEWR for range and animal herding occupations.
 This category of occupations was quite recently added to the H-2A program in 2016, and for that year the monthly AEWR was simply defined as \$7.25 (the federal minimum hourly wage), multiplied by 48 hours, and then multiplied by 4.333 weeks per month.
 This number is then multiplied by 0.8 for 2016, and multiplied by 1 for 2017, and inflated using the index thereafter.
+
+\subsection{Additional costs of using the program}
+
+Farmers who use the program must pay for the travel costs incurred by the guest workers during this application process, provide or pay for lodgings, provide transportation for their workers' commute to their worksite and for weekly grocery runs, and all associated application fees.
+This alone incurs anywhere between \$10,000 to \$14,000 + weekly travel costs per worker hired using the H-2A program \parencite{usda_h2a_info}.
+
+An addiitonal complication is that employers of H-2A workers have to pay all workers in ``corresponding employment'' at least the hourly rate they pay their H-2A workers plus an adjustment for the additional costs incurred by H-2A workers, i.e., lodgings and transport.
 
 \section{Data sources}
 
@@ -215,8 +241,9 @@ Each parcel of land corresponds to a single pixel in the CDL.
 I then assign each pixel to a county, and then aggregate the pixels by county-crop-year.
 
 \subsection{Crop prices and yields}
-We obtain state-level annual crop prices and annual national-level yields from annual agricultural surveys conducted by NASS.
+We obtain state-level crop prices and yields from agricultural surveys that the NASS conducts every year.
 While county-level prices and yields would be ideal, they are not systematically available for specialty crops.
+We also have county-level prices from USDA's Risk Management Agency actuarial data, however this obviously only ccovers specific county-crop-years for which federal crop insurance policies were purchased.
 
 \subsection{Occupational Employment and Wage Statistics (OEWS)}
 
@@ -238,15 +265,58 @@ The occupations we are interested in are the same occupations included in the FL
 We can also construct an AEWR wage equivalent by calculating the mean wage for these occupations, which is the same procedure used by the DOL.
 
 \subsection{Sample construction}
-Our geographic sample consists of all U.S. county pairs that straddle a state border.
-We then restrict this sample to only those border pairs where the two states fall into different AEWR regions, resulting in a discontinuity in the mandated AEWR across the county border.
-Our final dataset is structured at the county-year level for all counties in these "treated" and "untreated" county pairs.
+Our geographic sample consists of all U.S. counties that reported having positive amounts of farmland in 2007.
+Sample period is 2008 to 2024.
 
-\section{Empirical design}
+\section{Empirical design and results}
+\subsection{Sample construction}
+
+To estimate the impact of the Adverse Effect Wage Rate (AEWR) on agricultural labor demand, we construct a county-by-year panel dataset spanning the years 2008 to 2024.
+Our primary outcome variable is the intensity of H-2A program usage, defined as the number of H-2A workers certified in county $i$ during year $t$, normalized by the county's baseline total farm employment in 2011. 
+
+We restrict our estimation sample to counties that reported non-zero agricultural cropland in the 2007 Census of Agriculture.
+
+Our primary explanatory variable is the real AEWR.
+We define this as the one-year lagged difference between the nominal AEWR and the prevailing state agricultural minimum wage, deflated to real 2012 dollars using the Producer Price Index (PPI).
+
+Finally, we define a county's exposure to the policy. 
+We consider counties with *lower* historical reliance on the H-2A program as high exposure counties, as these counties are the ones that possess the greatest room to adjust their usage of the program when facing domestic wage pressures.
+
+Therefore, we define $HighExposure_i$ as an indicator equal to 1 for counties with pre-existing H-2A usage below the 75th percentile in the baseline period. These low-baseline counties represent the "untapped market" where the policy exerts the strongest influence on program uptake.
+
+## 4.2. Identification Strategy: Triple Difference (DDD)
+We exploit variation in the AEWR wage bite across states, over time, and across counties with differing baseline exposure to the H-2A program. We estimate the following continuous Triple Difference (DDD) specification:
 
 
-\section{Results}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../Output/coefplot_ddd_h2a_req_share_farm_workers_2011_start_year_high_h2a_share_75_controls.png}
+    \caption{A descriptive caption for the figure.}
+    \label{fig:figure_1_event_study_coef_plot}
+\end{figure}
+
+\begin{table}[ht]
+    \centering
+    \input{../Output/table_1_main_results.tex}
+    \caption{Your Caption}
+    \label{tab:table_1_main_results}
+\end{table}
+
+\section{Model}
 
 \printbibliography
 
