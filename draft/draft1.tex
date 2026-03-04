@@ -173,6 +173,71 @@ This alone incurs anywhere between \$10,000 to \$14,000 + weekly travel costs pe
 
 An addiitonal complication is that employers of H-2A workers have to pay all workers in ``corresponding employment'' at least the hourly rate they pay their H-2A workers plus an adjustment for the additional costs incurred by H-2A workers, i.e., lodgings and transport.
 
+\subsection{Changes in AEWR determination methodology}
+\begin{itemize}
+    \item Pre-1987:
+    \begin{itemize}
+        \item History detailed in 54 FR 28037
+        \item Used 1950 Census of Agriculture state numbers and adjusted that upwards occasionally
+    \end{itemize}
+    \item 1987-2008:
+    \begin{itemize}
+        \item 54 FR 28037 final rule: establishes new methodology: set USDA FLS average hourly wage within each region in the previous year as the AEWR
+        \item Reasoning: 
+        \begin{itemize}
+            \item Previous methodology led to AEWR that was above prevailing agricultural wages in some states and below in others
+        \end{itemize}
+    \end{itemize}
+    \item Feb 13, 2008:
+    \begin{itemize}
+        \item Notice of Proposed Rulemaking on February 13, 2008 (73 FR 8538)
+        \item Proposes change from FLS to OES
+        \item Reasoning:
+        \begin{itemize}
+            \item https://www.federalregister.gov/d/E8-29309/p-611
+            \item AEWR is too high, leading to farmers not utilizing the program and choosing to hire undocumented workers instead, potentially leading to wage depression
+            \item FLS inaccurate as it does not ask for hourly wage, and combines many occupations of different skill levels
+            \item FLS not administed by DOL, and is discretionary so USDA can terminate it at any time (it has almost done so many times, and actually did terminate it in August 2025)
+            \item OES is calculated at finer occupational and geographic granularity, so higher accuracy of estimated prevailing wage
+            \item More predictable budgeting by fixing contract wage at time contract signed, rather than adjusting with time work performed as under AEWR rule 
+        \end{itemize}
+    \end{itemize}
+    \item Jan 17, 2009
+    \begin{itemize}
+        \item 73 FR 77110 Final Rule implementing switch to OES goes into effect
+        \item DOL no longer required to publish AEWR
+        \item Table 1 in 75 FR 6884 gives us the AEWRs in effect, calculated from OES numbers and provided to applicants
+    \end{itemize}
+    \item May 29, 2009
+    \begin{itemize}
+        \item 74 FR 25972 Final Rule implements suspension of 2008 Final Rule as previously proposed (74 FR 11408 on Mar 17 2009, 74 FR 17597 on Apr 16 2009)
+    \end{itemize}
+    \item June 29, 2009
+    \begin{itemize}
+        \item Injunction granted against suspension of 2008 Final Rule
+        \item Lawsuit brought by NCGA (NCGA v. Solis, 1:09-cv-00411)
+    \end{itemize}
+    \item Sep 4, 2009
+    \begin{itemize}
+        \item 74 FR 45906 Proposed rule for reverting back to FLS methodology
+    \end{itemize}
+    \item Mar 15, 2010:
+    \begin{itemize}
+        \item 75 FR 6884 Final Rule effective March 15, 2010
+        \item Return to FLS methodology
+        \item Reasoning:
+        \begin{itemize}
+            \item OES does not survey farms, rejects assumption that farming support services capture farm wages
+            \item Rejects existence of differential skill level in agricultural labor, hence no need for OES
+            \item AEWR being too high for many locations due to wide geographic aggregation is feature, not bug (prevents localized wage depression due to program usage)
+            \item Higher estimation errors for OES compared to FLS
+            \item Change in wages due to change in time work performed is unavoidable, tough shit farmers, gotta budget better
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+
+
 \section{Data sources}
 
 \subsection{H-2A program usage}
@@ -270,37 +335,6 @@ Sample period is 2008 to 2024.
 
 \section{Empirical design and results}
 \subsection{Sample construction}
-
-To estimate the impact of the Adverse Effect Wage Rate (AEWR) on agricultural labor demand, we construct a county-by-year panel dataset spanning the years 2008 to 2024.
-Our primary outcome variable is the intensity of H-2A program usage, defined as the number of H-2A workers certified in county $i$ during year $t$, normalized by the county's baseline total farm employment in 2011. 
-
-We restrict our estimation sample to counties that reported non-zero agricultural cropland in the 2007 Census of Agriculture.
-
-Our primary explanatory variable is the real AEWR.
-We define this as the one-year lagged difference between the nominal AEWR and the prevailing state agricultural minimum wage, deflated to real 2012 dollars using the Producer Price Index (PPI).
-
-Finally, we define a county's exposure to the policy. 
-We consider counties with *lower* historical reliance on the H-2A program as high exposure counties, as these counties are the ones that possess the greatest room to adjust their usage of the program when facing domestic wage pressures.
-
-Therefore, we define $HighExposure_i$ as an indicator equal to 1 for counties with pre-existing H-2A usage below the 75th percentile in the baseline period. These low-baseline counties represent the "untapped market" where the policy exerts the strongest influence on program uptake.
-
-## 4.2. Identification Strategy: Triple Difference (DDD)
-We exploit variation in the AEWR wage bite across states, over time, and across counties with differing baseline exposure to the H-2A program. We estimate the following continuous Triple Difference (DDD) specification:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 \begin{figure}[h!]
     \centering

@@ -104,7 +104,7 @@ aewr_ts_nom <- ggplot(data = aewr_data_full_ts, aes(x = year, y = aewr)) +
 aewr_ts_nom
 ggsave(
   filename = paste0(folder_output, "ts_national_aewr_nominal.png"),
-  aewr_ts,
+  aewr_ts_nom,
   device = "png"
 )
 
