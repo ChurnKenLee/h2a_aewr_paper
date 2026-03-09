@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.2"
+__generated_with = "0.20.4"
 app = marimo.App(width="full")
 
 
@@ -12,6 +12,7 @@ def _():
     from pandas.api.types import union_categoricals
     from itertools import islice
     import re
+
     return Path, pd, re
 
 

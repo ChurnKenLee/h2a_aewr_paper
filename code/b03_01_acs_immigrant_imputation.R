@@ -7,21 +7,37 @@ library(janitor)
 library(readxl)
 library(foreign)
 library(ipumsr)
+library(haven)
 
 rm(list = ls())
-
-# Read in ACS data and save as binary
-# ddi <- read_ipums_ddi(here("Data", "acs", "usa_00028.xml"))
-# data <- read_ipums_micro(ddi)
-# write_parquet(data, here("binaries", "acs_5year_2007_2012_2017_2022.parquet"))
 
 # Load ACS file
-rm(list = ls())
-
-acs_df <- read_parquet(here(
-  "binaries",
-  "acs_5year_2007_2012_2017_2022.parquet"
-)) %>%
+acs_df <- read_parquet(
+  here("binaries", "acs_5year_for_immigrant_status_imputation.parquet"),
+  col_select = c(
+    "BPL",
+    "CITIZEN",
+    "HCOVPUB",
+    "HINSIHS",
+    "INCSS",
+    "INCWELFR",
+    "INCSUPP",
+    "VETSTAT",
+    "INDNAICS",
+    "OCCSOC",
+    "PERNUM",
+    "SPLOC",
+    "SAMPLE",
+    "SERIAL",
+    "YEAR",
+    "MULTYEAR",
+    "STATEFIP",
+    "PUMA",
+    "SEX",
+    "AGE",
+    "PERWT"
+  )
+) %>%
   clean_names()
 
 # Add identifiers of legal status as in Borjas 2007
