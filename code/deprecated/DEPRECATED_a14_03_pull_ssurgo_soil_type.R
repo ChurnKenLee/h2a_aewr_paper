@@ -131,28 +131,38 @@ query_state <- function(state) {
     SELECT
       legend.areasymbol,
       legend.areaname,
+      mapunit.muname,
+      mapunit.mukey,
       component.compname,
+      component.cokey,
+      component.drainagecl,
       component.taxorder,
       component.taxsuborder,
-      component.taxgrtgroup,
-      SUM(CAST(mapunit.muacres AS NUMERIC) * CAST(component.comppct_r AS NUMERIC) / 100.0) AS comp_acres,
-      SUM(CAST(mapunit.muacres AS NUMERIC)) AS mapunit_acres_sum
+      component.taxgrtgroup
+      --SUM(CAST(mapunit.muacres AS NUMERIC) * CAST(component.comppct_r AS NUMERIC) / 100.0) AS comp_acres,
+      --SUM(CAST(mapunit.muacres AS NUMERIC)) AS mapunit_acres_sum
     FROM legend
-      INNER JOIN mapunit  ON mapunit.lkey   = legend.lkey
+      INNER JOIN mapunit  ON mapunit.lkey = legend.lkey
       INNER JOIN component ON component.mukey = mapunit.mukey
     WHERE legend.areasymbol LIKE '",
     state,
     "%'
       AND legend.areasymbol != 'US'
       AND component.majcompflag = 'Yes'
+    /*
     GROUP BY
       legend.areasymbol,
       legend.areaname,
+      mapunit.muname,
+      mapunit.mukey,
       component.compname,
+      component.cokey,
+      component.drainagecl,
       component.taxorder,
       component.taxsuborder,
       component.taxgrtgroup
     ORDER BY legend.areasymbol, comp_acres DESC
+    */
   "
   )
 
@@ -194,6 +204,20 @@ query_state <- function(state) {
 # --- 3. Pull data for all states ---------------------------------------------
 
 message("Starting SDA pull for ", length(state_codes), " states...")
+
+# ==========================================================================
+test <- query_state("CA")
+test <- test %>%
+  arrange(
+    areasymbol,
+    muname,
+    compname,
+    drainagecl,
+    taxorder,
+    taxsuborder,
+    taxgrtgroup
+  )
+# ==========================================================================
 
 results_list <- map(state_codes, query_state)
 
