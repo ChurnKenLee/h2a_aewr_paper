@@ -47,6 +47,10 @@ bea_farm_nonfarm <- bea_farm %>%
   rename(county_fips = GeoFIPS) %>%
   mutate(year = as.numeric(year))
 
+bea_farm_nonfarm %>%
+  write_parquet(here("files_for_phil", "bea_farm_nonfarm_emp.parquet")) %>%
+  write_parquet(here("binaries", "bea_farm_nonfarm_emp.parquet"))
+
 # Aggregate to relevant ACS years and save
 bea_farm_nonfarm <- bea_farm_nonfarm %>%
   mutate(
@@ -64,7 +68,3 @@ bea_farm_nonfarm <- bea_farm_nonfarm %>%
     bea_nonfarm_emp = mean(bea_nonfarm_emp)
   ) %>%
   ungroup()
-
-bea_farm_nonfarm %>%
-  write_parquet(here("files_for_phil", "bea_farm_nonfarm_emp.parquet")) %>%
-  write_parquet(here("binaries", "bea_farm_nonfarm_emp.parquet"))

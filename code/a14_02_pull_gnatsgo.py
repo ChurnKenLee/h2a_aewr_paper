@@ -274,23 +274,37 @@ def _(joined_table, pl):
             pl.lit('very_deep')
         ).otherwise(
             pl.lit('no_depth')
-        ).alias('root_zone_depth')
+        ).alias('root_depth')
     )
 
-    table_b = table_b.select([
+    table_b_cat = table_b.select([
         'mukey', 'comppct_r',
         'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope', 'drainagecl', 'root_zone_depth',
+        'slope', 'drainagecl', 'root_depth',
         'nirrcapcl'
     ]).group_by([
         'mukey',
         'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope', 'drainagecl', 'root_zone_depth',
+        'slope', 'drainagecl', 'root_depth',
         'nirrcapcl'
     ]).agg(
         pl.col('comppct_r').sum()
     )
-    return (table_b,)
+
+    table_b_cont = table_b.select([
+        'mukey', 'comppct_r',
+        'taxorder', 'taxsuborder', 'taxgrtgroup',
+        'slope_r', 'drainagecl', 'resdept_r',
+        'nirrcapcl'
+    ]).group_by([
+        'mukey',
+        'taxorder', 'taxsuborder', 'taxgrtgroup',
+        'slope_r', 'drainagecl', 'resdept_r',
+        'nirrcapcl'
+    ]).agg(
+        pl.col('comppct_r').sum()
+    )
+    return (table_b_cont,)
 
 
 @app.cell(hide_code=True)
@@ -302,13 +316,12 @@ def _(mo):
 
 
 @app.cell
-def _(pl, table_a, table_b):
+def _(pl, table_a, table_b_cont):
     # Inner join connects every component inside every map unit located in our counties
-
     final_df = table_a.with_columns(
         pl.col('mukey').cast(pl.Int64).alias('mukey')
     ).join(
-        table_b, on="mukey", how="inner"
+        table_b_cont, on="mukey", how="inner"
     )
 
     # Component acreage: (Map Unit Area) * (Component Percentage / 100)
@@ -317,15 +330,21 @@ def _(pl, table_a, table_b):
     ])
 
     # Summary characteristics
-    classification_cols =[
-        'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope', 'drainagecl', 'root_zone_depth',
+    classification_cols_cat =[
+        'taxorder',
+        'slope', 'drainagecl', 'root_depth',
+        'nirrcapcl'
+    ]
+
+    classification_cols_cont =[
+        'taxorder',
+        'slope_r', 'drainagecl', 'resdept_r',
         'nirrcapcl'
     ]
 
     # Final acreage grouping by county and soil characteristics
     county_level_acreage = final_df.group_by(
-        ["county_id"] + classification_cols
+        ["county_id"] + classification_cols_cont
     ).agg(
         pl.col("component_acres").sum().alias("total_acres")
     ).sort(
@@ -338,7 +357,7 @@ def _(pl, table_a, table_b):
 
 @app.cell
 def _(binary_path, county_level_acreage):
-    county_level_acreage.write_parquet(binary_path / 'county_h2a_prediction_snatsgo.parquet')
+    county_level_acreage.write_parquet(binary_path / 'county_h2a_prediction_gnatsgo.parquet')
     return
 
 
