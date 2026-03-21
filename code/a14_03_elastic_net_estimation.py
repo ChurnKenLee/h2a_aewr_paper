@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.21.1"
 app = marimo.App(width="full")
 
 
@@ -21,6 +21,7 @@ def _():
     import pickle
     import seaborn as sns
     import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_auc_score, precision_score, recall_score, confusion_matrix
 
     return (
         cs,
@@ -150,6 +151,8 @@ def _(itertools, jnp, mo, np, pl):
         # extreme BEA data artifacts from destroying gradient magnitudes
         merged = merged.with_columns(
             (pl.col('h2a_certified') / pl.col('bea_farm_emp_2011')).clip(0.0, 2.0).alias('h2a_rate')
+        ).with_columns(
+            (pl.col('h2a_rate') * pl.col('bea_farm_emp_2011')).alias('h2a_target_count')
         )
 
         # For continuous variables, fill missing with the column mean
@@ -178,8 +181,8 @@ def _(itertools, jnp, mo, np, pl):
         num_groups = merged["group_id"].max() + 1
 
         # Extract Unique target COUNTS per County-Year (Not Rates)
-        unique_targets = merged.group_by("group_id").agg(pl.first("h2a_certified")).sort("group_id")
-        y_count_county_year = jnp.array(unique_targets["h2a_certified"].to_numpy(), dtype=jnp.float32)
+        unique_targets = merged.group_by("group_id").agg(pl.first("h2a_target_count")).sort("group_id")
+        y_count_county_year = jnp.array(unique_targets["h2a_target_count"].to_numpy(), dtype=jnp.float32)
 
         # Standardize continuous variables (27 total)
         X_cont = merged.select(cont_cols).to_numpy()
@@ -457,7 +460,7 @@ def _(mo):
 
 @app.cell
 def _(
-    compute_patch_log_rate,
+    compute_patch_log_worker,
     jax,
     jnp,
     lx,
@@ -478,9 +481,9 @@ def _(
 
         def all_groups_nll(p_flat):
             p = unravel_fn(p_flat)
-            log_rate = compute_patch_log_rate(p, feature_ids, X_cont)
-            workers = patch_exposure * jnp.exp(log_rate)
-            mu_cy = jax.ops.segment_sum(workers, group_ids, num_groups)
+            log_worker_per_patch = compute_patch_log_worker(p, feature_ids, X_cont)
+            workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
+            mu_cy = jax.ops.segment_sum(workers_in_patch, group_ids, num_groups)
             return mu_cy - y_county_year * jnp.log(mu_cy + 1e-7)
 
         # ---------------------------------------------------------
@@ -722,14 +725,14 @@ def _(
     soil,
 ):
     # Prep input data
-    feature_ids, feature_sizes, feature_names, X_cont, patch_exposure, group_ids, y_target_rate, num_groups, merged_df = prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, max_order = 3)
+    feature_ids, feature_sizes, feature_names, X_cont, patch_exposure, group_ids, y_target_count, num_groups, merged_df = prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, max_order = 3)
     feature_sizes_tup = tuple(sorted(feature_sizes.items()))
 
     # Check for any remaining NaNs or Infs
-    assert not np.isnan(y_target_rate).any(), "NaNs detected in target rate!"
-    assert not np.isinf(y_target_rate).any(), "Infs detected in target rate!"
-    print(f"Target Max Rate: {np.max(y_target_rate):.4f}")
-    print(f"Target Min Rate: {np.min(y_target_rate):.4f}")
+    assert not np.isnan(y_target_count).any(), "NaNs detected in target count!"
+    assert not np.isinf(y_target_count).any(), "Infs detected in target count!"
+    print(f"Target Max Count: {np.max(y_target_count):.4f}")
+    print(f"Target Min Count: {np.min(y_target_count):.4f}")
     return (
         X_cont,
         feature_ids,
@@ -739,7 +742,7 @@ def _(
         merged_df,
         num_groups,
         patch_exposure,
-        y_target_rate,
+        y_target_count,
     )
 
 
@@ -752,10 +755,10 @@ def _(
     num_groups,
     patch_exposure,
     run_meta_optimization,
-    y_target_rate,
+    y_target_count,
 ):
-    # Note that inner loop is set at max_iter = 50 as default value
-    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_rate, num_groups, feature_sizes_tup, meta_iters=150, patience=15, reset=False)
+    # Tune L1 and L2
+    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=210, patience=15, reset=False)
     return best_l1, best_l2
 
 
@@ -770,10 +773,10 @@ def _(
     num_groups,
     patch_exposure,
     train_model_inner,
-    y_target_rate,
+    y_target_count,
 ):
     # Final training run uses the same default parameters as the ones used for meta-Adam (max_iter=1000, tol=1e-5)
-    trained_params = train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_target_rate, num_groups, feature_sizes, best_l1, best_l2)
+    trained_params = train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes, best_l1, best_l2)
 
     print("\n--- Model Estimation with Optimized Penalty Parameters ---")
 
@@ -825,8 +828,15 @@ def _(compute_patch_log_worker, jax, jnp, mo):
 
 
 @app.cell
+def _(merged_df):
+    merged_df
+    return
+
+
+@app.cell
 def _(
     X_cont,
+    binary_path,
     feature_ids,
     group_ids,
     merged_df,
@@ -836,45 +846,34 @@ def _(
     pl,
     predicted_h2a_county_year,
     trained_params,
-    y_pred,
-    y_target_counts,
-    y_true,
 ):
-    print("\n--- Generating Predictions ---")
     # Get count predictions (returns a JAX array)
     y_pred_counts_jax = predicted_h2a_county_year(trained_params, feature_ids, X_cont, patch_exposure, group_ids, num_groups)
 
-    # Retrieve the county employment denominator to convert counts to rates
-    unique_emp = merged_df.group_by("group_id").agg(pl.first("bea_farm_emp_2011")).sort("group_id")
-    county_emp_arr = unique_emp["bea_farm_emp_2011"].to_numpy()
+    # County-year to group_id match
+    county_ansi_year_group_id = merged_df.select([
+        'county_ansi', 'year', 'group_id'
+    ]).unique()
+    county_ansi_year_group_id
 
-    # Convert JAX arrays to NumPy and calculate the rates
-    y_pred_counts = np.array(y_pred_counts_jax)
-    y_pred_rates = y_pred_counts / county_emp_arr
+    # Convert JAX arrays to NumPy to merge back into original data
+    y_pred_count = np.array(y_pred_counts_jax)
+    group_id = np.arange(num_groups)
 
-    y_true_counts = np.array(y_target_counts)
-    y_true_rates = y_true_counts / county_emp_arr
-
-    # Create a Polars DataFrame to compare True vs Predicted
+    # Add county ansi and year
     results_df = pl.DataFrame({
-        "group_id": np.arange(num_groups),
-        "true_h2a_share": y_true_rates,
-        "predicted_h2a_share": y_pred_rates,
-        "true_h2a_count": y_true_counts,
-        "predicted_h2a_count": y_pred_counts
-    })
+        "group_id": group_id,
+        "predicted_h2a_count": y_pred_count
+    }).join(
+        county_ansi_year_group_id,
+        on='group_id'
+    )
 
-    # Calculate some basic Econometric metrics
-    mae = np.mean(np.abs(y_true - y_pred))
-    rmse = np.sqrt(np.mean((y_true - y_pred)**2))
-
-    print(f"Mean Absolute Error (MAE): {mae:.2f} rate")
-    print(f"Root Mean Squared Error (RMSE): {rmse:.2f} rate")
-    return
-
-
-@app.cell
-def _():
+    results_df = results_df.group_by(['county_ansi']).agg(
+        pl.mean('predicted_h2a_count')
+    )
+    results_df.write_parquet(binary_path / 'h2a_prediction_using_elastic_net.parquet')
+    results_df
     return
 
 

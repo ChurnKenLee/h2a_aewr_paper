@@ -22,7 +22,7 @@ date <- paste0(
   substr(Sys.Date(), 9, 10)
 )
 
-## Load and Clean County Shape Files -------------------------------------------
+#### Load and Clean County Shape Files -------------------------------------------
 
 cnt_shp <- st_read(paste0(folder_data, "tl_2020_us_county.shp"))
 
@@ -41,7 +41,7 @@ border_df_yearly <- read_parquet(paste0(
 ))
 aewr_data_full <- read_parquet(paste0(folder_data, "aewr_data_full.parquet"))
 
-## County DDD Design -----------------------------------------------------------
+#### County DDD Design -----------------------------------------------------------
 
 county_df <- read_parquet(paste0(
   folder_data,
@@ -67,14 +67,14 @@ county_map <- st_simplify(
 
 ggplot(county_map) +
   geom_sf()
-
+f
 county_map$countyfips <- as.numeric(str_c(
   county_map$STATEFP,
   county_map$COUNTYFP
 ))
 
 
-## Exhibit 1: AEWR TS Real ---------------------------------------------------
+#### Exhibit 1: AEWR TS Real ---------------------------------------------------
 
 aewr_data_full_ts <- aewr_data_full %>%
   group_by(year) %>%
@@ -93,7 +93,7 @@ ggsave(
   device = "png"
 )
 
-## Exhibit 2: AEWR TS Nominal --------------------------------------------------
+#### Exhibit 2: AEWR TS Nominal --------------------------------------------------
 
 aewr_ts_nom <- ggplot(data = aewr_data_full_ts, aes(x = year, y = aewr)) +
   geom_line(linewidth = 1.25, color = "#2166ac") +
@@ -109,7 +109,7 @@ ggsave(
 )
 
 
-## Exhibit 3: H2A Use TS ---------------------------------------------------------
+#### Exhibit 3: H2A Use TS ---------------------------------------------------------
 
 # levels
 
@@ -222,7 +222,7 @@ ggsave(
   device = "png"
 )
 
-## Exhibit 4: H2A Map: 2012 use ----------------------------------------------
+#### Exhibit 4: H2A Map: 2012 use ----------------------------------------------
 
 head(county_map)
 
@@ -357,7 +357,7 @@ ggsave(
 )
 
 
-## Exhibit 5: H2A Map: Change from 2012 use ----------------------------------
+#### Exhibit 5: H2A Map: Change from 2012 use ----------------------------------
 
 h2a_change_data <- h2a_data %>%
   filter(census_period == 2012 | census_period == 2022) %>%
@@ -460,7 +460,7 @@ ggsave(
   device = "png"
 )
 
-## Exhibit 6: AEWR Map: AEWR Difference from National Trend ------------------
+#### Exhibit 6: AEWR Map: AEWR Difference from National Trend ------------------
 
 ts_ddd <- county_df %>%
   mutate(
@@ -587,7 +587,7 @@ ggsave(
 )
 
 gc()
-## Exhibit 7: Exposure Map: Counties by Sample Classification ----------------
+#### Exhibit 7: Exposure Map: Counties by Sample Classification ----------------
 
 ## DDD Sample Map
 
@@ -648,7 +648,7 @@ ggsave(
 )
 
 
-## Exhibit 8: AEWR TS Difference from Trend by Region ------------------------
+#### Exhibit 8: AEWR TS Difference from Trend by Region ------------------------
 
 # input data is made with the map above
 
@@ -687,8 +687,124 @@ ggsave(
   device = "png"
 )
 
-## Exhibit 9: DDD by Graph a la Jeff -----------------------------------------
+#### Exhibit 9: DDD by Graph a la Jeff -----------------------------------------
 
+# # need to make the ts graph using the trend growth as a dummy
+
+# head(aewr_reg_ts_data)
+
+# aewr_reg_ts_data <- aewr_reg_ts_data %>%
+#   mutate(
+#     aewr_high_growth_p50 = ifelse(
+#       aewr_high_growth >= median(aewr_reg_ts_data_color$aewr_high_growth),
+#       1,
+#       0
+#     ),
+#     aewr_high_growth_positive = ifelse(aewr_high_growth > 0, 1, 0)
+#   )
+
+# # need: nbr_workers_requested_start_year, high / low dummy, growth dummy, year
+
+# names(county_df)
+
+# aewr_reg_ts_h2a <- county_df %>%
+#   select(
+#     year,
+#     aewr_region_num,
+#     nbr_workers_certified_start_year,
+#     high_h2a_share_75,
+#     high_h2a_share_66,
+#     high_h2a_share_50
+#   )
+
+# aewr_reg_ts_data <- merge(
+#   x = aewr_reg_ts_h2a,
+#   y = aewr_reg_ts_data,
+#   by = c("aewr_region_num", "year"),
+#   all = T
+# )
+
+# # collapse
+
+# aewr_reg_ts_data_collapse <- aewr_reg_ts_data %>%
+#   group_by(high_h2a_share_75, aewr_high_growth_p50, year) %>%
+#   summarise(
+#     nbr_workers_certified_start_year = sum(
+#       nbr_workers_certified_start_year,
+#       na.rm = T
+#     )
+#   )
+
+# # index to 2012
+
+# aewr_reg_ts_data_base <- aewr_reg_ts_data_collapse %>%
+#   filter(year == 2011)
+
+# aewr_reg_ts_data_base <- aewr_reg_ts_data_base %>%
+#   rename(nbr_workers_certified_base = nbr_workers_certified_start_year) %>%
+#   select(-year)
+
+# aewr_reg_ts_data_collapse <- merge(
+#   x = aewr_reg_ts_data_collapse,
+#   y = aewr_reg_ts_data_base,
+#   by = c("high_h2a_share_75", "aewr_high_growth_p50")
+# )
+
+# aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
+#   mutate(
+#     nbr_workers_certified_indx2011 = nbr_workers_certified_start_year /
+#       nbr_workers_certified_base
+#   )
+
+# aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
+#   mutate(
+#     group_lab = ifelse(
+#       high_h2a_share_75 == 1 & aewr_high_growth_p50 == 1,
+#       "High AEWR Growth, High Exposure",
+#       ifelse(
+#         high_h2a_share_75 == 1 & aewr_high_growth_p50 == 0,
+#         "Low AEWR Growth, High Exposure",
+#         ifelse(
+#           high_h2a_share_75 == 0 & aewr_high_growth_p50 == 1,
+#           "High AEWR Growth, Low Exposure",
+#           "Low AEWR Growth, Low Exposure"
+#         )
+#       )
+#     )
+#   )
+
+# plot_aewr_use_ts_DDD <- ggplot(
+#   aewr_reg_ts_data_collapse,
+#   aes(
+#     x = year,
+#     y = nbr_workers_certified_indx2011,
+#     linetype = as.factor(group_lab),
+#     color = as.factor(group_lab)
+#   )
+# ) +
+#   geom_line() +
+#   theme_classic() +
+#   scale_color_manual(values = c("#b2182b", "#b2182b", "#2166ac", "#2166ac")) +
+#   scale_linetype_manual(values = c(1, 5, 3, 4)) +
+#   labs(color = "group_lab", linetype = "group_lab") +
+#   guides(
+#     color = guide_legend(ncol = 2, byrow = TRUE),
+#     linetype = guide_legend(ncol = 2, byrow = TRUE),
+#   ) +
+#   theme(legend.position = "bottom") +
+#   theme(legend.title = element_blank()) +
+#   geom_hline(yintercept = 1, alpha = 0.5) +
+#   ylab("Number of H2-A Workers Requested\n(Indexed to 2011)")
+# plot_aewr_use_ts_DDD
+
+# ggsave(
+#   plot_aewr_use_ts_DDD,
+#   filename = paste0(folder_output, "fig_ts_aewr_growth_exposure_DDD.png")
+# )
+
+# head(aewr_reg_ts_data_collapse)
+
+#### Exhibit 9B: DDD by Graph with predicted usage -----------------------
 # need to make the ts graph using the trend growth as a dummy
 
 head(aewr_reg_ts_data)
@@ -712,9 +828,7 @@ aewr_reg_ts_h2a <- county_df %>%
     year,
     aewr_region_num,
     nbr_workers_certified_start_year,
-    high_h2a_share_75,
-    high_h2a_share_66,
-    high_h2a_share_50
+    county_treatment_group_classification
   )
 
 aewr_reg_ts_data <- merge(
@@ -727,7 +841,11 @@ aewr_reg_ts_data <- merge(
 # collapse
 
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data %>%
-  group_by(high_h2a_share_75, aewr_high_growth_p50, year) %>%
+  group_by(
+    county_treatment_group_classification,
+    aewr_high_growth_p50,
+    year
+  ) %>%
   summarise(
     nbr_workers_certified_start_year = sum(
       nbr_workers_certified_start_year,
@@ -747,7 +865,7 @@ aewr_reg_ts_data_base <- aewr_reg_ts_data_base %>%
 aewr_reg_ts_data_collapse <- merge(
   x = aewr_reg_ts_data_collapse,
   y = aewr_reg_ts_data_base,
-  by = c("high_h2a_share_75", "aewr_high_growth_p50")
+  by = c("county_treatment_group_classification", "aewr_high_growth_p50")
 )
 
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
@@ -758,18 +876,19 @@ aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
 
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
   mutate(
-    group_lab = ifelse(
-      high_h2a_share_75 == 1 & aewr_high_growth_p50 == 1,
-      "High AEWR Growth, High Exposure",
-      ifelse(
-        high_h2a_share_75 == 1 & aewr_high_growth_p50 == 0,
-        "Low AEWR Growth, High Exposure",
-        ifelse(
-          high_h2a_share_75 == 0 & aewr_high_growth_p50 == 1,
-          "High AEWR Growth, Low Exposure",
-          "Low AEWR Growth, Low Exposure"
-        )
-      )
+    group_lab = case_when(
+      (county_treatment_group_classification == "always takers") &
+        (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Always Takers",
+      (county_treatment_group_classification == "always takers") &
+        (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Always Takers",
+      (county_treatment_group_classification == "adopters") &
+        (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Adopters",
+      (county_treatment_group_classification == "adopters") &
+        (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Adopters",
+      (county_treatment_group_classification == "never takers") &
+        (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Never Takers",
+      (county_treatment_group_classification == "never takers") &
+        (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Never Takers"
     )
   )
 
@@ -784,8 +903,17 @@ plot_aewr_use_ts_DDD <- ggplot(
 ) +
   geom_line() +
   theme_classic() +
-  scale_color_manual(values = c("#b2182b", "#b2182b", "#2166ac", "#2166ac")) +
-  scale_linetype_manual(values = c(1, 5, 3, 4)) +
+  scale_color_manual(
+    values = c(
+      "#b2182b",
+      "#2166ac",
+      "#47ac1f86",
+      "#b2182b",
+      "#2166ac",
+      "#47ac1f86"
+    )
+  ) +
+  scale_linetype_manual(values = c(1, 1, 1, 2, 2, 2)) +
   labs(color = "group_lab", linetype = "group_lab") +
   guides(
     color = guide_legend(ncol = 2, byrow = TRUE),
@@ -799,12 +927,15 @@ plot_aewr_use_ts_DDD
 
 ggsave(
   plot_aewr_use_ts_DDD,
-  filename = paste0(folder_output, "fig_ts_aewr_growth_exposure_DDD.png")
+  filename = paste0(
+    folder_output,
+    "fig_ts_aewr_growth_exposure_using_predicted_DDD.png"
+  )
 )
 
 head(aewr_reg_ts_data_collapse)
 
-## Exhibit 10: DDD (simple) in parts for H2A use only -------------------------
+#### Exhibit 10: DDD (simple) in parts for H2A use only -------------------------
 ## + ln_pop_census + emp_pop_ratio
 fixest_model_dd_simple <- feols(
   h2a_cert_share_farm_workers_2011_start_year ~ aewr_state_ag_ppi_l1 *

@@ -68,6 +68,7 @@ dependencies = [
     "jax>=0.9.1",
     "optax>=0.2.7",
     "lineax>=0.1.0",
+    "scikit-learn>=1.8.0",
 ]
 
 [[tool.uv.index]]

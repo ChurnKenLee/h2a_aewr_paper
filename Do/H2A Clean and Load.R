@@ -248,73 +248,17 @@ census_of_agriculture_cropland_base %>%
 rm(census_of_agriculture_cropland_base)
 
 ## H2A Data -------------------------------------------
-
-# h2a_data <- read.csv(file = paste0(folder_data, "h2a.csv"), stringsAsFactors = F)
-#
-# head(h2a_data)
-#
-# h2a_data <- h2a_data %>%
-#   select(-X)
-#
-# # census period
-#
-# h2a_data <- h2a_data %>%
-#   mutate(census_period = ifelse(year >= 2008 & year < 2012, 2012,
-#                                 ifelse(year >= 2012 & year < 2017, 2017,
-#                                        ifelse( year >= 2017 & year < 2022, 2022, NA))))
-#
-#
-# # fix fips code
-#
-# h2a_data <- h2a_data %>%
-#   mutate(cnty_fips_string = str_pad(as.character(county_fips_code), width = 3, side = "left", pad = "0"),
-#          st_fips_string = str_pad(as.character(state_fips_code), width = 2, side = "left", pad = "0"))
-#
-# h2a_data <- h2a_data %>%
-#   mutate(countyfips = as.numeric(paste0(st_fips_string, cnty_fips_string)))
-#
-#
-# # clean by dropping old codes #
-#
-# h2a_data <- h2a_data %>%
-#   filter(!is.na(census_period) & !is.na(county_fips_code)) %>%
-#   select(-cnty_fips_string, -st_fips_string, -state_fips_code, -county_fips_code)
-#
-# # collapse by period, county (county and state fips)
-#
-# h2a_data <- h2a_data %>%
-#   group_by(census_period, countyfips) %>%
-#   summarise(h2a_man_hours_certified = sum(h2a_man_hours_certified, na.rm = T),
-#             h2a_man_hours_requested = sum(h2a_man_hours_requested, na.rm = T),
-#             h2a_nbr_workers_certified = sum(h2a_nbr_workers_certified, na.rm = T),
-#             h2a_nbr_workers_requested = sum(h2a_nbr_workers_requested, na.rm = T),
-#             n_applications = sum(n_applications, na.rm = T))
-#
-#
-# saveRDS(h2a_data, file = paste0(folder_data, "h2a_data.rds"))
-#
-# # yearly, for TS
-#
-# h2a_data_ts <- read.csv(file = paste0(folder_data, "h2a.csv"), stringsAsFactors = F)
-# h2a_data_ts <- h2a_data_ts %>%
-#   select(-X)
-#
-# h2a_data_ts <- h2a_data_ts %>%
-#   group_by(case_year) %>%
-#   summarise(h2a_man_hours_certified = sum(h2a_man_hours_certified, na.rm = T),
-#             h2a_man_hours_requested = sum(h2a_man_hours_requested, na.rm = T),
-#             h2a_nbr_workers_certified = sum(h2a_nbr_workers_certified, na.rm = T),
-#             h2a_nbr_workers_requested = sum(h2a_nbr_workers_requested, na.rm = T),
-#             n_applications = sum(n_applications, na.rm = T))
-#
-# saveRDS(h2a_data_ts, file = paste0(folder_data, "h2a_data_ts.rds"))
-
 h2a_data <- read_parquet(
-  file = paste0(folder_data, "h2a_aggregated.parquet"),
-  stringsAsFactors = F
+  file = paste0(folder_data, "h2a_aggregated.parquet")
 )
-
-head(h2a_data)
+h2a_predict <- read_parquet(
+  file = paste0(folder_data, "h2a_prediction_using_elastic_net.parquet")
+) %>%
+  mutate(
+    countyfips = as.numeric(county_ansi)
+  ) %>%
+  select(-county_ansi) %>%
+  write_parquet(paste0(folder_data, "h2a_predict.parquet"))
 
 # census period
 h2a_data <- h2a_data %>%
@@ -365,6 +309,8 @@ h2a_data <- h2a_data %>%
   )
 
 # collapse by period, county (county and state fips)
+h2a_prediction <- h2a_data %>%
+  select(countyfips)
 
 h2a_data <- h2a_data %>%
   group_by(census_period, countyfips) %>%

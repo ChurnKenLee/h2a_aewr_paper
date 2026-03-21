@@ -31,6 +31,7 @@ fips_codes <- read.csv(
   stringsAsFactors = F
 )
 h2a_data <- read_parquet(paste0(folder_data, "h2a_data.parquet"))
+h2a_predict <- read_parquet(paste0(folder_data, "h2a_predict.parquet"))
 # nawspad_data
 # oews_data
 ppi_data <- read.csv(
@@ -1439,6 +1440,7 @@ fips_codes <- read.csv(
   stringsAsFactors = F
 )
 h2a_data <- read_parquet(paste0(folder_data, "h2a_data_year.parquet"))
+h2a_predict <- read_parquet(paste0(folder_data, "h2a_predict.parquet"))
 # nawspad_data
 # oews_data
 ppi_data <- read.csv(
@@ -1589,6 +1591,10 @@ for (i in 1:length(datasets)) {
   )
   rm(temp)
 }
+
+county_df <- county_df %>%
+  left_join(h2a_predict, by = "countyfips")
+
 dim(county_df)
 head(county_df)
 
@@ -1782,7 +1788,8 @@ county_df <- county_df %>%
     h2a_req_share_farm_workers_2011_start_year = nbr_workers_requested_start_year /
       emp_farm_2011,
     h2a_cert_share_farm_workers_2011_start_year = nbr_workers_certified_start_year /
-      emp_farm_2011
+      emp_farm_2011,
+    h2a_predicted_share_2011 = predicted_h2a_count / emp_farm_2011
   ) # add h2a apps per farm later
 
 county_df$h2a_req_share_farm_workers_start_year[is.infinite(
@@ -1797,6 +1804,10 @@ county_df$h2a_req_share_farm_workers_2011_start_year[is.infinite(
 )] <- NA
 county_df$h2a_cert_share_farm_workers_2011_start_year[is.infinite(
   county_df$h2a_cert_share_farm_workers_2011_start_year
+)] <- NA
+
+county_df$h2a_predicted_share_2011[is.infinite(
+  county_df$h2a_predicted_share_2011
 )] <- NA
 
 # add in CZs
@@ -2065,8 +2076,33 @@ county_df <- county_df %>%
 
 names(county_df)
 
-# cuts by 2008 h2a usage
 
+# Cut using pred X actual use rates in 2008
+true_share_cutoff <- 0.01
+pred_share_cutoff <- 0.01
+
+county_type_classification <- county_df %>%
+  filter(year == 2008) %>%
+  mutate(
+    county_treatment_group_classification = case_when(
+      (h2a_predicted_share_2011 > pred_share_cutoff) &
+        (h2a_cert_share_farm_workers_2011_start_year >
+          true_share_cutoff) ~ "always takers",
+      (h2a_predicted_share_2011 > pred_share_cutoff) &
+        (h2a_cert_share_farm_workers_2011_start_year <
+          true_share_cutoff) ~ "adopters",
+      (h2a_predicted_share_2011 < pred_share_cutoff) &
+        (h2a_cert_share_farm_workers_2011_start_year >
+          true_share_cutoff) ~ "defiers",
+      (h2a_predicted_share_2011 < pred_share_cutoff) &
+        (h2a_cert_share_farm_workers_2011_start_year <
+          true_share_cutoff) ~ "never takers",
+    )
+  ) %>%
+  select(countyfips, county_treatment_group_classification)
+
+
+# cuts by 2008 h2a usage
 h2a_use_df <- county_df %>%
   ungroup() %>%
   filter(year == 2008)
@@ -2156,6 +2192,9 @@ county_df <- merge(
   all.x = T,
   all.y = F
 )
+
+county_df <- county_df %>%
+  left_join(county_type_classification, by = "countyfips")
 
 names(county_df) #check
 # year dummys
