@@ -420,7 +420,7 @@ def _(aewr_path, check_df, pl, root_path):
         pl.col('aewr')
     )
     export_df.write_csv(aewr_path / 'state_year_aewr.csv')
-    export_df.write_parquet(root_path / 'files_for_phil' / 'aewr.parquet')
+    export_df.write_parquet(root_path / 'Data Int' / 'aewr.parquet')
     return
 
 
@@ -586,7 +586,7 @@ def _():
     #         )
     # )
     # aewr_df.write_csv(aewr_path / 'state_year_aewr.csv')
-    # aewr_df.write_parquet(root_path / 'files_for_phil' / 'aewr.parquet')
+    # aewr_df.write_parquet(root_path / 'Data Int' / 'aewr.parquet')
     return
 
 

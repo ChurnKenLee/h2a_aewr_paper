@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.22.3"
 app = marimo.App(width="full")
 
 
@@ -25,7 +25,7 @@ def _(pyprojroot):
     root_path = pyprojroot.find_root(criterion='pyproject.toml')
     binary_path = root_path / 'binaries'
     gnatsgo_path = root_path / 'data' / 'gnatsgo' / 'gNATSGO_gpkg_01_30_2026'
-    census_shp_path = root_path / 'data' / 'county_shapefile' / 'tl_2023_us_county' / 'tl_2023_us_county.shp'
+    census_shp_path = root_path / 'data' / 'county_shapefile' / 'tl_2010_us_county10' / 'tl_2010_us_county10.shp'
     return binary_path, census_shp_path, gnatsgo_path
 
 
@@ -93,7 +93,7 @@ def _(census_shp_path, converted_raster, gpd, rasterio):
         counties = counties.to_crs(src.crs)
 
     # County identifier in shapefile
-    county_id_col = "GEOID"
+    county_id_col = "GEOID10"
 
     # Pixel acreage
     pixel_width, pixel_height = src.res # this is in meters
@@ -358,11 +358,6 @@ def _(pl, table_a, table_b_cont):
 @app.cell
 def _(binary_path, county_level_acreage):
     county_level_acreage.write_parquet(binary_path / 'county_h2a_prediction_gnatsgo.parquet')
-    return
-
-
-@app.cell
-def _():
     return
 
 

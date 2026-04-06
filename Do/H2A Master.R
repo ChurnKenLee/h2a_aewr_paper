@@ -7,21 +7,22 @@ rm(list = ls())
 
 ## Master Paths ## -------------------------------------------------------------
 
-# folder_dir <- paste0("C:/Users/",Sys.info()["user"],"/Dropbox/H-2A Paper/")
-# folder_do <- paste0(folder_dir, "Do/")
-# folder_data <- paste0(folder_dir, "Data Int/")
-# folder_output <- paste0(folder_dir, "Output/")
+folder_dir <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
+folder_do <- paste0(folder_dir, "Do/")
+folder_data <- paste0(folder_dir, "Data Int/")
+folder_output <- paste0(folder_dir, "Output/")
 
+# # Hoxie Old
 # folder_dir <- "R:/Hoxie/H-2A Paper/"
 # folder_do <- "R:/Hoxie/H-2A Paper/Do/"
 # folder_data <- "R:/Hoxie/H-2A Paper/Data Int/"
 # folder_output <- "R:/Hoxie/H-2A Paper/Output/"
-
-library(here)
-folder_dir <- paste0(here(), "/")
-folder_do <- paste0(folder_dir, "Do/")
-folder_data <- paste0(folder_dir, "Data Int/")
-folder_output <- paste0(folder_dir, "Output/")
+# 
+# library(here)
+# folder_dir <- paste0(here(), "/")
+# folder_do <- paste0(folder_dir, "Do/")
+# folder_data <- paste0(folder_dir, "Data Int/")
+# folder_output <- paste0(folder_dir, "Output/")
 
 ## Packages ## -----------------------------------------------------------------
 

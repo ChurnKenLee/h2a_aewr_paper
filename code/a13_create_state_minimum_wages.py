@@ -178,7 +178,7 @@ def _(Path, min_wage_df_1):
     output_dir = Path('../binaries')
     output_dir.mkdir(parents=True, exist_ok=True)
     min_wage_df_1.to_parquet(output_dir / output_file, index=False)  # can join path elements with / operator
-    output_dir = Path('../files_for_phil')
+    output_dir = Path('../Data Int')
     output_dir.mkdir(parents=True, exist_ok=True)
     min_wage_df_1.to_parquet(output_dir / output_file, index=False)
     return

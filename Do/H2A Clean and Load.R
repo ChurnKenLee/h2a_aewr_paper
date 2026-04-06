@@ -6,6 +6,13 @@
 
 ## Two datasets, one by census period and one by year (calendar year)
 
+## CZ wage quantile ------------------------------------
+
+cz_wage_quantiles <- read_parquet(paste0(
+  folder_data,
+  "acs_czone_wage_quantiles.parquet"
+))
+
 ## state min wages ------------------------------------
 
 state_minwages <- read_parquet(paste0(

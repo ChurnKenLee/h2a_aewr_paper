@@ -344,5 +344,5 @@ acs_agg_df <- acs_agg_df %>%
 
 # Export
 acs_agg_df %>%
-  write_parquet(here("files_for_phil", "acs_immigrant_imputed.parquet")) %>%
+  write_parquet(here("Data Int", "acs_immigrant_imputed.parquet")) %>%
   write_parquet(here("binaries", "acs_immigrant_imputed.parquet"))

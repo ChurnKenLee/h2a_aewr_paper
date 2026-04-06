@@ -48,7 +48,7 @@ bea_farm_nonfarm <- bea_farm %>%
   mutate(year = as.numeric(year))
 
 bea_farm_nonfarm %>%
-  write_parquet(here("files_for_phil", "bea_farm_nonfarm_emp.parquet")) %>%
+  write_parquet(here("Data Int", "bea_farm_nonfarm_emp.parquet")) %>%
   write_parquet(here("binaries", "bea_farm_nonfarm_emp.parquet"))
 
 # Aggregate to relevant ACS years and save

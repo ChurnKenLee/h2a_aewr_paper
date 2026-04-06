@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.11"
+__generated_with = "0.22.3"
 app = marimo.App(width="full")
 
 
@@ -60,7 +60,7 @@ def _(pl):
 @app.cell
 def _(root_path):
     # Load and process Census files
-    census_code_path = root_path / 'data' / 'census_geography_codes'
+    census_code_path = root_path / 'data' / 'census_geographic_definitions'
     return (census_code_path,)
 
 
@@ -747,17 +747,13 @@ def _(us):
 @app.cell
 def _(
     add_fips_using_addfips,
-    census_county_ref_map,
-    census_place_ref_map,
     clean_county_explode,
     clean_state_to_abbr,
     clean_zip,
     fuzz_search,
-    mo,
     pl,
 ):
     # Apply functions in sequence to an input dataframe and produce dataframe with matched FIPS
-    @mo.persistent_cache
     def add_fips_with_addfips_and_fuzzy_matching(df, county_col, city_col, state_col, zip_col, census_zip_df, census_county_map, census_place_map):
         # Initialize helper columns
         df = df.with_columns([
@@ -766,7 +762,6 @@ def _(
             pl.col(state_col).map_elements(clean_state_to_abbr, return_dtype=pl.String).alias('xstate'),
             pl.col(zip_col).alias('xzip')
         ])
-
         df = clean_county_explode(df, 'xcounty', 'xstate')
         df = clean_zip(df, 'xzip')
 
@@ -792,17 +787,17 @@ def _(
         df = df.with_columns([
             pl.struct(['county_list', 'xstate'])
                 .map_elements(
-                    lambda x: fuzz_search(x['xstate'], x['county_list'], census_county_ref_map),
+                    lambda x: fuzz_search(x['xstate'], x['county_list'], census_county_map),
                     return_dtype=pl.Object
                 ).alias('county_fuzzy_raw'),
             pl.struct(['xcity', 'xstate'])
                 .map_elements(
-                    lambda x: fuzz_search(x['xstate'], x['xcity'], census_place_ref_map),
+                    lambda x: fuzz_search(x['xstate'], x['xcity'], census_place_map),
                     return_dtype=pl.Object
                 ).alias('city_fuzzy_raw'),
             pl.struct(['county_list', 'xstate'])
                 .map_elements(
-                    lambda x: fuzz_search(x['xstate'], x['county_list'], census_place_ref_map),
+                    lambda x: fuzz_search(x['xstate'], x['county_list'], census_place_map),
                     return_dtype=pl.Object
                 ).alias('ne_fuzzy_raw')
         ])
@@ -998,7 +993,7 @@ def _(pl, placeid_to_county_map):
                 common_county = pl.col('original_county').list.set_intersection(pl.col('suggested_county'))
             )
         )
-    
+
         return df_with_counties
 
     return (process_dataframe,)

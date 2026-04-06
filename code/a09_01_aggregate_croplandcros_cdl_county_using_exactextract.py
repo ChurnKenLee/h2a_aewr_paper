@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.2"
+__generated_with = "0.22.3"
 app = marimo.App(width="full")
 
 
@@ -46,15 +46,14 @@ def _(cdl_path, rio):
 def _(cdl_files, gpd, rio, root_path):
     # Reproject county shapefile to match CDL CRS
     # Read county border vector file
-    county_shapefile_path = root_path / 'data' / 'county_shapefile' / 'tl_2023_us_county' / 'tl_2023_us_county.shp'
+    county_shapefile_path = root_path / 'data' / 'county_shapefile' / 'tl_2010_us_county10' / 'tl_2010_us_county10.shp'
     county_borders = gpd.read_file(county_shapefile_path)
 
     # 3. Open rasters and ensure CRS match
     # CDL is almost always EPSG:5070 (USA Contiguous Albers Equal Area)
-    # TIGER files are usually EPSG:4269. We MUST reproject the counties.
+    # TIGER files are usually EPSG:4269. We reproject the counties.
     with rio.open(list(cdl_files.values())[0]) as src:
         cdl_crs = src.crs
-        print(f'Reprojecting county shapefile to {cdl_crs}...')
         county_borders = county_borders.to_crs(cdl_crs)
 
     # We only want CONUS
@@ -70,8 +69,8 @@ def _(cdl_files, gpd, rio, root_path):
         '74' #UM
     ]
 
-    county_borders_conus = county_borders[~county_borders['STATEFP'].isin(statefp_drop_list)]
-    county_borders_conus = county_borders_conus[['GEOID', 'geometry']].reset_index(drop=True)
+    county_borders_conus = county_borders[~county_borders['STATEFP10'].isin(statefp_drop_list)]
+    county_borders_conus = county_borders_conus[['GEOID10', 'geometry']].reset_index(drop=True)
     return
 
 
@@ -86,7 +85,7 @@ def _(cdl_files, pd, pl, root_path):
     #     rast=raster_handles, 
     #     vec=county_borders_conus, 
     #     ops=['count', 'unique', 'frac'], 
-    #     include_cols=['GEOID'],
+    #     include_cols=['GEOID10'],
     #     output='pandas'
     # )
 

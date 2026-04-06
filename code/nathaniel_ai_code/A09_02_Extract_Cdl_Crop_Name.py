@@ -106,7 +106,7 @@ county_crop = county_crop.rename(
 ```python {.marimo}
 # Save binary
 county_crop.write_parquet(project_path / 'binaries' / 'croplandcros_county_crop_acres.parquet')
-county_crop.write_parquet(project_path / 'files_for_phil' / 'croplandcros_county_crop_acres.parquet')
+county_crop.write_parquet(project_path / 'Data Int' / 'croplandcros_county_crop_acres.parquet')
 ```
 
 ```python {.marimo}

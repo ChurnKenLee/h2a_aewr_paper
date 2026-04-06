@@ -236,7 +236,7 @@ def _(backward_chain, base_anchor, binary_path, forward_chain, pl, root_path):
         .drop('log_index')
     )
     chained_fisher.write_parquet(binary_path / 'price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet')
-    chained_fisher.write_parquet(root_path / "files_for_phil" / 'price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet')
+    chained_fisher.write_parquet(root_path / "Data Int" / 'price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet')
     return (chained_fisher,)
 
 

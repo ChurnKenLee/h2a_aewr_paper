@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.21.1"
+__generated_with = "0.22.3"
 app = marimo.App(width="full")
 
 
@@ -124,8 +124,7 @@ def _(climate):
 
 
 @app.cell
-def _(itertools, jnp, mo, np, pl):
-    @mo.persistent_cache
+def _(itertools, jnp, np, pl):
     def prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, max_order):
         """
         Merge, standardize continuous variables, map categorical variables
@@ -583,12 +582,10 @@ def _(
     jax_inv_softplus,
     jnp,
     meta_val_and_grad,
-    mo,
     np,
     optax,
     pickle,
 ):
-    @mo.persistent_cache
     def run_meta_optimization(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, meta_iters=150, patience=15, reset=False):
 
         # Define file paths for checkpointing and logging
@@ -758,7 +755,7 @@ def _(
     y_target_count,
 ):
     # Tune L1 and L2
-    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=210, patience=15, reset=False)
+    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=400, patience=15, reset=False)
     return best_l1, best_l2
 
 
@@ -806,8 +803,7 @@ def _(jnp, trained_params):
 
 
 @app.cell
-def _(compute_patch_log_worker, jax, jnp, mo):
-    @mo.persistent_cache
+def _(compute_patch_log_worker, jax, jnp):
     def predicted_h2a_county_year(params, feature_ids, X_cont, patch_exposure, group_ids, num_groups):
     # 1. Get the log(rate) for all patches
         log_worker_per_patch = compute_patch_log_worker(params, feature_ids, X_cont)
@@ -825,12 +821,6 @@ def _(compute_patch_log_worker, jax, jnp, mo):
         return mu_count_cy
 
     return (predicted_h2a_county_year,)
-
-
-@app.cell
-def _(merged_df):
-    merged_df
-    return
 
 
 @app.cell
@@ -873,7 +863,11 @@ def _(
         pl.mean('predicted_h2a_count')
     )
     results_df.write_parquet(binary_path / 'h2a_prediction_using_elastic_net.parquet')
-    results_df
+    return
+
+
+@app.cell
+def _():
     return
 
 

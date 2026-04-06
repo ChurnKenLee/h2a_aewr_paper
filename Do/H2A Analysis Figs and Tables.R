@@ -93,6 +93,7 @@ ggsave(
   device = "png"
 )
 
+
 #### Exhibit 2: AEWR TS Nominal --------------------------------------------------
 
 aewr_ts_nom <- ggplot(data = aewr_data_full_ts, aes(x = year, y = aewr)) +
@@ -107,7 +108,6 @@ ggsave(
   aewr_ts_nom,
   device = "png"
 )
-
 
 #### Exhibit 3: H2A Use TS ---------------------------------------------------------
 
@@ -353,6 +353,71 @@ h2a_map_data_2012_nolog
 ggsave(
   filename = paste0(folder_output, "map_H2A_workers_2012_nolog.png"),
   h2a_map_data_2012,
+  device = "png"
+)
+
+## Predicted H2A Share Histogram -----------------------------------------------
+
+predicted_hist_data <- county_df %>% 
+  select(h2a_predicted_share_2011, year, countyfips, state_abbrev, county_simple_treatment_groups) %>% 
+  filter(year == 2011)
+
+summary(predicted_hist_data$h2a_predicted_share_2011)
+
+hist_pred <- ggplot(data = predicted_hist_data, aes(x = h2a_predicted_share_2011, 
+                                                    group = county_simple_treatment_groups,
+                                                    fill = county_simple_treatment_groups)) +
+  geom_histogram(alpha = 0.5, position = "identity", binwidth = 0.01) +
+  geom_vline(xintercept = 0.01, linetype = "dashed", color = "black") +
+  scale_x_continuous(limits = c(-0.01, 1)) +
+  theme_classic() +
+  scale_fill_manual(values = c("#b2182b","#2166ac" ))+
+  xlab("Predicted H2A Use as Share of Agricultural Employment") +
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+hist_pred
+
+ggsave(
+  filename = paste0(folder_output, "hist_h2a_predicted_share_2011.png"),
+  hist_pred,
+  device = "png"
+)
+
+## Predicted H2A map -----------------------------------------------------------
+
+pred_h2a_Map_data <- merge(x = county_map, 
+                           y = predicted_hist_data, 
+                           by = "countyfips",
+                           all.x = T,
+                           all.y = F
+                           )
+
+pred_h2a_Map <- ggplot(pred_h2a_Map_data) +
+  geom_sf(aes(fill = county_simple_treatment_groups), color = alpha("grey", 0.5)) +
+  theme(
+    panel.grid.major = element_line(
+      color = gray(0.5),
+      linetype = "dashed",
+      size = 0.5
+    ),
+    panel.background = element_rect(fill = "aliceblue")
+  ) +
+  theme_bw() +
+  annotation_north_arrow(
+    location = "bl",
+    which_north = "true",
+    pad_x = unit(0.05, "in"),
+    pad_y = unit(0.25, "in"),
+    style = north_arrow_fancy_orienteering
+  ) +
+  annotation_scale(location = "bl", width_hint = 0.4) +
+  scale_fill_manual(values = c("#b2182b","#2166ac" ))+
+  theme(legend.position = "bottom", legend.title = element_blank())
+pred_h2a_Map
+
+ggsave(
+  filename = paste0(folder_output, "map_predicted_h2a_groups.png"),
+  pred_h2a_Map,
   device = "png"
 )
 
@@ -678,7 +743,8 @@ plot_aewr_reg_ts <- ggplot(
     breaks = c(-1, -.5, 0, .5, 1),
     labels = c("-100%", "-50%", "0%", "+50%", "+100%"),
     limits = c(-1, 1)
-  )
+  )+
+  geom_vline(xintercept = 2012, linetype = "dashed", color= "black")
 plot_aewr_reg_ts
 
 ggsave(
@@ -816,7 +882,8 @@ aewr_reg_ts_data <- aewr_reg_ts_data %>%
       1,
       0
     ),
-    aewr_high_growth_positive = ifelse(aewr_high_growth > 0, 1, 0)
+    aewr_high_growth_positive = ifelse(aewr_high_growth > 0, 1, 0),
+    aewr_above_trend_growth = ifelse(aewr_ppi_chbase_detrend > 0, 1, 0)
   )
 
 # need: nbr_workers_requested_start_year, high / low dummy, growth dummy, year
@@ -828,7 +895,7 @@ aewr_reg_ts_h2a <- county_df %>%
     year,
     aewr_region_num,
     nbr_workers_certified_start_year,
-    county_treatment_group_classification
+    county_simple_treatment_groups
   )
 
 aewr_reg_ts_data <- merge(
@@ -841,9 +908,10 @@ aewr_reg_ts_data <- merge(
 # collapse
 
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data %>%
-  group_by(
-    county_treatment_group_classification,
-    aewr_high_growth_p50,
+  filter(!is.na(county_simple_treatment_groups)) %>% 
+  group_by(county_simple_treatment_groups
+    ,
+    aewr_above_trend_growth,
     year
   ) %>%
   summarise(
@@ -865,7 +933,7 @@ aewr_reg_ts_data_base <- aewr_reg_ts_data_base %>%
 aewr_reg_ts_data_collapse <- merge(
   x = aewr_reg_ts_data_collapse,
   y = aewr_reg_ts_data_base,
-  by = c("county_treatment_group_classification", "aewr_high_growth_p50")
+  by = c("county_simple_treatment_groups", "aewr_above_trend_growth")
 )
 
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
@@ -874,23 +942,39 @@ aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
       nbr_workers_certified_base
   )
 
+# aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
+#   mutate(
+#     group_lab = case_when(
+#       (county_treatment_group_classification == "always takers") &
+#         (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Always Takers",
+#       (county_treatment_group_classification == "always takers") &
+#         (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Always Takers",
+#       (county_treatment_group_classification == "adopters") &
+#         (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Adopters",
+#       (county_treatment_group_classification == "adopters") &
+#         (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Adopters",
+#       (county_treatment_group_classification == "never takers") &
+#         (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Never Takers",
+#       (county_treatment_group_classification == "never takers") &
+#         (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Never Takers"
+#     )
+#   )
+
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
   mutate(
     group_lab = case_when(
-      (county_treatment_group_classification == "always takers") &
-        (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Always Takers",
-      (county_treatment_group_classification == "always takers") &
-        (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Always Takers",
-      (county_treatment_group_classification == "adopters") &
-        (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Adopters",
-      (county_treatment_group_classification == "adopters") &
-        (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Adopters",
-      (county_treatment_group_classification == "never takers") &
-        (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Never Takers",
-      (county_treatment_group_classification == "never takers") &
-        (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Never Takers"
+      (county_simple_treatment_groups == "always takers") &
+        (aewr_above_trend_growth == 1) ~ "High AEWR Growth, Always Takers",
+      (county_simple_treatment_groups == "always takers") &
+        (aewr_above_trend_growth == 0) ~ "Low AEWR Growth, Always Takers",
+      (county_simple_treatment_groups != "always takers") &
+        (aewr_above_trend_growth == 1) ~ "High AEWR Growth, Adopters",
+      (county_simple_treatment_groups != "always takers") &
+        (aewr_above_trend_growth == 0) ~ "Low AEWR Growth, Adopters"
     )
   )
+
+head(aewr_reg_ts_data_collapse)
 
 plot_aewr_use_ts_DDD <- ggplot(
   aewr_reg_ts_data_collapse,
@@ -907,13 +991,13 @@ plot_aewr_use_ts_DDD <- ggplot(
     values = c(
       "#b2182b",
       "#2166ac",
-      "#47ac1f86",
+
       "#b2182b",
-      "#2166ac",
-      "#47ac1f86"
+      "#2166ac"
+
     )
   ) +
-  scale_linetype_manual(values = c(1, 1, 1, 2, 2, 2)) +
+  scale_linetype_manual(values = c(1, 1, 2, 2)) +
   labs(color = "group_lab", linetype = "group_lab") +
   guides(
     color = guide_legend(ncol = 2, byrow = TRUE),
@@ -1176,8 +1260,7 @@ ggsave(
 
 ## DDD figure exploration
 
-## Exhibit 11: Event studies for H2A use, wages, employment, prices ---------
-
+## Exhibit 11: Event studies for H2A use, wages, employment, prices ----------
 ## Exhibit 12: Pre-Trend Tests for H2A use, wages, emp, prices ---------------
 
 ## Exhibit 13: DDD tables for H2A use, wages, emp, prices --------------------

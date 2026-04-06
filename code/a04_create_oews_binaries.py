@@ -106,7 +106,7 @@ def _(oews_path_dict, pd):
 @app.cell
 def _(Path, binary_path, oews_df):
     # Save combined df as parquet
-    phil_path = Path("../files_for_phil")
+    phil_path = Path("../Data Int")
     oews_df.to_parquet(binary_path.joinpath('oews.parquet'))
     # oews_df.to_parquet(phil_path.joinpath('oews.parquet'))
     return

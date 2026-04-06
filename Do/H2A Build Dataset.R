@@ -1472,6 +1472,11 @@ census_of_agriculture_cropland_base <- read_parquet(paste0(
 
 state_min <- read_parquet(paste0(folder_data, "state_real_minwages.parquet"))
 
+cz_wage_quantiles <- read_parquet(paste0(
+  folder_data,
+  "acs_czone_wage_quantiles.parquet"
+))
+
 # base for full county dataset
 
 county_df <- read_parquet(paste0(folder_data, "county_df_year.parquet"))
@@ -1640,6 +1645,32 @@ county_df <- merge(
   all.y = F
 )
 
+# add in wage quantiles
+# annual data starts 2005
+cz_wage_quantiles <- cz_wage_quantiles %>%
+  rename(year = YEAR, cz_1990 = czone) %>%
+  mutate(countyfips = as.numeric(county_ansi)) %>%
+  filter(year >= 2005) %>%
+  select(-county_ansi)
+
+# Add lags as in state minimum wages
+cz_wage_quantiles <- cz_wage_quantiles %>%
+  group_by(countyfips) %>%
+  mutate(across(
+    names(cz_wage_quantiles)[3:7],
+    lag,
+    .names = "{.col}_l1",
+    order_by = year
+  ))
+
+county_df <- merge(
+  x = county_df,
+  y = cz_wage_quantiles,
+  by = c("countyfips", "year"),
+  all.x = T,
+  all.y = F
+)
+
 ## Variable cleaning ## -----------------
 
 # AEWR vs ag min diff #
@@ -1647,8 +1678,20 @@ county_df <- merge(
 county_df <- county_df %>%
   mutate(
     aewr_state_ag_ppi_l1 = aewr_ppi_l1 - prevailing_ag_min_wage_ppi_l1,
-    aewr_state_ag_ppi = aewr_ppi - prevailing_ag_min_wage_ppi
+    aewr_state_ag_ppi = aewr_ppi - prevailing_ag_min_wage_ppi,
+    # new CZ-distribution-based bites:
+    aewr_cz_p10_l1 = aewr_ppi_l1 - wage_p10_l1,
+    aewr_cz_p25_l1 = aewr_ppi_l1 - wage_p25_l1,
+    aewr_cz_p50_l1 = aewr_ppi_l1 - wage_p50_l1
   )
+
+summary(county_df$aewr_ppi_l1)
+summary(county_df$aewr_cz_p10_l1)
+
+check <- county_df %>%
+  filter(is.na(wage_p10_l1)) %>%
+  group_by(state_abbrev, countyfips, countyname) %>%
+  tally()
 
 county_df <- county_df %>%
   mutate(
@@ -1733,6 +1776,9 @@ county_df <- county_df %>%
     ln_aewr_ppi_l1 = log(aewr_ppi_l1),
     ln_aewr_l2 = log(aewr_l2),
     ln_aewr_ppi_l2 = log(aewr_ppi_l2),
+    ln_aewr_cz_p10_l1 = log(aewr_cz_p10_l1),
+    ln_aewr_cz_p25_l1 = log(aewr_cz_p25_l1),
+    ln_aewr_cz_p50_l1 = log(aewr_cz_p50_l1),
     ln_emp_farm_propr = log(emp_farm_propr),
     ln_emp_farm = log(emp_farm),
     ln_emp_nonfarm = log(emp_nonfarm),
@@ -2097,9 +2143,13 @@ county_type_classification <- county_df %>%
       (h2a_predicted_share_2011 < pred_share_cutoff) &
         (h2a_cert_share_farm_workers_2011_start_year <
           true_share_cutoff) ~ "never takers",
+    ),
+    county_simple_treatment_groups = case_when(
+      (county_treatment_group_classification == "always takers") ~ "always takers",
+      (county_treatment_group_classification != "always takers") ~ "exposed adoptors"
     )
   ) %>%
-  select(countyfips, county_treatment_group_classification)
+  select(countyfips, county_treatment_group_classification, county_simple_treatment_groups)
 
 
 # cuts by 2008 h2a usage
