@@ -132,7 +132,6 @@ def _(cdl_pixel, crop_code_keys, pl):
 def _(county_crop, project_path):
     # Save binary
     county_crop.write_parquet(project_path / 'binaries' / 'croplandcros_county_crop_acres.parquet')
-    county_crop.write_parquet(project_path / 'Data Int' / 'croplandcros_county_crop_acres.parquet')
     return
 
 

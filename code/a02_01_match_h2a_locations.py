@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.3"
+__generated_with = "0.22.4"
 app = marimo.App(width="full")
 
 
@@ -22,6 +22,7 @@ def _():
     import pickle
     import rapidfuzz
     from functools import partial
+    import io
 
     return Path, addfips, json, mo, pl, pyprojroot, rapidfuzz, re, us
 
@@ -39,7 +40,8 @@ def _(pyprojroot):
     root_path = pyprojroot.find_root(criterion='pyproject.toml')
     binary_path = root_path / 'binaries'
     json_path = root_path / 'code' / 'json'
-    return binary_path, json_path, root_path
+    h2a_path = root_path / 'data' / 'h2a'
+    return binary_path, h2a_path, json_path, root_path
 
 
 @app.cell
@@ -55,6 +57,26 @@ def _(pl):
         return df
 
     return (read_census_file,)
+
+
+@app.cell
+def _(addfips, pl):
+    # Define a custom AddFIPS function that operates on a polars dataframe
+    def add_fips_using_addfips(df, county_col, state_col, target_col):
+        # Instantiate the library ONCE here
+        af = addfips.AddFIPS(vintage=2010)
+
+        # The 'row' object passed from pl.struct is a dictionary
+        return df.with_columns(
+            pl.struct(
+                [county_col, state_col]
+            ).map_elements(
+                lambda row: af.get_county_fips(county=row[county_col], state=row[state_col]) or '',
+                return_dtype=pl.String
+            ).alias(target_col)
+        )
+
+    return (add_fips_using_addfips,)
 
 
 @app.cell
@@ -90,9 +112,9 @@ def _(re):
 @app.cell
 def _(census_code_path, pl, place_suffix_pattern, read_census_file):
     # Census county names
-    census_county = read_census_file(census_code_path / 'national_county2020.txt')
-    census_county = (
-        census_county
+    census_county_2020 = read_census_file(census_code_path / 'national_county2020.txt')
+    census_county_2020 = (
+        census_county_2020
             .with_columns(
                 (pl.col('STATEFP') + pl.col('COUNTYFP')).alias('fips')
             )
@@ -109,40 +131,122 @@ def _(census_code_path, pl, place_suffix_pattern, read_census_file):
                 pl.col('county').str.replace_all(place_suffix_pattern, '')
             )
     )
-    return (census_county,)
+    census_county_2020
+    return
+
+
+@app.cell
+def _(census_code_path, pl, place_suffix_pattern):
+    census_county_2010 = pl.read_csv(
+        census_code_path / 'national_county.txt', 
+        has_header=False, 
+        infer_schema=False
+    ).rename({
+        'column_1':'state',
+        'column_2':'statefp',
+        'column_3':'countyfp',
+        'column_4':'county'
+    }).with_columns(
+        (pl.col('statefp') + pl.col('countyfp')).alias('fips'),
+        pl.col(pl.String).str.to_uppercase()
+    ).select([
+        'state', 'county', 'fips'
+    ]).filter(
+        pl.col('county') != ''
+    ).with_columns(
+        pl.col('county').str.replace_all(place_suffix_pattern, '')
+    )
+    census_county_2010
+    return (census_county_2010,)
+
+
+@app.cell
+def _(census_code_path, census_county_2010, pl, place_suffix_pattern):
+    census_placebycounty_2010 = pl.read_csv(
+        census_code_path / 'national_places.txt', 
+        separator='|', 
+        infer_schema=False, 
+        encoding='latin-1'
+    ).rename({
+        'STATE':'state',
+        'STATEFP':'statefp',
+        'PLACENAME':'place',
+        'COUNTY\r':'county',
+    }).with_columns(
+        pl.col(pl.String).str.strip_chars("\r")
+    ).with_columns(
+        pl.col(pl.String).str.to_uppercase()
+    )
+    # There are places that map to multiple counties
+    # Explode those, match FIPS, then melt back
+    census_place_agg_2010 = census_placebycounty_2010.with_columns(
+        pl.col('county').str.split(',').alias('county_list')
+    ).select([
+        'state', 'statefp', 'place', 'county_list'
+    ]).explode(
+        'county_list'
+    ).with_columns(
+        pl.col('county_list').str.replace_all(place_suffix_pattern, '').alias('county'),
+        pl.col('place').str.replace_all(place_suffix_pattern, '')
+    ).drop(
+        'county_list'
+    )
+    # census_placebycounty_2010 = add_fips_using_addfips(census_placebycounty_2010, 'county_list', 'state', 'fips')
+    census_place_agg_2010 = census_place_agg_2010.join(census_county_2010, on=['state', 'county'])
+    census_place_agg_2010 = census_place_agg_2010.group_by(
+        ['state', 'place']
+    ).agg(
+        pl.col('fips').str.join(',')
+    )
+    census_place_agg_2010
+    return (census_place_agg_2010,)
 
 
 @app.cell
 def _(census_code_path, pl, place_suffix_pattern, read_census_file):
     # Census counties aggregated to Census places
-    census_placebycounty = read_census_file(census_code_path / 'national_place_by_county2020.txt')
-    census_place_agg = (
-        census_placebycounty
+    census_placebycounty_2020 = read_census_file(census_code_path / 'national_place_by_county2020.txt')
+    census_place_agg_2020 = (
+        census_placebycounty_2020
             .with_columns(
-                (pl.col('STATEFP') + pl.col('COUNTYFP')).alias('fips')
-            )
-            .group_by(['STATE', 'COUNTYNAME', 'PLACENAME'])
-            .agg(pl.col('fips').str.join(','))
-            .filter(pl.col('PLACENAME') != '')
-            .rename(
-                {
+                (pl.col('STATEFP') + pl.col('COUNTYFP')).alias('fips'))
+            .rename({
                     'STATE': 'state',
                     'COUNTYNAME': 'county',
                     'PLACENAME': 'place'
-                }
-            ).with_columns(
+            })
+            .group_by(['state', 'place'])
+            .agg(pl.col('fips').str.join(','))
+            .filter(pl.col('place') != '')
+            .with_columns(
                 pl.col('place').str.replace_all(place_suffix_pattern, '')
             )
     )
-    return (census_place_agg,)
+    census_place_agg_2020.filter(pl.col('state')=='AL').sort('place')
+    return
+
+
+@app.cell
+def _(census_code_path, pl):
+    census_zip_2010 = pl.read_csv(census_code_path / 'zcta_county_rel_10.txt', infer_schema=False)
+    census_zip_agg_2010 = census_zip_2010.rename({
+        'ZCTA5':'zip',
+        'GEOID':'fips'
+    }).group_by(
+        'zip'
+    ).agg(
+        pl.col('fips').str.join(',')
+    )
+    census_zip_agg_2010
+    return (census_zip_agg_2010,)
 
 
 @app.cell
 def _(census_code_path, pl, read_census_file):
     # Census counties aggregated to ZIP
-    census_zip = read_census_file(census_code_path / 'tab20_zcta520_county20_natl.txt')
-    census_zip_agg = (
-        census_zip
+    census_zip_2020 = read_census_file(census_code_path / 'tab20_zcta520_county20_natl.txt')
+    census_zip_agg_2020 = (
+        census_zip_2020
             .group_by('GEOID_ZCTA5_20')
             .agg(pl.col('GEOID_COUNTY_20').str.join(',')
                 )
@@ -154,7 +258,8 @@ def _(census_code_path, pl, read_census_file):
                 }
             )
     )
-    return (census_zip_agg,)
+    census_zip_agg_2020
+    return
 
 
 @app.cell
@@ -183,11 +288,22 @@ def _(pl):
 
 
 @app.cell
-def _(census_county, census_place_agg, create_ref_lookup):
+def _(census_county_2010, census_place_agg_2010, create_ref_lookup):
     # Create state-based maps for rapidfuzz to match
-    census_county_ref_map = create_ref_lookup(census_county, 'county')
-    census_place_ref_map = create_ref_lookup(census_place_agg, 'place')
-    return census_county_ref_map, census_place_ref_map
+    census_county_ref_map_2010 = create_ref_lookup(census_county_2010, 'county')
+    census_place_ref_map_2010 = create_ref_lookup(census_place_agg_2010, 'place')
+
+    census_county_ref_map_2020 = create_ref_lookup(census_county_2010, 'county')
+    census_place_ref_map_2020 = create_ref_lookup(census_place_agg_2010, 'place')
+    return census_county_ref_map_2010, census_place_ref_map_2010
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Load H-2A performance files
+    """)
+    return
 
 
 @app.cell
@@ -208,12 +324,6 @@ def _(load_workbook):
         return []
 
     return
-
-
-@app.cell
-def _(root_path):
-    h2a_path = root_path / 'data' / 'h2a'
-    return (h2a_path,)
 
 
 @app.cell
@@ -666,26 +776,6 @@ def _(pl):
 
 
 @app.cell
-def _(addfips, pl):
-    # Define a custom AddFIPS function that operates on a polars dataframe
-    def add_fips_using_addfips(df, county_col, state_col, target_col):
-        # Instantiate the library ONCE here
-        af = addfips.AddFIPS()
-
-        # The 'row' object passed from pl.struct is a dictionary
-        return df.with_columns(
-            pl.struct(
-                [county_col, state_col]
-            ).map_elements(
-                lambda row: af.get_county_fips(county=row[county_col], state=row[state_col]) or '',
-                return_dtype=pl.String
-            ).alias(target_col)
-        )
-
-    return (add_fips_using_addfips,)
-
-
-@app.cell
 def _(rapidfuzz):
     # Uses rapidfuzz.process.extractOne and name maps to quickly find locality with best name match
     def fuzz_search(state, query, ref_map):
@@ -883,9 +973,9 @@ def _(pl):
 def _(
     add_b_worksite_locations,
     add_fips_with_addfips_and_fuzzy_matching,
-    census_county_ref_map,
-    census_place_ref_map,
-    census_zip_agg,
+    census_county_ref_map_2010,
+    census_place_ref_map_2010,
+    census_zip_agg_2010,
     h2a_worksite_locations,
     pick_best_fips,
 ):
@@ -893,14 +983,14 @@ def _(
     h2a_worksite_locations_added_fips = add_fips_with_addfips_and_fuzzy_matching(
         h2a_worksite_locations,
         'worksite_county', 'worksite_city', 'worksite_state', 'worksite_zip',
-        census_zip_agg, census_county_ref_map, census_place_ref_map
+        census_zip_agg_2010, census_county_ref_map_2010, census_place_ref_map_2010
     )
     h2a_worksite_locations_added_fips = pick_best_fips(h2a_worksite_locations_added_fips, 80)
 
     add_b_worksite_locations_added_fips = add_fips_with_addfips_and_fuzzy_matching(
         add_b_worksite_locations,
         'worksite_county', 'worksite_city', 'worksite_state', 'worksite_zip',
-        census_zip_agg, census_county_ref_map, census_place_ref_map
+        census_zip_agg_2010, census_county_ref_map_2010, census_place_ref_map_2010
     )
     add_b_worksite_locations_added_fips = pick_best_fips(add_b_worksite_locations_added_fips, 80)
     return (
@@ -948,7 +1038,7 @@ def _(mo):
 @app.cell
 def _(json, json_path):
     # 1. Load mappings
-    with open(json_path / 'placeid_address_components_mapping_json.json') as _fp:
+    with open(json_path / 'placeid_address_components_mapping.json') as _fp:
         raw_mapping = json.load(_fp)
 
     # 2. Pre-process mapping: Extract only counties once to avoid parsing JSON inside the loop
@@ -1002,7 +1092,7 @@ def _(pl, placeid_to_county_map):
 @app.cell
 def _(addfips, binary_path, pl, process_dataframe):
     # Function converts list of county names to one string of FIPS codes joined with ','
-    af = addfips.AddFIPS()
+    af = addfips.AddFIPS(vintage=2010)
     def add_fips_to_places_api_county(row):
         # row is a dictionary passed by pl.struct
         county_list = row['common_county']

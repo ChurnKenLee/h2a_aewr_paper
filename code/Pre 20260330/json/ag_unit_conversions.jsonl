@@ -1,0 +1,204 @@
+{"commodity_desc": "TOMATOES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "OLIVES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PLUMS & PRUNES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "COFFEE", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SORGHUM", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BEDDING PLANTS, HERBACEOUS PERENNIAL", "weight_unit": "Pot", "conversion_factor": 2.0, "reasoning": "There is no official USDA weight for a 'pot' of herbaceous perennials as they are sold by count. Using a 2 lb estimate based on a standard 6-inch retail container weight including soil and plant.", "source": "llm_dspy"}
+{"commodity_desc": "APRICOTS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LEMONS", "weight_unit": "Box", "conversion_factor": 40.0, "reasoning": "Standard USDA and industry shipping weight for a carton/box of lemons is 40 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "PECANS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RYE", "weight_unit": "Bushel", "conversion_factor": 56.0, "reasoning": "Standard USDA/NASS test weight for one bushel of rye is 56 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "MINT", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "COFFEE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GARLIC", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LEGUMES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RAPESEED", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEPPERS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "COTTON", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FLAXSEED", "weight_unit": "Bushel", "conversion_factor": 56.0, "reasoning": "The standard USDA and industry test weight for a bushel of flaxseed is 56 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "PEPPERS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "OIL", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MUSHROOMS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MACADAMIAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SQUASH", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HOPS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RICE", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GUAVAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEAS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "ALMONDS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PAPAYAS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "VEGETABLE TOTALS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SUGARCANE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PAPAYAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LENTILS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RASPBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "APPLES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BANANAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RICE", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MUSTARD", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CAULIFLOWER", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "DATES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MILLFEED", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HEMP", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "POTATOES", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "NECTARINES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "STRAWBERRIES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FLOUR", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MUSTARD", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SUNFLOWER", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PISTACHIOS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FIGS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CUT FLOWERS", "weight_unit": "Stem", "conversion_factor": 0.1, "reasoning": "Standard USDA/NASS conversion factors do not exist for cut flower stems due to high variability between species. Industry estimates for shipping often approximate a single stem at 0.1 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "PLUMS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PRUNES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HAY & HAYLAGE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GRAPES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "KIWIFRUIT", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CANOLA", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEACHES", "weight_unit": "Bushel", "conversion_factor": 48.0, "reasoning": "A standard bushel of peaches is recognized by the USDA and most state agricultural departments as weighing 48 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "APPLES", "weight_unit": "Bushel", "conversion_factor": 42.0, "reasoning": "Standard USDA/NASS weight for a bushel of apples is 42 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "PECANS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CUCUMBERS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BLACKBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "TOMATOES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "OLIVES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PLUMS & PRUNES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "COFFEE", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SORGHUM", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BEDDING PLANTS, HERBACEOUS PERENNIAL", "weight_unit": "Pot", "conversion_factor": 2.0, "reasoning": "There is no official USDA weight for a 'pot' of herbaceous perennials as they are sold by count. Using a 2 lb estimate based on a standard 6-inch retail container weight including soil and plant.", "source": "llm_dspy"}
+{"commodity_desc": "APRICOTS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LEMONS", "weight_unit": "Box", "conversion_factor": 40.0, "reasoning": "Standard USDA and industry shipping weight for a carton/box of lemons is 40 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "PECANS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RYE", "weight_unit": "Bushel", "conversion_factor": 56.0, "reasoning": "Standard USDA/NASS test weight for one bushel of rye is 56 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "MINT", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "COFFEE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GARLIC", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LEGUMES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RAPESEED", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEPPERS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "COTTON", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FLAXSEED", "weight_unit": "Bushel", "conversion_factor": 56.0, "reasoning": "The standard USDA and industry test weight for a bushel of flaxseed is 56 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "PEPPERS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "OIL", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MUSHROOMS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MACADAMIAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SQUASH", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HOPS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RICE", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GUAVAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEAS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "ALMONDS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PAPAYAS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "VEGETABLE TOTALS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SUGARCANE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PAPAYAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LENTILS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RASPBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "APPLES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BANANAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RICE", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MUSTARD", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CAULIFLOWER", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "DATES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MILLFEED", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HEMP", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "POTATOES", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "NECTARINES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "STRAWBERRIES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FLOUR", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MUSTARD", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SUNFLOWER", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PISTACHIOS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FIGS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CUT FLOWERS", "weight_unit": "Stem", "conversion_factor": 0.1, "reasoning": "Standard USDA/NASS conversion factors do not exist for cut flower stems due to high variability between species. Industry estimates for shipping often approximate a single stem at 0.1 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "PLUMS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PRUNES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HAY & HAYLAGE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GRAPES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "KIWIFRUIT", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CANOLA", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEACHES", "weight_unit": "Bushel", "conversion_factor": 48.0, "reasoning": "A standard bushel of peaches is recognized by the USDA and most state agricultural departments as weighing 48 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "APPLES", "weight_unit": "Bushel", "conversion_factor": 42.0, "reasoning": "Standard USDA/NASS weight for a bushel of apples is 42 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "PECANS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CUCUMBERS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BLACKBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CUT FLOWERS", "weight_unit": "Spike", "conversion_factor": 0.0, "reasoning": "A 'Spike' is a count-based unit for cut flowers (e.g., Gladiolus) and does not have a standardized USDA or legal weight equivalent in pounds.", "source": "llm_dspy"}
+{"commodity_desc": "BROCCOLI", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "TARO", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BEANS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BOYSENBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PISTACHIOS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEACHES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "WALNUTS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SORGHUM", "weight_unit": "Bushel", "conversion_factor": 56.0, "reasoning": "Standard USDA/NASS test weight for a bushel of grain sorghum is 56 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "CHERRIES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BLUEBERRIES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BARLEY", "weight_unit": "Bushel", "conversion_factor": 48.0, "reasoning": "The standard test weight for a bushel of barley as defined by the USDA and NASS is 48 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "SAFFLOWER", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "WHEAT", "weight_unit": "Bushel", "conversion_factor": 60.0, "reasoning": "Standard USDA and industry test weight for one bushel of wheat is 60 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "NON-CITRUS TOTALS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "TOMATOES", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CORN", "weight_unit": "Bushel", "conversion_factor": 56.0, "reasoning": "Standard USDA/NASS test weight for one bushel of shelled corn is 56 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "ONIONS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "TEMPLES", "weight_unit": "Box", "conversion_factor": 90.0, "reasoning": "Based on standard USDA/NASS weight for a Florida citrus box, which is the primary production region for Temples, a box is equivalent to 90 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "TANGERINES", "weight_unit": "Box", "conversion_factor": 95.0, "reasoning": "According to USDA NASS conversion tables, a standard full box of tangerines (primarily based on Florida standards) is 95 pounds. Note that a 4/5 bushel box is 47.5 pounds and a California carton is approximately 75 pounds, but the 'Box' unit defaults to the 95 lb standard in historical NASS data.", "source": "llm_dspy"}
+{"commodity_desc": "CUT FLOWERS", "weight_unit": "Bloom", "conversion_factor": 0.0, "reasoning": "Weight per bloom varies significantly by species; there is no standardized USDA/NASS pound conversion for a generic 'Bloom'.", "source": "llm_dspy"}
+{"commodity_desc": "OATS", "weight_unit": "Bushel", "conversion_factor": 32.0, "reasoning": "The standard test weight for a bushel of oats is 32 pounds, as established by the USDA and most state labeling laws.", "source": "llm_dspy"}
+{"commodity_desc": "CHICKPEAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FLOWERING PLANTS, POTTED", "weight_unit": "Pot", "conversion_factor": 1.0, "reasoning": "There is no standard USDA weight for a 'Pot' of flowering plants as weights vary significantly by pot size (e.g., 4-inch vs. 10-inch) and soil moisture. A placeholder of 1.0 is used as no standard conversion to pounds exists.", "source": "llm_dspy"}
+{"commodity_desc": "BEANS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HAY", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BEDDING PLANTS, ANNUAL", "weight_unit": "Basket", "conversion_factor": 10.0, "reasoning": "Standard industry and shipping estimate for an average annual bedding plant hanging basket (typically 10-12 inches).", "source": "llm_dspy"}
+{"commodity_desc": "CHICKPEAS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CRANBERRIES", "weight_unit": "Barrel", "conversion_factor": 100.0, "reasoning": "The standard weight of a barrel of cranberries is defined by the USDA and industry standards as 100 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "BEETS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "RAPESEED", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CABBAGE", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "ALCOHOL COPRODUCTS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MELONS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CUT FLOWERS", "weight_unit": "Bunch", "conversion_factor": 0.0, "reasoning": "Standard weight for a bunch of cut flowers is not defined by USDA/NASS as it varies by flower variety and stem count.", "source": "llm_dspy"}
+{"commodity_desc": "BEDDING PLANTS, ANNUAL", "weight_unit": "Pot", "conversion_factor": 1.0, "reasoning": "Standard USDA/NASS test weights do not exist for nursery stock 'pots' due to variability in size and soil content; 1.0 lb is used as a nominal representative weight for a single standard unit (pot) in general estimations.", "source": "llm_dspy"}
+{"commodity_desc": "PEANUTS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SWEET POTATOES", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SAFFLOWER", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LENTILS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MAPLE SYRUP", "weight_unit": "Gallon", "conversion_factor": 11.0, "reasoning": "Standard USDA/NASS and industry conversion factor for one gallon of maple syrup is 11 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "CANOLA", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "ORANGES", "weight_unit": "Box", "conversion_factor": 90.0, "reasoning": "Standard USDA/NASS weight for a box of oranges, particularly in Florida and Texas, is 90 lbs. While California uses a smaller box (approx 80 lbs), 90 lbs is the primary benchmark for national unit conversion.", "source": "llm_dspy"}
+{"commodity_desc": "LETTUCE", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SWEET CORN", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "STRAWBERRIES", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "TOBACCO", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GRAPEFRUIT", "weight_unit": "Box", "conversion_factor": 80.0, "reasoning": "Standard USDA/NASS conversion factor for a box of grapefruit is typically 80 lbs, though it can vary by state (e.g., 67 lbs in CA/AZ). 80 lbs is the most common statistical benchmark.", "source": "llm_dspy"}
+{"commodity_desc": "CARROTS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "ARTICHOKES", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SWEET CORN", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PUMPKINS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "MILLET", "weight_unit": "Bushel", "conversion_factor": 50.0, "reasoning": "The standard test weight for a bushel of millet (specifically proso millet) as defined by USDA and various state grain standards is 50 pounds.", "source": "llm_dspy"}
+{"commodity_desc": "RASPBERRIES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEAS", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GREENS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CHERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BLUEBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "TANGELOS", "weight_unit": "Box", "conversion_factor": 80.0, "reasoning": "Standard USDA/NASS conversion for a box of Tangelos, typically based on the Florida 4/5 bushel box weight of 80 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "CUT CULTIVATED GREENS", "weight_unit": "Bunch", "conversion_factor": 1.0, "reasoning": "Standard commercial and USDA AMS proxy for a bunch of leafy greens or cultivated greens is typically estimated at 1 pound for statistical reporting purposes.", "source": "llm_dspy"}
+{"commodity_desc": "SOYBEANS", "weight_unit": "Bushel", "conversion_factor": 60.0, "reasoning": "Standard USDA test weight for a bushel of soybeans is 60 lbs.", "source": "llm_dspy"}
+{"commodity_desc": "SORGHUM", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SPINACH", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CORN", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CRANBERRIES", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "BEDDING PLANTS, ANNUAL", "weight_unit": "Flat", "conversion_factor": 15.0, "reasoning": "Standard horticultural 'flat' weights typically range between 10 to 20 lbs depending on moisture; 15 lbs is the commonly accepted average for a standard 1020-style bedding plant tray.", "source": "llm_dspy"}
+{"commodity_desc": "SUNFLOWER", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "ASPARAGUS", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "PEARS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "AVOCADOS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HAZELNUTS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "FOLIAGE PLANTS", "weight_unit": "Pot", "conversion_factor": 0.0, "reasoning": "Foliage plants sold in pots vary by size (e.g., 4-inch, 6-inch, gallon) and have no standard USDA/NASS weight conversion factor.", "source": "llm_dspy"}
+{"commodity_desc": "COTTON", "weight_unit": "Bale", "conversion_factor": 480.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CELERY", "weight_unit": "Hundredweight", "conversion_factor": 100.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "HAYLAGE", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "LOGANBERRIES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "SUGARBEETS", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "GINGER ROOT", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "APPLES", "weight_unit": "Pound", "conversion_factor": 1.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}
+{"commodity_desc": "CAKE & MEAL", "weight_unit": "Ton", "conversion_factor": 2000.0, "reasoning": "Static constant weight defined in pipeline logic.", "source": "static"}

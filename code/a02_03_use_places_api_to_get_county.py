@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.11"
+__generated_with = "0.22.4"
 app = marimo.App(width="full")
 
 
@@ -16,7 +16,7 @@ def _():
     from google.genai import types
     from google.genai._transformers import process_schema
     from google.maps import places_v1
-    from google.protobuf.json_format import MessageToJson
+    from google.protobuf.json_format import MessageToJson, MessageToDict
     from typing import Optional, List, get_args, get_origin
     from pydantic import BaseModel, Field
     import time
@@ -26,17 +26,17 @@ def _():
     import pickle
 
     return (
-        MessageToJson,
+        MessageToDict,
         dotenv,
         json,
         limits,
         mo,
         os,
-        pickle,
         pl,
         places_v1,
         pyprojroot,
         sleep_and_retry,
+        time,
         us,
     )
 
@@ -57,9 +57,9 @@ def _(us):
     def state_abbr_to_name(val):
         if val is None or val == '':
             return ''
-    
+
         val_str = str(val).strip()
-    
+
         if val_str.upper() == 'DC':
             return 'District of Columbia'
 
@@ -83,7 +83,7 @@ def _(pl, state_abbr_to_name):
                 (pl.element() != "") & (pl.element().is_not_null())
             )
         ).list.join(", ")
-    
+
         return concat_df
 
     # Function applies clean name and concat to df
@@ -102,7 +102,7 @@ def _(pl, state_abbr_to_name):
 
         return clean_names_df
 
-    return
+    return (process_df,)
 
 
 @app.cell(hide_code=True)
@@ -114,84 +114,108 @@ def _(mo):
 
 
 @app.cell
-def _():
-    # # Load cleaned unmatched locations, clean state names, and concat place names to get location name
-    # h2a_df = pl.read_csv(json_path / "unmatched_h2a_with_suggestions.csv", infer_schema=False).fill_null('')
-    # add_b_df = pl.read_csv(json_path / "unmatched_add_b_with_suggestions.csv", infer_schema=False).fill_null('')
-    # h2a_df = process_df(h2a_df)
-    # add_b_df = process_df(add_b_df)
+def _(binary_path, client, json, json_path, pl, places_v1, process_df, time):
+    # Load cleaned unmatched locations, clean state names, and concat place names to get location name
+    h2a_df = pl.read_csv(json_path / "unmatched_h2a_with_suggestions.csv", infer_schema=False).fill_null('')
+    add_b_df = pl.read_csv(json_path / "unmatched_add_b_with_suggestions.csv", infer_schema=False).fill_null('')
+    h2a_df = process_df(h2a_df)
+    add_b_df = process_df(add_b_df)
 
-    # def rate_limited_queries(queries, qpm):
-    #     response_list = []
-    #     # Calculate delay in seconds
-    #     delay = (60 / qpm) + 0.01
+    search_cache_file = json_path / "placeid_search_queries_cache.json"
+    if search_cache_file.exists():
+        print("Loaded cached PlaceIDs")
+        with open(search_cache_file, "r") as _fp:
+            search_query_cache = json.load(_fp)
+    else:
+        search_query_cache = {}
 
-    #     for query in queries:
-    #         # Polars might pass None for null values, so check for truthiness
-    #         if not query or ',' not in query:
-    #             response_list.append([])
-    #             continue
+    def rate_limited_queries(queries, qpm, save_frequency=50):
+        response_list =[]
+        # Calculate delay in seconds
+        delay = (60 / qpm) + 0.01
 
-    #         # Create request
-    #         request = places_v1.SearchTextRequest(text_query=query)
+        new_calls_since_last_save = 0
 
-    #         # Call API
-    #         response = client.search_text(
-    #             request=request, 
-    #             metadata=[("x-goog-fieldmask", "places.id")]
-    #         )
-        
-    #         placeid_candidates = [place.id for place in response.places]
-    #         response_list.append(placeid_candidates)
-        
-    #         # Actually sleep to respect the rate limit
-    #         time.sleep(delay)
+        for query in queries:
+            # Polars might pass None for null values, so check for truthiness
+            if not query or ',' not in query:
+                response_list.append([])
+                continue
 
-    #     return response_list
+            # --- NEW: Check if query was previously executed ---
+            if query in search_query_cache:
+                response_list.append(search_query_cache[query])
+                continue
 
-    # # --- Process h2a_df ---
-    # h2a_original_locations_list = h2a_df["original_location_name"].to_list()
-    # h2a_original_locations_candidate_list = rate_limited_queries(h2a_original_locations_list, 600)
-    # h2a_suggested_locations_list = h2a_df["suggested_location_name"].to_list()
-    # h2a_suggested_locations_candidate_list = rate_limited_queries(h2a_suggested_locations_list, 600)
-    # h2a_df = h2a_df.with_columns([
-    #     pl.Series(
-    #         name="original_location_placeid", 
-    #         values=h2a_original_locations_candidate_list
-    #     ),
-    #     pl.Series(
-    #         name="suggested_location_placeid", 
-    #         values=h2a_suggested_locations_candidate_list
-    #     )
-    # ])
+            # Create request
+            request = places_v1.SearchTextRequest(text_query=query)
 
-    # # --- Process add_b_df ---
-    # add_b_original_locations_list = add_b_df["original_location_name"].to_list()
-    # add_b_original_locations_candidate_list = rate_limited_queries(add_b_original_locations_list, 600)
-    # add_b_suggested_locations_list = add_b_df["suggested_location_name"].to_list()
-    # add_b_suggested_locations_candidate_list = rate_limited_queries(add_b_suggested_locations_list, 600)
-    # add_b_df = add_b_df.with_columns([
-    #     pl.Series(
-    #         name="original_location_placeid", 
-    #         values=add_b_original_locations_candidate_list
-    #     ),
-    #     pl.Series(
-    #         name="suggested_location_placeid", 
-    #         values=add_b_suggested_locations_candidate_list
-    #     )
-    # ])
+            # Call API
+            response = client.search_text(
+                request=request, 
+                metadata=[("x-goog-fieldmask", "places.id")]
+            )
 
-    # # # Save to Parquet using Polars write method
-    # # h2a_df.write_parquet(binary_path / "h2a_location_placeids.parquet")
-    # # add_b_df.write_parquet(binary_path / "add_b_location_placeids.parquet")
-    return
+            placeid_candidates = [place.id for place in response.places]
 
+            # Add to cache
+            search_query_cache[query] = placeid_candidates
+            response_list.append(placeid_candidates)
 
-@app.cell
-def _(binary_path, pl):
-    # Read Place ID suggestions
-    h2a_df = pl.read_parquet(binary_path / "h2a_location_placeids.parquet")
-    add_b_df = pl.read_parquet(binary_path / "add_b_location_placeids.parquet")
+            new_calls_since_last_save += 1
+
+            # Save to disk periodically
+            if new_calls_since_last_save >= save_frequency:
+                with open(search_cache_file, "w") as _fp:
+                    json.dump(search_query_cache, _fp)
+                print(f"Checkpoint: Saved {len(search_query_cache)} queries to cache.")
+                new_calls_since_last_save = 0
+
+            # Actually sleep to respect the rate limit
+            time.sleep(delay)
+
+        # =Final save to catch any remaining queries
+        if new_calls_since_last_save > 0:
+            with open(search_cache_file, "w") as _fp:
+                json.dump(search_query_cache, _fp)
+
+        return response_list
+
+    # --- Process h2a_df ---
+    h2a_original_locations_list = h2a_df["original_location_name"].to_list()
+    h2a_original_locations_candidate_list = rate_limited_queries(h2a_original_locations_list, 600)
+    h2a_suggested_locations_list = h2a_df["suggested_location_name"].to_list()
+    h2a_suggested_locations_candidate_list = rate_limited_queries(h2a_suggested_locations_list, 600)
+    h2a_df = h2a_df.with_columns([
+        pl.Series(
+            name="original_location_placeid", 
+            values=h2a_original_locations_candidate_list
+        ),
+        pl.Series(
+            name="suggested_location_placeid", 
+            values=h2a_suggested_locations_candidate_list
+        )
+    ])
+
+    # --- Process add_b_df ---
+    add_b_original_locations_list = add_b_df["original_location_name"].to_list()
+    add_b_original_locations_candidate_list = rate_limited_queries(add_b_original_locations_list, 600)
+    add_b_suggested_locations_list = add_b_df["suggested_location_name"].to_list()
+    add_b_suggested_locations_candidate_list = rate_limited_queries(add_b_suggested_locations_list, 600)
+    add_b_df = add_b_df.with_columns([
+        pl.Series(
+            name="original_location_placeid", 
+            values=add_b_original_locations_candidate_list
+        ),
+        pl.Series(
+            name="suggested_location_placeid", 
+            values=add_b_suggested_locations_candidate_list
+        )
+    ])
+
+    # # Save to Parquet using Polars write method
+    h2a_df.write_parquet(binary_path / "h2a_location_placeids.parquet")
+    add_b_df.write_parquet(binary_path / "add_b_location_placeids.parquet")
 
     # Define the operation as an expression to reuse it
     def add_common_id_cols(df: pl.DataFrame) -> pl.DataFrame:
@@ -225,7 +249,7 @@ def _(add_b_df, h2a_df, pl):
         .unique()
         .to_list()
     )
-    return
+    return (placeid_list,)
 
 
 @app.cell
@@ -254,35 +278,50 @@ def _(api_key, limits, places_v1, sleep_and_retry):
 
         return response
 
-    return
+    return client, get_address_components_from_placeid
 
 
 @app.cell
-def _():
-    # placeid_address_components_dict = {}
+def _(
+    MessageToDict,
+    get_address_components_from_placeid,
+    json,
+    json_path,
+    placeid_list,
+):
+    # 1. Load existing JSON responses if available
+    json_file_path = json_path / "placeid_address_components_mapping.json"
 
-    # for _placeid in placeid_list:
-    #     _response = get_address_components_from_placeid(_placeid)
-    #     placeid_address_components_dict[_placeid] = _response
+    if json_file_path.exists():
+        with open(json_file_path, "r") as _fp:
+            placeid_address_components_dict = json.load(_fp)
+        print(f"Loaded {len(placeid_address_components_dict)} pre-existing Place API responses from JSON.")
+    else:
+        placeid_address_components_dict = {}
 
-    # # Pickle results
-    # with open(json_path / "placeid_address_components_mapping_pickle.pickle", "wb") as _fp:
-    #     pickle.dump(placeid_address_components_dict, _fp)
-    return
+    new_calls = 0
 
+    for _placeid in placeid_list:
+        # 2. Only fetch if we haven't seen this PlaceID before
+        if _placeid not in placeid_address_components_dict:
+            _response = get_address_components_from_placeid(_placeid)
 
-@app.cell
-def _(MessageToJson, json, json_path, pickle):
-    # Store mappings as JSON as well for stability
-    with open(json_path / "placeid_address_components_mapping_pickle.pickle", "rb") as _fp:
-        placeid_address_components_dict_loaded = pickle.load(_fp)
+            # Convert the Protobuf response immediately to a standard Python dictionary
+            placeid_address_components_dict[_placeid] = MessageToDict(_response._pb)
 
-    placeid_address_components_dict_json = {}
-    for _placeid, _response in placeid_address_components_dict_loaded.items():
-        placeid_address_components_dict_json[_placeid] = MessageToJson(_response._pb) # Convert protocol response to JSON for writing to JSON file
+            new_calls += 1
 
-    with open(json_path / "placeid_address_components_mapping_json.json", 'w') as _fp:
-        json.dump(placeid_address_components_dict_json, _fp)
+            # 3. Periodically backup to JSON so you don't lose progress
+            if new_calls % 50 == 0:
+                with open(json_file_path, "w") as _fp:
+                    json.dump(placeid_address_components_dict, _fp, indent=2)
+                print(f"Checkpoint: Saved {len(placeid_address_components_dict)} responses to JSON.")
+
+    print(f"Made {new_calls} new API calls for Place Details.")
+
+    # 4. Final save of the JSON mapping
+    with open(json_file_path, "w") as _fp:
+        json.dump(placeid_address_components_dict, _fp, indent=2)
     return
 
 

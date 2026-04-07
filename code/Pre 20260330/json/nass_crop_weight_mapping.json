@@ -1,0 +1,371 @@
+[
+  {
+    "Category": "Field Crops",
+    "Crop": "Barley",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "BARLEY",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Corn: Ear, husked",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "CORN",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "SILAGE"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Corn: Shelled",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "CORN",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "SILAGE"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Hay",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "HAY & HAYLAGE",
+    "class_desc": "(EXCL ALFALFA)",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Oats",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "OATS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Potatoes",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "POTATOES",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Rye",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "RYE",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Soybeans",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "SOYBEANS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Wheat",
+    "group_desc": "FIELD CROPS",
+    "commodity_desc": "WHEAT",
+    "class_desc": "WINTER",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Apples",
+    "group_desc": "FRUIT & TREE NUTS",
+    "commodity_desc": "APPLES",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Blueberries",
+    "group_desc": "FRUIT & TREE NUTS",
+    "commodity_desc": "BLUEBERRIES",
+    "class_desc": "TAME",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Cranberries",
+    "group_desc": "FRUIT & TREE NUTS",
+    "commodity_desc": "CRANBERRIES",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Strawberries",
+    "group_desc": "FRUIT & TREE NUTS",
+    "commodity_desc": "STRAWBERRIES",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Asparagus",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "ASPARAGUS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Beans, Lima",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "BEANS",
+    "class_desc": "GREEN, LIMA",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Beans, Snap",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "BEANS",
+    "class_desc": "SNAP",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Beets",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "BEETS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Broccoli",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "BROCCOLI",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cabbage",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "CABBAGE",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cantaloupe",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "MELONS",
+    "class_desc": "CANTALOUP",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "FRESH MARKET"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Carrots",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "CARROTS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cauliflower",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "CAULIFLOWER",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Celery",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "CELERY",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Collards",
+    "group_desc": null,
+    "commodity_desc": null,
+    "class_desc": null,
+    "prodn_practice_desc": null,
+    "util_practice_desc": null
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Corn, Sweet",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "SWEET CORN",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "FRESH MARKET"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cucumber",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "CUCUMBERS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Eggplant",
+    "group_desc": null,
+    "commodity_desc": null,
+    "class_desc": null,
+    "prodn_practice_desc": null,
+    "util_practice_desc": null
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Garlic",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "GARLIC",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Honeydew",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "MELONS",
+    "class_desc": "HONEYDEW",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "FRESH MARKET"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Kale",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "GREENS",
+    "class_desc": "KALE",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Lettuce",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "LETTUCE",
+    "class_desc": "HEAD",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "FRESH MARKET"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Okra",
+    "group_desc": null,
+    "commodity_desc": null,
+    "class_desc": null,
+    "prodn_practice_desc": null,
+    "util_practice_desc": null
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Onions, green",
+    "group_desc": null,
+    "commodity_desc": null,
+    "class_desc": null,
+    "prodn_practice_desc": null,
+    "util_practice_desc": null
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Onions, dry",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "ONIONS",
+    "class_desc": "DRY",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Peas, green",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "PEAS",
+    "class_desc": "GREEN",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Peppers, bell",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "PEPPERS",
+    "class_desc": "BELL",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Pumpkins",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "PUMPKINS",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Spinach",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "SPINACH",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Squash",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "SQUASH",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "ALL UTILIZATION PRACTICES"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Tomatoes",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "TOMATOES",
+    "class_desc": "ALL CLASSES",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "PROCESSING"
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Watermelon",
+    "group_desc": "VEGETABLES",
+    "commodity_desc": "MELONS",
+    "class_desc": "WATERMELON",
+    "prodn_practice_desc": "ALL PRODUCTION PRACTICES",
+    "util_practice_desc": "FRESH MARKET"
+  }
+]

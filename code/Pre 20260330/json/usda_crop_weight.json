@@ -1,0 +1,260 @@
+[
+  {
+    "Category": "Field Crops",
+    "Crop": "Barley",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 48
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Corn: Ear, husked",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 70
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Corn: Shelled",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 56
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Hay",
+    "Unit": "Square Bale",
+    "AvgWeightLbs": 45
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Oats",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 32
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Potatoes",
+    "Unit": "Carton/Sack",
+    "AvgWeightLbs": 100
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Rye",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 56
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Soybeans",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 60
+  },
+  {
+    "Category": "Field Crops",
+    "Crop": "Wheat",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 60
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Apples",
+    "Unit": "Bushel or carton",
+    "AvgWeightLbs": 40
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Blueberries",
+    "Unit": "Flat (12 pints)",
+    "AvgWeightLbs": 12
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Cranberries",
+    "Unit": "Barrel",
+    "AvgWeightLbs": 100
+  },
+  {
+    "Category": "Fruit & Berries",
+    "Crop": "Strawberries",
+    "Unit": "Flat (12 pints)",
+    "AvgWeightLbs": 12
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Asparagus",
+    "Unit": "Crate/Carton",
+    "AvgWeightLbs": 30
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Beans, Lima",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 30
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Beans, Snap",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 30
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Beets",
+    "Unit": "Crate/Carton",
+    "AvgWeightLbs": 38
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Broccoli",
+    "Unit": "Crate/Carton",
+    "AvgWeightLbs": 23
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cabbage",
+    "Unit": "Crate/bag/sack",
+    "AvgWeightLbs": 50
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cantaloupe",
+    "Unit": "1/2 carton or crate",
+    "AvgWeightLbs": 40
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Carrots",
+    "Unit": "Carton/Sack",
+    "AvgWeightLbs": 50
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cauliflower",
+    "Unit": "Crate",
+    "AvgWeightLbs": 60
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Celery",
+    "Unit": "Carton/Crate",
+    "AvgWeightLbs": 60
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Collards",
+    "Unit": "Bag",
+    "AvgWeightLbs": 3
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Corn, Sweet",
+    "Unit": "Crate",
+    "AvgWeightLbs": 50
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Corn, Sweet",
+    "Unit": "Dozen",
+    "AvgWeightLbs": 7.5
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Cucumber",
+    "Unit": "Bushel/carton/crate",
+    "AvgWeightLbs": 55
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Eggplant",
+    "Unit": "Bushel/carton/crate",
+    "AvgWeightLbs": 33
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Garlic",
+    "Unit": "Carton/Crate",
+    "AvgWeightLbs": 30
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Honeydew",
+    "Unit": "2/3 Carton",
+    "AvgWeightLbs": 30
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Kale",
+    "Unit": "Carton/Crate",
+    "AvgWeightLbs": 25
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Lettuce",
+    "Unit": "Carton",
+    "AvgWeightLbs": 50
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Okra",
+    "Unit": "Bushel/Crate",
+    "AvgWeightLbs": 30
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Onions, green",
+    "Unit": "Carton",
+    "AvgWeightLbs": 13
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Onions, dry",
+    "Unit": "Sack",
+    "AvgWeightLbs": 50
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Peas, green",
+    "Unit": "Bushel/carton/crate",
+    "AvgWeightLbs": 28
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Peppers, bell",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 28
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Pumpkins",
+    "Unit": "Bin",
+    "AvgWeightLbs": 1000
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Spinach",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 25
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Squash",
+    "Unit": "Bushel",
+    "AvgWeightLbs": 40
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Tomatoes",
+    "Unit": "Carton",
+    "AvgWeightLbs": 25
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Watermelon",
+    "Unit": "Bin",
+    "AvgWeightLbs": 1050
+  },
+  {
+    "Category": "Vegetables",
+    "Crop": "Watermelon",
+    "Unit": "Carton",
+    "AvgWeightLbs": 85
+  }
+]

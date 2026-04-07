@@ -986,7 +986,6 @@ sanity_check_total_4 <- h2a_aggregated_df %>%
 # Numbers match, we are good
 
 h2a_aggregated_df %>%
-  write_parquet(here("Data Int", "h2a_aggregated.parquet")) %>%
   write_parquet(here("binaries", "h2a_aggregated.parquet"))
 
 h2a_ts_df <- h2a_aggregated_df %>%

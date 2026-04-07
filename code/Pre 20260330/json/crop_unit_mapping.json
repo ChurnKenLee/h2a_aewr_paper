@@ -1,0 +1,445 @@
+{
+  "price": {
+    "string_type": "observation_type",
+    "dimension": "price"
+  },
+  "production": {
+    "string_type": "observation_type",
+    "dimension": "production"
+  },
+  "yield": {
+    "string_type": "observation_type",
+    "dimension": "yield"
+  },
+  "area": {
+    "string_type": "observation_type",
+    "dimension": "area"
+  },
+  "$ / BASKET, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BASKET",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "LB": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "LB",
+    "area_unit": null,
+    "basis": null
+  },
+  "LB / ACRE, CHERRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "LB",
+    "area_unit": "ACRE",
+    "basis": "CHERRY BASIS"
+  },
+  "$, CHERRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": null,
+    "area_unit": null,
+    "basis": "CHERRY BASIS"
+  },
+  "$ / CWT": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "CWT",
+    "area_unit": null,
+    "basis": null
+  },
+  "480 LB BALES": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "480 LB BALES",
+    "area_unit": null,
+    "basis": null
+  },
+  "LB, CHERRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "LB",
+    "area_unit": null,
+    "basis": "CHERRY BASIS"
+  },
+  "TONS / ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "TONS",
+    "area_unit": "ACRE",
+    "basis": null
+  },
+  "$ / BU": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BU",
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / LB, GREEN BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "LB",
+    "area_unit": null,
+    "basis": "GREEN BASIS"
+  },
+  "$, PHD EQUIV": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": null,
+    "area_unit": null,
+    "basis": "PHD EQUIV"
+  },
+  "$ / STEM, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "STEM",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "$ / TON": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "TON",
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / BOX, PHD EQUIV": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BOX",
+    "area_unit": null,
+    "basis": "PHD EQUIV"
+  },
+  "CENTS / BLOOM, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "CENTS",
+    "weight_unit": "BLOOM",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "BU": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BU",
+    "area_unit": null,
+    "basis": null
+  },
+  "TONS, DRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "TONS",
+    "area_unit": null,
+    "basis": "DRY BASIS"
+  },
+  "CWT / ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "CWT",
+    "area_unit": "ACRE",
+    "basis": null
+  },
+  "BU / PLANTED ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BU",
+    "area_unit": "PLANTED ACRE",
+    "basis": null
+  },
+  "$ / LB, CHERRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "LB",
+    "area_unit": null,
+    "basis": "CHERRY BASIS"
+  },
+  "$ / BUNCH": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BUNCH",
+    "area_unit": null,
+    "basis": null
+  },
+  "$": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": null,
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / SPIKE": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "SPIKE",
+    "area_unit": null,
+    "basis": null
+  },
+  "CWT": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "CWT",
+    "area_unit": null,
+    "basis": null
+  },
+  "BU / ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BU",
+    "area_unit": "ACRE",
+    "basis": null
+  },
+  "$ / BLOOM, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BLOOM",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "$ / BUNCH, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BUNCH",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "$ / BARREL": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BARREL",
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / FLAT": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "FLAT",
+    "area_unit": null,
+    "basis": null
+  },
+  "CENTS / STEM, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "CENTS",
+    "weight_unit": "STEM",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "BOXES / ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BOXES",
+    "area_unit": "ACRE",
+    "basis": null
+  },
+  "$ / TON, DRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "TON",
+    "area_unit": null,
+    "basis": "DRY BASIS"
+  },
+  "BARRELS / ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BARRELS",
+    "area_unit": "ACRE",
+    "basis": null
+  },
+  "ACRES WHERE TAPS SET": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": null,
+    "area_unit": "ACRES WHERE TAPS SET",
+    "basis": null
+  },
+  "$ / POT": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "POT",
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / GALLON": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "GALLON",
+    "area_unit": null,
+    "basis": null
+  },
+  "TONS / ACRE, FRESH BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "TONS",
+    "area_unit": "ACRE",
+    "basis": "FRESH BASIS"
+  },
+  "BARRELS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BARRELS",
+    "area_unit": null,
+    "basis": null
+  },
+  "BU / NET PLANTED ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "BU",
+    "area_unit": "NET PLANTED ACRE",
+    "basis": null
+  },
+  "$ / BASKET": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BASKET",
+    "area_unit": null,
+    "basis": null
+  },
+  "CENTS / SPIKE, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "CENTS",
+    "weight_unit": "SPIKE",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "GALLONS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "GALLONS",
+    "area_unit": null,
+    "basis": null
+  },
+  "CENTS / STEM": {
+    "string_type": "unit_desc",
+    "money_unit": "CENTS",
+    "weight_unit": "STEM",
+    "area_unit": null,
+    "basis": null
+  },
+  "TONS / ACRE, DRY BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "TONS",
+    "area_unit": "ACRE",
+    "basis": "DRY BASIS"
+  },
+  "$ / POT, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "POT",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "GALLONS / TAP": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "GALLONS",
+    "area_unit": "TAP",
+    "basis": null
+  },
+  "ACRES": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": null,
+    "area_unit": "ACRES",
+    "basis": null
+  },
+  "$ / LB": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "LB",
+    "area_unit": null,
+    "basis": null
+  },
+  "TONS, FRESH BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "TONS",
+    "area_unit": null,
+    "basis": "FRESH BASIS"
+  },
+  "$ / FLAT, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "FLAT",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "CENTS / SPIKE": {
+    "string_type": "unit_desc",
+    "money_unit": "CENTS",
+    "weight_unit": "SPIKE",
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / BLOOM": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BLOOM",
+    "area_unit": null,
+    "basis": null
+  },
+  "TONS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "TONS",
+    "area_unit": null,
+    "basis": null
+  },
+  "LB / SQ FT": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "LB",
+    "area_unit": "SQ FT",
+    "basis": null
+  },
+  "LB, GREEN BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "LB",
+    "area_unit": null,
+    "basis": "GREEN BASIS"
+  },
+  "$ / STEM": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "STEM",
+    "area_unit": null,
+    "basis": null
+  },
+  "$ / SPIKE, WHOLESALE BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "SPIKE",
+    "area_unit": null,
+    "basis": "WHOLESALE BASIS"
+  },
+  "LB / ACRE": {
+    "string_type": "unit_desc",
+    "money_unit": null,
+    "weight_unit": "LB",
+    "area_unit": "ACRE",
+    "basis": null
+  },
+  "$ / BOX, ON TREE EQUIV": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "BOX",
+    "area_unit": null,
+    "basis": "ON TREE EQUIV"
+  },
+  "$ / TON, FRESH BASIS": {
+    "string_type": "unit_desc",
+    "money_unit": "$",
+    "weight_unit": "TON",
+    "area_unit": null,
+    "basis": "FRESH BASIS"
+  },
+  "CENTS / BLOOM": {
+    "string_type": "unit_desc",
+    "money_unit": "CENTS",
+    "weight_unit": "BLOOM",
+    "area_unit": null,
+    "basis": null
+  }
+}
