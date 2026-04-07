@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.3"
+__generated_with = "0.22.4"
 app = marimo.App(width="full")
 
 
@@ -18,7 +18,7 @@ def _():
     import optax
     import lineax as lx
     from jax.flatten_util import ravel_pytree
-    import pickle
+    import json
     import seaborn as sns
     import matplotlib.pyplot as plt
     from sklearn.metrics import roc_auc_score, precision_score, recall_score, confusion_matrix
@@ -28,11 +28,11 @@ def _():
         itertools,
         jax,
         jnp,
+        json,
         lx,
         mo,
         np,
         optax,
-        pickle,
         pl,
         pyprojroot,
         ravel_pytree,
@@ -581,15 +581,16 @@ def _(
     jax,
     jax_inv_softplus,
     jnp,
+    json,
     meta_val_and_grad,
     np,
     optax,
-    pickle,
 ):
     def run_meta_optimization(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, meta_iters=150, patience=15, reset=False):
 
         # Define file paths for checkpointing and logging
-        checkpoint_path = code_path / 'json' / "meta_ppml_opt_checkpoint.pkl"
+        # Changed from .pkl to .json for human-readable checkpoints
+        checkpoint_path = code_path / 'json' / "meta_ppml_opt_checkpoint.json"
         log_path = code_path / 'json' / "meta_ppml_opt_log.csv"
 
         meta_optimizer = optax.adam(learning_rate=0.01)
@@ -599,19 +600,57 @@ def _(
             checkpoint_path.unlink()
             print("[-] Deleted old checkpoint. Starting fresh.")
 
+        # Helper function to initialize dummy structure to capture JAX treedefs
+        def get_templates():
+            raw_l1 = {k: jnp.array(jax_inv_softplus(0.01 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
+            raw_l2 = {k: jnp.array(jax_inv_softplus(0.005 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
+            hparams = (raw_l1, raw_l2)
+            state = meta_optimizer.init(hparams)
+            return hparams, state
+
+        hparams_template, state_template = get_templates()
+        _, hparams_treedef = jax.tree_util.tree_flatten(hparams_template)
+        _, state_treedef = jax.tree_util.tree_flatten(state_template)
+
+        # Helper function to convert JAX/NumPy arrays to serializable lists/scalars
+        def to_serializable(x):
+            if hasattr(x, 'tolist'): return x.tolist()
+            if hasattr(x, 'item'): return x.item()
+            return x
+
+        # Helper function to restore loaded JSON lists back to original JAX arrays
+        def restore_leaves(loaded_leaves, template_leaves):
+            restored =[]
+            for loaded, template in zip(loaded_leaves, template_leaves):
+                if hasattr(template, 'dtype'):
+                    restored.append(jnp.array(loaded, dtype=template.dtype))
+                else:
+                    restored.append(loaded)
+            return restored
+
         # -------------------------------------------------------------
         # 1. LOAD CHECKPOINT OR INITIALIZE FROM SCRATCH
         # -------------------------------------------------------------
         if checkpoint_path.exists():
             print(f"\n--- Resuming Bilevel Hyperparameter Tuning from {checkpoint_path.name} ---")
-            with open(checkpoint_path, "rb") as f:
-                chkpt = pickle.load(f)
+            with open(checkpoint_path, "r") as f:
+                chkpt = json.load(f)
 
-            raw_l1, raw_l2 = chkpt['hparams']
-            hparams = (raw_l1, raw_l2)
-            state = chkpt['state']
+            hparams_template_leaves = jax.tree_util.tree_leaves(hparams_template)
+            state_template_leaves = jax.tree_util.tree_leaves(state_template)
+
+            # Reconstruct exactly matched PyTrees from JSON lists
+            hparams_leaves = restore_leaves(chkpt['hparams_leaves'], hparams_template_leaves)
+            hparams = jax.tree_util.tree_unflatten(hparams_treedef, hparams_leaves)
+            raw_l1, raw_l2 = hparams
+
+            state_leaves = restore_leaves(chkpt['state_leaves'], state_template_leaves)
+            state = jax.tree_util.tree_unflatten(state_treedef, state_leaves)
+
+            best_hparams_leaves = restore_leaves(chkpt['best_hparams_leaves'], hparams_template_leaves)
+            best_hparams = jax.tree_util.tree_unflatten(hparams_treedef, best_hparams_leaves)
+
             best_alo = chkpt['best_alo']
-            best_hparams = chkpt['best_hparams']
             wait = chkpt['wait']
             start_iter = chkpt['iter'] + 1
 
@@ -619,10 +658,9 @@ def _(
 
         else:
             print("\n--- Starting Bilevel Hyperparameter Tuning from Scratch ---")
-            raw_l1 = {k: jnp.array(jax_inv_softplus(0.01 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
-            raw_l2 = {k: jnp.array(jax_inv_softplus(0.005 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
-            hparams = (raw_l1, raw_l2)
-            state = meta_optimizer.init(hparams)
+            hparams = hparams_template
+            state = state_template
+            raw_l1, raw_l2 = hparams
 
             best_alo = float('inf')
             best_hparams = hparams
@@ -664,20 +702,27 @@ def _(
                 f.write(f"{i},{current_alo},{act_l1},{wait}\n")
 
             # -------------------------------------------------------------
-            # 3. ATOMIC CHECKPOINT SAVE
+            # 3. ATOMIC CHECKPOINT SAVE (JSON Format)
             # -------------------------------------------------------------
             # We save to a temporary file and replace the old one. 
             # This prevents corruption if you cancel the run exactly mid-save.
-            tmp_path = checkpoint_path.with_suffix('.pkl.tmp')
-            with open(tmp_path, "wb") as f:
-                pickle.dump({
-                    'iter': i,
-                    'hparams': hparams,
-                    'state': state,
-                    'best_alo': best_alo,
-                    'best_hparams': best_hparams,
-                    'wait': wait
-                }, f)
+            tmp_path = checkpoint_path.with_suffix('.json.tmp')
+        
+            hparams_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(hparams)]
+            state_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(state)]
+            best_hparams_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(best_hparams)]
+
+            chkpt_data = {
+                'iter': i,
+                'hparams_leaves': hparams_leaves,
+                'state_leaves': state_leaves,
+                'best_alo': float(best_alo),
+                'best_hparams_leaves': best_hparams_leaves,
+                'wait': wait
+            }
+
+            with open(tmp_path, "w") as f:
+                json.dump(chkpt_data, f, indent=4) # indent=4 makes it pretty-formatted and readable
             tmp_path.replace(checkpoint_path)
 
             # Break out if patience threshold is met

@@ -1,6 +1,6 @@
 ---
 title: A14 03 Elastic Net Estimation
-marimo-version: 0.20.4
+marimo-version: 0.22.4
 width: full
 ---
 
@@ -20,6 +20,7 @@ from jax.flatten_util import ravel_pytree
 import pickle
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score, precision_score, recall_score, confusion_matrix
 ```
 
 ```python {.marimo}
@@ -89,7 +90,6 @@ cat_cols = [
 ```
 
 ```python {.marimo}
-@mo.persistent_cache
 def prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, max_order):
     """
     Merge, standardize continuous variables, map categorical variables
@@ -115,6 +115,8 @@ def prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, ma
     # extreme BEA data artifacts from destroying gradient magnitudes
     merged = merged.with_columns(
         (pl.col('h2a_certified') / pl.col('bea_farm_emp_2011')).clip(0.0, 2.0).alias('h2a_rate')
+    ).with_columns(
+        (pl.col('h2a_rate') * pl.col('bea_farm_emp_2011')).alias('h2a_target_count')
     )
 
     # For continuous variables, fill missing with the column mean
@@ -130,19 +132,21 @@ def prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, ma
         pl.struct(["county_ansi", "year"]).rank("dense").alias("group_id") - 1
     ])
 
-    # Calculate acreage fraction per patch
+    # Calculate acreage fraction AND Patch Exposure (frac of total BEA farm emp allocated that patch)
     merged = merged.with_columns(
         (pl.col('total_acres') / pl.col('total_acres').sum().over('group_id')).alias('acreage_frac')
+    ).with_columns(
+        (pl.col('acreage_frac') * pl.col('bea_farm_emp_2011')).alias('patch_exposure')
     )
 
     # Extract arrays
-    acreage_frac = jnp.array(merged["acreage_frac"].to_numpy(), dtype=jnp.float32)
+    patch_exposure = jnp.array(merged["patch_exposure"].to_numpy(), dtype=jnp.float32)
     group_ids = jnp.array(merged["group_id"].to_numpy(), dtype=jnp.int32)
     num_groups = merged["group_id"].max() + 1
 
-    # Extract Unique Target Rates per County-Year
-    unique_targets = merged.group_by("group_id").agg(pl.first("h2a_rate")).sort("group_id")
-    y_rate_county_year = jnp.array(unique_targets["h2a_rate"].to_numpy(), dtype=jnp.float32)
+    # Extract Unique target COUNTS per County-Year (Not Rates)
+    unique_targets = merged.group_by("group_id").agg(pl.first("h2a_target_count")).sort("group_id")
+    y_count_county_year = jnp.array(unique_targets["h2a_target_count"].to_numpy(), dtype=jnp.float32)
 
     # Standardize continuous variables (27 total)
     X_cont = merged.select(cont_cols).to_numpy()
@@ -175,7 +179,7 @@ def prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, ma
         feature_sizes[order] = current_offset
         feature_names[order] = order_names
 
-    return feature_ids, feature_sizes, feature_names, X_cont, acreage_frac, group_ids, y_rate_county_year, num_groups, merged
+    return feature_ids, feature_sizes, feature_names, X_cont, patch_exposure, group_ids, y_count_county_year, num_groups, merged
 ```
 
 # PPML objective function
@@ -204,9 +208,9 @@ def initialize_params(feature_sizes: dict, num_continuous: int) -> dict:
 ```
 
 ```python {.marimo}
-def compute_patch_log_rate(params: dict, feature_ids: dict, X_cont: jnp.ndarray) -> jnp.ndarray:
+def compute_patch_log_worker(params: dict, feature_ids: dict, X_cont: jnp.ndarray) -> jnp.ndarray:
     """
-    Computes the log(workers per acre) for EACH specific soil group in a county.
+    Computes log(worker) for EACH specific soil group in a county.
     """
     log_mu = params['bias']
 
@@ -224,8 +228,8 @@ def compute_patch_log_rate(params: dict, feature_ids: dict, X_cont: jnp.ndarray)
 
 ```python {.marimo}
 def ppml_objective_compositional(params: dict, feature_ids: dict, X_cont: jnp.ndarray, 
-                                 acreage_frac: jnp.ndarray, group_ids: jnp.ndarray, 
-                                 y_rate_county_year: jnp.ndarray, num_groups: int,
+                                 patch_exposure: jnp.ndarray, group_ids: jnp.ndarray, 
+                                 y_count_county_year: jnp.ndarray, num_groups: int,
                                  l1_rates: dict, l2_rates: dict) -> float:
     """
     The PPML objective function.
@@ -233,24 +237,20 @@ def ppml_objective_compositional(params: dict, feature_ids: dict, X_cont: jnp.nd
     and THEN calculates the Poisson Error.
     """
     # 1. Get the log(rate) for all patches
-    log_rate_per_patch = compute_patch_log_rate(params, feature_ids, X_cont)
+    log_worker_per_patch = compute_patch_log_worker(params, feature_ids, X_cont)
 
-    # 2. Weight the exponentiated rate by the patch's fractional footprint in the county
-    weighted_patch_rate = acreage_frac * jnp.exp(log_rate_per_patch)
+    # 2. Patch Exposure * exp(log_worker_per_patch)) = Predicted workers for that patch
+    workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
 
-    # 3. AGGREGATION MAGIC: jax.ops.segment_sum
-    # This instantly groups `weighted_patch_rate` by `group_ids` and sums them up.
-    # The output is a highly compressed array of length `num_groups` (County-Years).
-    mu_rate_cy = jax.ops.segment_sum(
-        data=weighted_patch_rate, 
+    # 3. Sum up the workers to the county level
+    mu_count_cy = jax.ops.segment_sum(
+        data=workers_in_patch, 
         segment_ids=group_ids, 
         num_segments=num_groups
     )
 
-    # 4. POISSON NLL at the County-Year Level
-    # Standard PPML Poisson loss: mu - y * log(mu)
-    # We add 1e-7 inside the log to prevent Math Domain Errors if mu is exactly 0
-    nll = jnp.mean(mu_rate_cy - y_rate_county_year * jnp.log(mu_rate_cy + 1e-7))
+    # 4. POISSON NLL targeting the COUNTS
+    nll = jnp.mean(mu_count_cy - y_count_county_year * jnp.log(mu_count_cy + 1e-7))
 
     # 5. Elastic Net Penalty
     # We impose massive penalties on interactions terms if parent terms are dropped, to impose heredity
@@ -275,12 +275,12 @@ def ppml_objective_compositional(params: dict, feature_ids: dict, X_cont: jnp.nd
 
 ```python {.marimo}
 # This is the inner loop that is actually solving the PPML optimization problem
-def train_model_inner(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates, max_iter=1000, tol=1e-5):
+def train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates, max_iter=1000, tol=1e-5):
     num_continuous = X_cont.shape[1]
     params = initialize_params(feature_sizes_tup, num_continuous)
 
     def loss_fn(p):
-        return ppml_objective_compositional(p, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
+        return ppml_objective_compositional(p, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
 
     solver = optax.lbfgs()
     opt_state = solver.init(params)
@@ -331,16 +331,16 @@ def train_model_inner(feature_ids, X_cont, acreage, group_ids, y_county_year, nu
     return final_params
 
 @jax.custom_vjp
-def train_model_cpu(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
-    return train_model_inner(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+def train_model_cpu(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
+    return train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
 
-def train_fwd(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
-    opt_params = train_model_inner(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
-    residuals = (opt_params, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+def train_fwd(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
+    opt_params = train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+    residuals = (opt_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
     return opt_params, residuals
 
 def train_bwd(residuals, cotangents):
-    opt_params, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates = residuals
+    opt_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates = residuals
     v = cotangents 
 
     flat_opt_params, unravel_fn = ravel_pytree(opt_params)
@@ -350,7 +350,7 @@ def train_bwd(residuals, cotangents):
 
     def flat_total_loss(p_flat):
         return ppml_objective_compositional(
-            unravel_fn(p_flat), feature_ids, X_cont, acreage, group_ids, 
+            unravel_fn(p_flat), feature_ids, X_cont, patch_exposure, group_ids, 
             y_county_year, num_groups, l1_rates, safe_l2_rates
         )
 
@@ -371,7 +371,7 @@ def train_bwd(residuals, cotangents):
     def mixed_grad(l1_d, l2_d):
         safe_l2_d = {k: jnp.maximum(val, 1e-4) for k, val in l2_d.items()}
         return jax.grad(lambda p: ppml_objective_compositional(
-            p, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, l1_d, safe_l2_d))(opt_params)
+            p, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l1_d, safe_l2_d))(opt_params)
 
     _, vjp_fn = jax.vjp(mixed_grad, l1_rates, l2_rates)
     grad_l1, grad_l2 = vjp_fn(w_pytree)
@@ -397,9 +397,9 @@ def compute_alo_compositional(params, feature_ids, X_cont, acreage, group_ids,
 
     def all_groups_nll(p_flat):
         p = unravel_fn(p_flat)
-        log_rate = compute_patch_log_rate(p, feature_ids, X_cont)
-        workers = acreage * jnp.exp(log_rate)
-        mu_cy = jax.ops.segment_sum(workers, group_ids, num_groups)
+        log_worker_per_patch = compute_patch_log_worker(p, feature_ids, X_cont)
+        workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
+        mu_cy = jax.ops.segment_sum(workers_in_patch, group_ids, num_groups)
         return mu_cy - y_county_year * jnp.log(mu_cy + 1e-7)
 
     # ---------------------------------------------------------
@@ -480,7 +480,6 @@ meta_val_and_grad = jax.jit(jax.value_and_grad(meta_loss_fn, argnums=(0, 1)), st
 ```
 
 ```python {.marimo}
-@mo.persistent_cache
 def run_meta_optimization(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, meta_iters=150, patience=15, reset=False):
 
     # Define file paths for checkpointing and logging
@@ -599,24 +598,24 @@ def run_meta_optimization(feature_ids, X_cont, acreage, group_ids, y_county_year
 
 ```python {.marimo}
 # Prep input data
-feature_ids, feature_sizes, feature_names, X_cont, acreage_frac, group_ids, y_target_rate, num_groups, merged_df = prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, max_order = 3)
+feature_ids, feature_sizes, feature_names, X_cont, patch_exposure, group_ids, y_target_count, num_groups, merged_df = prep_jax_composition_arrays(h2a, bea, soil, climate, cont_cols, cat_cols, max_order = 3)
 feature_sizes_tup = tuple(sorted(feature_sizes.items()))
 
 # Check for any remaining NaNs or Infs
-assert not np.isnan(y_target_rate).any(), "NaNs detected in target rate!"
-assert not np.isinf(y_target_rate).any(), "Infs detected in target rate!"
-print(f"Target Max Rate: {np.max(y_target_rate):.4f}")
-print(f"Target Min Rate: {np.min(y_target_rate):.4f}")
+assert not np.isnan(y_target_count).any(), "NaNs detected in target count!"
+assert not np.isinf(y_target_count).any(), "Infs detected in target count!"
+print(f"Target Max Count: {np.max(y_target_count):.4f}")
+print(f"Target Min Count: {np.min(y_target_count):.4f}")
 ```
 
 ```python {.marimo}
-# Note that inner loop is set at max_iter = 50 as default value
-best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, acreage_frac, group_ids, y_target_rate, num_groups, feature_sizes_tup, meta_iters=150, patience=15, reset=False)
+# Tune L1 and L2
+best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=400, patience=15, reset=False)
 ```
 
 ```python {.marimo}
 # Final training run uses the same default parameters as the ones used for meta-Adam (max_iter=1000, tol=1e-5)
-trained_params = train_model_inner(feature_ids, X_cont, acreage_frac, group_ids, y_target_rate, num_groups, feature_sizes, best_l1, best_l2)
+trained_params = train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes, best_l1, best_l2)
 
 print("\n--- Model Estimation with Optimized Penalty Parameters ---")
 
@@ -637,172 +636,50 @@ for order in range(1, 4):
 ```
 
 ```python {.marimo}
-@mo.persistent_cache
-def predicted_h2a_county_year(params, feature_ids, X_cont, acreage_frac, group_ids, num_groups):
-    """
-    Generates the final County-Year H2-A worker predictions.
-    """
-    # 1. Get the log(rate) for all patches
-    log_rate_per_patch = compute_patch_log_rate(params, feature_ids, X_cont)
+def predicted_h2a_county_year(params, feature_ids, X_cont, patch_exposure, group_ids, num_groups):
+# 1. Get the log(rate) for all patches
+    log_worker_per_patch = compute_patch_log_worker(params, feature_ids, X_cont)
 
-    # 2. Weight the exponentiated rate by the patch's fractional footprint in the county
-    weighted_patch_rate = acreage_frac * jnp.exp(log_rate_per_patch)
+    # 2. Patch Exposure * exp(log_worker_per_patch)) = Predicted workers for that patch
+    workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
 
-    # 3. AGGREGATION MAGIC: jax.ops.segment_sum
-    # This instantly groups `weighted_patch_rate` by `group_ids` and sums them up.
-    # The output is a highly compressed array of length `num_groups` (County-Years).
-    mu_rate_cy = jax.ops.segment_sum(
-        data=weighted_patch_rate, 
+    # 3. Sum up the workers to the county level
+    mu_count_cy = jax.ops.segment_sum(
+        data=workers_in_patch, 
         segment_ids=group_ids, 
         num_segments=num_groups
     )
 
-    return mu_rate_cy
+    return mu_count_cy
 ```
 
 ```python {.marimo}
-print("\n--- Generating Predictions ---")
-# Get predictions (returns a JAX array)
-y_pred_jax = predicted_h2a_county_year(trained_params, feature_ids, X_cont, acreage_frac, group_ids, num_groups)
+# Get count predictions (returns a JAX array)
+y_pred_counts_jax = predicted_h2a_county_year(trained_params, feature_ids, X_cont, patch_exposure, group_ids, num_groups)
 
-# Convert JAX arrays back to standard NumPy/Polars for analysis
-y_pred = np.array(y_pred_jax)
-y_true = np.array(y_target_rate)
+# County-year to group_id match
+county_ansi_year_group_id = merged_df.select([
+    'county_ansi', 'year', 'group_id'
+]).unique()
+county_ansi_year_group_id
 
-# Create a Polars DataFrame to compare True vs Predicted
+# Convert JAX arrays to NumPy to merge back into original data
+y_pred_count = np.array(y_pred_counts_jax)
+group_id = np.arange(num_groups)
+
+# Add county ansi and year
 results_df = pl.DataFrame({
-    "group_id": np.arange(num_groups),
-    "true_h2a_share": y_true,
-    "predicted_h2a_share": y_pred
-})
-
-# Calculate some basic Econometric metrics
-mae = np.mean(np.abs(y_true - y_pred))
-rmse = np.sqrt(np.mean((y_true - y_pred)**2))
-
-print(f"Mean Absolute Error (MAE): {mae:.2f} rate")
-print(f"Root Mean Squared Error (RMSE): {rmse:.2f} rate")
-```
-
-```python {.marimo hide_code="true"}
-# Choose which order you want to look at (1 = Main effects, 2 = 2-way, etc.)
-order_to_examine = 3
-
-# 1. Convert the raw JAX weights for this order back to a NumPy array
-weights_matrix = np.array(trained_params['weights'][order_to_examine])
-
-# 2. Split into intercepts and slopes
-intercepts = weights_matrix[:, 0]
-slopes = weights_matrix[:, 1:]
-
-# 3. Build a dictionary to convert into a Polars DataFrame
-data_dict = {
-    "Categorical_Combination": feature_names[order_to_examine],
-    "Intercept": intercepts
-}
-
-# Dynamically add all continuous variable slopes as their own columns
-for i, col_name in enumerate(cont_cols):
-    data_dict[f"Slope_{col_name}"] = slopes[:, i]
-
-param_df = pl.DataFrame(data_dict)
-
-# 4. Filter out the "dead" features (where intercept and ALL slopes were shrunk to ~0)
-# This uses the 1e-3 threshold from your Elastic Net
-active_param_df = param_df.filter(
-    pl.any_horizontal(pl.exclude("Categorical_Combination").abs() > 1e-3)
-)
-```
-
-# Merge predictions back into original data and save predictions
-
-```python {.marimo}
-# Extract 1 row per County-Year
-county_year_mapping = merged_df.group_by("group_id").agg([
-    pl.first("county_ansi"),
-    pl.first("year"),
-    pl.first("h2a_rate")
-]).sort("group_id")
-```
-
-```python {.marimo}
-mapping_targets = county_year_mapping["h2a_rate"].to_numpy()
-jax_targets = np.array(y_target_rate)
-
-# This will throw an error and stop the code immediately if there is any mismatch
-assert np.allclose(mapping_targets, jax_targets), "CRITICAL: The regenerated group IDs do not match the JAX arrays!"
-print("✅ Verification Passed: Regenerated group IDs perfectly match the JAX training data.")
-
-# Final Aggregated Output (County-Year)
-final_predictions = merged_df.join(
-    results_df, on="group_id", how="inner"
-).select([
-    "county_ansi", "year", "h2a_certified", "predicted_h2a_share", "true_h2a_share"
-]).sort(
-    ["county_ansi", "year"]
-).unique()
-
-final_predictions.write_parquet(binary_path / 'county_h2a_prediction_ppml_elastic_net.parquet')
-final_predictions
-```
-
-# Analyze how well predicted values preserve rank ordering in original data
-
-```python {.marimo}
-# Get average of annual predictions
-predicted_h2a_shares = final_predictions.group_by(
-    pl.col('county_ansi')
-).agg([
-    pl.col('predicted_h2a_share').mean().alias('county_mean_predicted_h2a_share')
-]).join(
-    bea, on='county_ansi',how='inner'
-)
-```
-
-```python {.marimo}
-h2a_shares = predicted_h2a_shares.join(
-    final_predictions, on='county_ansi', how='inner'
+    "group_id": group_id,
+    "predicted_h2a_count": y_pred_count
+}).join(
+    county_ansi_year_group_id,
+    on='group_id'
 )
 
-true_h2a_share_cutoff = h2a_shares['true_h2a_share'].quantile(0.75, interpolation='midpoint')
-predicted_h2a_share_cutoff = h2a_shares['predicted_h2a_share'].quantile(0.75, interpolation='midpoint')
-
-h2a_shares = h2a_shares.with_columns(
-    (pl.col('true_h2a_share') > true_h2a_share_cutoff).alias('high_true_share'),
-    (pl.col('predicted_h2a_share') > predicted_h2a_share_cutoff).alias('high_predicted_share')
+results_df = results_df.group_by(['county_ansi']).agg(
+    pl.mean('predicted_h2a_count')
 )
-```
-
-```python {.marimo}
-h2a_shares.select(pl.corr('true_h2a_share', 'predicted_h2a_share', method='spearman'))
-```
-
-```python {.marimo}
-h2a_shares.select(pl.corr('high_true_share', 'high_predicted_share', method='pearson'))
-```
-
-```python {.marimo}
-h2a_shares.filter(
-    pl.col('high_true_share')
-)
-```
-
-```python {.marimo}
-h2a_shares.filter(
-    pl.col('high_true_share'),
-    pl.col('high_predicted_share')
-)
-```
-
-```python {.marimo}
-h2a_scatter = sns.scatterplot(
-    data=h2a_shares,
-    x='true_h2a_share',
-    y='predicted_h2a_share'
-)
-
-h2a_scatter.axhline(y=predicted_h2a_share_cutoff)
-h2a_scatter.axvline(x=true_h2a_share_cutoff)
+results_df.write_parquet(binary_path / 'h2a_prediction_using_elastic_net.parquet')
 ```
 
 ```python {.marimo}

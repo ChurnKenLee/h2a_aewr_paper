@@ -1038,20 +1038,18 @@ def _(mo):
 @app.cell
 def _(json, json_path):
     # 1. Load mappings
-    with open(json_path / 'placeid_address_components_mapping.json') as _fp:
-        raw_mapping = json.load(_fp)
-
-    # 2. Pre-process mapping: Extract only counties once to avoid parsing JSON inside the loop
-    # This transforms {pid: 'json_string'} -> {pid: ['County A', 'County B']}
     placeid_to_county_map = {}
-    for pid, json_str in raw_mapping.items():
-        data = json.loads(json_str)
-        counties = [
-            comp['longText'] 
-            for comp in data.get('addressComponents', [])
-            if 'administrative_area_level_2' in comp.get('types', [])
-        ]
-        placeid_to_county_map[pid] = counties
+    with open(json_path / 'placeid_address_components_mapping.json') as _fp:
+        placeid_mapping = json.load(_fp)
+
+    for _pid, _pid_response in placeid_mapping.items():
+        all_address_components = _pid_response.get('addressComponents', [])
+        _county_list = []
+        for _comp in all_address_components:
+            if 'administrative_area_level_2' in _comp.get('types', []):
+                _county_list.append(_comp['longText'])
+
+        placeid_to_county_map[_pid] = _county_list
     return (placeid_to_county_map,)
 
 
@@ -1101,9 +1099,44 @@ def _(addfips, binary_path, pl, process_dataframe):
         if not county_list:
             return ''
 
+        # Crosswalk modern county names (from Google) back to 2010 county names (for addfips)
+        # Crosswalk modern county names (from Google Places API) back to 2010 county names (for addfips)
+        modern_to_2010_crosswalk = {
+            # --- SOUTH DAKOTA (Changed in 2015) ---
+            "Oglala Lakota County": "Shannon County",
+        
+            # --- ALASKA (Changed in 2015 & 2019) ---
+            "Kusilvak Census Area": "Wade Hampton Census Area",
+            "Chugach Census Area": "Valdez-Cordova Census Area",
+            "Copper River Census Area": "Valdez-Cordova Census Area",
+
+            # --- VIRGINIA (Merged in 2013) ---
+            # Bedford City reverted to town status and merged into Bedford County
+            "Bedford City": "Bedford County", 
+        
+            # --- CONNECTICUT (Changed in 2022) ---
+            # Connecticut replaced its 8 legacy counties with 9 Planning Regions.
+            # Regions do not perfectly map 1:1, but this majority-landmass mapping 
+            # is the standard approach to push modern CT data into 2010 boundaries.
+            "Capitol Planning Region": "Hartford County",
+            "Greater Bridgeport Planning Region": "Fairfield County",
+            "Lower Connecticut River Valley Planning Region": "Middlesex County",
+            "Naugatuck Valley Planning Region": "New Haven County",
+            "Northeastern Connecticut Planning Region": "Windham County",
+            "Northwest Hills Planning Region": "Litchfield County",
+            "South Central Connecticut Planning Region": "New Haven County",
+            "Southeastern Connecticut Planning Region": "New London County",
+            "Western Connecticut Planning Region": "Fairfield County"
+        }
+
         fips_codes = []
         for county_name in county_list:
-            county_fips = af.get_county_fips(county_name, state)
+            # 1. Translate the modern name to the 2010 name (if it changed)
+            # If the county name isn't in the crosswalk, it just leaves it alone.
+            historical_county_name = modern_to_2010_crosswalk.get(county_name, county_name)
+
+            # 2. Query AddFIPS using the 2010 vintage
+            county_fips = af.get_county_fips(historical_county_name, state)
             fips_codes.append(county_fips if county_fips else '')
 
         return ','.join(fips_codes)
@@ -1236,11 +1269,6 @@ def _(add_b_with_fips_df, binary_path, h2a_with_fips_df):
     # Export binary
     h2a_with_fips_df.write_parquet(binary_path / 'h2a_with_fips.parquet')
     add_b_with_fips_df.write_parquet(binary_path / 'h2a_addendum_b_with_fips.parquet')
-    return
-
-
-@app.cell
-def _():
     return
 
 

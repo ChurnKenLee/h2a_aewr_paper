@@ -123,7 +123,6 @@ def _(binary_path, client, json, json_path, pl, places_v1, process_df, time):
 
     search_cache_file = json_path / "placeid_search_queries_cache.json"
     if search_cache_file.exists():
-        print("Loaded cached PlaceIDs")
         with open(search_cache_file, "r") as _fp:
             search_query_cache = json.load(_fp)
     else:
@@ -142,7 +141,7 @@ def _(binary_path, client, json, json_path, pl, places_v1, process_df, time):
                 response_list.append([])
                 continue
 
-            # --- NEW: Check if query was previously executed ---
+            # Check if query was previously executed ---
             if query in search_query_cache:
                 response_list.append(search_query_cache[query])
                 continue
@@ -178,6 +177,8 @@ def _(binary_path, client, json, json_path, pl, places_v1, process_df, time):
         if new_calls_since_last_save > 0:
             with open(search_cache_file, "w") as _fp:
                 json.dump(search_query_cache, _fp)
+        if new_calls_since_last_save == 0:
+            print("No new locations so no new PlaceIDs")
 
         return response_list
 

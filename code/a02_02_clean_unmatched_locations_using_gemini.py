@@ -152,10 +152,10 @@ def _(json, pd):
         for i in range(0, len(df), chunk_size):
             #chunk = df.slice(i, chunk_size) # This gets added to our prompt as json
             #chunk_in_json = chunk.to_json(orient='records')
-        
+
             chunk = df.slice(i, chunk_size) # This gets added to our prompt as json
             chunk_in_json = json.dumps(chunk.to_dicts())
-        
+
             # Define prompt here
             prompt_string = f"""
             You are an expert data cleaning assistant. 
@@ -379,11 +379,11 @@ def _(CleanedLocation, Path, ValidationError, json, pl):
         for l in lines:
             # Strip all leading/trailing whitespace and newlines
             clean_line = l.strip()
-        
+
             # Skip completely empty lines
             if not clean_line:
                 continue
-            
+
             try:
                 batch_item = json.loads(clean_line)
             except json.JSONDecodeError as e:
@@ -503,7 +503,7 @@ def _(
         # 3. Submit the job
         print(f"Found {len(new_df)} new locations. Submitting Gemini Batch Job...")
         write_batch_request_jsonl(new_df, hash_col, genai_schema, request_jsonl_path, batch_rows)
-    
+
         upload = upload_jsonl_using_files_api(request_jsonl_path, upload_display_name)
         batch_job = initiate_genai_batch(upload.name, model_id, job_display_name)
 
@@ -511,7 +511,7 @@ def _(
         save_job_id(tracking_file, batch_job.name)
         print(f"Job successfully submitted! Job ID: {batch_job.name}")
         print("You can now safely interrupt the notebook and retrieve results later.")
-    
+
         return batch_job.name
 
     return (submit_gemini_batch_async,)
@@ -523,9 +523,9 @@ def _(Path, clear_job_id, client, load_job_id, parse_results, pl):
         cache_file: Path,
         tracking_file: Path
     ) -> pl.DataFrame:
-    
+
         job_name = load_job_id(tracking_file)
-    
+
         if not job_name:
             print("No pending jobs tracked. Returning currently cached results.")
             return parse_results(cache_file)

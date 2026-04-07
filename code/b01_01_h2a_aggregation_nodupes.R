@@ -989,7 +989,7 @@ h2a_aggregated_df %>%
   write_parquet(here("binaries", "h2a_aggregated.parquet"))
 
 h2a_ts_df <- h2a_aggregated_df %>%
-  filter(state_fips_code != "00") %> %>% %>% %
+  filter(state_fips_code != "00") %>%
   group_by(year) %>%
   summarise_if(is.numeric, sum, na.rm = TRUE) %>%
   filter(year > 2007 & year < 2023)
