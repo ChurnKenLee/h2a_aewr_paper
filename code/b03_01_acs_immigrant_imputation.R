@@ -41,42 +41,6 @@ acs_df <- read_parquet(
   clean_names()
 
 # Add identifiers of legal status as in Borjas 2007
-# Citizenship status
-acs_df <- acs_df %>%
-  mutate(is_citizen = if_else(bpl < 150, TRUE, FALSE)) %>% # Born in the US + US territories
-  mutate(is_citizen = if_else(citizen %in% c(1, 2, 4), TRUE, is_citizen)) # Naturalized
-
-# Public health insurance recipient
-acs_df <- acs_df %>%
-  mutate(
-    public_health_insurance = case_when(
-      hcovpub == 2 ~ TRUE, # any public health insurance coverage
-      hinsihs == 2 ~ TRUE, # Indian Health Services insurance
-      .default = FALSE
-    )
-  )
-
-# SSI, AFDC, GA
-acs_df <- acs_df %>%
-  mutate(social_security = FALSE) %>%
-  mutate(
-    social_security = if_else(between(incss, 1, 99998), TRUE, social_security)
-  ) %>% # Social Security
-  mutate(public_assistance = FALSE) %>%
-  mutate(
-    public_assistance = if_else(
-      between(incwelfr, 1, 99998),
-      TRUE,
-      public_assistance
-    )
-  ) %>% # SSI, AFDC, GA
-  mutate(ssi = FALSE) %>%
-  mutate(ssi = if_else(between(incsupp, 1, 99998), TRUE, ssi)) # SSI
-
-# Born in Cuba
-acs_df <- acs_df %>%
-  mutate(born_in_cuba = if_else(bpl == 250, TRUE, FALSE))
-
 # Military status
 military_occupations <- c(
   "551000",
@@ -103,13 +67,6 @@ military_sectors <- c(
   "9281107",
   "9281107P7"
 )
-
-acs_df <- acs_df %>%
-  mutate(military = FALSE) %>%
-  mutate(military = if_else(vetstat == 2, TRUE, military)) %>% # Veteran
-  mutate(military = indnaics %in% military_sectors) %>% # Military sector
-  mutate(military = occsoc %in% military_occupations) # Military occupation
-
 # Public sector employee
 public_sectors <- c(
   "9211MP",
@@ -122,10 +79,6 @@ public_sectors <- c(
   "928Z",
   "928P"
 )
-
-acs_df <- acs_df %>%
-  mutate(public_sector = indnaics %in% public_sectors)
-
 # Licensed occupations
 licensed_occupations <- c(
   "171010",
@@ -211,56 +164,42 @@ licensed_occupations <- c(
 )
 
 acs_df <- acs_df %>%
-  mutate(licensed_occupation = occsoc %in% licensed_occupations)
+  mutate(
+    is_citizen = (bpl < 150 | citizen %in% c(1, 2, 4)), # Born in US or naturalized
+    public_health_insurance = (hcovpub == 2) | (hinsihs == 2), # Receives public health insurance
+    social_security = between(incss, 1, 99998), # Social security
+    public_assistance = between(incwelfr, 1, 99998), # AFDC
+    ssi = between(incsupp, 1, 99998), # SSI
+    born_in_cuba = (bpl == 250), # Born in Cuba
+    military = (vetstat == 2) | # In military
+      (indnaics %in% military_sectors) |
+      (occsoc %in% military_occupations),
+    public_sector = indnaics %in% public_sectors, # Public sector employee
+    licensed_occupation = occsoc %in% licensed_occupations # Occupation is licensed
+  )
 
 # Identify spouses of citizens
-# Iterate over pernum, getting citizen status of the spouse
+# Create spouse lookup table
+# Rename pernum to sploc for joining back
+spouse_info <- acs_df %>%
+  filter(sploc > 0) %>% # Has spouse = is spouse
+  select(sample, serial, pernum, is_citizen) %>%
+  rename(sploc = pernum, spouse_is_citizen_actual = is_citizen)
+
+# Join it back to the main data
 acs_df <- acs_df %>%
-  mutate(spouse_is_citizen = FALSE)
-
-acs_df_spousal <- acs_df %>%
-  filter(sploc != 0)
-
-acs_df <- acs_df %>%
-  filter(sploc == 0)
-
-for (i in 1:20) {
-  print(paste("Currently on pernum=", i))
-  acs_df_spousal <- acs_df_spousal %>%
-    mutate(pernum_is_citizen = (pernum == i) & is_citizen)
-
-  acs_df_spousal <- acs_df_spousal %>%
-    group_by(sample, serial) %>%
-    mutate(hh_pernum_is_citizen = any(pernum_is_citizen == TRUE)) %>%
-    ungroup() %>%
-    mutate(
-      spouse_is_citizen = if_else(
-        sploc == i & hh_pernum_is_citizen,
-        TRUE,
-        spouse_is_citizen
-      )
-    )
-}
-
-acs_df_spousal <- acs_df_spousal %>%
-  select(-pernum_is_citizen, -hh_pernum_is_citizen)
-
-acs_df <- rbind(acs_df, acs_df_spousal)
+  left_join(spouse_info, by = c("sample", "serial", "sploc")) %>%
+  mutate(spouse_is_citizen = replace_na(spouse_is_citizen_actual, FALSE)) %>%
+  select(-spouse_is_citizen_actual)
 
 # Add imputed immigrant type
 acs_df <- acs_df %>%
-  mutate(immigrant_type = "non_immigrant") %>%
   mutate(
-    immigrant_type = if_else(
-      bpl > 120 & citizen != 1,
-      "undocumented_immigrant",
-      immigrant_type
-    )
-  ) %>%
-  mutate(
-    immigrant_type = if_else(
-      immigrant_type == "undocumented_immigrant" &
-        (is_citizen |
+    immigrant_type = case_when(
+      # If they are foreign born and not a citizen...
+      bpl > 120 & citizen != 1 ~ case_when(
+        # ...but meet any of these criteria, they are documented
+        is_citizen |
           public_health_insurance |
           social_security |
           public_assistance |
@@ -268,23 +207,34 @@ acs_df <- acs_df %>%
           born_in_cuba |
           military |
           public_sector |
-          licensed_occupation),
-      "documented_immigrant",
-      immigrant_type
+          licensed_occupation |
+          spouse_is_citizen ~ "documented_immigrant",
+        # ...otherwise, undocumented
+        .default = "undocumented_immigrant"
+      ),
+      # If born in US/territories or already a citizen
+      .default = "non_immigrant"
     )
-  )
+  ) %>%
+  select(year, multyear, statefip, puma, sex, age, perwt, immigrant_type)
 
 acs_df <- acs_df %>%
   select(year, multyear, statefip, puma, sex, age, perwt, immigrant_type)
 
 # Pad state FIPS code and PUMA code for merging with GEOCORR
 acs_df <- acs_df %>%
-  mutate(statefip = str_pad(statefip, 2, side = c("left"), pad = "0")) %>%
-  mutate(puma = str_pad(puma, 5, side = c("left"), pad = "0"))
+  mutate(
+    statefip = str_pad(statefip, 2, side = "left", pad = "0"),
+    puma = str_pad(puma, 5, side = "left", pad = "0")
+  )
 
 # Load GEOCORR crosswalk
 # Have to skip the 2nd row
-all_content <- readLines(here("Data", "geocorr", "geocorr2000_puma_county.csv"))
+all_content <- readLines(here(
+  "Data",
+  "geocorr",
+  "geocorr2014_puma2000_county2010.csv"
+))
 skip_second <- all_content[-2]
 geocorr_2000_df <- read.csv(
   textConnection(skip_second),
@@ -293,10 +243,14 @@ geocorr_2000_df <- read.csv(
 )
 geocorr_2000_df <- geocorr_2000_df %>%
   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
-  mutate(puma = str_pad(puma5, 5, side = c("left"), pad = "0")) %>%
-  select(-c(state, puma5))
+  mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
+  select(-c(state, puma2k))
 
-all_content <- readLines(here("Data", "geocorr", "geocorr2018_puma_county.csv"))
+all_content <- readLines(here(
+  "Data",
+  "geocorr",
+  "geocorr2018_puma2010_county2010.csv"
+))
 skip_second <- all_content[-2]
 geocorr_2012_df <- read.csv(
   textConnection(skip_second),

@@ -908,11 +908,12 @@ def _(
         pl.mean('predicted_h2a_count')
     )
     results_df.write_parquet(binary_path / 'h2a_prediction_using_elastic_net.parquet')
-    return
+    return (results_df,)
 
 
 @app.cell
-def _():
+def _(results_df):
+    results_df
     return
 
 

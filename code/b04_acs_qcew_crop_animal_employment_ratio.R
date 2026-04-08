@@ -10,12 +10,10 @@ library(ipumsr)
 
 rm(list = ls())
 
-# Read in ACS data and save as binary
-# ddi <- read_ipums_ddi(here("Data", "acs", "usa_00022.xml"))
-# data <- read_ipums_micro(ddi)
-# write_parquet(data, here("binaries", "acs_5year_2007_2012_2017.parquet"))
-
-acs_df <- read_parquet(here("binaries", "acs_5year_2007_2012_2017.parquet")) %>%
+acs_df <- read_parquet(here(
+  "binaries",
+  "acs_5year_for_immigrant_status_imputation.parquet"
+)) %>%
   clean_names()
 
 # We only care about NAICS 111 and 112
@@ -34,10 +32,13 @@ acs_df <- acs_df %>%
   mutate(statefip = str_pad(statefip, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma, 5, side = c("left"), pad = "0"))
 
-
 # Load GEOCORR crosswalk
 # Have to skip the 2nd row
-all_content <- readLines(here("Data", "geocorr", "geocorr2000_puma_county.csv"))
+all_content <- readLines(here(
+  "Data",
+  "geocorr",
+  "geocorr2014_puma2000_county2010.csv"
+))
 skip_second <- all_content[-2]
 geocorr_2000_df <- read.csv(
   textConnection(skip_second),
@@ -46,10 +47,14 @@ geocorr_2000_df <- read.csv(
 )
 geocorr_2000_df <- geocorr_2000_df %>%
   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
-  mutate(puma = str_pad(puma5, 5, side = c("left"), pad = "0")) %>%
-  select(-c(state, puma5))
+  mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
+  select(-c(state, puma2k))
 
-all_content <- readLines(here("Data", "geocorr", "geocorr2018_puma_county.csv"))
+all_content <- readLines(here(
+  "Data",
+  "geocorr",
+  "geocorr2018_puma2010_county2010.csv"
+))
 skip_second <- all_content[-2]
 geocorr_2012_df <- read.csv(
   textConnection(skip_second),
