@@ -26,9 +26,9 @@ def _(mo):
 
 @app.cell
 def _(Path):
-    project_path = Path(__file__).parent.parent
-    cdl_path = project_path / 'Data' / 'croplandcros_cdl'
-    return cdl_path, project_path
+    root_path = Path(__file__).parent.parent
+    cdl_path = root_path / 'Data' / 'croplandcros_cdl'
+    return cdl_path, root_path
 
 
 @app.cell
@@ -89,9 +89,9 @@ def _(pl, rows_list):
 
 
 @app.cell
-def _(pl, project_path):
+def _(pl, root_path):
     # Read CDL county aggregates
-    cdl_pixel_file = project_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
+    cdl_pixel_file = root_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
     cdl_pixel = pl.read_parquet(cdl_pixel_file)
     # Change type to match crop code data
     cdl_pixel = cdl_pixel.with_columns(
@@ -121,7 +121,7 @@ def _(cdl_pixel, crop_code_keys, pl):
 
     # Keep relevant columns and export
     county_crop = county_crop.rename(
-        {'GEOID':'fips'}
+        {'GEOID10':'fips'}
     ).select(
         ['fips', 'year', 'crop_code', 'crop_name', 'acres']
     )
@@ -129,14 +129,9 @@ def _(cdl_pixel, crop_code_keys, pl):
 
 
 @app.cell
-def _(county_crop, project_path):
+def _(county_crop, root_path):
     # Save binary
-    county_crop.write_parquet(project_path / 'binaries' / 'croplandcros_county_crop_acres.parquet')
-    return
-
-
-@app.cell
-def _():
+    county_crop.write_parquet(root_path / 'binaries' / 'croplandcros_county_crop_acres.parquet')
     return
 
 

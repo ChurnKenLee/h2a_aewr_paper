@@ -707,7 +707,7 @@ def _(
             # We save to a temporary file and replace the old one. 
             # This prevents corruption if you cancel the run exactly mid-save.
             tmp_path = checkpoint_path.with_suffix('.json.tmp')
-        
+
             hparams_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(hparams)]
             state_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(state)]
             best_hparams_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(best_hparams)]

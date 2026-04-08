@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.3"
+__generated_with = "0.22.4"
 app = marimo.App(width="full")
 
 
@@ -88,8 +88,8 @@ def _(cdl_files, pd, pl, root_path):
     #     include_cols=['GEOID10'],
     #     output='pandas'
     # )
+    # results.to_parquet(root_path / 'binaries' / 'temp_exactextract.parquet')
 
-    # results.to_parquet(project_path / 'binaries' / 'temp_exactextract.parquet')
     results = pd.read_parquet(root_path / 'binaries' / 'temp_exactextract.parquet')
     results = pl.from_pandas(results)
 
@@ -102,9 +102,9 @@ def _(cs, pl):
     # Define a function that unpivots each column type separately
     def unpivot_to_long_metric(df, suffix, value_name):
         long_df = df.select(
-            ["GEOID", cs.contains(suffix)]
+            ["GEOID10", cs.contains(suffix)]
         ).unpivot(
-            index="GEOID", variable_name="year", value_name=value_name
+            index="GEOID10", variable_name="year", value_name=value_name
         ).with_columns(
             pl.col("year").str.extract(r"^(\d{4})", 1) # Extract 2008, 2009, etc.
         )
@@ -129,9 +129,9 @@ def _(df_counts, df_fracs, df_unique, pl, root_path):
     # Join them back together on GEOID and Year
     # Using a join ensures that 2008 count matches 2008 unique
     long_df = df_counts.join(
-        df_unique, on=["GEOID", "year"]
+        df_unique, on=["GEOID10", "year"]
     ).join(
-        df_fracs, on=["GEOID", "year"]
+        df_fracs, on=["GEOID10", "year"]
     )
 
     # Explode the lists and calculate pixel counts
@@ -145,11 +145,6 @@ def _(df_counts, df_fracs, df_unique, pl, root_path):
     # Export as parquet
     binary_file_path = root_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
     long_df.write_parquet(binary_file_path)
-    return
-
-
-@app.cell
-def _():
     return
 
 

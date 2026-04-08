@@ -747,6 +747,15 @@ bea_caemp25n_data <- bea_caemp25n_data %>%
 bea_caemp25n_data <- bea_caemp25n_data %>%
   select(-oldfips, -realfips)
 
+# SD Oglala Lakota to Shannon
+bea_caemp25n_data <- bea_caemp25n_data %>%
+  mutate(
+    countyfips = case_when(
+      countyfips == 46102 ~ 46113,
+      .default = countyfips
+    )
+  )
+
 write_parquet(
   bea_caemp25n_data,
   paste0(folder_data, "bea_caemp25n_data.parquet")
@@ -1894,6 +1903,15 @@ bea_caemp25n_data <- bea_caemp25n_data %>%
 
 bea_caemp25n_data <- bea_caemp25n_data %>%
   select(-oldfips, -realfips)
+
+# SD Oglala Lakota to Shannon
+bea_caemp25n_data <- bea_caemp25n_data %>%
+  mutate(
+    countyfips = case_when(
+      countyfips == 46102 ~ 46113,
+      .default = countyfips
+    )
+  )
 
 head(bea_caemp25n_data)
 

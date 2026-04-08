@@ -1,27 +1,36 @@
 import marimo
 
-__generated_with = "0.18.4"
-app = marimo.App()
+__generated_with = "0.22.4"
+app = marimo.App(width="full")
 
 
 @app.cell
 def _():
+    import marimo as mo
     from pathlib import Path
+    import pyprojroot
+    import dotenv, os
     import pandas as pd
     import numpy as np
     import json
     from pandas.api.types import union_categoricals
-    from itertools import islice
-    import re
-    import addfips
     import requests
     import urllib
     import time
-    DC_STATEHOOD = 1 # Enables DC to be included in the state list
+    import addfips
     import us
-    import pickle
-    import rapidfuzz
-    return Path, pd, requests, us
+    DC_STATEHOOD = 1 # Enables DC to be included in the state list
+    return dotenv, mo, os, pd, pyprojroot, requests, us
+
+
+@app.cell
+def _(dotenv, os, pyprojroot):
+    root_path = pyprojroot.find_root(criterion='pyproject.toml')
+    binary_path = root_path / 'binaries'
+    code_path = root_path / 'code'
+    dotenv.load_dotenv()
+    fred_api_key = os.getenv('FRED_API_KEY') # FRED API key from my account
+    return fred_api_key, root_path
 
 
 @app.cell(hide_code=True)
@@ -33,23 +42,12 @@ def _(mo):
 
 
 @app.cell
-def _():
-    # FRED API key from my account
-    # Import API key stored in text file
-    with open("../tools/fred_api_key.txt") as f:
-        lines = f.readlines()
-
-    api_key = lines[0]
-    return (api_key,)
-
-
-@app.cell
-def _(api_key, requests):
+def _(fred_api_key, requests):
     # Get release ID of state minimum wages
     # Grab release ID of all releases
     fred_release_api_url = 'https://api.stlouisfed.org/fred/releases'
     release_params = {
-        'api_key': api_key,
+        'api_key': fred_api_key,
         'file_type': 'json'
         }
 
@@ -64,13 +62,13 @@ def _(api_key, requests):
 
 
 @app.cell
-def _(api_key):
+def _(fred_api_key):
     # Base URL to call API
     fred_observations_api_url = 'https://api.stlouisfed.org/fred/v2/release/observations'
 
     # Bearer token has to go in request header
     fred_observations_headers = {
-        'Authorization': f'Bearer {api_key}'
+        'Authorization': f'Bearer {fred_api_key}'
     }
 
     fred_observations_params = {
@@ -169,28 +167,15 @@ def _(min_wage_df, us):
     # Add state FIPS code and export
     min_wage_df['state_fips'] = min_wage_df['state_name'].map(us.states.mapping('name', 'fips'))
     min_wage_df_1 = min_wage_df.rename(columns={'state_fips': 'state_fips_code'})
+    min_wage_df_1
     return (min_wage_df_1,)
 
 
 @app.cell
-def _(Path, min_wage_df_1):
-    output_file = 'state_year_min_wage.parquet'
-    output_dir = Path('../binaries')
-    output_dir.mkdir(parents=True, exist_ok=True)
-    min_wage_df_1.to_parquet(output_dir / output_file, index=False)  # can join path elements with / operator
+def _(min_wage_df_1, root_path):
+    min_wage_df_1.to_parquet(root_path / 'Data Int' / 'state_year_min_wage.parquet', index=False)
+    min_wage_df_1.to_parquet(root_path / 'binaries' / 'state_year_min_wage.parquet', index=False)
     return
-
-
-@app.cell
-def _(min_wage_df_1):
-    min_wage_df_1
-    return
-
-
-@app.cell
-def _():
-    import marimo as mo
-    return (mo,)
 
 
 if __name__ == "__main__":

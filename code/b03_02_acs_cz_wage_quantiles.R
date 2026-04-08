@@ -44,7 +44,9 @@ czone_1990_county_xwalk <- read_csv(here("data", "acs", "cz_crosswalk.csv"))
 # Add county ANSI to xwalk
 czone_1990_county_xwalk <- czone_1990_county_xwalk %>%
   mutate(state_ansi = substr(NHGISST, 1, nchar(NHGISST) - 1)) %>%
-  mutate(county_ansi = paste0(state_ansi, NHGISCTY))
+  mutate(county_ansi = paste0(state_ansi, NHGISCTY)) %>%
+  mutate(county_ansi = str_pad(county_ansi, 5, side = "left", pad = "0"))
+
 
 # Pick CZ within each county that has biggest overlap (weight)
 czone_1990_county_2010_xwalk <- czone_1990_county_xwalk %>%
@@ -200,5 +202,4 @@ wage_quantiles_county <- wage_quantiles_czone %>%
   arrange(county_ansi)
 
 wage_quantiles_county %>%
-  write_parquet(here("binaries", "acs_czone_wage_quantiles.parquet")) %>%
-  write_parquet(here("Data Int", "acs_czone_wage_quantiles.parquet"))
+  write_parquet(here("binaries", "acs_czone_wage_quantiles.parquet"))

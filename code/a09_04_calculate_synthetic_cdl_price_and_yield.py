@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.2"
+__generated_with = "0.22.4"
 app = marimo.App(width="full")
 
 
@@ -718,11 +718,6 @@ def _(binary_path, pl, qs_national_wide):
         ])
     )
     national_synthetic_cdl.write_parquet(binary_path / 'cdl_price_yield_synthetic_national.parquet')
-    return
-
-
-@app.cell
-def _():
     return
 
 

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.2"
+__generated_with = "0.22.4"
 app = marimo.App(width="full")
 
 
@@ -269,15 +269,15 @@ def _():
 
 
 @app.cell
-def _(summary_t):
+def _(ibis, summary_t):
     # Create markdown table (using pandas + tabulate)
     # Get summary stats from Ibis/Polars table
     def markdown_summary_table(group_val, comm_val):
         summary_df = (summary_t
             .filter([
-                _.group_desc == group_val,
-                _.commodity_desc == comm_val,
-                _.observation_type.notnull() # Only include categorized obs to save on tokens
+                ibis._.group_desc == group_val,
+                ibis._.commodity_desc == comm_val,
+                ibis._.observation_type.notnull() # Only include categorized obs to save on tokens
             ]).to_polars())
 
         if summary_df.is_empty():
@@ -499,15 +499,54 @@ def _(binary_path, census_selected_crops, pl, survey_selected_crops):
         pl.col(pl.Categorical).cast(pl.String)
     )
 
-    # Combine and export
+    # Combine crop and asset observations
+    census_selected_obs = pl.concat([census_selected_crops, census_cropland], how="diagonal")
+    survey_selected_obs = survey_selected_crops
+    return census_selected_obs, survey_selected_obs
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Adjust county FIPS to match 2010 Census definition
+    """)
+    return
+
+
+@app.cell
+def _(census_selected_obs, pl, survey_selected_obs):
+    # Only code change was in South Dakota
+    census_2010_def = census_selected_obs.with_columns(
+        pl.when(
+            (pl.col('state_fips_code')=='46') & 
+            (pl.col('county_code')=='102') # Oglala Lakota County
+        ).then(
+            pl.lit('113') # Shannon County
+        ).otherwise(
+            pl.col('county_code')
+        ).alias('county_code')
+    )
+
+    survey_2010_def = survey_selected_obs.with_columns(
+        pl.when(
+            (pl.col('state_fips_code')=='46') & 
+            (pl.col('county_code')=='102') # Oglala Lakota County
+        ).then(
+            pl.lit('113') # Shannon County
+        ).otherwise(
+            pl.col('county_code')
+        ).alias('county_code')
+    )
+    return census_2010_def, survey_2010_def
+
+
+@app.cell
+def _(binary_path, census_2010_def, survey_2010_def):
     # Note that polars' handling of categoricals/enums are non-standard and R cannot parse it
     # So we keep all categoricals as strings for exporting
     # Since the parquet file is massively reduced in size, should not blow up memory usage in R
-    qs_census_selected_obs = pl.concat([census_selected_crops, census_cropland], how="diagonal")
-    qs_survey_selected_obs = survey_selected_crops
-
-    qs_census_selected_obs.write_parquet(binary_path / "qs_census_selected_obs.parquet")
-    qs_survey_selected_obs.write_parquet(binary_path / "qs_survey_selected_obs.parquet")
+    census_2010_def.write_parquet(binary_path / "qs_census_selected_obs.parquet")
+    survey_2010_def.write_parquet(binary_path / "qs_survey_selected_obs.parquet")
     return
 
 
