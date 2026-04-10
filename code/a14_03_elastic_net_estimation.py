@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.4"
+__generated_with = "0.23.0"
 app = marimo.App(width="full")
 
 
@@ -800,7 +800,7 @@ def _(
     y_target_count,
 ):
     # Tune L1 and L2
-    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=400, patience=15, reset=False)
+    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=400, patience=30, reset=False)
     return best_l1, best_l2
 
 
