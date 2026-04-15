@@ -181,7 +181,7 @@ write_parquet(
 )
 
 ## Census of Agriculture ------------------------------
-
+options(arrow.skip_nul = T)
 census_of_agriculture <- read_parquet(
   file = paste0(folder_data, "qs_census_selected_obs.parquet")
 )
@@ -433,9 +433,8 @@ cdl_data <- merge(
 head(cdl_data)
 
 cdl_data_collapse <- cdl_data %>%
-  group_by(crop_type, year, state_fips_code, county_fips_code) %>%
+  group_by(crop_type, year, fips) %>%
   summarise(
-    pixel_count = sum(pixel_count, na.rm = T),
     acres = sum(acres, na.rm = T),
     crop_count = n()
   )
@@ -444,9 +443,9 @@ head(cdl_data_collapse)
 
 cdl_data_collapse <- cdl_data_collapse %>%
   pivot_wider(
-    id_cols = c("state_fips_code", "county_fips_code", "year"),
+    id_cols = c("fips", "year"),
     names_from = "crop_type",
-    values_from = c("pixel_count", "acres", "crop_count")
+    values_from = c("acres", "crop_count")
   )
 
 head(cdl_data_collapse)
@@ -455,8 +454,8 @@ cdl_data_collapse[is.na(cdl_data_collapse)] <- 0 # NAs are zeros
 
 cdl_data_collapse <- cdl_data_collapse %>%
   ungroup() %>%
-  mutate(countyfips = as.numeric(str_c(state_fips_code, county_fips_code))) %>%
-  dplyr::select(-state_fips_code, -county_fips_code)
+  mutate(countyfips = as.numeric(fips)) %>%
+  dplyr::select(-fips)
 
 write_parquet(cdl_data_collapse, paste0(folder_data, "cdl_cropshares.parquet"))
 
@@ -1265,6 +1264,7 @@ dim(full_county_set)
 
 ## Census of Agriculture ------------------------------
 
+options(arrow.skip_nul = TRUE)
 census_of_agriculture <- read_parquet(paste0(
   folder_data,
   "qs_census_selected_obs.parquet"

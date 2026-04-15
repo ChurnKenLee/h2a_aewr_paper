@@ -1,7 +1,6 @@
 library(here)
 library(arrow)
 library(tidyverse)
-library(dplyr)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(readxl)

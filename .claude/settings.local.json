@@ -1,7 +1,34 @@
 {
   "permissions": {
     "allow": [
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(cat)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/run_clean_load.R)",
+      "Bash(C:/Program Files/R/R-4.4.0/bin/Rscript.exe:*)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/inspect_cz.R)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/inspect_aewr.R)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/inspect_aewr_full.R)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/inspect_aewr2.R)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/check_aewr_year.R)",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" /tmp/check_deflation.R)",
+      "WebSearch",
+      "WebFetch(domain:www.ers.usda.gov)",
+      "WebFetch(domain:ers.usda.gov)",
+      "WebFetch(domain:www.princeton.edu)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:www.semanticscholar.org)",
+      "WebFetch(domain:www.dol.gov)",
+      "WebFetch(domain:www.americanimmigrationcouncil.org)",
+      "WebFetch(domain:www.cato.org)",
+      "WebFetch(domain:www.choicesmagazine.org)",
+      "WebFetch(domain:specialtycropgrower.com)",
+      "WebFetch(domain:www.fb.org)",
+      "WebFetch(domain:s.gifford.ucdavis.edu)",
+      "WebFetch(domain:southernagtoday.org)",
+      "WebFetch(domain:www.congress.gov)",
+      "WebFetch(domain:migration.ucdavis.edu)",
+      "WebFetch(domain:www.wilsoncenter.org)",
+      "WebFetch(domain:www.ncaeonline.org)"
     ]
   }
 }

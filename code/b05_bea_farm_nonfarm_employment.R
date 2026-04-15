@@ -1,7 +1,6 @@
 library(here)
 library(arrow)
 library(tidyverse)
-library(dplyr)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(readxl)
@@ -19,7 +18,7 @@ options(tigris_use_cache = TRUE)
 rm(list = ls())
 
 # BEA
-bea <- read_csv(here("Data", "bea", "CAEMP25N__ALL_AREAS_2001_2022.csv"))
+bea <- read_csv(here("data", "bea", "CAEMP25N__ALL_AREAS_2001_2022.csv"))
 
 # We only want total farm and nonfarm employment
 bea_farm <- bea %>%

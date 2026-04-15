@@ -2,6 +2,8 @@
 ## Phil Hoxie
 ## 1/31/24
 
+gc() 
+
 library(sf)
 library(tidyverse)
 #library(USAboundaries)
@@ -49,6 +51,38 @@ county_df <- read_parquet(paste0(
 ))
 
 names(county_df)
+
+#### Exhibit 0: Distribution of AEWR Bite Variables (real, non-lagged) ---------
+
+bite_long <- county_df %>%
+  filter(any_cropland_2007 == 1) %>%
+  select(countyfips, year, aewr_cz_p10, aewr_cz_p25, aewr_cz_p50) %>%
+  pivot_longer(
+    cols = c(aewr_cz_p10, aewr_cz_p25, aewr_cz_p50),
+    names_to = "percentile",
+    values_to = "bite"
+  ) %>%
+  mutate(percentile = recode(percentile,
+    aewr_cz_p10 = "AEWR minus p10",
+    aewr_cz_p25 = "AEWR minus p25",
+    aewr_cz_p50 = "AEWR minus p50"
+  ))
+
+ggplot(bite_long, aes(x = bite)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  facet_wrap(~ percentile, ncol = 1, scales = "free_y") +
+  labs(
+    x = "Real AEWR minus Real CZ Wage Percentile (2012 $)",
+    y = "Count",
+    title = "Distribution of AEWR Bite Variables"
+  ) +
+  theme_clean()
+
+ggsave(
+  paste0(folder_output, "hist_aewr_cz_bite_variables.png"),
+  width = 7, height = 8
+)
 
 # map
 
@@ -106,6 +140,33 @@ aewr_ts_nom
 ggsave(
   filename = paste0(folder_output, "ts_national_aewr_nominal.png"),
   aewr_ts_nom,
+  device = "png"
+)
+
+#### Exhibit 1C: Real AEWR vs p25 CZ Wage Bite TS ## ---------------------------
+
+aewr_bite_ts_data <- county_df %>%
+  filter(
+    any_cropland_2007 == 1,
+    county_simple_treatment_groups != "always takers"
+  ) %>%
+  group_by(year) %>%
+  summarise(aewr_cz_p25 = mean(aewr_cz_p25, na.rm = TRUE))
+
+aewr_bite_ts <- ggplot(
+  data = aewr_bite_ts_data,
+  aes(x = year, y = aewr_cz_p25)
+) +
+  geom_line(linewidth = 1.25, color = "#2166ac") +
+  theme_clean() +
+  xlab("Year") +
+  ylab("Real AEWR vs p25 Wage Gap (2012 $)") +
+  geom_vline(xintercept = 2011, linetype = "dashed")
+aewr_bite_ts
+
+ggsave(
+  filename = paste0(folder_output, "ts_national_aewr_cz_p25_bite.png"),
+  aewr_bite_ts,
   device = "png"
 )
 
@@ -352,7 +413,7 @@ h2a_map_data_2012_nolog
 
 ggsave(
   filename = paste0(folder_output, "map_H2A_workers_2012_nolog.png"),
-  h2a_map_data_2012,
+  h2a_map_data_2012_nolog,
   device = "png"
 )
 
@@ -753,6 +814,58 @@ ggsave(
   device = "png"
 )
 
+#### Exhibit 6B: AEWR p25 Bite Change 2008–2022 (County-Level Map) ## ----------
+
+# County-level change in AEWR p25 bite from 2008 to 2022 (in 2012 $ levels)
+county_bite_change <- county_df %>%
+  filter(
+    any_cropland_2007 == 1,
+    county_simple_treatment_groups != "always takers",
+    year %in% c(2008, 2022)
+  ) %>%
+  select(countyfips, year, aewr_cz_p25) %>%
+  pivot_wider(names_from = year, values_from = aewr_cz_p25, names_prefix = "bite_") %>%
+  mutate(bite_change_2008_2022 = bite_2022 - bite_2008) %>%
+  filter(!is.na(bite_change_2008_2022))
+
+bite_median <- median(county_bite_change$bite_change_2008_2022, na.rm = TRUE)
+
+county_map_bite <- merge(
+  x = county_map,
+  y = county_bite_change,
+  by = "countyfips",
+  all.x = TRUE, all.y = FALSE
+)
+
+map_aewr_cz_p25_bite_change <- ggplot(county_map_bite) +
+  geom_sf(aes(fill = bite_change_2008_2022), color = alpha("grey", 0.3), linewidth = 0.1) +
+  theme(
+    panel.grid.major = element_line(
+      color = gray(0.5), linetype = "dashed", linewidth = 0.5
+    ),
+    panel.background = element_rect(fill = "aliceblue")
+  ) +
+  theme_bw() +
+  annotation_north_arrow(
+    location = "bl", which_north = "true",
+    pad_x = unit(0.05, "in"), pad_y = unit(0.25, "in"),
+    style = north_arrow_fancy_orienteering
+  ) +
+  annotation_scale(location = "bl", width_hint = 0.4) +
+  scale_fill_gradient2(
+    low  = muted("#2166ac"), mid = "white", midpoint = bite_median,
+    high = muted("#b2182b"),
+    name = "Change in\nAEWR p25 Bite\n2008–2022\n(2012 $)",
+    na.value = "grey90"
+  )
+map_aewr_cz_p25_bite_change
+
+ggsave(
+  filename = paste0(folder_output, "map_aewr_cz_p25_change_from_trend_2022_2008.png"),
+  map_aewr_cz_p25_bite_change,
+  device = "png"
+)
+
 #### Exhibit 9: DDD by Graph a la Jeff -----------------------------------------
 
 # # need to make the ts graph using the trend growth as a dummy
@@ -1019,250 +1132,399 @@ ggsave(
 
 head(aewr_reg_ts_data_collapse)
 
-#### Exhibit 10: DDD (simple) in parts for H2A use only -------------------------
-## + ln_pop_census + emp_pop_ratio
-fixest_model_dd_simple <- feols(
-  h2a_cert_share_farm_workers_2011_start_year ~ aewr_state_ag_ppi_l1 *
-    postdummy +
-    ln_pop_census +
-    emp_pop_ratio |
-    county_fe + year_fe,
-  data = subset(county_df, any_cropland_2007 == 1),
-  vcov = ~statefips
+#### Exhibit 9B New: CZ x AEWR Region Deviation from Trend (Deciles) ## -------
+
+# Aggregate aewr_cz_p25 to CZ x AEWR region x year
+aewr_cz_p25_czreg_ts_data <- county_df %>%
+  filter(
+    any_cropland_2007 == 1,
+    county_simple_treatment_groups != "always takers",
+    !is.na(cz_out10), !is.na(aewr_region_num)
+  ) %>%
+  mutate(cz_aewr_id = paste0(cz_out10, "_", aewr_region_num)) %>%
+  group_by(cz_aewr_id, year) %>%
+  summarise(
+    aewr_cz_p25_mean = mean(aewr_cz_p25, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# National average bite across all CZ x region units by year
+czreg_national_avg <- aewr_cz_p25_czreg_ts_data %>%
+  group_by(year) %>%
+  summarise(national_avg = mean(aewr_cz_p25_mean, na.rm = TRUE))
+
+aewr_cz_p25_czreg_ts_data <- merge(
+  x = aewr_cz_p25_czreg_ts_data,
+  y = czreg_national_avg,
+  by = "year"
 )
 
-fixest_model_dd_simple$coeftable # matches stata
-fixest_model_dd_simple$nobs
+aewr_cz_p25_czreg_ts_data <- aewr_cz_p25_czreg_ts_data %>%
+  mutate(deviation = (aewr_cz_p25_mean - national_avg) / national_avg)
 
-fixest_model_ddd_simple <- feols(
-  h2a_cert_share_farm_workers_2011_start_year ~ aewr_state_ag_ppi_l1 *
-    high_h2a_share_75_inverse *
-    postdummy +
-    ln_pop_census +
-    emp_pop_ratio |
-    county_fe + year_fe,
-  data = subset(county_df, any_cropland_2007 == 1 & year >= 2011),
-  vcov = ~statefips
+# Classify CZ x region units into 10 decile bins based on 2022 endpoint deviation
+czreg_2022_dev <- aewr_cz_p25_czreg_ts_data %>%
+  filter(year == 2022) %>%
+  select(cz_aewr_id, deviation) %>%
+  rename(dev_2022 = deviation) %>%
+  mutate(
+    decile = ntile(dev_2022, 10),
+    above_trend_stable = ifelse(dev_2022 > 0, 1, 0)
+  )
+
+aewr_cz_p25_czreg_ts_data <- merge(
+  x = aewr_cz_p25_czreg_ts_data,
+  y = czreg_2022_dev %>% select(cz_aewr_id, decile, above_trend_stable),
+  by = "cz_aewr_id"
 )
 
-fixest_model_ddd_simple$coeftable # matches stata
-fixest_model_ddd_simple$nobs
+# Average deviation by decile x year for plotting
+czreg_decile_ts <- aewr_cz_p25_czreg_ts_data %>%
+  group_by(decile, year) %>%
+  summarise(avg_deviation = mean(deviation, na.rm = TRUE), .groups = "drop")
 
-fixest_model_ddd_event <- feols(
+plot_czreg_decile_ts <- ggplot(
+  czreg_decile_ts,
+  aes(
+    x = year, y = avg_deviation,
+    group = as.factor(decile),
+    color = decile
+  )
+) +
+  geom_line(linewidth = 0.8) +
+  scale_color_distiller(palette = "RdBu", name = "Decile\n(2022 Endpoint)") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_vline(xintercept = 2012, linetype = "dashed", color = "black") +
+  theme_clean() +
+  theme(legend.position = "none") +
+  xlab("Year") +
+  ylab("AEWR p25 Bite Deviation from National Average (% of national avg)")
+plot_czreg_decile_ts
+
+ggsave(
+  filename = paste0(folder_output, "fig_ts_aewr_cz_p25_czregion_deviations_deciles.png"),
+  plot_czreg_decile_ts,
+  width = 8, height = 5,
+  device = "png"
+)
+
+#### Exhibit 9C: DD Visual - Indexed H-2A Use, Above vs Below Trend ## ---------
+
+# Merge stable above/below classification (based on 2022 endpoint) to county_df
+county_df_dd_vis <- county_df %>%
+  filter(
+    any_cropland_2007 == 1,
+    county_simple_treatment_groups != "always takers",
+    !is.na(cz_out10), !is.na(aewr_region_num)
+  ) %>%
+  mutate(cz_aewr_id = paste0(cz_out10, "_", aewr_region_num))
+
+county_df_dd_vis <- merge(
+  x = county_df_dd_vis,
+  y = czreg_2022_dev %>% select(cz_aewr_id, above_trend_stable),
+  by = "cz_aewr_id",
+  all.x = TRUE
+)
+
+# Collapse H-2A use by above_trend_stable x year, index to 2011 = 1
+dd_vis_collapse <- county_df_dd_vis %>%
+  filter(!is.na(above_trend_stable)) %>%
+  group_by(above_trend_stable, year) %>%
+  summarise(
+    h2a_use = sum(nbr_workers_certified_start_year, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+dd_vis_base <- dd_vis_collapse %>%
+  filter(year == 2011) %>%
+  rename(h2a_base = h2a_use) %>%
+  select(above_trend_stable, h2a_base)
+
+dd_vis_collapse <- merge(dd_vis_collapse, dd_vis_base, by = "above_trend_stable")
+
+dd_vis_collapse <- dd_vis_collapse %>%
+  mutate(
+    h2a_indx = h2a_use / h2a_base,
+    trend_lab = ifelse(
+      above_trend_stable == 1,
+      "Above National Trend (2022 Endpoint)",
+      "Below National Trend (2022 Endpoint)"
+    )
+  )
+
+plot_dd_indexed_h2a <- ggplot(
+  dd_vis_collapse,
+  aes(
+    x = year, y = h2a_indx,
+    color = trend_lab, linetype = trend_lab
+  )
+) +
+  geom_line(linewidth = 1.25) +
+  scale_color_manual(values = c("#b2182b", "#2166ac")) +
+  scale_linetype_manual(values = c(1, 2)) +
+  geom_hline(yintercept = 1, linetype = "dashed", alpha = 0.5) +
+  geom_vline(xintercept = 2011, linetype = "dashed", color = "black") +
+  theme_clean() +
+  theme(legend.position = "bottom", legend.title = element_blank()) +
+  xlab("Year") +
+  ylab("H-2A Workers Certified (Indexed to 2011 = 1)")
+plot_dd_indexed_h2a
+
+ggsave(
+  filename = paste0(folder_output, "fig_ts_aewr_cz_p25_dd_indexed_h2a.png"),
+  plot_dd_indexed_h2a,
+  width = 7, height = 5,
+  device = "png"
+)
+
+## Exhibit 10: DD Main Results -------------------------------------------------
+
+samp_base <- county_df %>%
+  filter(any_cropland_2007 == 1, county_simple_treatment_groups != "always takers")
+
+samp_no_border <- samp_base %>% filter(border_cz == 0)
+
+# DD model 1: no controls, all CZs
+dd_1 <- feols(
   h2a_cert_share_farm_workers_2011_start_year ~
-    aewr_state_ag_ppi_l1 *
-    yeardummy_2008 *
-    high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2009 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2010 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2012 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2013 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2014 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2015 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2016 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2017 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2018 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2019 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2020 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2021 * high_h2a_share_75_inverse +
-    aewr_state_ag_ppi_l1 * yeardummy_2022 * high_h2a_share_75_inverse +
+    aewr_cz_p25_l1 * postdummy |
+    county_fe + year_fe,
+  data = samp_base,
+  vcov = ~cz_aewr_region_fe
+)
+
+# DD model 2: with controls, all CZs
+dd_2 <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    aewr_cz_p25_l1 * postdummy +
     ln_pop_census +
     emp_pop_ratio |
     county_fe + year_fe,
-  data = subset(county_df, any_cropland_2007 == 1),
-  vcov = ~statefips
+  data = samp_base,
+  vcov = ~cz_aewr_region_fe
 )
 
-fixest_model_ddd_event$coeftable # matches stata
-fixest_model_ddd_event$nobs
-
-wald(
-  fixest_model_ddd_event,
-  keep = c(
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2012",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2013",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2014",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2015",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2016",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2017",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2018",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2019",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2020",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2021",
-    "aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy_2022"
-  ),
-  vcov = ~statefips
+# DD model 3: no controls, no border CZs
+dd_3 <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    aewr_cz_p25_l1 * postdummy |
+    county_fe + year_fe,
+  data = samp_no_border,
+  vcov = ~cz_aewr_region_fe
 )
 
-# Use etable() to export fixest_model_dd_simple and fixest_model_ddd_simple
+# DD model 4: with controls, no border CZs
+dd_4 <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    aewr_cz_p25_l1 * postdummy +
+    ln_pop_census +
+    emp_pop_ratio |
+    county_fe + year_fe,
+  data = samp_no_border,
+  vcov = ~cz_aewr_region_fe
+)
+
 table_1 <- etable(
-  fixest_model_dd_simple,
-  fixest_model_ddd_simple,
+  dd_1, dd_2, dd_3, dd_4,
   tex = TRUE,
   title = "The Effect of the AEWR Wage Premium on H-2A Utilization",
-  headers = c("Standard DD", "Triple Difference (DDD)"),
+  headers = c("No Controls", "Controls", "No Border, No Controls", "No Border, Controls"),
   dict = c(
     "h2a_cert_share_farm_workers_2011_start_year" = "Normalized H-2A program usage",
-    "aewr_state_ag_ppi_l1" = "Adjusted lagged AEWR",
-    "postdummy" = "Post",
-    "high_h2a_share_75" = "High H-2A usage pre-2011",
-    "ln_pop_census" = "Log population",
-    "emp_pop_ratio" = "Employment-to-pop Ratio"
+    "aewr_cz_p25_l1"  = "Lagged AEWR vs 25th pct wage gap",
+    "postdummy"        = "Post",
+    "ln_pop_census"    = "Log population",
+    "emp_pop_ratio"    = "Employment-to-pop ratio"
   ),
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
   file = paste0(folder_output, "table_1_main_results.tex"),
   replace = TRUE
 )
 
-# Generate Event Study coefficients
-# Exporting the dynamic model to show pre-trends
+summary(dd_1)
+summary(dd_2)
+summary(dd_3)
+summary(dd_4)
+
+## Exhibit 11: Event Study (Flexible DD, Base Year = 2011) --------------------
+
+es_rhs <- paste(
+  "aewr_cz_p25_l1 * yeardummy_2008",
+  "aewr_cz_p25_l1 * yeardummy_2009",
+  "aewr_cz_p25_l1 * yeardummy_2010",
+  "aewr_cz_p25_l1 * yeardummy_2012",
+  "aewr_cz_p25_l1 * yeardummy_2013",
+  "aewr_cz_p25_l1 * yeardummy_2014",
+  "aewr_cz_p25_l1 * yeardummy_2015",
+  "aewr_cz_p25_l1 * yeardummy_2016",
+  "aewr_cz_p25_l1 * yeardummy_2017",
+  "aewr_cz_p25_l1 * yeardummy_2018",
+  "aewr_cz_p25_l1 * yeardummy_2019",
+  "aewr_cz_p25_l1 * yeardummy_2020",
+  "aewr_cz_p25_l1 * yeardummy_2021",
+  "aewr_cz_p25_l1 * yeardummy_2022",
+  sep = " + "
+)
+
+es_fml <- as.formula(paste(
+  "h2a_cert_share_farm_workers_2011_start_year ~",
+  es_rhs,
+  "| county_fe + year_fe"
+))
+
+es_fml_ctrl <- as.formula(paste(
+  "h2a_cert_share_farm_workers_2011_start_year ~",
+  es_rhs,
+  "+ ln_pop_census + emp_pop_ratio | county_fe + year_fe"
+))
+
+# Event study model 1: no controls, all CZs
+es_1 <- feols(es_fml, data = samp_base,      vcov = ~cz_aewr_region_fe)
+
+# Event study model 2: with controls, all CZs
+es_2 <- feols(es_fml_ctrl, data = samp_base, vcov = ~cz_aewr_region_fe)
+
+# Event study model 3: no controls, no border CZs
+es_3 <- feols(es_fml, data = samp_no_border,      vcov = ~cz_aewr_region_fe)
+
+# Event study model 4: with controls, no border CZs
+es_4 <- feols(es_fml_ctrl, data = samp_no_border, vcov = ~cz_aewr_region_fe)
+
+# Wald test on post-2011 interactions (joint significance)
+post_terms <- grep("aewr_cz_p25_l1:yeardummy_201[2-9]|aewr_cz_p25_l1:yeardummy_202",
+                   names(coef(es_1)), value = TRUE)
+wald(es_1, keep = post_terms)
+wald(es_2, keep = post_terms)
+
+es_dict <- c(
+  "aewr_cz_p25_l1"    = "Lagged AEWR vs 25th pct wage gap",
+  "yeardummy_2008"    = "2008",
+  "yeardummy_2009"    = "2009",
+  "yeardummy_2010"    = "2010",
+  "yeardummy_2012"    = "2012",
+  "yeardummy_2013"    = "2013",
+  "yeardummy_2014"    = "2014",
+  "yeardummy_2015"    = "2015",
+  "yeardummy_2016"    = "2016",
+  "yeardummy_2017"    = "2017",
+  "yeardummy_2018"    = "2018",
+  "yeardummy_2019"    = "2019",
+  "yeardummy_2020"    = "2020",
+  "yeardummy_2021"    = "2021",
+  "yeardummy_2022"    = "2022"
+)
+
 table_2 <- etable(
-  fixest_model_ddd_event,
+  es_1, es_2, es_3, es_4,
   tex = TRUE,
   title = "Event Study Coefficients (Base Year = 2011)",
-  # We add ":yeardummy" so it ONLY keeps the triple interactions dropping all the standalone baseline effects
-  keep = "%aewr_state_ag_ppi_l1:high_h2a_share_75:yeardummy",
-  dict = c(
-    "aewr_state_ag_ppi_l1" = "Adjusted lagged AEWR",
-    "high_h2a_share_75" = "High H-2A usage pre-2011",
-    "yeardummy_2008" = "2008",
-    "yeardummy_2009" = "2009",
-    "yeardummy_2010" = "2010",
-    "yeardummy_2012" = "2012",
-    "yeardummy_2013" = "2013",
-    "yeardummy_2014" = "2014",
-    "yeardummy_2015" = "2015",
-    "yeardummy_2016" = "2016",
-    "yeardummy_2017" = "2017",
-    "yeardummy_2018" = "2018",
-    "yeardummy_2019" = "2019",
-    "yeardummy_2020" = "2020",
-    "yeardummy_2021" = "2021",
-    "yeardummy_2022" = "2022"
-  ),
+  keep = "%aewr_cz_p25_l1:yeardummy",
+  headers = c("No Controls", "Controls", "No Border, No Controls", "No Border, Controls"),
+  dict = es_dict,
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
   file = paste0(folder_output, "table_2_event_study.tex"),
   replace = TRUE
 )
 
-# graph it
+## Exhibit 12: Event Study Coefficient Plots -----------------------------------
 
-coeff_df <- data.frame(
-  year = c(
-    2008,
-    2009,
-    2010,
-    2011,
-    2012,
-    2013,
-    2014,
-    2015,
-    2016,
-    2017,
-    2018,
-    2019,
-    2020,
-    2021,
-    2022
-  ),
-  beta = c(
-    fixest_model_ddd_event$coeftable[33, 1],
-    fixest_model_ddd_event$coeftable[34, 1],
-    fixest_model_ddd_event$coeftable[35, 1],
-    0,
-    fixest_model_ddd_event$coeftable[36, 1],
-    fixest_model_ddd_event$coeftable[37, 1],
-    fixest_model_ddd_event$coeftable[38, 1],
-    fixest_model_ddd_event$coeftable[39, 1],
-    fixest_model_ddd_event$coeftable[40, 1],
-    fixest_model_ddd_event$coeftable[41, 1],
-    fixest_model_ddd_event$coeftable[42, 1],
-    fixest_model_ddd_event$coeftable[43, 1],
-    fixest_model_ddd_event$coeftable[44, 1],
-    fixest_model_ddd_event$coeftable[45, 1],
-    fixest_model_ddd_event$coeftable[46, 1]
-  ),
-  se = c(
-    fixest_model_ddd_event$coeftable[33, 2],
-    fixest_model_ddd_event$coeftable[34, 2],
-    fixest_model_ddd_event$coeftable[35, 2],
-    0,
-    fixest_model_ddd_event$coeftable[36, 2],
-    fixest_model_ddd_event$coeftable[37, 2],
-    fixest_model_ddd_event$coeftable[38, 2],
-    fixest_model_ddd_event$coeftable[39, 2],
-    fixest_model_ddd_event$coeftable[40, 2],
-    fixest_model_ddd_event$coeftable[41, 2],
-    fixest_model_ddd_event$coeftable[42, 2],
-    fixest_model_ddd_event$coeftable[43, 2],
-    fixest_model_ddd_event$coeftable[44, 2],
-    fixest_model_ddd_event$coeftable[45, 2],
-    fixest_model_ddd_event$coeftable[46, 2]
+make_coefplot <- function(model) {
+  coef_names <- grep("aewr_cz_p25_l1:yeardummy_", names(coef(model)), value = TRUE)
+  ct <- model$coeftable[coef_names, , drop = FALSE]
+
+  years_in_model <- as.integer(sub(".*yeardummy_", "", rownames(ct)))
+
+  all_years <- 2008:2022
+  coeff_df <- data.frame(year = all_years) %>%
+    mutate(
+      beta = ifelse(year == 2011, 0, ct[match(paste0("aewr_cz_p25_l1:yeardummy_", year), rownames(ct)), 1]),
+      se   = ifelse(year == 2011, 0, ct[match(paste0("aewr_cz_p25_l1:yeardummy_", year), rownames(ct)), 2])
+    ) %>%
+    mutate(
+      upper_ci = beta + 1.96 * se,
+      lower_ci = beta - 1.96 * se
+    )
+
+  ggplot(coeff_df, aes(x = year)) +
+    geom_hline(yintercept = 0, color = "grey40") +
+    geom_vline(xintercept = 2011, linetype = "dashed", color = "grey40") +
+    geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.2, fill = "steelblue") +
+    geom_line(aes(y = beta), color = "steelblue", lwd = 1.2) +
+    geom_point(aes(y = beta), color = "steelblue", size = 2) +
+    labs(
+      x = "Year",
+      y = "Coefficient on Lagged AEWR vs 25th pct wage gap"
+    ) +
+    theme_clean()
+}
+
+p_es_1 <- make_coefplot(es_1)
+p_es_2 <- make_coefplot(es_2)
+p_es_3 <- make_coefplot(es_3)
+p_es_4 <- make_coefplot(es_4)
+
+ggsave(p_es_1,
+  filename = paste0(folder_output, "coefplot_dd_no_controls.png"),
+  width = 8, height = 5, device = "png")
+
+ggsave(p_es_2,
+  filename = paste0(folder_output, "coefplot_dd_controls.png"),
+  width = 8, height = 5, device = "png")
+
+ggsave(p_es_3,
+  filename = paste0(folder_output, "coefplot_dd_no_border_no_controls.png"),
+  width = 8, height = 5, device = "png")
+
+ggsave(p_es_4,
+  filename = paste0(folder_output, "coefplot_dd_no_border_controls.png"),
+  width = 8, height = 5, device = "png")
+
+## Exhibit 13: Summary Statistics Table -----------------------------------------
+
+sumstats_vars <- list(
+  "H-2A share of 2011 farm employment" = "h2a_cert_share_farm_workers_2011_start_year",
+  "H-2A certified workers (start year)" = "nbr_workers_certified_start_year",
+  "Farm employment 2011 (baseline)"     = "emp_farm_2011",
+  "AEWR p25 bite (2012 \$)"             = "aewr_cz_p25",
+  "Log population"                      = "ln_pop_census",
+  "Employment-to-population ratio"      = "emp_pop_ratio"
+)
+
+sumstats_rows <- purrr::imap_dfr(sumstats_vars, function(col, label) {
+  x <- samp_base[[col]]
+  tibble(
+    Variable = label,
+    N        = sum(!is.na(x)),
+    Mean     = mean(x, na.rm = TRUE),
+    SD       = sd(x, na.rm = TRUE),
+    Min      = min(x, na.rm = TRUE),
+    Max      = max(x, na.rm = TRUE)
   )
+})
+
+sumstats_tex <- c(
+  "\\begin{table}[htbp]",
+  "\\centering",
+  "\\caption{Summary Statistics: Difference-in-Differences Variables}",
+  "\\label{tab:sumstats}",
+  "\\begin{tabular}{lrrrrr}",
+  "\\hline\\hline",
+  "Variable & N & Mean & SD & Min & Max \\\\",
+  "\\hline",
+  apply(sumstats_rows, 1, function(r) {
+    sprintf("%s & %s & %.3f & %.3f & %.3f & %.3f \\\\",
+      r["Variable"],
+      format(as.integer(r["N"]), big.mark = ","),
+      as.numeric(r["Mean"]),
+      as.numeric(r["SD"]),
+      as.numeric(r["Min"]),
+      as.numeric(r["Max"])
+    )
+  }),
+  "\\hline\\hline",
+  "\\end{tabular}",
+  "\\end{table}"
 )
 
-
-coeff_df <- coeff_df %>%
-  mutate(upper_ci = beta + se * 1.96, lower_ci = beta - se * 1.96)
-
-coefplot <- ggplot(data = coeff_df, aes(x = year)) +
-  geom_line(aes(y = beta), lwd = 1.5) +
-  geom_line(aes(y = upper_ci), linetype = "dashed") +
-  geom_line(aes(y = lower_ci), linetype = "dashed") +
-  geom_vline(xintercept = 2011) +
-  geom_hline(yintercept = 0) +
-  theme_classic()
-coefplot
-
-ggsave(
-  coefplot,
-  filename = paste0(
-    folder_output,
-    "coefplot_ddd_h2a_req_share_farm_workers_2011_start_year_high_h2a_share_75_controls.png"
-  ),
-  device = "png"
-)
-
-# with ggiplot
-
-fixest_model_ddd_full_i <- feols(
-  h2a_cert_share_farm_workers_2011_start_year ~
-    i(year, high_h2a_share_75, ref = 2011) +
-    i(year, aewr_state_ag_ppi_l1, ref = 2011) +
-    i(high_h2a_share_75, aewr_state_ag_ppi_l1, ref = 0) +
-    i(year, I(high_h2a_share_75 * aewr_state_ag_ppi_l1), ref = 2011) +
-    ln_pop_census +
-    emp_pop_ratio +
-    aewr_state_ag_ppi_l1 |
-    county_fe + year_fe,
-  data = subset(county_df, any_cropland_2007 == 1),
-  vcov = ~statefips
-)
-summary(fixest_model_ddd_full_i)
-# Plot only the triple interaction coefficients
-ddd_plot <- ggiplot(
-  fixest_model_ddd_full_i,
-  i.select = 4,
-  geom_style = "ribbon"
-) +
-  xlab("") +
-  theme(plot.title = element_blank())
-ddd_plot
-
-ggsave(
-  coefplot,
-  filename = paste0(
-    folder_output,
-    "coefplot_ddd_h2a_req_share_farm_workers_2011_start_year_high_h2a_share_75_controls_gg.png"
-  ),
-  device = "png"
-)
-
-## DDD figure exploration
-
-## Exhibit 11: Event studies for H2A use, wages, employment, prices ----------
-## Exhibit 12: Pre-Trend Tests for H2A use, wages, emp, prices ---------------
-
-## Exhibit 13: DDD tables for H2A use, wages, emp, prices --------------------
-
-## Exhibit 14: Summary Statistics --------------------------------------------
+writeLines(sumstats_tex, con = paste0(folder_output, "table_sumstats_dd_variables.tex"))

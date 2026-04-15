@@ -1,9 +1,10 @@
 # ==========================================================================
 # PYTHON (uv venv)
 # ==========================================================================
-.venv/
+.venv
 .venv-wsl
-__pycache__/
+.venv-nixos
+__pycache__
 *.py[cod]
 *$py.class
 .python-version
@@ -71,4 +72,3 @@ draft/*
 !draft/*.tex
 !draft/*.pdf
 !draft/*.bib
-

@@ -2,7 +2,17 @@
 ## Phil Hoxie
 ## 1/31/24
 
-## Run Master File First ##
+## Run Master File First (or set paths/packages here if running standalone) ##
+
+if (!exists("folder_data")) {
+  folder_dir    <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
+  folder_do     <- paste0(folder_dir, "Do/")
+  folder_data   <- paste0(folder_dir, "Data Int/")
+  folder_output <- paste0(folder_dir, "Output/")
+  library(tidyverse)
+  library(arrow)
+  library(tidylog, warn.conflicts = FALSE)
+}
 
 ## Load Data -------------------------------------------------------------------
 
@@ -1477,6 +1487,8 @@ cz_wage_quantiles <- read_parquet(paste0(
   "acs_czone_wage_quantiles.parquet"
 ))
 
+ppi_annual <- read_parquet(paste0(folder_data, "ppi_2012.parquet"))
+
 # base for full county dataset
 
 county_df <- read_parquet(paste0(folder_data, "county_df_year.parquet"))
@@ -1653,6 +1665,14 @@ cz_wage_quantiles <- cz_wage_quantiles %>%
   filter(year >= 2005) %>%
   select(-county_ansi)
 
+# Deflate wage percentiles to real 2012 terms using PPI WPU01 (rebased 2012=100)
+# aewr_ppi is real; wage_p* must also be real before computing bite variables
+cz_wage_quantiles <- cz_wage_quantiles %>%
+  left_join(ppi_annual, by = "year") %>%
+  mutate(across(c(wage_p10, wage_p25, wage_p50, wage_p75, wage_p90),
+                ~ . / ppi_2012)) %>%
+  select(-ppi_2012)
+
 # Add lags as in state minimum wages
 cz_wage_quantiles <- cz_wage_quantiles %>%
   group_by(countyfips) %>%
@@ -1679,7 +1699,11 @@ county_df <- county_df %>%
   mutate(
     aewr_state_ag_ppi_l1 = aewr_ppi_l1 - prevailing_ag_min_wage_ppi_l1,
     aewr_state_ag_ppi = aewr_ppi - prevailing_ag_min_wage_ppi,
-    # new CZ-distribution-based bites:
+    # new CZ-distribution-based bites (non-lagged):
+    aewr_cz_p10 = aewr_ppi - wage_p10,
+    aewr_cz_p25 = aewr_ppi - wage_p25,
+    aewr_cz_p50 = aewr_ppi - wage_p50,
+    # lagged CZ bites:
     aewr_cz_p10_l1 = aewr_ppi_l1 - wage_p10_l1,
     aewr_cz_p25_l1 = aewr_ppi_l1 - wage_p25_l1,
     aewr_cz_p50_l1 = aewr_ppi_l1 - wage_p50_l1
@@ -1776,6 +1800,9 @@ county_df <- county_df %>%
     ln_aewr_ppi_l1 = log(aewr_ppi_l1),
     ln_aewr_l2 = log(aewr_l2),
     ln_aewr_ppi_l2 = log(aewr_ppi_l2),
+    ln_aewr_cz_p10 = log(aewr_cz_p10),
+    ln_aewr_cz_p25 = log(aewr_cz_p25),
+    ln_aewr_cz_p50 = log(aewr_cz_p50),
     ln_aewr_cz_p10_l1 = log(aewr_cz_p10_l1),
     ln_aewr_cz_p25_l1 = log(aewr_cz_p25_l1),
     ln_aewr_cz_p50_l1 = log(aewr_cz_p50_l1),
@@ -1910,6 +1937,15 @@ levels(county_df$aewrregtime_fe) <- c(levels(county_df$aewrregtime_fe), "0.0")
 unique(county_df$year)
 
 county_df$aewrregtime_fe[county_df$year == 2008] <- "0.0" # first period is 0
+
+# CZ x AEWR region FE — each (CZ, AEWR region) pair is a distinct FE level.
+# CZs that span AEWR region borders are split: counties on each side
+# get separate levels, matching the clustering unit for the main regressions.
+
+county_df$cz_aewr_region_fe <- with(
+  county_df,
+  interaction(as.factor(cz_out10), as.factor(aewr_region_num))
+)
 
 
 # sample restriction to counties with cropland ------------------------------------
@@ -2242,6 +2278,10 @@ county_df <- merge(
   all.x = T,
   all.y = F
 )
+
+county_type_classification <- county_type_classification %>% 
+  ungroup() %>% 
+  select(-county_fe)
 
 county_df <- county_df %>%
   left_join(county_type_classification, by = "countyfips")
