@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.4"
+__generated_with = "0.23.0"
 app = marimo.App(width="full")
 
 
@@ -32,7 +32,7 @@ def _(pyprojroot):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ExactExtract cannot handle uint32, we will have to convert raster to float64 first
+    ExactExtract cannot handle uint32, we will have to convert raster to int32 first
     """)
     return
 
@@ -52,6 +52,10 @@ def _(gnatsgo_path, np, rasterio):
             # Safely convert NoData value to integer if it exists
             _nodata_val = int(_src.nodata) if _src.nodata is not None else None
 
+            # If the original nodata overflows int32, change it to -1 to match NumPy's cast
+            if _nodata_val is not None and _nodata_val > 2147483647:
+                _nodata_val = -1
+
             # Update the raster _profile to int32
             _profile.update(
                 dtype=rasterio.int32,
@@ -69,6 +73,9 @@ def _(gnatsgo_path, np, rasterio):
         print(f"Raster successfully converted and saved to {converted_raster}")
     else:
         print(f"Found existing converted raster: {converted_raster}")
+
+    with rasterio.open(input_raster) as _src:
+        print("Input overviews:", _src.overviews(1))
     return (converted_raster,)
 
 

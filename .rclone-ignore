@@ -1,0 +1,12 @@
+# Ignore OS system files
+- desktop.ini
+- Thumbs.db
+- .DS_Store
+
+# uv and marimo cache
+- .venv/**
+- .venv-nixos/**
+- __marimo__/**
+
+# Raw data
+- data/**

@@ -47,6 +47,14 @@ def _(pyprojroot):
     return binary_path, code_path
 
 
+@app.cell
+def _(jax):
+    # Check CUDA working
+    print(jax.devices())
+    print(jax.default_backend())
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""

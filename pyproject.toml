@@ -64,11 +64,11 @@ dependencies = [
     "torch>=2.9.1",
     "torchvision>=0.24.1",
     "pymupdf>=1.27.1",
-    "jax[cuda13]>=0.9.1",
     "optax>=0.2.7",
     "lineax>=0.1.0",
     "scikit-learn>=1.8.0",
-    "jaxlib[cuda12,cuda13]>=0.9.2",
+    "jax[cuda13]>=0.9.2; sys_platform == 'linux'",
+    "jax>=0.9.2; sys_platform != 'linux'",
 ]
 
 [[tool.uv.index]]
