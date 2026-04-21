@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.4"
+__generated_with = "0.23.0"
 app = marimo.App(width="full")
 
 
@@ -40,13 +40,14 @@ def _():
 def _(dspy, os, pyprojroot):
     root_path = pyprojroot.find_root(criterion='pyproject.toml')
     binary_path = root_path / 'binaries'
+    phil_path = root_path / 'Data Int'
     json_path = root_path / 'code' / 'json'
     cdl_path = root_path / 'data' / 'croplandcros_cdl'
     # Configure Gemini
     gemini_api_key = os.getenv('GOOGLE_GEMINI_API_KEY')
     gemini = dspy.LM('gemini/gemini-3-flash-preview', api_key=gemini_api_key)
     dspy.configure(lm=gemini)
-    return binary_path, cdl_path, json_path, root_path
+    return binary_path, cdl_path, json_path, phil_path, root_path
 
 
 @app.cell(hide_code=True)
@@ -669,7 +670,7 @@ def _(nass_identity, pl, qs_national_wide, qs_state_wide):
 
 
 @app.cell
-def _(binary_path, pl, qs_state_revenue):
+def _(binary_path, phil_path, pl, qs_state_revenue):
     # State synthetic CDL
     state_synthetic_cdl = (qs_state_revenue
         # Filter for crops where we have the scaler (revenue) and the CDL inputs we are scaling on (yield, price)
@@ -690,6 +691,7 @@ def _(binary_path, pl, qs_state_revenue):
         ])
     )
     state_synthetic_cdl.write_parquet(binary_path / 'cdl_price_yield_synthetic_state.parquet')
+    state_synthetic_cdl.write_parquet(phil_path / 'cdl_price_yield_synthetic_state.parquet')
     return
 
 

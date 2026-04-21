@@ -28,7 +28,8 @@
       "WebFetch(domain:www.congress.gov)",
       "WebFetch(domain:migration.ucdavis.edu)",
       "WebFetch(domain:www.wilsoncenter.org)",
-      "WebFetch(domain:www.ncaeonline.org)"
+      "WebFetch(domain:www.ncaeonline.org)",
+      "Bash(C:/Program Files/R/R-4.4.0/bin/Rscript.exe *)"
     ]
   }
 }

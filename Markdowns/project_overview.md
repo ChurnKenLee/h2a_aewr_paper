@@ -18,9 +18,9 @@ This paper estimates the impact of the **Adverse Effect Wage Rate (AEWR)** — a
 - **AEWR:** Adverse Effect Wage Rate — the minimum hourly wage employers must pay H-2A workers, set annually by region (roughly by state, but with USDA Farm Labor Survey regions)
 - **Policy change:** 2011 methodology change to AEWR setting, creating variation across regions
 - **Identification strategy:** Triple Difference (DDD)
-  - *Dimension 1:* High vs. low H-2A pre-adoption counties (exposure to program)
-  - *Dimension 2:* High vs. low AEWR growth regions
-  - *Dimension 3:* Pre-2011 vs. post-2011 period
+  - _Dimension 1:_ High vs. low H-2A pre-adoption counties (exposure to program)
+  - _Dimension 2:_ High vs. low AEWR growth regions
+  - _Dimension 3:_ Pre-2011 vs. post-2011 period
 
 ---
 
@@ -125,17 +125,17 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 
 ## Key External Data Sources
 
-| Source | Description | Access |
-|--------|-------------|--------|
-| DOL H-2A records | Visa applications, worker counts, job orders | Ken's Python pipeline |
-| FRED API | State/federal minimum wages (STTMINWG*), PPI (WPU01) | Direct API in Pull Min Wages.R |
-| BEA CAEMP25N | County-level farm/nonfarm employment | Parquet partitions in Data Int/ |
-| BEA CAINC45 | County-level farm income and expenses | Parquet partitions in Data Int/ |
-| USDA NASS Census of Ag | Cropland acres, farm labor expenses | Ken's pipeline |
-| USDA CDL | Cropland Data Layer (raster, crop type by county) | Ken's exactextract pipeline |
-| Census TIGER | County shapefiles (tl_2020_us_county.shp) | Data Int/ |
-| ACS | Immigrant populations, wage quantiles by commuting zone | Ken's pipeline |
-| QCEW | Agricultural employment by county | Ken's pipeline |
+| Source                 | Description                                             | Access                          |
+| ---------------------- | ------------------------------------------------------- | ------------------------------- |
+| DOL H-2A records       | Visa applications, worker counts, job orders            | Ken's Python pipeline           |
+| FRED API               | State/federal minimum wages (STTMINWG\*), PPI (WPU01)   | Direct API in Pull Min Wages.R  |
+| BEA CAEMP25N           | County-level farm/nonfarm employment                    | Parquet partitions in Data Int/ |
+| BEA CAINC45            | County-level farm income and expenses                   | Parquet partitions in Data Int/ |
+| USDA NASS Census of Ag | Cropland acres, farm labor expenses                     | Ken's pipeline                  |
+| USDA CDL               | Cropland Data Layer (raster, crop type by county)       | Ken's exactextract pipeline     |
+| Census TIGER           | County shapefiles (tl_2020_us_county.shp)               | Data Int/                       |
+| ACS                    | Immigrant populations, wage quantiles by commuting zone | Ken's pipeline                  |
+| QCEW                   | Agricultural employment by county                       | Ken's pipeline                  |
 
 ---
 
@@ -146,11 +146,13 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 **Role:** Top-level orchestration script. Run this to execute the entire pipeline.
 
 **What it does:**
+
 1. Clears the workspace and loads core packages (`tidyverse`, `arrow`, `tidylog`)
 2. Sets folder paths using `here()` for portability across machines
 3. Calls the four sub-scripts in sequence via `source(..., echo = TRUE)`
 
 **Path variables set here (inherited by all sub-scripts):**
+
 - `folder_dir` — project root
 - `folder_do` — `Do/`
 - `folder_data` — `Data Int/`
@@ -165,17 +167,20 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 **Role:** Fetches annual state and federal minimum wage data from the FRED API and saves a merged file.
 
 **Inputs:**
+
 - FRED API key (hardcoded in script)
 - `Data Int/fips_codes.csv` — for state FIPS-to-abbreviation crosswalk
 - FRED series IDs: federal `STTMINWGFG`, state `STTMINWG{abbrev}`
 
 **Process:**
+
 1. Loops over all 50 states + DC, pulling annual minimum wages from 1968–2025
 2. Uses `tryCatch` to handle states with no FRED series (fills with `NA`)
 3. Merges state and federal rates
 4. Computes `prevailing_min_wage = max(state, federal)` for each state-year
 
 **Output:**
+
 - `Data Int/fred_state_minwages.parquet`
   - Variables: `fips`, `year`, `state_min_wage`, `federal_min_wage`, `prevailing_min_wage`
 
@@ -186,6 +191,7 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 **Role:** The main data loading and cleaning script. Reads raw parquet files from both Ken's pipeline and external sources, processes them, and writes cleaned intermediate parquets.
 
 **Inputs (parquet files from Ken or external):**
+
 - ACS: `cz_wage_quantiles`, `acs_immigrant_imputed`, `acs_qcew_data`
 - Geographic: `fips_codes`, `aewr_regions`, `commuting_zones`, `border_counties_allmatches`, `state_border_pairs`
 - H-2A: `h2a_aggregated`, `h2a_prediction`
@@ -219,6 +225,7 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 9. **Population estimates:** Loads Census 2008–2022 estimates; handles Connecticut regional boundary changes (2020) and South Dakota county code changes.
 
 **Outputs (all to `Data Int/`):**
+
 - `state_real_minwages.parquet`
 - `census_ag_cropland.parquet`
 - `census_ag_cropland_2007.parquet`
@@ -263,6 +270,7 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 9. Runs missing-data diagnostics
 
 **Outputs:**
+
 - `border_df_analysis.parquet`
 - `border_df_analysis_year.parquet`
 - `county_df_analysis_year.parquet` ← main analysis dataset
@@ -274,6 +282,7 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 **Role:** All econometric estimation and output production. Generates every figure and table in the paper.
 
 **Inputs:**
+
 - `county_df_analysis_year.parquet` — main panel
 - `border_df_analysis.parquet` — border pairs
 - `border_df_analysis_year.parquet`
@@ -285,42 +294,48 @@ Do/H2A Analysis Figs and Tables.R → Output/ (PNGs, TEX tables)
 
 #### Exhibits Produced
 
-| Exhibit | Description | Output file |
-|---------|-------------|-------------|
-| 1 | Real AEWR time series (national avg, PPI-adjusted) | `ts_national_aewr_real.png` |
-| 2 | Nominal AEWR time series | `ts_national_aewr_nominal.png` |
-| 3 | H-2A program use over time (levels + indexed to 2011=100) | `fig_line_ts_h2a_workers_certified.png`, `fig_line_ts_h2a_indexes.png` |
-| 4 | County maps of H-2A use (log scale) for 2012, 2017, 2022 | map PNG files |
-| 5 | Map of change in H-2A workers 2012→2022; new adopter counties | map PNG files |
-| 6 | Map of AEWR growth by region relative to national trend | diverging color map PNG |
-| 7 | County classification map (high/low H-2A exposure) | sample classification map PNG |
-| 8 | AEWR region time series (AEWR levels by region) | ts PNG |
-| 9A | DDD parallel trends graph (commented-out version) | — |
-| 9B | DDD parallel trends using predicted usage groups | `fig_ts_aewr_growth_exposure_using_predicted_DDD.png` |
-| 10 | Main regression table (DD + DDD) | `table_1_main_results.tex` |
-| 11–12 | Event study coefficients (pre/post 2011, base year = 2011) | `table_2_event_study.tex`, `coefplot_*.png` |
+| Exhibit | Description                                                   | Output file                                                            |
+| ------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1       | Real AEWR time series (national avg, PPI-adjusted)            | `ts_national_aewr_real.png`                                            |
+| 2       | Nominal AEWR time series                                      | `ts_national_aewr_nominal.png`                                         |
+| 3       | H-2A program use over time (levels + indexed to 2011=100)     | `fig_line_ts_h2a_workers_certified.png`, `fig_line_ts_h2a_indexes.png` |
+| 4       | County maps of H-2A use (log scale) for 2012, 2017, 2022      | map PNG files                                                          |
+| 5       | Map of change in H-2A workers 2012→2022; new adopter counties | map PNG files                                                          |
+| 6       | Map of AEWR growth by region relative to national trend       | diverging color map PNG                                                |
+| 7       | County classification map (high/low H-2A exposure)            | sample classification map PNG                                          |
+| 8       | AEWR region time series (AEWR levels by region)               | ts PNG                                                                 |
+| 9A      | DDD parallel trends graph (commented-out version)             | —                                                                      |
+| 9B      | DDD parallel trends using predicted usage groups              | `fig_ts_aewr_growth_exposure_using_predicted_DDD.png`                  |
+| 10      | Main regression table (DD + DDD)                              | `table_1_main_results.tex`                                             |
+| 11–12   | Event study coefficients (pre/post 2011, base year = 2011)    | `table_2_event_study.tex`, `coefplot_*.png`                            |
 
 #### Main Regression Models
 
 **Standard Difference-in-Differences (DD):**
+
 ```
 H2A_share ~ AEWR_l1 × Post + ln_pop + emp_pop_ratio | county_fe + year_fe
 ```
+
 - SE clustered by state
 - Sample: counties with any cropland in 2007
 
 **Triple Difference (DDD) — Main Specification:**
+
 ```
 H2A_share ~ AEWR_l1 × HighH2A_75th_inverse × Post + controls | county_fe + year_fe
 ```
+
 - `high_h2a_share_75_inverse` = 1 for low pre-treatment H-2A counties (those most affected by AEWR increases)
 - SE clustered by state
 
 **Event Study (DDD, year-by-year):**
+
 ```
 H2A_share ~ AEWR_l1 × yeardummy_t × HighH2A_75th_inverse + controls | county_fe + year_fe
   for t ∈ {2008,...,2010, 2012,...,2022}, base year = 2011
 ```
+
 - Pre-trend years (2008–2010) should have near-zero coefficients to validate parallel trends
 - Coefficients extracted manually from `coeftable` rows 33–46 and plotted
 
@@ -339,6 +354,7 @@ H2A_share ~ AEWR_l1 × yeardummy_t × HighH2A_75th_inverse + controls | county_f
 **What it does:** Iterates over a specified list of parquet files in `files_for_phil/`, reads each with `read_parquet()` to verify the file is valid and inspect structure. No outputs are written.
 
 **Files it checks:**
+
 - `state_year_min_wage.parquet`
 - `oews_county_aggregated.parquet`
 - `h2a_aggregated.parquet`
@@ -350,13 +366,14 @@ H2A_share ~ AEWR_l1 × yeardummy_t × HighH2A_75th_inverse + controls | county_f
 
 ### `TSCB.R`
 
-**Role:** Monte Carlo simulation to validate the cluster-robust inference procedure used in the main analysis. Based on the "Two-way Split-sample Cluster Bootstrap" (TSCB) paper published in the *Quarterly Journal of Economics* (Abadie et al., 2023).
+**Role:** Monte Carlo simulation to validate the cluster-robust inference procedure used in the main analysis. Based on the "Two-way Split-sample Cluster Bootstrap" (TSCB) paper published in the _Quarterly Journal of Economics_ (Abadie et al., 2023).
 
 **Source:** https://academic.oup.com/qje/article/138/1/1/6750017
 
 **Why it exists:** The border county-pair design has a complex clustering structure (32 AEWR regions, ~750 county pairs). This simulation checks whether state-clustered SEs provide correct coverage.
 
 **Data Generating Process:**
+
 - Population: 1,502 units paired into 751 border pairs
 - Clusters: 32 (matching the number of AEWR region borders in the real data)
 - Time periods: 3 years
@@ -364,12 +381,14 @@ H2A_share ~ AEWR_l1 × yeardummy_t × HighH2A_75th_inverse + controls | county_f
 - Model: Y = α + β×Treatment + unit FE + pair×time FE + ε
 
 **Simulation loop (1,000 iterations):**
+
 1. Generate synthetic paired panel data with the DGP above
 2. Estimate DDD model with pair and pair×time fixed effects via `fixest::feols()`
 3. Compute cluster-robust (state) vs. bootstrap standard errors
 4. Record coverage rates for 95% CIs
 
 **Output:**
+
 - `tscb_sim_results_{date}.csv` — simulation results for comparison of inferential approaches
 
 **Note:** This script uses a hardcoded network path (`//acsnfs4.ucsd.edu/...`) for the output folder that is specific to Phil's institutional server. Run it standalone, not through Master.R.

@@ -2,6 +2,20 @@
 ## Phil Hoxie
 ## 1/11/24
 
+## New Price Data (20260417) ----------------------
+
+price_data <- read_parquet(paste0(folder_data, "price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet")) %>%
+  mutate(
+    countyfips = as.numeric(fips),
+    year = as.integer(year)
+  ) %>%
+  select(countyfips, year, fisher_index) %>%
+  filter(year >= 2008 & year <= 2022)
+
+write_parquet(price_data, paste0(folder_data, "nass_fisher_price_index.parquet"))
+head(price_data)
+rm(price_data)
+
 ## requires running master file first ##
 
 ## Two datasets, one by census period and one by year (calendar year)

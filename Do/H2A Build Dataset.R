@@ -1489,6 +1489,8 @@ cz_wage_quantiles <- read_parquet(paste0(
 
 ppi_annual <- read_parquet(paste0(folder_data, "ppi_2012.parquet"))
 
+nass_price_index <- read_parquet(paste0(folder_data, "nass_fisher_price_index.parquet"))
+
 # base for full county dataset
 
 county_df <- read_parquet(paste0(folder_data, "county_df_year.parquet"))
@@ -1591,7 +1593,8 @@ datasets <- c(
   "bea_cainc45_data",
   "h2a_data",
   "census_pop_ests",
-  "census_of_agriculture_cropland"
+  "census_of_agriculture_cropland",
+  "nass_price_index"
 )
 
 for (i in 1:length(datasets)) {
@@ -1690,6 +1693,11 @@ county_df <- merge(
   all.x = T,
   all.y = F
 )
+
+# deflate fisher price index to real 2012 terms
+# ppi_2012 is already present in county_df via bea_cainc45_data_year merge
+county_df <- county_df %>%
+  mutate(fisher_index_ppi = fisher_index / ppi_2012)
 
 ## Variable cleaning ## -----------------
 

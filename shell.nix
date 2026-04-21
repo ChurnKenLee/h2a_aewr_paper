@@ -12,26 +12,28 @@ pkgs.mkShell {
     rPackages.haven
     rPackages.readxl
     rPackages.foreign
+    rPackages.janitor
 
     # Tidyverse
     rPackages.tidyverse
     rPackages.tidylog
 
-    # Convenient data sources
-    rPackages.tidycensus
-    rPackages.ipumsr
-
     # Graphics
     rPackages.ggplot2
-    rPackages.ggnewscale
-
-    # Cleaning tools
-    rPackages.janitor
 
     # Faster tools
     rPackages.collapse
+    rPackages.fixest
 
-    # Vectors
+    # Project-specific packages
+    rPackages.tidycensus
+    rPackages.ipumsr
+    rPackages.ggnewscale
+    rPackages.ggspatial
+    rPackages.scales
+    rPackages.cowplot
+    rPackages.ggthemes
+    rPackages.ggfixest
     rPackages.sf
 
     # --- Python Environment ---

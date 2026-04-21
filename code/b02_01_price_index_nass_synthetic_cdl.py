@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.2"
+__generated_with = "0.23.0"
 app = marimo.App(width="full")
 
 
@@ -213,10 +213,14 @@ def _(bilateral_links, county_cdl_panel, math, pl):
     base_anchor = (county_cdl_panel
         .select("fips").unique()
         .with_columns([
-            pl.lit(base_year).alias("year").cast(pl.Int64),
+            pl.lit(base_year).alias("year").cast(pl.Int32),
             pl.lit(log100).alias("log_index")
         ])
     )
+
+    # forward_chain = forward_chain.with_columns(pl.col("year").cast(pl.Int32))
+    # backward_chain = backward_chain.with_columns(pl.col("year").cast(pl.Int32))
+    # base_anchor = base_anchor.with_columns(pl.col("year").cast(pl.Int32))
     return backward_chain, base_anchor, forward_chain
 
 
