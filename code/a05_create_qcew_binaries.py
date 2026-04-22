@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.0"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -10,11 +10,11 @@ def _():
     from pathlib import Path
     import pyprojroot
     import dotenv, os
-    import numpy as np
-    import pandas as pd
-    from zipfile import ZipFile
+    import io
+    import polars as pl
+    import py7zr
 
-    return ZipFile, mo, pd, pyprojroot
+    return io, mo, pl, py7zr, pyprojroot
 
 
 @app.cell
@@ -34,37 +34,101 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(pl):
     qcew_dtype_dict = {
-        'area_fips': 'string',
-        'own_code': 'string',
-        'industry_code': 'string',
-        'agglvl_code': 'string',
-        'size_code': 'string',
-        'year': 'int16',
-        'qtr': 'string',
-        'disclosure_code': 'string',
-        'annual_avg_estabs': 'float32',
-        'annual_avg_emplvl': 'float32',
-        'total_annual_wages': 'float32'
+        'area_fips': pl.String,
+        'own_code': pl.String,
+        'industry_code': pl.String,
+        'agglvl_code': pl.String,
+        'size_code': pl.String,
+        'year': pl.Int16,
+        'qtr': pl.String,
+        'disclosure_code': pl.String,
+        'annual_avg_estabs': pl.Float32,
+        'annual_avg_emplvl': pl.Float32,
+        'total_annual_wages': pl.Float32
     }
     qcew_cols_list = list(qcew_dtype_dict.keys())
     return qcew_cols_list, qcew_dtype_dict
 
 
 @app.cell
-def _(ZipFile, binary_path, pd, qcew_cols_list, qcew_dtype_dict, qcew_path):
-    for t in range(2005, 2018):
-        print(t)
-        zip_path = qcew_path / f"{t}_annual_singlefile.zip"
-        zf = ZipFile(zip_path)
-        qcew_df = pd.read_csv(zf.open(f'{t}.annual.singlefile.csv'), usecols = qcew_cols_list, dtype = qcew_dtype_dict)
-        qcew_df.to_parquet(binary_path / f'qcew_{t}.parquet')
-    return
+def _(io):
+    # Define a custom buffer that prevents py7zr from closing it prematurely
+    class MemoryBufferIO(io.BytesIO):
+        def size(self):
+            """
+            py7zr expects a .size() method on the IO object.
+            """
+            return self.getbuffer().nbytes
+    
+        def close(self):
+            """
+            Block py7zr from closing the buffer so Polars can still read it.
+            """
+            pass 
+        
+        def force_close(self):
+            """
+            A method to actually clear the memory when we are done.
+            """
+            super().close()
+
+    return (MemoryBufferIO,)
 
 
 @app.cell
-def _():
+def _(MemoryBufferIO, py7zr):
+    # Define the Factory class that py7zr will call to create the buffers
+    class PolarsMemoryFactory(py7zr.io.WriterFactory):
+        def __init__(self):
+            self.buffers = {}
+
+        def create(self, filename: str):
+            bio = MemoryBufferIO()
+            self.buffers[filename] = bio
+            return bio
+
+    return (PolarsMemoryFactory,)
+
+
+@app.cell
+def _(
+    PolarsMemoryFactory,
+    binary_path,
+    pl,
+    py7zr,
+    qcew_cols_list,
+    qcew_dtype_dict,
+    qcew_path,
+):
+    for t in range(2005, 2018):
+        print(t)
+        sevenz_path = qcew_path / f"{t}_annual_singlefile.7z"
+        target_csv = f'{t}.annual.singlefile.csv'
+        mem_factory = PolarsMemoryFactory()
+
+        # Extract straight into memory
+        with py7zr.SevenZipFile(sevenz_path, mode='r') as zf:
+            zf.extract(targets=[target_csv], factory=mem_factory)
+    
+        extracted_buffer = mem_factory.buffers[target_csv]
+
+        # Rewind the buffer to the beginning
+        extracted_buffer.seek(0)
+
+        # Read straight from the RAM buffer using Polars
+        qcew_df = pl.read_csv(
+            extracted_buffer,
+            columns=qcew_cols_list,
+            schema_overrides=qcew_dtype_dict
+        )
+    
+        # Write to Parquet using Polars
+        qcew_df.write_parquet(binary_path / f'qcew_{t}.parquet')
+    
+        # Flush the memory buffer before the next iteration
+        extracted_buffer.force_close()
     return
 
 

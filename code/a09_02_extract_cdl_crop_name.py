@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.4"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -8,12 +8,14 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
+    import pyprojroot
+    import dotenv, os
     import polars as pl
     import numpy as np
     from bs4 import BeautifulSoup
     import re
 
-    return BeautifulSoup, Path, mo, pl, re
+    return BeautifulSoup, mo, pl, pyprojroot, re
 
 
 @app.cell(hide_code=True)
@@ -25,9 +27,9 @@ def _(mo):
 
 
 @app.cell
-def _(Path):
-    root_path = Path(__file__).parent.parent
-    cdl_path = root_path / 'Data' / 'croplandcros_cdl'
+def _(pyprojroot):
+    root_path = pyprojroot.find_root(criterion='pyproject.toml')
+    cdl_path = root_path / 'data' / 'croplandcros_cdl'
     return cdl_path, root_path
 
 

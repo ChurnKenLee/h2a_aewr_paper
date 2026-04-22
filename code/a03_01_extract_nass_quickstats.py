@@ -8,7 +8,7 @@
 
 import marimo
 
-__generated_with = "0.20.2"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -37,8 +37,9 @@ def _(mo):
 @app.cell
 def _(pyprojroot):
     root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    binary_path = root_path/'binaries'
-    return binary_path, root_path
+    binary_path = root_path/ 'binaries'
+    quickstats_path = root_path / 'data' / 'quickstats'
+    return binary_path, quickstats_path
 
 
 @app.cell
@@ -88,7 +89,7 @@ def _(pl):
 
 
 @app.cell
-def _(binary_path, pl, quickstats_pl_type_dict, root_path):
+def _(binary_path, pl, quickstats_path, quickstats_pl_type_dict):
     nass_qs_list = [
         'animals_products',
         'crops',
@@ -99,7 +100,6 @@ def _(binary_path, pl, quickstats_pl_type_dict, root_path):
     # environmental csv is malformed or encoded incorrectly
 
     # Extract quickstats archive, read with polars, then export as binaries
-    quickstats_path = root_path / 'Data' / 'quickstats'
     for qs_type in nass_qs_list:
         for file_path in quickstats_path.iterdir():
             file_name = file_path.name

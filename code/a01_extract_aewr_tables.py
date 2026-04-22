@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -424,11 +424,6 @@ def _(aewr_path, check_df, pl, root_path):
     return
 
 
-@app.cell
-def _():
-    return
-
-
 @app.cell(hide_code=True)
 def _():
     # # Extract table from text files
@@ -679,7 +674,6 @@ def _(aewr_df, alt, pl):
     ).interactive()
 
     chart.show()
-    chart.save('aewr_nominal_quantiles.png')
     return
 
 

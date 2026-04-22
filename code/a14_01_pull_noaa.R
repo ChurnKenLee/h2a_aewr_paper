@@ -5,7 +5,7 @@
 # =============================================================================
 #
 # SOURCE: NOAA nClimGrid-Daily county-level area averages
-#   https://www.ncei.noaa.gov/pub/data/daily-grids/v1-0-0/averages/
+#   https://www.ncei.noaa.gov/data/nclimgrid-daily/access/averages
 #
 # No special packages required beyond the tidyverse.
 #
@@ -127,7 +127,7 @@ OUTPUT_FILE <- here(
 
 START_YEAR <- 2000
 END_YEAR <- as.integer(format(Sys.Date(), "%Y"))
-BASE_URL <- "https://www.ncei.noaa.gov/pub/data/daily-grids/v1-0-0/averages"
+BASE_URL <- "https://www.ncei.noaa.gov/data/nclimgrid-daily/access/averages"
 
 MISSING_VAL <- -999.00 # NOAA sentinel for missing / non-existent days
 
@@ -369,6 +369,7 @@ download_monthly <- function(variable, year, month) {
       ym,
       status
     )
+    print(url)
     result <- tryCatch(
       suppressMessages(read_csv(
         url,

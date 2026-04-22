@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.4"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -12,7 +12,6 @@ def _():
     import dotenv, os
     import polars as pl
     import polars.selectors as cs
-    import pandas as pd
 
     return mo, pl, pyprojroot
 
@@ -113,10 +112,10 @@ def _(oews_path, pl):
     for y in range(2019, 2023):
         # Read excel and cast to string to maintain consistency
         oews_df_1 = pl.read_excel(oews_path / f'area_definitions_m{y}.xlsx').select(pl.all().cast(pl.String))
-    
+
         area_name_variable = f'May {y} MSA name'
         area_code_variable = f'May {y} MSA code '
-    
+
         rename_map = {
             'FIPS code': 'oews_state_fips', 
             'County code': 'oews_county_fips', 
@@ -126,10 +125,10 @@ def _(oews_path, pl):
             area_code_variable: 'oews_area_code', 
             area_name_variable: 'oews_area_name'
         }
-    
+
         # Safe renaming in case certain variables are absent in a specific year
         rename_map = {k: v for k, v in rename_map.items() if k in oews_df_1.columns}
-    
+
         oews_df_1 = oews_df_1.rename(rename_map).with_columns(pl.lit(y).cast(pl.Int32).alias('year'))
         oews_df_list.append(oews_df_1)
     return (oews_df_list,)

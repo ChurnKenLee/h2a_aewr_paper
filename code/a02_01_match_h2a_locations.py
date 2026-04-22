@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.4"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -1104,7 +1104,7 @@ def _(addfips, binary_path, pl, process_dataframe):
         modern_to_2010_crosswalk = {
             # --- SOUTH DAKOTA (Changed in 2015) ---
             "Oglala Lakota County": "Shannon County",
-        
+
             # --- ALASKA (Changed in 2015 & 2019) ---
             "Kusilvak Census Area": "Wade Hampton Census Area",
             "Chugach Census Area": "Valdez-Cordova Census Area",
@@ -1113,7 +1113,7 @@ def _(addfips, binary_path, pl, process_dataframe):
             # --- VIRGINIA (Merged in 2013) ---
             # Bedford City reverted to town status and merged into Bedford County
             "Bedford City": "Bedford County", 
-        
+
             # --- CONNECTICUT (Changed in 2022) ---
             # Connecticut replaced its 8 legacy counties with 9 Planning Regions.
             # Regions do not perfectly map 1:1, but this majority-landmass mapping 

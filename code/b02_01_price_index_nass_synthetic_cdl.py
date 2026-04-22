@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.0"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -189,7 +189,8 @@ def _(bilateral_links, county_cdl_panel, math, pl):
         .filter(pl.col("year") > base_year)
         .sort(["fips", "year"])
         .with_columns(
-            (pl.col("log_fisher").cum_sum().over("fips") + log100).alias("log_index")
+            (pl.col("log_fisher").cum_sum().over("fips") + log100).alias("log_index"),
+            pl.col("year").cast(pl.Int32)
         )
     )
 
@@ -207,6 +208,9 @@ def _(bilateral_links, county_cdl_panel, math, pl):
             pl.col("target_year").alias("year"), 
             "log_index"
         ])
+        .with_columns(
+            pl.col("year").cast(pl.Int32)
+        )
     )
 
     # Base year anchor
@@ -217,7 +221,6 @@ def _(bilateral_links, county_cdl_panel, math, pl):
             pl.lit(log100).alias("log_index")
         ])
     )
-
     # forward_chain = forward_chain.with_columns(pl.col("year").cast(pl.Int32))
     # backward_chain = backward_chain.with_columns(pl.col("year").cast(pl.Int32))
     # base_anchor = base_anchor.with_columns(pl.col("year").cast(pl.Int32))
@@ -247,11 +250,6 @@ def _(backward_chain, base_anchor, binary_path, forward_chain, pl, root_path):
 @app.cell
 def _(chained_fisher):
     chained_fisher
-    return
-
-
-@app.cell
-def _():
     return
 
 

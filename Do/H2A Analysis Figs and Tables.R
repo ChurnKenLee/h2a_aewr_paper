@@ -6,7 +6,6 @@ gc()
 
 library(sf)
 library(tidyverse)
-#library(USAboundaries)
 library(ggspatial)
 library(scales)
 library(cowplot)

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.0"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -19,7 +19,7 @@ def _():
     from exactextract import exact_extract, operation
     import time
 
-    return cs, gpd, pd, pl, pyprojroot, rio
+    return cs, exact_extract, gpd, pd, pl, pyprojroot, rio
 
 
 @app.cell
@@ -71,29 +71,34 @@ def _(cdl_files, gpd, rio, root_path):
 
     county_borders_conus = county_borders[~county_borders['STATEFP10'].isin(statefp_drop_list)]
     county_borders_conus = county_borders_conus[['GEOID10', 'geometry']].reset_index(drop=True)
-    return
+    return (county_borders_conus,)
 
 
 @app.cell
-def _(cdl_files, pd, pl, root_path):
+def _(cdl_files, county_borders_conus, exact_extract, pd, pl, root_path):
     # We open all years simultaneously and pass them as a list
     # exactextract will compute weights once and apply to all bands (years)
     print('Starting extraction (this may take a while for CONUS)...')
     raster_handles = [path for path in cdl_files.values()]
 
-    # results = exact_extract(
-    #     rast=raster_handles, 
-    #     vec=county_borders_conus, 
-    #     ops=['count', 'unique', 'frac'], 
-    #     include_cols=['GEOID10'],
-    #     output='pandas'
-    # )
-    # results.to_parquet(root_path / 'binaries' / 'temp_exactextract.parquet')
+    # Calculate zonal stats if not already done
+    temp_ee = root_path / 'binaries' / 'temp_exactextract.parquet'
+    if temp_ee.is_file():
+        print('Zonal stats already exist')
+        results = pd.read_parquet(temp_ee)
 
-    results = pd.read_parquet(root_path / 'binaries' / 'temp_exactextract.parquet')
+    else:
+        results = exact_extract(
+            rast=raster_handles, 
+            vec=county_borders_conus, 
+            ops=['count', 'unique', 'frac'], 
+            include_cols=['GEOID10'],
+            output='pandas'
+        )
+        results.to_parquet(temp_ee)
+        print('Finished extracting')
+
     results = pl.from_pandas(results)
-
-    print('Finished extracting')
     return (results,)
 
 

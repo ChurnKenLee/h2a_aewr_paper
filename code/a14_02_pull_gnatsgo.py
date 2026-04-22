@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.0"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -73,9 +73,6 @@ def _(gnatsgo_path, np, rasterio):
         print(f"Raster successfully converted and saved to {converted_raster}")
     else:
         print(f"Found existing converted raster: {converted_raster}")
-
-    with rasterio.open(input_raster) as _src:
-        print("Input overviews:", _src.overviews(1))
     return (converted_raster,)
 
 
@@ -238,7 +235,7 @@ def _(conn, pl):
         INNER JOIN component ON mapunit.mukey = component.mukey
         INNER JOIN corestrictions ON component.cokey = corestrictions.cokey
     """
-    joined_table = pl.read_database(joined_query, infer_schema_length = None, connection=conn)
+    joined_table = pl.read_database(query=joined_query, infer_schema_length = None, connection=conn)
     return (joined_table,)
 
 

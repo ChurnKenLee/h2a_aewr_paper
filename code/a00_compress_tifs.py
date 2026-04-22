@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.0"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -29,11 +29,21 @@ def _(pyprojroot):
 @app.cell
 def _(copy, os, rasterio):
     def compress_fast_cdl(file_path):
-        temp_path = file_path.stem + ".tmp.tif"
+        # Create temp compressed tif file in same directory as original
+        temp_path = file_path.with_name(file_path.stem + ".tmp.tif") 
         print(f"Starting multi-threaded C++ compression for: {file_path}...")
-    
+
         try:
             with rasterio.open(file_path) as src:
+            
+                # Skip if already compressed ---
+                current_compression = src.profile.get('compress')
+            
+                # If the dataset has a compression algorithm applied (and it isn't 'none')
+                if current_compression == 'deflate':
+                    print(f"Skipped! File is already compressed using: {current_compression.upper()}")
+                    return  # Exit the function early
+                
                 # rasterio.shutil.copy calls GDAL's C++ CreateCopy method directly.
                 # It completely bypasses Python loops and uses all CPU cores.
                 copy(
@@ -47,11 +57,11 @@ def _(copy, os, rasterio):
                     blockysize=512, 
                     num_threads='all_cpus'  # This triggers the multi-threading!
                 )
-            
+
             # Safely overwrite the original file
             os.replace(temp_path, file_path)
             print(f"Success! {file_path} has been compressed and replaced.")
-        
+
         except Exception as e:
             print(f"An error occurred: {e}")
             # Clean up the broken temp file if something crashes
@@ -73,14 +83,22 @@ def _(cdl_path, compress_fast_cdl):
 @app.cell
 def _(copy, os, rasterio):
     def compress_fast_gnatsgo(file_path):
-        temp_path = file_path.stem + ".tmp.tif"
+        temp_path = file_path.with_name(file_path.stem + ".tmp.tif") 
         print(f"Starting gNATSGO multi-threaded compression for: {file_path}...")
-    
+
         try:
             with rasterio.open(file_path) as src:
                 # Check the original data type just to be safe
                 print(f"Original Data Type: {src.dtypes[0]}")
+
+                # Skip if already compressed ---
+                current_compression = src.profile.get('compress')
             
+                # If the dataset has a compression algorithm applied (and it isn't 'none')
+                if current_compression == 'deflate':
+                    print(f"Skipped! File is already compressed using: {current_compression.upper()}")
+                    return  # Exit the function early
+
                 # We copy the file natively (preserving the 32-bit MUKEYs),
                 # but we apply aggressive tiling and integer-optimized compression.
                 copy(
@@ -93,11 +111,11 @@ def _(copy, os, rasterio):
                     blockysize=512, 
                     num_threads='all_cpus' 
                 )
-            
+
             # Safely overwrite the original file
             os.replace(temp_path, file_path)
             print(f"Success! {file_path} has been compressed, tiled, and replaced.")
-        
+
         except Exception as e:
             print(f"An error occurred: {e}")
             if os.path.exists(temp_path):
@@ -111,6 +129,11 @@ def _(compress_fast_gnatsgo, gnatsgo_path):
     # Compress gNTATSGO
     gnatsgo_raster = gnatsgo_path / "MURASTER_30m_CONUS_2026.tif"
     compress_fast_gnatsgo(gnatsgo_raster)
+    return
+
+
+@app.cell
+def _():
     return
 
 
