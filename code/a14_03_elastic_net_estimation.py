@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.0"
+__generated_with = "0.23.2"
 app = marimo.App(width="full")
 
 
@@ -19,9 +19,8 @@ def _():
     import lineax as lx
     from jax.flatten_util import ravel_pytree
     import json
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    from sklearn.metrics import roc_auc_score, precision_score, recall_score, confusion_matrix
+    import time
+    from functools import partial
 
     return (
         cs,
@@ -33,9 +32,11 @@ def _():
         mo,
         np,
         optax,
+        partial,
         pl,
         pyprojroot,
         ravel_pytree,
+        time,
     )
 
 
@@ -275,10 +276,12 @@ def _(jnp):
             slopes = gathered_weights[:, :, 1:]          
 
             log_mu += jnp.sum(intercepts, axis=1)
-            interaction_effect = jnp.sum(slopes * X_cont[:, None, :], axis=(1, 2))
+
+            # 'nkc' is slopes, 'nc' is X_cont. We multiply them and sum over 'k' and 'c' for each 'n'
+            interaction_effect = jnp.einsum('nkc,nc->n', slopes, X_cont)
             log_mu += interaction_effect
 
-        return jnp.clip(log_mu, a_max=15.0) # Clipped slightly lower for per-acre rates to prevent overflow
+        return jnp.clip(log_mu, max=15.0) # Clipped slightly lower for per-acre rates to prevent overflow
 
     return (compute_patch_log_worker,)
 
@@ -340,24 +343,20 @@ def _(mo):
 
 
 @app.cell
-def _(
-    initialize_params,
-    jax,
-    jnp,
-    lx,
-    optax,
-    ppml_objective_compositional,
-    ravel_pytree,
-):
+def _(jax, jnp, lx, optax, ppml_objective_compositional, ravel_pytree):
     # This is the inner loop that is actually solving the PPML optimization problem
-    def train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates, max_iter=1000, tol=1e-5):
+    def train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates, max_iter=1000, tol=1e-5):
         num_continuous = X_cont.shape[1]
-        params = initialize_params(feature_sizes_tup, num_continuous)
+
+        # Warm starting with solution from previous putermost iteration
+        params = init_params
 
         def loss_fn(p):
             return ppml_objective_compositional(p, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
 
-        solver = optax.lbfgs()
+        # Reduce L-BFGS memory size from default 10 down to 5 as we are warm starting
+        # No need to trace backwards as far
+        solver = optax.lbfgs(memory_size=5)
         opt_state = solver.init(params)
         val_and_grad_fn = optax.value_and_grad_from_state(loss_fn)
 
@@ -406,11 +405,11 @@ def _(
         return final_params
 
     @jax.custom_vjp
-    def train_model_cpu(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
-        return train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+    def train_model_cpu(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
+        return train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
 
-    def train_fwd(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
-        opt_params = train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+    def train_fwd(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
+        opt_params = train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
         residuals = (opt_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
         return opt_params, residuals
 
@@ -433,12 +432,12 @@ def _(
             g = jax.grad(flat_total_loss)(p_flat)
             return g + 1.0 * p_flat
 
-        hessian_op = lx.JacobianLinearOperator(damped_grad, flat_opt_params)
+        hessian_op = lx.JacobianLinearOperator(damped_grad, flat_opt_params, tags=lx.positive_semidefinite_tag)
 
         jax.debug.print("  ->[Implicit VJP] Solving Hessian linear system for backward pass...")
 
-        solver = lx.GMRES(rtol=1e-1, atol=1e-1, restart=50, max_steps=50)
-        solution = lx.linear_solve(hessian_op, -flat_v, solver=solver)
+        solver = lx.CG(rtol=1e-1, atol=1e-1, max_steps=250)
+        solution = lx.linear_solve(hessian_op, -flat_v, solver=solver, throw=False)
 
         w_pytree = unravel_fn(solution.value)
         jax.debug.print("  -> [Implicit VJP] Linear solve completed.")
@@ -451,7 +450,7 @@ def _(
         _, vjp_fn = jax.vjp(mixed_grad, l1_rates, l2_rates)
         grad_l1, grad_l2 = vjp_fn(w_pytree)
 
-        return (None, None, None, None, None, None, None, grad_l1, grad_l2)
+        return (None, None, None, None, None, None, None, None, grad_l1, grad_l2)
 
     train_model_cpu.defvjp(train_fwd, train_bwd)
     return train_model_cpu, train_model_inner
@@ -501,30 +500,28 @@ def _(
                 # 1.0 Damping to enforce strong conditioning
                 return jax.grad(flat_total_loss)(p) + 1.0 * p
 
-            hessian_op = lx.JacobianLinearOperator(damped_grad, p_flat)
+            hessian_op = lx.JacobianLinearOperator(damped_grad, p_flat, tags=lx.positive_semidefinite_tag)
 
             # MOVED max_steps HERE: Caps the XLA loop to guarantee it never hangs
-            solver = lx.GMRES(rtol=1e-1, atol=1e-1, restart=50, max_steps=50)
+            solver = lx.CG(rtol=1e-1, atol=1e-1, max_steps=250)
 
             # Reduced from 10 to 2: We only need a rough approximation for hyperparameter tuning
             K = 2
             key = jax.random.PRNGKey(42)
             Z = jax.random.rademacher(key, (K, num_groups), dtype=p_flat.dtype)
 
-            def compute_trace_sample(i):
-                z = Z[i]
-                jax.debug.print("    [ALO-CV] Solving sample {i}/{K}...", i=i+1, K=K)
+            def compute_trace_sample(z):
 
                 def z_weighted_nll(p):
                     return jnp.sum(z * all_groups_nll(p))
 
                 v = jax.grad(z_weighted_nll)(p_flat)
-                w = lx.linear_solve(hessian_op, v, solver=solver).value
+                w = lx.linear_solve(hessian_op, v, solver=solver, throw=False).value
 
-                jax.debug.print("    [ALO-CV] Sample {i} solved.", i=i+1)
                 return jnp.dot(v, w)
 
-            trace_samples = jax.lax.map(compute_trace_sample, jnp.arange(K))
+            # Vectorize! Solves all K samples in parallel matrix operations
+            trace_samples = jax.vmap(compute_trace_sample)(Z)
             return jnp.mean(trace_samples)
 
         # jax.lax.stop_gradient guarantees JAX will not try to take the derivative 
@@ -564,7 +561,7 @@ def _(jnp):
 
 @app.cell
 def _(compute_alo_compositional, jax, train_model_cpu):
-    def meta_loss_fn(raw_l1, raw_l2, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup):
+    def meta_loss_fn(raw_l1, raw_l2, init_params, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup):
         """
         Compute ALO-CV score given L1 and L2 params
         """
@@ -573,13 +570,15 @@ def _(compute_alo_compositional, jax, train_model_cpu):
         l2_rates = {k: jax.nn.softplus(v) + 1e-4 for k, v in raw_l2.items()}
 
         # 1. Train Inner Model
-        opt_params = train_model_cpu(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+        opt_params = train_model_cpu(init_params, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
 
         # 2. Evaluate with ALO-CV
-        return compute_alo_compositional(opt_params, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
+        alo = compute_alo_compositional(opt_params, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
+
+        return alo, opt_params
 
     # JIT the meta-gradient calculator
-    meta_val_and_grad = jax.jit(jax.value_and_grad(meta_loss_fn, argnums=(0, 1)), static_argnames=['num_groups', 'feature_sizes_tup'])
+    meta_val_and_grad = jax.jit(jax.value_and_grad(meta_loss_fn, argnums=(0, 1), has_aux=True), static_argnames=['num_groups', 'feature_sizes_tup'])
     return (meta_val_and_grad,)
 
 
@@ -628,7 +627,7 @@ def _(
 
         # Helper function to restore loaded JSON lists back to original JAX arrays
         def restore_leaves(loaded_leaves, template_leaves):
-            restored =[]
+            restored = []
             for loaded, template in zip(loaded_leaves, template_leaves):
                 if hasattr(template, 'dtype'):
                     restored.append(jnp.array(loaded, dtype=template.dtype))
@@ -752,7 +751,245 @@ def _(
 
         return final_l1, final_l2
 
-    return (run_meta_optimization,)
+    return
+
+
+@app.cell
+def _(jax, jnp, meta_val_and_grad, optax, partial):
+    @partial(jax.jit, static_argnames=['num_groups', 'feature_sizes_tup', 'max_iters', 'patience', 'meta_optimizer'])
+    def compiled_meta_loop(
+        carry_init, 
+        feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, 
+        max_iters, patience, tol, meta_optimizer
+    ):
+        """
+        Natively compiled XLA outer While Loop. Runs entirely on GPU.
+        """
+
+        def cond_fn(carry):
+            # 1. Unpack the exact state we need to check
+            i, chunk_i, _, _, _, _, wait, _, _ = carry
+
+            # 2. Loop continues ONLY if both conditions are True
+            not_max_iter = i < max_iters
+            not_out_of_patience = wait < patience
+
+            return jnp.logical_and(not_max_iter, not_out_of_patience)
+
+        def body_fn(carry):
+            # 1. Unpack the carry
+            i, chunk_i, hparams, opt_state, best_hparams, best_alo, wait, history_buffer, inner_params = carry
+            raw_l1, raw_l2 = hparams
+
+            # 2. Execute the Inner Bilevel Step (Computes Loss & Gradients)
+            # Passes previous opt_params as initial inner_params
+            (alo, new_inner_params), (gl1, gl2) = meta_val_and_grad(
+                raw_l1, raw_l2, inner_params, feature_ids, X_cont, acreage, 
+                group_ids, y_county_year, num_groups, feature_sizes_tup
+            )
+
+            # 3. Early Stopping Math
+            improved = alo < (best_alo - tol)
+            new_best_alo = jnp.where(improved, alo, best_alo)
+            new_wait = jnp.where(improved, 0, wait + 1)
+
+            # 4. Conditionally update PyTrees (Dictionaries)
+            # We cannot use jnp.where directly on dicts. We map over the leaves.
+            new_best_hparams = jax.tree_util.tree_map(
+                lambda current_val, best_val: jnp.where(improved, current_val, best_val),
+                hparams, best_hparams
+            )
+
+            # 5. Apply Meta-Optimizer Updates
+            # We always apply gradients to explore the space, even if we didn't improve.
+            updates, new_opt_state = meta_optimizer.update((gl1, gl2), opt_state, hparams)
+            new_hparams = optax.apply_updates(hparams, updates)
+
+            # 6. Calculate and store telemetry in VRAM; telemetry extracted asynchronously
+            act_l1_vals = jax.tree_util.tree_leaves(jax.tree_util.tree_map(jax.nn.softplus, raw_l1))
+            mean_l1 = jnp.mean(jnp.array(act_l1_vals))
+
+            # Pack the current step metrics into a 1D vector
+            new_metric_row = jnp.array([i, alo, mean_l1, new_wait], dtype=jnp.float32)
+
+            # Insert the vector into the history buffer matrix at the current chunk index
+            new_history_buffer = history_buffer.at[chunk_i].set(new_metric_row)
+
+            # jax.debug.print does not break JIT; it streams to stdout asynchronously
+            jax.debug.print(
+                "Step {i} | ALO-CV: {alo} | Mean L1: {l1} | Wait: {w}/{p}",
+                i=i, alo=alo, l1=mean_l1, w=new_wait, p=patience
+            )
+
+            # 7. Repack carry, incrementing both the global step (i) and local step (chunk_i)
+            return (i + 1, chunk_i + 1, new_hparams, new_opt_state, new_best_hparams, new_best_alo, new_wait, new_history_buffer, new_inner_params)
+
+        # Execute the loop
+        final_carry = jax.lax.while_loop(cond_fn, body_fn, carry_init)
+        return final_carry
+
+    return (compiled_meta_loop,)
+
+
+@app.cell
+def _(
+    code_path,
+    compiled_meta_loop,
+    initialize_params,
+    jax,
+    jax_inv_softplus,
+    jnp,
+    json,
+    optax,
+    time,
+):
+    def run_meta_optimization_chunked(
+        feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, 
+        total_iters=400, patience=30, chunk_size=20, reset=False
+    ):
+        checkpoint_path = code_path / 'json' / "meta_ppml_opt_checkpoint.json"
+        log_path = code_path / 'json' / "meta_ppml_opt_log.csv"
+
+        meta_optimizer = optax.adam(learning_rate=0.01)
+
+        # ---------------------------------------------------------
+        # HELPER FUNCTIONS
+        # ---------------------------------------------------------
+        def get_templates():
+            raw_l1 = {k: jnp.array(jax_inv_softplus(0.01 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
+            raw_l2 = {k: jnp.array(jax_inv_softplus(0.005 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
+            hparams = (raw_l1, raw_l2)
+            state = meta_optimizer.init(hparams)
+            return hparams, state
+
+        def to_serializable(x):
+            if hasattr(x, 'tolist'): return x.tolist()
+            if hasattr(x, 'item'): return x.item()
+            return x
+
+        def restore_leaves(loaded_leaves, template_leaves):
+            restored =[]
+            for loaded, template in zip(loaded_leaves, template_leaves):
+                if hasattr(template, 'dtype'):
+                    restored.append(jnp.array(loaded, dtype=template.dtype))
+                else:
+                    restored.append(loaded)
+            return restored
+
+        # ---------------------------------------------------------
+        # STATE INITIALIZATION & ROBUST DESERIALIZATION
+        # ---------------------------------------------------------
+        if checkpoint_path.exists() and not reset:
+            with open(checkpoint_path, "r") as f:
+                chkpt = json.load(f)
+
+            # Get Treedefs for reconstruction
+            hparams_template, state_template = get_templates()
+            hparams_template_leaves, hparams_treedef = jax.tree_util.tree_flatten(hparams_template)
+            state_template_leaves, state_treedef = jax.tree_util.tree_flatten(state_template)
+
+            # Unflatten PyTrees using original structure
+            hparams_leaves = restore_leaves(chkpt['hparams_leaves'], hparams_template_leaves)
+            hparams = jax.tree_util.tree_unflatten(hparams_treedef, hparams_leaves)
+
+            state_leaves = restore_leaves(chkpt['state_leaves'], state_template_leaves)
+            state = jax.tree_util.tree_unflatten(state_treedef, state_leaves)
+
+            best_hparams_leaves = restore_leaves(chkpt['best_hparams_leaves'], hparams_template_leaves)
+            best_hparams = jax.tree_util.tree_unflatten(hparams_treedef, best_hparams_leaves)
+
+            # CRITICAL FIX: Explicitly cast JSON scalars back to JAX Arrays
+            best_alo = jnp.array(chkpt['best_alo'], dtype=jnp.float32)
+            wait = jnp.array(chkpt['wait'], dtype=jnp.int32)
+            start_iter = chkpt['iter']
+
+            print(f"\n--- Resuming Bilevel Hyperparameter Tuning from {checkpoint_path.name} ---")
+            print(f"Resuming at Iteration {start_iter} (Best ALO so far: {float(best_alo):.4f} | Patience: {int(wait)}/{patience})")
+
+        else:
+            print("\n--- Starting Bilevel Hyperparameter Tuning from Scratch ---")
+            hparams, state = get_templates()
+            best_hparams = hparams
+            best_alo = jnp.array(jnp.inf, dtype=jnp.float32)
+            wait = jnp.array(0, dtype=jnp.int32)
+            start_iter = 0
+
+            with open(log_path, "w") as f:
+                f.write("Step,ALO_CV_Score,Mean_L1_Penalty,Wait\n")
+
+        print(f"--- Chunked XLA Meta-Optimization (Chunk Size: {chunk_size}, Total Target: {total_iters}) ---")
+
+        # CHUNKING loop starts here
+        tol = 1e-3
+        current_iter = start_iter
+
+        # Generate initial weights
+        num_continuous = X_cont.shape[1]
+        inner_params = initialize_params(feature_sizes_tup, num_continuous)
+
+        # wait defensively wrapped with int()
+        while current_iter < total_iters and int(wait) < patience:
+
+            iters_this_chunk = min(chunk_size, total_iters - current_iter)
+            target_iter = current_iter + iters_this_chunk
+
+            # Pre-allocate telemetry buffer
+            history_buffer = jnp.zeros((chunk_size, 4), dtype=jnp.float32)
+            chunk_idx_start = jnp.array(0, dtype=jnp.int32)
+
+            carry_init = (jnp.array(current_iter, dtype=jnp.int32), chunk_idx_start, 
+                          hparams, state, best_hparams, best_alo, wait, history_buffer, inner_params)
+
+            # Dispatch to GPU for 20 loop chunk
+            t0 = time.time()
+            final_carry = compiled_meta_loop(
+                carry_init, 
+                feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, 
+                max_iters=target_iter, patience=patience, tol=tol,
+                meta_optimizer=meta_optimizer
+            )
+            final_carry = jax.block_until_ready(final_carry)
+            t1 = time.time()
+
+            # Unpack carry
+            current_iter_jax, chunk_steps_completed, hparams, state, best_hparams, best_alo, wait, finished_history, inner_params = final_carry
+            current_iter = int(current_iter_jax)
+
+            print(f"  [Host Sync] Chunk completed in {t1-t0:.2f}s. Global Iter: {current_iter}. Best ALO: {float(best_alo):.4f}")
+
+            # Write telemetry to CSV, async after each GPU chunk
+            with open(log_path, "a") as f:
+                for row in range(int(chunk_steps_completed)):
+                    step_val, alo_val, l1_val, wait_val = finished_history[row]
+                    f.write(f"{int(step_val)},{float(alo_val):.4f},{float(l1_val):.6f},{int(wait_val)}\n")
+
+            # JSON checkpoint save
+            tmp_path = checkpoint_path.with_suffix('.json.tmp')
+            chkpt_data = {
+                'iter': current_iter,
+                'hparams_leaves':[to_serializable(x) for x in jax.tree_util.tree_leaves(hparams)],
+                'state_leaves':[to_serializable(x) for x in jax.tree_util.tree_leaves(state)],
+                'best_alo': float(best_alo),
+                'best_hparams_leaves':[to_serializable(x) for x in jax.tree_util.tree_leaves(best_hparams)],
+                'wait': int(wait)
+            }
+            with open(tmp_path, "w") as f:
+                json.dump(chkpt_data, f, indent=4)
+            tmp_path.replace(checkpoint_path)
+
+        # Final extraction (defensively wrapped with int())
+        if int(wait) >= patience:
+            print(f"\n[!] Convergence Reached: ALO-CV Score has not improved by {tol} in {patience} steps.")
+        elif current_iter >= total_iters:
+            print(f"\n[!] Maximum target iterations ({total_iters}) reached.")
+
+        best_raw_l1, best_raw_l2 = best_hparams
+        final_l1 = {k: jax.nn.softplus(v) for k, v in best_raw_l1.items()}
+        final_l2 = {k: jax.nn.softplus(v) + 1e-4 for k, v in best_raw_l2.items()}
+
+        return final_l1, final_l2, inner_params
+
+    return (run_meta_optimization_chunked,)
 
 
 @app.cell(hide_code=True)
@@ -797,6 +1034,23 @@ def _(
 
 
 @app.cell
+def _():
+    # # # Tune L1 and L2 (python wrapper)
+    # _start_time = time.perf_counter()
+
+    # # --- Code chunk starts ---
+    # best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=500, patience=15, reset=False)
+    # # --- Code chunk ends ---
+
+    # _end_time = time.perf_counter()
+    # print(f"Execution time: {_end_time - _start_time:.6f} seconds")
+    # # Execution time: 637.409503 seconds from step 401 to 453 (53 iterations, 12.02 sec/iter)
+    # # Execution time: 200.421152 seconds from step 401 to 417 (17 iterations, 11.78 sec/iter) with Dynamic Boost enabled
+    # # Execution time: 427.559468 seconds from step 401 to 435 (35 iterations, 12.20 sec/iter) on WSL2
+    return
+
+
+@app.cell
 def _(
     X_cont,
     feature_ids,
@@ -804,12 +1058,25 @@ def _(
     group_ids,
     num_groups,
     patch_exposure,
-    run_meta_optimization,
+    run_meta_optimization_chunked,
+    time,
     y_target_count,
 ):
-    # Tune L1 and L2
-    best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=400, patience=30, reset=False)
-    return best_l1, best_l2
+    # Tune L1 and L2 (full GPU dispatch)
+    _start_time = time.perf_counter()
+
+    # --- Code chunk starts ---
+    best_l1, best_l2, final_inner_param = run_meta_optimization_chunked(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, total_iters=500, patience=15, chunk_size=20, reset=False)
+    # --- Code chunk ends ---
+
+    _end_time = time.perf_counter()
+    print(f"Execution time: {_end_time - _start_time:.6f} seconds")
+    # Execution time: 883.408708 seconds from step 401 to 470 (70 iterations, 12.61 seconds per iteration)
+    # Execution time: 270.925781 seconds from step 401 to 421 (21 iterations, 12.90 seconds per iteration) with Dynamic Boost
+    # Execution time: 286.239185 seconds from step 401 to 422 (22 iterations, 13.00 seconds per iteration) on WSL2
+    # Execution time: 132.502967 seconds from step 401 to 415 (15 iterations, 8.80 seconds per iteration) with warm start inner
+    # Execution time: 45.734372 seconds from step 401 to 414 (14 iterations, 3.27 seconds per iteration) with lx.CG instead of lx.GMRES and vmap to solve all K samples in ALO-CV simultaneously
+    return best_l1, best_l2, final_inner_param
 
 
 @app.cell
@@ -819,19 +1086,28 @@ def _(
     best_l2,
     feature_ids,
     feature_sizes,
+    final_inner_param,
     group_ids,
     num_groups,
     patch_exposure,
+    time,
     train_model_inner,
     y_target_count,
 ):
-    # Final training run uses the same default parameters as the ones used for meta-Adam (max_iter=1000, tol=1e-5)
-    trained_params = train_model_inner(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes, best_l1, best_l2)
+    # Final training run uses the same default parameters as the ones used for meta-Adam (max_iter=1000, tol=1e-3)
+    _start_time = time.perf_counter()
+    # --- Code chunk starts ---
+    trained_params = train_model_inner(final_inner_param, feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes, best_l1, best_l2)
 
     print("\n--- Model Estimation with Optimized Penalty Parameters ---")
 
     print("\nOptimization Complete!")
     print(f"Final Global Base Rate (Bias): {trained_params['bias']:.4f}")
+
+    # --- Code chunk ends ---
+
+    _end_time = time.perf_counter()
+    print(f"Execution time: {_end_time - _start_time:.6f} seconds")
     return (trained_params,)
 
 

@@ -141,12 +141,6 @@ def _(df_2):
     return (min_wage_df,)
 
 
-@app.cell
-def _(df_2):
-    df_2.to_csv('min_wage.csv')
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
