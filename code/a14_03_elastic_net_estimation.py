@@ -291,47 +291,71 @@ def _(compute_patch_log_worker, jax, jnp):
     def ppml_objective_compositional(params: dict, feature_ids: dict, X_cont: jnp.ndarray, 
                                      patch_exposure: jnp.ndarray, group_ids: jnp.ndarray, 
                                      y_count_county_year: jnp.ndarray, num_groups: int,
-                                     l1_rates: dict, l2_rates: dict) -> float:
+                                     l1_rates:dict, l2_rates: dict) -> float:
         """
-        The PPML objective function.
+        The FULL objective function. 
+        Used for logging only! Gradients are NOT taken through this function anymore.
         It predicts the workers for every patch, sums them to the county level, 
         and THEN calculates the Poisson Error.
         """
-        # 1. Get the log(rate) for all patches
+        # 1. Get the log(rate) for all patches (identical to original)
         log_worker_per_patch = compute_patch_log_worker(params, feature_ids, X_cont)
 
-        # 2. Patch Exposure * exp(log_worker_per_patch)) = Predicted workers for that patch
+        # 2. Patch Exposure * exp(log_worker_per_patch)) = Predicted workers for that patch (identical)
         workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
 
-        # 3. Sum up the workers to the county level
-        mu_count_cy = jax.ops.segment_sum(
-            data=workers_in_patch, 
-            segment_ids=group_ids, 
-            num_segments=num_groups
-        )
+        # 3. Sum up the workers to the county level (identical)
+        mu_count_cy = jax.ops.segment_sum(workers_in_patch, group_ids, num_groups)
 
-        # 4. POISSON NLL targeting the COUNTS
+        # 4. POISSON NLL targeting the COUNTS (identical)
         nll = jnp.mean(mu_count_cy - y_count_county_year * jnp.log(mu_count_cy + 1e-7))
 
-        # 5. Elastic Net Penalty
-        # We impose massive penalties on interactions terms if parent terms are dropped, to impose heredity
         total_penalty = 0.0
-        tau = 0.01 
         for k in feature_ids.keys():
             w_matrix = params['weights'][k]
-            sp = tau * (jax.nn.softplus(w_matrix/tau) + jax.nn.softplus(-w_matrix/tau) - 2.0*jnp.log(2.0))
 
+            # Exact L1 Heredity Multiplier
             if k == 1:
                 multiplier = 1.0 
             else:
                 parent_magnitude = jax.lax.stop_gradient(jnp.mean(params['weights'][k-1]**2))
                 multiplier = jnp.maximum(1.0, 1e-3 / (parent_magnitude + 1e-8))
 
-            total_penalty += l1_rates[k] * jnp.sum(multiplier * sp) + l2_rates[k] * jnp.sum(w_matrix**2)
+            # EXACT L1 (jnp.abs) instead of Softplus approximation, so not differentiable
+            l1_penalty = l1_rates[k] * jnp.sum(multiplier * jnp.abs(w_matrix))
+            l2_penalty = l2_rates[k] * jnp.sum(w_matrix**2)
+
+            total_penalty += l1_penalty + l2_penalty
 
         return nll + total_penalty
 
     return (ppml_objective_compositional,)
+
+
+@app.cell
+def _(compute_patch_log_worker, jax, jnp):
+    def ppml_objective_compositional_smooth_only(params: dict, feature_ids: dict, X_cont: jnp.ndarray, 
+                                                 patch_exposure: jnp.ndarray, group_ids: jnp.ndarray, 
+                                                 y_count_county_year: jnp.ndarray, num_groups: int,
+                                                 l2_rates: dict) -> float:
+        """
+        The smooth part of the PPML objective function (Poisson NLL + L2 Ridge). 
+        Used exclusively by FISTA's jax.grad and the VJP's exact_hvp.
+        """
+        log_worker_per_patch = compute_patch_log_worker(params, feature_ids, X_cont)
+        workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
+        mu_count_cy = jax.ops.segment_sum(workers_in_patch, group_ids, num_groups)
+        nll = jnp.mean(mu_count_cy - y_count_county_year * jnp.log(mu_count_cy + 1e-7))
+
+        # L2 ridge penalty only
+        total_l2_penalty = 0.0
+        for k in feature_ids.keys():
+            w_matrix = params['weights'][k]
+            total_l2_penalty += l2_rates[k] * jnp.sum(w_matrix**2)
+
+        return nll + total_l2_penalty
+
+    return (ppml_objective_compositional_smooth_only,)
 
 
 @app.cell(hide_code=True)
@@ -343,49 +367,171 @@ def _(mo):
 
 
 @app.cell
-def _(jax, jnp, lx, optax, ppml_objective_compositional, ravel_pytree):
+def _(feature_ids, jax, jnp):
+    # This replaces softplus function used to make L1 penalty differentiable
+    # Adds L1 penalty parameters to objective function using soft-thresholding and imposes heredity on higher order interaction terms
+    def prox_g(param_pytree, step_size, l1_rates):
+        '''
+        Applies soft-thresholding to weights, considering heredity and zero-padding for bias.
+        Bias is not regularized.
+        '''
+        updated_params = {
+            'bias': param_pytree['bias'], # Bias is not regularized
+            'weights': {}  # Initialize empty weights dictionary
+        }
+
+        # Get flattened current parameters to calculate parent magnitudes for heredity (stop_gradient)
+        # We need the *current* state of the parameters (p, not y_mom) for heredity.
+        # This implies that the heredity multipliers are based on the parameters from the *previous* FISTA iteration's `p`.
+        # For simplicity in this structure, we'll assume `param_pytree` itself is the reference for heredity.
+        # A more rigorous implementation might pass the previous `p` as a separate argument.
+
+        for order in feature_ids.keys():
+            w_matrix = param_pytree['weights'][order]
+            l1_rate_k = l1_rates[order]
+
+            if order == 1:
+                # No parent for order 1, multiplier is 1.0
+                multiplier = 1.0
+            else:
+                # Heredity: use stop_gradient on parent magnitude from the *reference* params
+                # This ensures we don't take gradients through the thresholding logic for heredity
+                parent_magnitude = jax.lax.stop_gradient(jnp.mean(param_pytree['weights'][order-1]**2))
+                multiplier = jnp.maximum(1.0, 1e-3 / (parent_magnitude + 1e-8)) # Ensure multiplier >= 1.0
+
+            # Calculate dynamic threshold
+            threshold = step_size * l1_rate_k * multiplier
+
+            # Apply EXACT SOFT-THRESHOLDING (Vectorized in JAX)
+            updated_weights = jnp.sign(w_matrix) * jnp.maximum(0.0, jnp.abs(w_matrix) - threshold)
+
+            updated_params['weights'][order] = updated_weights
+
+        return updated_params
+
+    return (prox_g,)
+
+
+@app.cell
+def _(
+    jax,
+    jnp,
+    ppml_objective_compositional,
+    ppml_objective_compositional_smooth_only,
+    prox_g,
+    ravel_pytree,
+):
     # This is the inner loop that is actually solving the PPML optimization problem
-    def train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates, max_iter=1000, tol=1e-5):
+    def train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates, max_iter=1000, tol=1e-6): # note smaller tol, we are using FISTA
         num_continuous = X_cont.shape[1]
 
-        # Warm starting with solution from previous putermost iteration
-        params = init_params
+        # FISTA initializations
+        p = init_params # Current parameters
+        y_mom = init_params # Momentum point (y_k)
+        t = jnp.array(1.0, dtype=jnp.float32) # Nesterov momentum scalar
+        L = jnp.array(1.0, dtype=jnp.float32) # Initial Lipschitz constant (can be adaptive or fixed)
 
-        def loss_fn(p):
-            return ppml_objective_compositional(p, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
+        # Smooth loss function (for backtracking and gradient calculation)
+        def smooth_loss_fn(p_val):
+            return ppml_objective_compositional_smooth_only(p_val, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l2_rates)
 
-        # Reduce L-BFGS memory size from default 10 down to 5 as we are warm starting
-        # No need to trace backwards as far
-        solver = optax.lbfgs(memory_size=5)
-        opt_state = solver.init(params)
-        val_and_grad_fn = optax.value_and_grad_from_state(loss_fn)
+        # JIT the value and gradient for efficiency
+        val_and_grad_smooth_fn = jax.jit(jax.value_and_grad(smooth_loss_fn))
 
-        def step(p, state):
-            value, grad = val_and_grad_fn(p, state=state)
-            updates, new_state = solver.update(grad, state, p, value=value, grad=grad, value_fn=loss_fn)
-            return optax.apply_updates(p, updates), new_state, value
+        # Implement FISTA while loop
+        # Placeholder for the previous max_param_change to initiate the loop
+        prev_max_param_change = jnp.array(jnp.inf, dtype=jnp.float32)
 
-        jax.debug.print("  ->[Inner L-BFGS] Starting optimization (max_iter={max_iter}, tol={tol})...", max_iter=max_iter, tol=tol)
+        def cond_fn_outer(carry):
+            i, _, _, _, _, mpc, _, _ = carry
+            # Loop continues if max_iter not reached AND not converged
+            return jnp.logical_and(i < max_iter, mpc > tol)
 
-        # JAX native while loop (Checks convergence dynamically)
-        def cond_fn(carry):
-            i, p, state, prev_val, curr_val = carry
+        def body_fn_outer(carry):
+            i, p, y_mom, t, L, prev_max_param_change, best_p, best_loss = carry
 
-            # Calculate relative change: |curr - prev| / |prev|
-            rel_change = jnp.abs(curr_val - prev_val) / (jnp.abs(prev_val) + 1e-8)
+            # --- Backtracking Line Search (Nested While Loop) ---
+            # The line search requires the smooth part of the objective only
+            loss_y_val, grad_y_val = val_and_grad_smooth_fn(y_mom)
 
-            # Stop if we hit tolerance (but force at least 5 iterations to get started)
-            not_converged = jnp.logical_or(i < 5, rel_change > tol)
-            not_max_iter = i < max_iter
+            def cond_fn_bt(carry_bt):
+                k_bt, _, loss_p_next_candidate, L_bt_current = carry_bt
+                # Majorization condition: f(p_next) <= f(y) + <grad f(y), p_next - y> + (L/2)*||p_next - y||^2
 
-            return jnp.logical_and(not_converged, not_max_iter)
+                # Compute p_next_candidate for the current L_bt_current
+                grad_y_at_L = jax.tree_util.tree_map(lambda ym, gy: ym - (1.0 / L_bt_current) * gy, y_mom, grad_y_val)
+                p_next_candidate_val = prox_g(grad_y_at_L, 1.0 / L_bt_current, l1_rates)
 
-        def body_fn(carry):
-            i, p, state, prev_val, curr_val = carry
-            p_next, state_next, val_next = step(p, state)
+                # Re-evaluate loss_p_next_candidate with the new p_next_candidate_val
+                loss_p_next_candidate_re_eval = smooth_loss_fn(p_next_candidate_val)
 
+                # Sum each leaf to a scalar first, then sum the scalars
+                diff_sq_leaves = jax.tree_util.tree_leaves(
+                    jax.tree_util.tree_map(lambda pn, ym: jnp.sum((pn - ym)**2), p_next_candidate_val, y_mom)
+                )
+                diff_p_y_norm_sq = jnp.sum(jnp.array(diff_sq_leaves))
+
+                grad_dot_diff_leaves = jax.tree_util.tree_leaves(
+                    jax.tree_util.tree_map(lambda gy, pn, ym: jnp.sum(gy * (pn - ym)), grad_y_val, p_next_candidate_val, y_mom)
+                )
+                grad_dot_diff = jnp.sum(jnp.array(grad_dot_diff_leaves))
+
+                lhs = loss_p_next_candidate_re_eval
+                rhs = loss_y_val + grad_dot_diff + (0.5 * L_bt_current * diff_p_y_norm_sq)
+
+                # Stop after 20 iterations to prevent infinite loop for ill-conditioned problems
+                return jnp.logical_and(lhs > rhs, k_bt < 20)
+
+            def body_fn_bt(carry_bt):
+                k_bt, _, _, L_bt_current = carry_bt
+                L_new_bt = L_bt_current * 1.5 # Grow L
+                # Recalculate p_next_candidate and its loss in the condition, no need here.
+                return k_bt + 1, None, None, L_new_bt # Only L is updated inside the loop
+
+            # Initialize backtracking with current L
+            bt_carry_init = (0, None, None, L) # (k_bt, dummy_p, dummy_loss, L_init)
+            final_k_bt, _, _, L_final_bt = jax.lax.while_loop(cond_fn_bt, body_fn_bt, bt_carry_init)
+
+            # Decay L for next outer iteration. L should always be positive.
+            L_new = L_final_bt * 0.9 
+            # Ensure L does not drop too low or become zero.
+            L_new = jnp.maximum(L_new, 1e-8) 
+
+            # Compute p_next using the final L from backtracking
+            grad_y = jax.tree_util.tree_map(lambda ym, gy: ym - (1.0 / L_final_bt) * gy, y_mom, grad_y_val)
+            p_next = prox_g(grad_y, 1.0 / L_final_bt, l1_rates)
+
+            # --- Adaptive Restart Check ---
+            # Flatten for vdot comparison
+            flat_p_prev, _ = ravel_pytree(p) 
+            flat_p_next, _ = ravel_pytree(p_next)
+            flat_y_mom, _ = ravel_pytree(y_mom)
+
+            # Check gradient-momentum alignment: <y_k - p_{k-1}, p_k - p_{k-1}> > 0
+            restart_condition = jnp.vdot(flat_y_mom - flat_p_prev, flat_p_next - flat_p_prev) > 0
+
+            # Update t based on restart
+            t_next_raw = (1.0 + jnp.sqrt(1.0 + 4.0 * t**2)) / 2.0
+            t_next = jnp.where(restart_condition, 1.0, t_next_raw)
+
+            # Update y_mom (momentum point)
+            # If restart, y_mom_next = p_next. Otherwise, standard FISTA momentum.
+            y_mom_next = jax.tree_util.tree_map(
+                lambda pn, pp: jnp.where(restart_condition, pn, pn + ((t - 1.0) / t_next) * (pn - pp)),
+                p_next, p
+            )
+
+            # Convergence check: max parameter change
+            max_param_change = jnp.max(jnp.abs(flat_p_next - flat_p_prev))
+
+            # JAX debug print for progress (streams to stdout asynchronously)
             def print_progress():
-                jax.debug.print("      Iter {iter}: Loss = {loss}", iter=i+1, loss=val_next)
+                # Use the full objective (NLL + L1 + L2) for logging
+                full_loss = ppml_objective_compositional(p_next, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l1_rates, l2_rates)
+                jax.debug.print(
+                    "      Iter {iter}: Loss = {loss:.4f}, MaxParamChange = {mpc:.6f}, L = {L:.4f}, BT_iters={k_bt}", 
+                    iter=i+1, loss=full_loss, mpc=max_param_change, L=L_final_bt, k_bt=final_k_bt
+                )
 
             jax.lax.cond(
                 jnp.logical_or(i == 0, (i + 1) % 50 == 0),
@@ -393,67 +539,163 @@ def _(jax, jnp, lx, optax, ppml_objective_compositional, ravel_pytree):
                 lambda: None
             )
 
-            return (i + 1, p_next, state_next, curr_val, val_next)
+            return (i + 1, p_next, y_mom_next, t_next, L_new, max_param_change, best_p, best_loss) # Pass best_p/best_loss along, though not used in FISTA logic for now
 
-        # Initial carry state: (iteration_index, params, opt_state, prev_loss, curr_loss)
-        # We fake the initial losses so the relative change triggers the loop to start
-        init_carry = (0, params, opt_state, jnp.array(1e9, dtype=jnp.float32), jnp.array(1e8, dtype=jnp.float32))
-
-        final_i, final_params, final_state, _, final_value = jax.lax.while_loop(cond_fn, body_fn, init_carry)
-
-        jax.debug.print("  ->[Inner L-BFGS] Completed at Iter {i}. Final Loss = {loss}", i=final_i, loss=final_value)
+        # Initial carry state for FISTA outer while_loop
+        init_carry = (
+            0,                 # i (iteration index)
+            p,                 # p (current parameters)
+            y_mom,             # y_mom (momentum point)
+            t,                 # t (Nesterov momentum scalar)
+            L,                 # L (Lipschitz constant)
+            prev_max_param_change, # prev_max_param_change (for convergence check)
+            p,                 # best_p (not directly used by FISTA, but useful to pass along)
+            jnp.array(jnp.inf, dtype=jnp.float32) # best_loss (not directly used)
+        )
+        # Run the while loop
+        final_i, final_params, _, _, _, final_mpc, _, _ = jax.lax.while_loop(cond_fn_outer, body_fn_outer, init_carry)
+        jax.debug.print("  ->[Inner FISTA] Completed at Iter {i}. Final Max Param Change = {mpc:.6f}", i=final_i, mpc=final_mpc)
         return final_params
 
+    return (train_model_inner,)
+
+
+@app.cell
+def _(
+    jax,
+    jnp,
+    lx,
+    ppml_objective_compositional_smooth_only,
+    ravel_pytree,
+    train_model_inner,
+):
+    # These functions are forwards and backwards mode solvers that we join to our inner loop solver
+    # This is the inner loop solver
     @jax.custom_vjp
     def train_model_cpu(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
         return train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
 
+    # Forwards pass is just solving the inner loop
     def train_fwd(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates):
         opt_params = train_model_inner(init_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
-        residuals = (opt_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
+
+        # Calculate active mask at the optimum
+        active_mask = jax.tree_util.tree_map(lambda x: jnp.abs(x) > 1e-6, opt_params)
+        active_mask['bias'] = jnp.array(True) # Bias is always active
+
+        residuals = (opt_params, active_mask, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates)
         return opt_params, residuals
 
+    # Backwards pass requires tracing out the chain of operations to obtain derivatives
     def train_bwd(residuals, cotangents):
-        opt_params, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates = residuals
-        v = cotangents 
+        opt_params, active_mask, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, feature_sizes_tup, l1_rates, l2_rates = residuals
 
+        v = cotangents # This 'v' is a pytree matching opt_params
+
+        # 1. Mask the RHS (cotangents 'v') for inactive components
+        v_masked = jax.tree_util.tree_map(lambda val, mask: jnp.where(mask, val, 0.0), v, active_mask)
+
+        # Ravel and unravel functions for convenience
         flat_opt_params, unravel_fn = ravel_pytree(opt_params)
-        flat_v, _ = ravel_pytree(v)
+        flat_v_masked, _ = ravel_pytree(v_masked)
 
-        safe_l2_rates = {k: jnp.maximum(val, 1e-4) for k, val in l2_rates.items()}
-
-        def flat_total_loss(p_flat):
-            return ppml_objective_compositional(
-                unravel_fn(p_flat), feature_ids, X_cont, patch_exposure, group_ids, 
-                y_county_year, num_groups, l1_rates, safe_l2_rates
+        # 2. Define the flat smooth-only objective for Hessian calculations
+        def flat_smooth_only_loss(p_flat):
+            return ppml_objective_compositional_smooth_only(
+                unravel_fn(p_flat), feature_ids, X_cont, patch_exposure, group_ids,
+                y_county_year, num_groups, l2_rates
             )
 
-        def damped_grad(p_flat, _):
-            g = jax.grad(flat_total_loss)(p_flat)
-            return g + 1.0 * p_flat
+        # 3. Construct the Subspace Preconditioned Operator
+        # This operator should apply H_smooth + ridge for active components, and identity for inactive.
 
-        hessian_op = lx.JacobianLinearOperator(damped_grad, flat_opt_params, tags=lx.positive_semidefinite_tag)
+        # Map l2_rates back to parameter structure for the ridge diagonal
+        l2_param_pytree = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x, dtype=x.dtype), opt_params)
+        for k, l2_val in l2_rates.items():
+            l2_param_pytree['weights'][k] = jnp.full_like(opt_params['weights'][k], l2_val, dtype=opt_params['weights'][k].dtype)
+        flat_l2_param_pytree, _ = ravel_pytree(l2_param_pytree)
+        flat_active_mask, _ = ravel_pytree(active_mask)
+
+        def full_hvp_plus_ridge(tangent_vec_flat):
+            # Hessian-vector product of the smooth loss
+            # The grad_grad_fn computes H_smooth @ v
+            _, hvp_active_flat = jax.jvp(jax.grad(flat_smooth_only_loss), (flat_opt_params,), (tangent_vec_flat,))
+
+            # Apply ridge only to active components of the tangent vector
+            # The IFT formulation usually has H^-1 (I - P_G)v, where P_G is projection onto subgradient.
+            # Here, we simplify by adding ridge to H_smooth for the active set and identity for inactive.
+
+            # For active components: (H_smooth + diag(l2_rates)) @ v_active
+            # Add a strict 1e-4 numerical jitter to the active diagonal. 
+            # This forcibly caps the condition number to prevent solver divergence in float32.
+            damping_factor = 0.1
+            active_contrib_flat = jnp.where(
+                flat_active_mask, 
+                hvp_active_flat + (flat_l2_param_pytree + damping_factor) * tangent_vec_flat, 
+                0.0
+            )
+            # For inactive components: 1 * v_inactive (identity)
+            inactive_contrib_flat = jnp.where(
+                ~flat_active_mask, 
+                tangent_vec_flat, 
+                0.0
+            )
+
+            return active_contrib_flat + inactive_contrib_flat
+
+        hessian_op = lx.FunctionLinearOperator(
+            full_hvp_plus_ridge,
+            jax.eval_shape(lambda: flat_opt_params), # Pass ShapeDtypeStruct; flat_opt_params.shape is tuple, breaks FLO
+            tags=lx.positive_semidefinite_tag
+        )
 
         jax.debug.print("  ->[Implicit VJP] Solving Hessian linear system for backward pass...")
 
-        solver = lx.CG(rtol=1e-1, atol=1e-1, max_steps=250)
-        solution = lx.linear_solve(hessian_op, -flat_v, solver=solver, throw=False)
+        # 4. float32 precision often breaks strict matrix symmetry, which instantly crashes CG
+        # GMRES is immune to this.
+        solver = lx.CG(rtol=1e-2, atol=1e-2, max_steps=150)
+        solution = lx.linear_solve(hessian_op, -flat_v_masked, solver=solver, throw=False)
 
-        w_pytree = unravel_fn(solution.value)
+        # 5. If the matrix is still too hostile and GMRES fails, replace NaNs with 0.0
+        # This safely zeroes the meta-gradient for this step  rather than corrupting the hyper-parameters
+        safe_solution_value = jnp.where(jnp.isnan(solution.value), 0.0, solution.value)
+        w_pytree = unravel_fn(safe_solution_value)
+
         jax.debug.print("  -> [Implicit VJP] Linear solve completed.")
 
-        def mixed_grad(l1_d, l2_d):
-            safe_l2_d = {k: jnp.maximum(val, 1e-4) for k, val in l2_d.items()}
-            return jax.grad(lambda p: ppml_objective_compositional(
-                p, feature_ids, X_cont, patch_exposure, group_ids, y_county_year, num_groups, l1_d, safe_l2_d))(opt_params)
+        # 5. Algebraic KKT Output
+        grad_l1 = {}
+        grad_l2 = {}
 
-        _, vjp_fn = jax.vjp(mixed_grad, l1_rates, l2_rates)
-        grad_l1, grad_l2 = vjp_fn(w_pytree)
+        for k in feature_ids.keys():
+            w_matrix_k = w_pytree['weights'][k]
+            opt_w_matrix_k = opt_params['weights'][k]
+            active_sub_mask_k = active_mask['weights'][k]
 
+            # Recalculate heredity multiplier at the optimum for this order (from opt_params)
+            if k == 1:
+                multiplier_k = 1.0
+            else:
+                # Use stop_gradient on the parent magnitude at the *optimum*
+                parent_magnitude_k = jax.lax.stop_gradient(jnp.mean(opt_params['weights'][k-1]**2))
+                multiplier_k = jnp.maximum(1.0, 1e-3 / (parent_magnitude_k + 1e-8))
+
+            # Partial derivative of ALO w.r.t. L1_k (for active components)
+            # This is: sum_j in S_k { w_j * multiplier_j * sign(beta_j) }
+            grad_l1_k = jnp.sum(jnp.where(active_sub_mask_k, w_matrix_k * multiplier_k * jnp.sign(opt_w_matrix_k), 0.0))
+            grad_l1[k] = grad_l1_k
+
+            # Partial derivative of ALO w.r.t. L2_k (for active components)
+            # This is: sum_j in S_k { w_j * 2 * beta_j }
+            grad_l2_k = jnp.sum(jnp.where(active_sub_mask_k, w_matrix_k * 2.0 * opt_w_matrix_k, 0.0))
+            grad_l2[k] = grad_l2_k
+
+        # Note: If lx.CG stagnates in float32 during finite difference tests due to high condition numbers,
+        # consider locally promoting CG solver inputs to jnp.float64 or temporarily increasing RIDGE to 1e-4.
         return (None, None, None, None, None, None, None, None, grad_l1, grad_l2)
 
     train_model_cpu.defvjp(train_fwd, train_bwd)
-    return train_model_cpu, train_model_inner
+    return (train_model_cpu,)
 
 
 @app.cell(hide_code=True)
@@ -465,75 +707,167 @@ def _(mo):
 
 
 @app.cell
+def _():
+    # def compute_alo_compositional(params, feature_ids, X_cont, acreage, group_ids, 
+    #                               y_county_year, num_groups, l1_rates, l2_rates):
+
+    #     flat_p, unravel_fn = ravel_pytree(params)
+
+    #     def flat_total_loss(p_flat):
+    #         return ppml_objective_compositional(
+    #             unravel_fn(p_flat), feature_ids, X_cont, acreage, group_ids, 
+    #             y_county_year, num_groups, l1_rates, l2_rates
+    #         )
+
+    #     def all_groups_nll(p_flat):
+    #         p = unravel_fn(p_flat)
+    #         log_worker_per_patch = compute_patch_log_worker(p, feature_ids, X_cont)
+    #         workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
+    #         mu_cy = jax.ops.segment_sum(workers_in_patch, group_ids, num_groups)
+    #         return mu_cy - y_county_year * jnp.log(mu_cy + 1e-7)
+
+    #     # ---------------------------------------------------------
+    #     # ISOLATE LEVERAGES AND STOP GRADIENTS (Prevents 3rd-order autodiff hang)
+    #     # ---------------------------------------------------------
+    #     def compute_leverages_no_grad(p_flat):
+    #         def damped_grad(p, _):
+    #             # 1.0 Damping to enforce strong conditioning
+    #             return jax.grad(flat_total_loss)(p) + 1.0 * p
+
+    #         hessian_op = lx.JacobianLinearOperator(damped_grad, p_flat, tags=lx.positive_semidefinite_tag)
+
+    #         # MOVED max_steps HERE: Caps the XLA loop to guarantee it never hangs
+    #         solver = lx.CG(rtol=1e-1, atol=1e-1, max_steps=250)
+
+    #         # Reduced from 10 to 2: We only need a rough approximation for hyperparameter tuning
+    #         K = 2
+    #         key = jax.random.PRNGKey(42)
+    #         Z = jax.random.rademacher(key, (K, num_groups), dtype=p_flat.dtype)
+
+    #         def compute_trace_sample(z):
+
+    #             def z_weighted_nll(p):
+    #                 return jnp.sum(z * all_groups_nll(p))
+
+    #             v = jax.grad(z_weighted_nll)(p_flat)
+    #             w = lx.linear_solve(hessian_op, v, solver=solver, throw=False).value
+
+    #             return jnp.dot(v, w)
+
+    #         # Vectorize! Solves all K samples in parallel matrix operations
+    #         trace_samples = jax.vmap(compute_trace_sample)(Z)
+    #         return jnp.mean(trace_samples)
+
+    #     # jax.lax.stop_gradient guarantees JAX will not try to take the derivative 
+    #     # of the Hessian-inverse during the Meta-Adam update.
+    #     sum_leverages = jax.lax.stop_gradient(compute_leverages_no_grad(flat_p))
+
+    #     # 4. Mean ALO Score calculation
+    #     # Gradients will flow normally through the NLL term
+    #     group_nlls = all_groups_nll(flat_p)
+    #     alo_score = jnp.mean(group_nlls) + (sum_leverages / (num_groups ** 2))
+
+    #     jax.debug.print("  -> [ALO-CV] ALO Score calculated successfully: {alo}", alo=alo_score)
+
+    #     return alo_score
+    return
+
+
+@app.cell
 def _(
     compute_patch_log_worker,
     jax,
     jnp,
     lx,
-    patch_exposure,
-    ppml_objective_compositional,
+    ppml_objective_compositional_smooth_only,
     ravel_pytree,
 ):
-    def compute_alo_compositional(params, feature_ids, X_cont, acreage, group_ids, 
+    def compute_alo_compositional(params, feature_ids, X_cont, patch_exposure, group_ids, 
                                   y_county_year, num_groups, l1_rates, l2_rates):
 
         flat_p, unravel_fn = ravel_pytree(params)
 
-        def flat_total_loss(p_flat):
-            return ppml_objective_compositional(
-                unravel_fn(p_flat), feature_ids, X_cont, acreage, group_ids, 
-                y_county_year, num_groups, l1_rates, l2_rates
+        # 1. Active Mask & L2 Parameter Mapping (For the exact operator)
+        active_mask = jax.tree_util.tree_map(lambda x: jnp.abs(x) > 1e-6, params)
+        active_mask['bias'] = jnp.array(True)
+        flat_active_mask, _ = ravel_pytree(active_mask)
+
+        l2_param_pytree = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x), params)
+        for k, l2_val in l2_rates.items():
+            l2_param_pytree['weights'][k] = jnp.full_like(params['weights'][k], l2_val)
+        flat_l2_param_pytree, _ = ravel_pytree(l2_param_pytree)
+
+        # 2. Smooth-Only Loss (Crucial: Do not take Hessian of L1 penalty!)
+        def flat_smooth_only_loss(p_flat):
+            return ppml_objective_compositional_smooth_only(
+                unravel_fn(p_flat), feature_ids, X_cont, patch_exposure, group_ids, 
+                y_county_year, num_groups, l2_rates
             )
 
         def all_groups_nll(p_flat):
             p = unravel_fn(p_flat)
-            log_worker_per_patch = compute_patch_log_worker(p, feature_ids, X_cont)
-            workers_in_patch = patch_exposure * jnp.exp(log_worker_per_patch)
+            log_w = compute_patch_log_worker(p, feature_ids, X_cont)
+            workers_in_patch = patch_exposure * jnp.exp(log_w)
             mu_cy = jax.ops.segment_sum(workers_in_patch, group_ids, num_groups)
             return mu_cy - y_county_year * jnp.log(mu_cy + 1e-7)
 
-        # ---------------------------------------------------------
-        # ISOLATE LEVERAGES AND STOP GRADIENTS (Prevents 3rd-order autodiff hang)
-        # ---------------------------------------------------------
+        # 3. Fast, Matrix-Free Trace Estimator
         def compute_leverages_no_grad(p_flat):
-            def damped_grad(p, _):
-                # 1.0 Damping to enforce strong conditioning
-                return jax.grad(flat_total_loss)(p) + 1.0 * p
+            # Use the stabilized HVP operator from Phase 3
+            def full_hvp_plus_ridge(tangent_vec_flat):
+                _, hvp_active_flat = jax.jvp(jax.grad(flat_smooth_only_loss), (p_flat,), (tangent_vec_flat,))
+            
+                # 0.1 damping to stabilize CG
+                active_contrib = jnp.where(
+                    flat_active_mask, 
+                    hvp_active_flat + (flat_l2_param_pytree + 0.1) * tangent_vec_flat, 
+                    0.0
+                )
+                inactive_contrib = jnp.where(~flat_active_mask, tangent_vec_flat, 0.0)
+                return active_contrib + inactive_contrib
 
-            hessian_op = lx.JacobianLinearOperator(damped_grad, p_flat, tags=lx.positive_semidefinite_tag)
+            hessian_op = lx.FunctionLinearOperator(
+                full_hvp_plus_ridge,
+                jax.eval_shape(lambda: p_flat),
+                tags=lx.positive_semidefinite_tag
+            )
 
-            # MOVED max_steps HERE: Caps the XLA loop to guarantee it never hangs
-            solver = lx.CG(rtol=1e-1, atol=1e-1, max_steps=250)
+            solver = lx.CG(rtol=1e-2, atol=1e-2, max_steps=150)
 
-            # Reduced from 10 to 2: We only need a rough approximation for hyperparameter tuning
+            # Hutchinson estimator (K=2)
             K = 2
             key = jax.random.PRNGKey(42)
             Z = jax.random.rademacher(key, (K, num_groups), dtype=p_flat.dtype)
 
             def compute_trace_sample(z):
-
                 def z_weighted_nll(p):
                     return jnp.sum(z * all_groups_nll(p))
 
                 v = jax.grad(z_weighted_nll)(p_flat)
-                w = lx.linear_solve(hessian_op, v, solver=solver, throw=False).value
+            
+                # Mask the RHS
+                v_masked = jnp.where(flat_active_mask, v, 0.0)
+            
+                solution = lx.linear_solve(hessian_op, v_masked, solver=solver, throw=False)
+            
+                # NaN Guard
+                w_safe = jnp.where(jnp.isnan(solution.value), 0.0, solution.value)
+            
+                return jnp.dot(v_masked, w_safe)
 
-                return jnp.dot(v, w)
-
-            # Vectorize! Solves all K samples in parallel matrix operations
+            # Vectorize all K samples
             trace_samples = jax.vmap(compute_trace_sample)(Z)
             return jnp.mean(trace_samples)
 
-        # jax.lax.stop_gradient guarantees JAX will not try to take the derivative 
-        # of the Hessian-inverse during the Meta-Adam update.
+        # 4. Stop gradients on the leverage calculation to prevent infinite meta-autodiff loops
         sum_leverages = jax.lax.stop_gradient(compute_leverages_no_grad(flat_p))
 
-        # 4. Mean ALO Score calculation
-        # Gradients will flow normally through the NLL term
+        # 5. ALO Score calculation
         group_nlls = all_groups_nll(flat_p)
         alo_score = jnp.mean(group_nlls) + (sum_leverages / (num_groups ** 2))
 
-        jax.debug.print("  -> [ALO-CV] ALO Score calculated successfully: {alo}", alo=alo_score)
+        jax.debug.print("  -> [ALO-CV] Stochastic ALO: {alo:.4f} | Active Params: {k}", 
+                        alo=alo_score, k=jnp.sum(flat_active_mask))
 
         return alo_score
 
@@ -580,178 +914,6 @@ def _(compute_alo_compositional, jax, train_model_cpu):
     # JIT the meta-gradient calculator
     meta_val_and_grad = jax.jit(jax.value_and_grad(meta_loss_fn, argnums=(0, 1), has_aux=True), static_argnames=['num_groups', 'feature_sizes_tup'])
     return (meta_val_and_grad,)
-
-
-@app.cell
-def _(
-    code_path,
-    jax,
-    jax_inv_softplus,
-    jnp,
-    json,
-    meta_val_and_grad,
-    np,
-    optax,
-):
-    def run_meta_optimization(feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup, meta_iters=150, patience=15, reset=False):
-
-        # Define file paths for checkpointing and logging
-        # Changed from .pkl to .json for human-readable checkpoints
-        checkpoint_path = code_path / 'json' / "meta_ppml_opt_checkpoint.json"
-        log_path = code_path / 'json' / "meta_ppml_opt_log.csv"
-
-        meta_optimizer = optax.adam(learning_rate=0.01)
-
-        # Allow forced reset if you want to start over
-        if reset and checkpoint_path.exists():
-            checkpoint_path.unlink()
-            print("[-] Deleted old checkpoint. Starting fresh.")
-
-        # Helper function to initialize dummy structure to capture JAX treedefs
-        def get_templates():
-            raw_l1 = {k: jnp.array(jax_inv_softplus(0.01 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
-            raw_l2 = {k: jnp.array(jax_inv_softplus(0.005 * (2.0**(k-1))), dtype=jnp.float32) for k in range(1, 4)}
-            hparams = (raw_l1, raw_l2)
-            state = meta_optimizer.init(hparams)
-            return hparams, state
-
-        hparams_template, state_template = get_templates()
-        _, hparams_treedef = jax.tree_util.tree_flatten(hparams_template)
-        _, state_treedef = jax.tree_util.tree_flatten(state_template)
-
-        # Helper function to convert JAX/NumPy arrays to serializable lists/scalars
-        def to_serializable(x):
-            if hasattr(x, 'tolist'): return x.tolist()
-            if hasattr(x, 'item'): return x.item()
-            return x
-
-        # Helper function to restore loaded JSON lists back to original JAX arrays
-        def restore_leaves(loaded_leaves, template_leaves):
-            restored = []
-            for loaded, template in zip(loaded_leaves, template_leaves):
-                if hasattr(template, 'dtype'):
-                    restored.append(jnp.array(loaded, dtype=template.dtype))
-                else:
-                    restored.append(loaded)
-            return restored
-
-        # -------------------------------------------------------------
-        # 1. LOAD CHECKPOINT OR INITIALIZE FROM SCRATCH
-        # -------------------------------------------------------------
-        if checkpoint_path.exists():
-            print(f"\n--- Resuming Bilevel Hyperparameter Tuning from {checkpoint_path.name} ---")
-            with open(checkpoint_path, "r") as f:
-                chkpt = json.load(f)
-
-            hparams_template_leaves = jax.tree_util.tree_leaves(hparams_template)
-            state_template_leaves = jax.tree_util.tree_leaves(state_template)
-
-            # Reconstruct exactly matched PyTrees from JSON lists
-            hparams_leaves = restore_leaves(chkpt['hparams_leaves'], hparams_template_leaves)
-            hparams = jax.tree_util.tree_unflatten(hparams_treedef, hparams_leaves)
-            raw_l1, raw_l2 = hparams
-
-            state_leaves = restore_leaves(chkpt['state_leaves'], state_template_leaves)
-            state = jax.tree_util.tree_unflatten(state_treedef, state_leaves)
-
-            best_hparams_leaves = restore_leaves(chkpt['best_hparams_leaves'], hparams_template_leaves)
-            best_hparams = jax.tree_util.tree_unflatten(hparams_treedef, best_hparams_leaves)
-
-            best_alo = chkpt['best_alo']
-            wait = chkpt['wait']
-            start_iter = chkpt['iter'] + 1
-
-            print(f"Resuming at Iteration {start_iter} (Best ALO so far: {best_alo:.4f} | Patience: {wait}/{patience})")
-
-        else:
-            print("\n--- Starting Bilevel Hyperparameter Tuning from Scratch ---")
-            hparams = hparams_template
-            state = state_template
-            raw_l1, raw_l2 = hparams
-
-            best_alo = float('inf')
-            best_hparams = hparams
-            wait = 0
-            start_iter = 0
-
-            # Initialize the CSV log file
-            with open(log_path, "w") as f:
-                f.write("Step,ALO_CV_Score,Mean_L1_Penalty,Wait\n")
-
-        print(f"\n{'Step':<6} | {'ALO-CV Score':<15} | {'Mean L1 Penalty':<15} | Patience Tracker")
-        print("-" * 70)
-
-        tol = 1e-3
-
-        # -------------------------------------------------------------
-        # 2. RUN META-OPTIMIZATION LOOP
-        # -------------------------------------------------------------
-        for i in range(start_iter, meta_iters):
-            alo, (gl1, gl2) = meta_val_and_grad(raw_l1, raw_l2, feature_ids, X_cont, acreage, group_ids, y_county_year, num_groups, feature_sizes_tup)
-
-            current_alo = alo.item()
-
-            # Early Stopping Logic
-            if current_alo < best_alo - tol:
-                best_alo = current_alo
-                best_hparams = hparams
-                wait = 0
-            else:
-                wait += 1
-
-            act_l1 = np.mean([jax.nn.softplus(v).item() for v in raw_l1.values()])
-
-            # Print to console
-            print(f"{i:<6} | {current_alo:<15.4f} | {act_l1:<15.6f} | {wait}/{patience}")
-
-            # Append to CSV log
-            with open(log_path, "a") as f:
-                f.write(f"{i},{current_alo},{act_l1},{wait}\n")
-
-            # -------------------------------------------------------------
-            # 3. ATOMIC CHECKPOINT SAVE (JSON Format)
-            # -------------------------------------------------------------
-            # We save to a temporary file and replace the old one. 
-            # This prevents corruption if you cancel the run exactly mid-save.
-            tmp_path = checkpoint_path.with_suffix('.json.tmp')
-
-            hparams_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(hparams)]
-            state_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(state)]
-            best_hparams_leaves =[to_serializable(x) for x in jax.tree_util.tree_leaves(best_hparams)]
-
-            chkpt_data = {
-                'iter': i,
-                'hparams_leaves': hparams_leaves,
-                'state_leaves': state_leaves,
-                'best_alo': float(best_alo),
-                'best_hparams_leaves': best_hparams_leaves,
-                'wait': wait
-            }
-
-            with open(tmp_path, "w") as f:
-                json.dump(chkpt_data, f, indent=4) # indent=4 makes it pretty-formatted and readable
-            tmp_path.replace(checkpoint_path)
-
-            # Break out if patience threshold is met
-            if wait >= patience:
-                print(f"\n[!] Convergence Reached: ALO-CV Score has not improved by {tol} in {patience} steps.")
-                print(f"[!] Stopping early at Meta-Iteration {i}.")
-                hparams = best_hparams
-                break
-
-            # Apply gradients
-            updates, state = meta_optimizer.update((gl1, gl2), state, hparams)
-            hparams = optax.apply_updates(hparams, updates)
-            raw_l1, raw_l2 = hparams
-
-        # Extract the absolute best hyperparameters found
-        best_raw_l1, best_raw_l2 = best_hparams
-        final_l1 = {k: jax.nn.softplus(v) for k, v in best_raw_l1.items()}
-        final_l2 = {k: jax.nn.softplus(v) + 1e-4 for k, v in best_raw_l2.items()}
-
-        return final_l1, final_l2
-
-    return
 
 
 @app.cell
@@ -850,7 +1012,10 @@ def _(
         checkpoint_path = code_path / 'json' / "meta_ppml_opt_checkpoint.json"
         log_path = code_path / 'json' / "meta_ppml_opt_log.csv"
 
-        meta_optimizer = optax.adam(learning_rate=0.01)
+        meta_optimizer = optax.chain(
+            optax.clip_by_global_norm(1.0), # Add global norm clipping
+            optax.adam(learning_rate=0.01)
+        )
 
         # ---------------------------------------------------------
         # HELPER FUNCTIONS
@@ -1034,23 +1199,6 @@ def _(
 
 
 @app.cell
-def _():
-    # # # Tune L1 and L2 (python wrapper)
-    # _start_time = time.perf_counter()
-
-    # # --- Code chunk starts ---
-    # best_l1, best_l2 = run_meta_optimization(feature_ids, X_cont, patch_exposure, group_ids, y_target_count, num_groups, feature_sizes_tup, meta_iters=500, patience=15, reset=False)
-    # # --- Code chunk ends ---
-
-    # _end_time = time.perf_counter()
-    # print(f"Execution time: {_end_time - _start_time:.6f} seconds")
-    # # Execution time: 637.409503 seconds from step 401 to 453 (53 iterations, 12.02 sec/iter)
-    # # Execution time: 200.421152 seconds from step 401 to 417 (17 iterations, 11.78 sec/iter) with Dynamic Boost enabled
-    # # Execution time: 427.559468 seconds from step 401 to 435 (35 iterations, 12.20 sec/iter) on WSL2
-    return
-
-
-@app.cell
 def _(
     X_cont,
     feature_ids,
@@ -1076,6 +1224,7 @@ def _(
     # Execution time: 286.239185 seconds from step 401 to 422 (22 iterations, 13.00 seconds per iteration) on WSL2
     # Execution time: 132.502967 seconds from step 401 to 415 (15 iterations, 8.80 seconds per iteration) with warm start inner
     # Execution time: 45.734372 seconds from step 401 to 414 (14 iterations, 3.27 seconds per iteration) with lx.CG instead of lx.GMRES and vmap to solve all K samples in ALO-CV simultaneously
+    # Execution time: 345.189666 seconds from step 240 to 264 (25 iterations, 13.8 seconds per iteration) with exact L1 soft-thresholding, forwards FISTA, backwards exact L1 IFT, lx.CG with 0.1 damping
     return best_l1, best_l2, final_inner_param
 
 
@@ -1198,6 +1347,11 @@ def _(
 @app.cell
 def _(results_df):
     results_df
+    return
+
+
+@app.cell
+def _():
     return
 
 
