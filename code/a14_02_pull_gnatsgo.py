@@ -229,11 +229,14 @@ def _(conn, pl):
         component.slope_r,
         component.drainagecl,
         component.nirrcapcl,
-        corestrictions.resdept_r
+        corestrictions.resdept_r,
+        component.cropprodindex,   -- The general exogenous crop productivity index (NCCPI)
+        muaggatt.aws0150wta        -- Exogenous Available Water Storage (0-150cm)
     FROM
         mapunit
         INNER JOIN component ON mapunit.mukey = component.mukey
-        INNER JOIN corestrictions ON component.cokey = corestrictions.cokey
+        LEFT JOIN corestrictions ON component.cokey = corestrictions.cokey
+        LEFT JOIN muaggatt ON mapunit.mukey = muaggatt.mukey
     """
     joined_table = pl.read_database(query=joined_query, infer_schema_length = None, connection=conn)
     return (joined_table,)
@@ -299,12 +302,12 @@ def _(joined_table, pl):
         'mukey', 'comppct_r',
         'taxorder', 'taxsuborder', 'taxgrtgroup',
         'slope_r', 'drainagecl', 'resdept_r',
-        'nirrcapcl'
+        'nirrcapcl', 'cropprodindex', 'aws0150wta'
     ]).group_by([
         'mukey',
         'taxorder', 'taxsuborder', 'taxgrtgroup',
         'slope_r', 'drainagecl', 'resdept_r',
-        'nirrcapcl'
+        'nirrcapcl', 'cropprodindex', 'aws0150wta'
     ]).agg(
         pl.col('comppct_r').sum()
     )
@@ -334,16 +337,18 @@ def _(pl, table_a, table_b_cont):
     ])
 
     # Summary characteristics
+    # Note that slope_r and resdept_r are unbinned raw values
+    # slope and root_depth are binned categoricals
     classification_cols_cat =[
         'taxorder',
         'slope', 'drainagecl', 'root_depth',
-        'nirrcapcl'
+        'nirrcapcl', 'cropprodindex', 'aws0150wta'
     ]
 
     classification_cols_cont =[
         'taxorder',
         'slope_r', 'drainagecl', 'resdept_r',
-        'nirrcapcl'
+        'nirrcapcl', 'cropprodindex', 'aws0150wta'
     ]
 
     # Final acreage grouping by county and soil characteristics

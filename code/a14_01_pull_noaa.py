@@ -11,12 +11,8 @@ def _():
     import pyprojroot
     import urllib.request
     import urllib.error
-    import gzip
-    import shutil
-    from datetime import datetime
     import polars as pl
     import us
-    import pyarrow
     import ssl
 
     return Path, pl, pyprojroot, ssl, urllib, us
