@@ -1473,10 +1473,14 @@ def _(
         alo_cg_rtol=5e-2,
         alo_cg_atol=5e-2,
         alo_cg_max_steps=50,
+        checkpoint_path=None,
+        log_path=None,
         reset=False,
     ):
-        checkpoint_path = code_path / "json" / "meta_ppml_opt_checkpoint.json"
-        log_path = code_path / "json" / "meta_ppml_opt_log.csv"
+        if checkpoint_path is None:
+            checkpoint_path = code_path / "json" / "meta_ppml_opt_checkpoint.json"
+        if log_path is None:
+            log_path = code_path / "json" / "meta_ppml_opt_log.csv"
 
         meta_optimizer = optax.chain(
             optax.clip_by_global_norm(1.0),  # Add global norm clipping
@@ -1514,6 +1518,86 @@ def _(
                 else:
                     restored.append(loaded)
             return restored
+
+        def save_meta_checkpoint(
+            path,
+            *,
+            iteration,
+            hparams,
+            opt_state,
+            best_hparams,
+            best_alo,
+            wait,
+            inner_params,
+        ):
+            tmp_path = path.with_suffix(path.suffix + ".tmp")
+            data = {
+                "iter": int(iteration),
+                "hparams_leaves": [
+                    to_serializable(x) for x in jax.tree_util.tree_leaves(hparams)
+                ],
+                "state_leaves": [
+                    to_serializable(x) for x in jax.tree_util.tree_leaves(opt_state)
+                ],
+                "best_hparams_leaves": [
+                    to_serializable(x) for x in jax.tree_util.tree_leaves(best_hparams)
+                ],
+                "best_alo": float(best_alo),
+                "wait": int(wait),
+                "inner_params_leaves": [
+                    to_serializable(x) for x in jax.tree_util.tree_leaves(inner_params)
+                ],
+            }
+            with open(tmp_path, "w") as f:
+                json.dump(data, f, indent=4)
+            tmp_path.replace(path)
+
+        def load_meta_checkpoint(
+            path,
+            *,
+            hparams_template,
+            state_template,
+            inner_params_template,
+        ):
+            with open(path, "r") as f:
+                chkpt = json.load(f)
+
+            hparams_template_leaves, hparams_treedef = jax.tree_util.tree_flatten(
+                hparams_template
+            )
+            state_template_leaves, state_treedef = jax.tree_util.tree_flatten(
+                state_template
+            )
+            inner_template_leaves, inner_treedef = jax.tree_util.tree_flatten(
+                inner_params_template
+            )
+
+            hparams = jax.tree_util.tree_unflatten(
+                hparams_treedef,
+                restore_leaves(chkpt["hparams_leaves"], hparams_template_leaves),
+            )
+            opt_state = jax.tree_util.tree_unflatten(
+                state_treedef,
+                restore_leaves(chkpt["state_leaves"], state_template_leaves),
+            )
+            best_hparams = jax.tree_util.tree_unflatten(
+                hparams_treedef,
+                restore_leaves(chkpt["best_hparams_leaves"], hparams_template_leaves),
+            )
+            inner_params = jax.tree_util.tree_unflatten(
+                inner_treedef,
+                restore_leaves(chkpt["inner_params_leaves"], inner_template_leaves),
+            )
+
+            return {
+                "iter": int(chkpt["iter"]),
+                "hparams": hparams,
+                "opt_state": opt_state,
+                "best_hparams": best_hparams,
+                "best_alo": jnp.array(chkpt["best_alo"], dtype=jnp.float32),
+                "wait": jnp.array(chkpt["wait"], dtype=jnp.int32),
+                "inner_params": inner_params,
+            }
 
         # ---------------------------------------------------------
         # STATE INITIALIZATION & ROBUST DESERIALIZATION
@@ -1714,6 +1798,190 @@ def _(
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    Create functions for robust restarting and refinement
+    """)
+    return
+
+
+@app.cell
+def _(jnp):
+    def get_hparam_templates(meta_optimizer, jax_inv_softplus):
+        raw_l1 = {
+            k: jnp.array(jax_inv_softplus(0.01 * (2.0 ** (k - 1))), dtype=jnp.float32)
+            for k in range(1, 4)
+        }
+        raw_l2 = {
+            k: jnp.array(jax_inv_softplus(0.005 * (2.0 ** (k - 1))), dtype=jnp.float32)
+            for k in range(1, 4)
+        }
+        hparams = (raw_l1, raw_l2)
+        state = meta_optimizer.init(hparams)
+        return hparams, state
+
+    return (get_hparam_templates,)
+
+
+@app.cell
+def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
+    def create_restart_from_best_checkpoint(
+        source_checkpoint_path,
+        restart_checkpoint_path,
+        *,
+        meta_optimizer,
+        initialize_params,
+        train_model_inner,
+        feature_ids,
+        X_county_cont,
+        X_patch_cont,
+        patch_exposure,
+        group_ids,
+        y_target_count,
+        num_groups,
+        feature_sizes_tup,
+        jax_inv_softplus,
+        refit_inner_iters=1000,
+        refit_inner_tol=1e-6,
+        restart_iter=0,
+    ):
+        hparams_template, state_template = get_hparam_templates(
+            meta_optimizer,
+            jax_inv_softplus,
+        )
+
+        num_continuous = X_county_cont.shape[1] + X_patch_cont.shape[1]
+        inner_template = initialize_params(feature_sizes_tup, num_continuous)
+
+        loaded = load_meta_checkpoint(
+            source_checkpoint_path,
+            hparams_template=hparams_template,
+            state_template=state_template,
+            inner_params_template=inner_template,
+        )
+
+        best_hparams = loaded["best_hparams"]
+        best_raw_l1, best_raw_l2 = best_hparams
+
+        best_l1 = {k: jax.nn.softplus(v) for k, v in best_raw_l1.items()}
+        best_l2 = {k: jax.nn.softplus(v) + 1e-4 for k, v in best_raw_l2.items()}
+
+        # Use loaded inner params as warm start, but refit under best hparams.
+        best_inner_params = train_model_inner(
+            loaded["inner_params"],
+            feature_ids,
+            X_county_cont,
+            X_patch_cont,
+            patch_exposure,
+            group_ids,
+            y_target_count,
+            num_groups,
+            feature_sizes_tup,
+            best_l1,
+            best_l2,
+            inner_iters=refit_inner_iters,
+            inner_tol=refit_inner_tol,
+        )
+
+        fresh_state = meta_optimizer.init(best_hparams)
+
+        save_meta_checkpoint(
+            restart_checkpoint_path,
+            iteration=restart_iter,
+            hparams=best_hparams,
+            opt_state=fresh_state,
+            best_hparams=best_hparams,
+            best_alo=loaded["best_alo"],
+            wait=0,
+            inner_params=best_inner_params,
+        )
+
+    return
+
+
+@app.cell
+def _(get_hparam_templates, jax, load_meta_checkpoint):
+    def evaluate_checkpoint_best_hparams(
+        checkpoint_path,
+        *,
+        meta_optimizer,
+        initialize_params,
+        train_model_inner,
+        compute_alo_compositional,
+        feature_ids,
+        X_county_cont,
+        X_patch_cont,
+        patch_exposure,
+        group_ids,
+        y_target_count,
+        num_groups,
+        feature_sizes_tup,
+        jax_inv_softplus,
+        inner_iters=1000,
+        inner_tol=1e-6,
+        alo_k=2,
+        alo_cg_rtol=1e-2,
+        alo_cg_atol=1e-2,
+        alo_cg_max_steps=150,
+    ):
+        hparams_template, state_template = get_hparam_templates(
+            meta_optimizer,
+            jax_inv_softplus,
+        )
+
+        num_continuous = X_county_cont.shape[1] + X_patch_cont.shape[1]
+        inner_template = initialize_params(feature_sizes_tup, num_continuous)
+
+        loaded = load_meta_checkpoint(
+            checkpoint_path,
+            hparams_template=hparams_template,
+            state_template=state_template,
+            inner_params_template=inner_template,
+        )
+
+        best_raw_l1, best_raw_l2 = loaded["best_hparams"]
+        best_l1 = {k: jax.nn.softplus(v) for k, v in best_raw_l1.items()}
+        best_l2 = {k: jax.nn.softplus(v) + 1e-4 for k, v in best_raw_l2.items()}
+
+        params = train_model_inner(
+            loaded["inner_params"],
+            feature_ids,
+            X_county_cont,
+            X_patch_cont,
+            patch_exposure,
+            group_ids,
+            y_target_count,
+            num_groups,
+            feature_sizes_tup,
+            best_l1,
+            best_l2,
+            inner_iters=inner_iters,
+            inner_tol=inner_tol,
+        )
+
+        alo = compute_alo_compositional(
+            params,
+            feature_ids,
+            X_county_cont,
+            X_patch_cont,
+            patch_exposure,
+            group_ids,
+            y_target_count,
+            num_groups,
+            best_l1,
+            best_l2,
+            alo_k,
+            alo_cg_rtol,
+            alo_cg_atol,
+            alo_cg_max_steps,
+        )
+
+        return alo, params, best_l1, best_l2
+
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     # Perform bilevel optimization to find optimal L1 and L2 rates
     """)
     return
@@ -1775,24 +2043,23 @@ def _(
 
 
 @app.cell
-def _(time):
-    start_time = time.perf_counter()
-    return (start_time,)
-
-
-@app.cell
 def _(
     X_county_cont,
     X_patch_cont,
+    code_path,
     feature_ids,
     feature_sizes_tup,
     group_ids,
     num_groups,
     patch_exposure,
     run_meta_optimization_chunked,
+    time,
     y_target_count,
 ):
+    start_time = time.perf_counter()
     # Tune L1 and L2 (full GPU dispatch)
+    checkpoint_path = code_path / "json" / "meta_ppml_opt_checkpoint.json"
+    log_path = code_path / "json" / "meta_ppml_opt_log.csv"
     best_l1, best_l2, final_inner_param = run_meta_optimization_chunked(
         feature_ids,
         X_county_cont,
@@ -1811,19 +2078,30 @@ def _(
         alo_cg_rtol=5e-2,
         alo_cg_atol=5e-2,
         alo_cg_max_steps=50,
+        checkpoint_path=checkpoint_path,
+        log_path=log_path,
         reset=False,
     )
-    return best_l1, best_l2, final_inner_param
+    return best_l1, best_l2, final_inner_param, start_time
 
 
 @app.cell
 def _(start_time, time):
     end_time = time.perf_counter()
     print(f"Execution time: {end_time - start_time:.6f} seconds")
-    # Execution time: 1407.829450 seconds
-    # Step 212 | ALO-CV: -94.39273834228516 | Mean L1: 0.00429133977741003 | Wait: 50/50
-    # [Host Sync] Chunk completed in 25.19s. Global Iter: 213. Best ALO: -94.7025
-    # [!] Convergence Reached: ALO-CV Score has not improved by 0.001 in 50 steps.
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Restart from best iter with stricter parameters
+    """)
+    return
+
+
+@app.cell
+def _():
     return
 
 
