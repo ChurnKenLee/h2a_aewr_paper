@@ -943,8 +943,7 @@ def _(
             damping_factor = 0.1
             active_contrib_flat = jnp.where(
                 flat_active_mask,
-                hvp_active_flat
-                + (flat_l2_param_pytree + damping_factor) * tangent_vec_flat,
+                hvp_active_flat + damping_factor * tangent_vec_flat,
                 0.0,
             )
             # For inactive components: 1 * v_inactive (identity)
@@ -1118,9 +1117,10 @@ def _(
                 )
 
                 # 0.1 damping to stabilize CG
+                damping_factor = 0.1
                 active_contrib = jnp.where(
                     flat_active_mask,
-                    hvp_active_flat + (flat_l2_param_pytree + 0.1) * tangent_vec_flat,
+                    hvp_active_flat + damping_factor * tangent_vec_flat,
                     0.0,
                 )
                 inactive_contrib = jnp.where(~flat_active_mask, tangent_vec_flat, 0.0)

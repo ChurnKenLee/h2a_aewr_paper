@@ -1403,6 +1403,50 @@ dd_4 <- feols(
   vcov = ~cz_aewr_region_fe
 )
 
+# DD model 5: robustness check by excluding potentially influential CZs within each AEWR region
+# How many total ag workers are there within each AEWR region?
+samp_no_large_cz <- samp_base %>%
+  group_by(aewr_region_num, year) %>%
+  mutate(aewr_region_year_total_emp_farm = sum(emp_farm, na.rm = FALSE)) %>%
+  ungroup() %>%
+  group_by(cz_fe, year) %>%
+  mutate(cz_year_total_emp_farm = sum(emp_farm, na.rm = FALSE)) %>%
+  ungroup()
+
+cz_share_of_aewr_region_farm_emp <- samp_no_large_cz %>%
+  distinct(aewr_region_num, cz_fe, year, .keep_all = TRUE) %>%
+  select(
+    aewr_region_num,
+    cz_fe,
+    year,
+    aewr_region_year_total_emp_farm,
+    cz_year_total_emp_farm
+  ) %>%
+  mutate(
+    cz_share_farm_emp = cz_year_total_emp_farm / aewr_region_year_total_emp_farm
+  )
+
+cz_share_of_aewr_region_farm_emp %>%
+  ggplot(aes(x = cz_share_farm_emp)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8)
+
+# Pick arbitrary cutoff of 0.1 for now
+cz_to_keep <- cz_share_of_aewr_region_farm_emp %>%
+  filter(cz_share_farm_emp < 0.1) %>%
+  select(aewr_region_num, cz_fe, year)
+
+samp_no_large_cz <- samp_no_large_cz %>%
+  inner_join(cz_to_keep)
+
+dd_5 <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    aewr_cz_p25_l1 * postdummy | county_fe + year_fe,
+  data = samp_no_large_cz,
+  vcov = ~cz_aewr_region_fe,
+  demeaned = TRUE
+)
+
+# Tables
 table_1 <- etable(
   dd_1,
   dd_2,
@@ -1432,6 +1476,7 @@ summary(dd_1)
 summary(dd_2)
 summary(dd_3)
 summary(dd_4)
+summary(dd_5)
 
 ## Exhibit 11: Event Study (Flexible DD, Base Year = 2011) --------------------
 

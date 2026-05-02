@@ -1,34 +1,34 @@
 import marimo
 
-__generated_with = "0.23.2"
+__generated_with = "0.23.4"
 app = marimo.App(width="full")
 
 
 @app.cell
 def _():
-    import marimo as mo
-    from pathlib import Path
-    import pyprojroot
-    import urllib.request
-    import urllib.error
-    import polars as pl
-    import us
     import ssl
+    import urllib.error
+    import urllib.request
+    from pathlib import Path
 
-    return Path, pl, pyprojroot, ssl, urllib, us
+    import numpy as np
+    import polars as pl
+    import pyprojroot
+    from sklearn.preprocessing import SplineTransformer
+
+    return Path, SplineTransformer, np, pl, pyprojroot, ssl, urllib
 
 
 @app.cell
-def _(Path, pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    binary_path = root_path / 'binaries'
+def _(pyprojroot):
+    root_path = pyprojroot.find_root(criterion="pyproject.toml")
 
-    CACHE_DIR = root_path / 'data' / "epinoaa_nclimgrid"
+    CACHE_DIR = root_path / "data" / "epinoaa_nclimgrid"
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    OUT_DIR = Path("binaries")
+    OUT_DIR = root_path / "binaries"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    OUTPUT_FILE = OUT_DIR / "county_h2a_prediction_climate_gdd_annual.parquet"
+    OUTPUT_FILE = OUT_DIR / "county_h2a_prediction_climate_basis_annual.parquet"
     return CACHE_DIR, OUTPUT_FILE
 
 
@@ -36,66 +36,44 @@ def _(Path, pyprojroot):
 def _():
     START_YEAR = 2000
     END_YEAR = 2025
-    MISSING_VAL = -999.00
-    N_BINS = 10
+
+    NORMAL_START_YEAR = 2000
+    NORMAL_END_YEAR = 2011
+
     WET_DAY_MM = 1.0
-    N_PRCP_BINS = 10
-    return END_YEAR, N_BINS, N_PRCP_BINS, START_YEAR, WET_DAY_MM
 
-
-@app.cell
-def _():
-    # Crop temperature preferences, in Celsius
-    # --- 2. Crop GDD parameters (Celsius) ----------------------------------------
-    CROPS = {
-        # -- Field crops --
-        "corn": {"base_C": 10.0, "cap_C": 30.0, "months":[4, 5, 6, 7, 8, 9], "cross_year": False},
-        "soybean": {"base_C": 10.0, "cap_C": 30.0, "months":[4, 5, 6, 7, 8, 9, 10], "cross_year": False},
-        "sorghum": {"base_C": 10.0, "cap_C": 30.0, "months": [4, 5, 6, 7, 8, 9], "cross_year": False},
-        "rice": {"base_C": 10.0, "cap_C": None, "months": [5, 6, 7, 8, 9], "cross_year": False},
-        "cotton": {"base_C": 15.6, "cap_C": 30.0, "months":[4, 5, 6, 7, 8, 9, 10], "cross_year": False},
-        "winter_wheat": {"base_C": 0.0, "cap_C": 35.0, "months":[10, 11, 12, 1, 2, 3, 4, 5, 6], "cross_year": True},
-        "spring_wheat": {"base_C": 0.0, "cap_C": 35.0, "months":[3, 4, 5, 6, 7], "cross_year": False},
-        "barley": {"base_C": 0.0, "cap_C": 35.0, "months": [3, 4, 5, 6, 7], "cross_year": False},
-        "canola": {"base_C": 5.0, "cap_C": None, "months": [3, 4, 5, 6], "cross_year": False},
-        "sunflower": {"base_C": 6.7, "cap_C": None, "months":[5, 6, 7, 8, 9], "cross_year": False},
-
-        # -- Specialty crops --
-        "grape": {"base_C": 10.0, "cap_C": None, "months":[4, 5, 6, 7, 8, 9, 10], "cross_year": False},
-        "citrus": {"base_C": 12.8, "cap_C": None, "months": list(range(1, 13)), "cross_year": False},
-        "apple": {"base_C": 6.1, "cap_C": None, "months":[3, 4, 5, 6, 7, 8, 9, 10], "cross_year": False},
-        "potato": {"base_C": 4.4, "cap_C": 30.0, "months":[4, 5, 6, 7, 8, 9], "cross_year": False},
-        "sugar_beet": {"base_C": 1.1, "cap_C": 30.0, "months":[4, 5, 6, 7, 8, 9, 10], "cross_year": False},
-        "tomato": {"base_C": 10.0, "cap_C": 30.0, "months":[5, 6, 7, 8, 9], "cross_year": False},
-        "alfalfa": {"base_C": 5.0, "cap_C": None, "months":[3, 4, 5, 6, 7, 8, 9, 10], "cross_year": False},
-        "peanut": {"base_C": 10.0, "cap_C": None, "months": [5, 6, 7, 8, 9, 10], "cross_year": False},
-        "tobacco": {"base_C": 12.8, "cap_C": None, "months": [5, 6, 7, 8, 9], "cross_year": False},
-    }
-    return (CROPS,)
-
-
-@app.cell
-def _(CACHE_DIR, pl, us):
-    ncei_fips_xwalk = pl.read_csv(CACHE_DIR / 'ncei_state_code.csv', infer_schema=False)
-    ncei_fips_xwalk = ncei_fips_xwalk.with_columns(
-        pl.col('state_name').map_elements(lambda x: us.states.lookup(x).fips, return_dtype=pl.String).alias('fips')
-    ).with_columns(
-        pl.col('ncei').str.pad_start(2, fill_char='0').alias('ncei')
+    # Smooth climate-basis design.
+    TEMP_SPLINE_VAR = "tavg"
+    TEMP_N_KNOTS = 7
+    PRCP_N_KNOTS = 5
+    SPLINE_DEGREE = 3
+    SPLINE_EXTRAPOLATION = "constant"
+    SEASON_HARMONICS = 3
+    return (
+        END_YEAR,
+        NORMAL_END_YEAR,
+        NORMAL_START_YEAR,
+        PRCP_N_KNOTS,
+        SEASON_HARMONICS,
+        SPLINE_DEGREE,
+        SPLINE_EXTRAPOLATION,
+        START_YEAR,
+        TEMP_N_KNOTS,
+        TEMP_SPLINE_VAR,
+        WET_DAY_MM,
     )
-    return
 
 
 @app.function
 def get_parquet_url(year: int, month: int) -> str:
     ym = f"{year:04d}{month:02d}"
-    yr_str = f"{year:04d}"
     file_name = f"{ym}.parquet"
     return f"https://noaa-nclimgrid-daily-pds.s3.amazonaws.com/EpiNOAA/v1-0-0/parquet/cty/YEAR={year}/STATUS=scaled/{file_name}"
 
 
 @app.cell
 def _(CACHE_DIR, Path, ssl, urllib):
-    def download_monthly_parquet(year: int, month: int) -> Path:
+    def download_monthly_parquet(year: int, month: int) -> Path | None:
         ym_str = f"{year}{month:02d}"
         cache_file = CACHE_DIR / f"{ym_str}.parquet"
 
@@ -107,19 +85,17 @@ def _(CACHE_DIR, Path, ssl, urllib):
         ctx = ssl._create_unverified_context()
 
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=30, context=ctx) as response:
                 data = response.read()
 
-                # Validate by checking for Parquet magic bytes ('PAR1')
-                if not data.startswith(b'PAR1'):
+                if not data.startswith(b"PAR1"):
                     print(f"ERROR: URL {url} did not return a Parquet file.")
-                    # Print the first 250 characters to check if it's HTML or XML
-                    preview = data[:250].decode('utf-8', errors='ignore').replace('\n', ' ')
+                    preview = data[:250].decode("utf-8", errors="ignore").replace("\n", " ")
                     print(f"Preview of downloaded content: {preview}...\n")
                     return None
 
-                with open(cache_file, 'wb') as f_out:
+                with open(cache_file, "wb") as f_out:
                     f_out.write(data)
 
             return cache_file
@@ -133,236 +109,293 @@ def _(CACHE_DIR, Path, ssl, urllib):
 
 @app.cell
 def _(END_YEAR, START_YEAR, download_monthly_parquet):
-    print(f"Downloading EpiNOAA monthly county parquets ({START_YEAR - 1}-{END_YEAR})...")
-    for _yr in range(START_YEAR - 1, END_YEAR + 1):
+    print(f"Downloading EpiNOAA monthly county parquets ({START_YEAR}-{END_YEAR})...")
+    for _yr in range(START_YEAR, END_YEAR + 1):
         for _mo in range(1, 13):
             download_monthly_parquet(_yr, _mo)
 
-    print("Downloads Complete.")
+    print("Downloads complete.")
     return
 
 
 @app.cell
-def _(CACHE_DIR, START_YEAR, pl):
-    all_daily = pl.read_parquet(CACHE_DIR / "*.parquet")
-    all_daily = (
-        all_daily
-        .select([
-            # Rename columns standard to EpiNOAA down to what your script expects
-            pl.col("fips"),
-            pl.col("date"),
-            pl.col("tmin").str.strip_chars().cast(pl.Float64),
-            pl.col("tmax").str.strip_chars().cast(pl.Float64),
-            pl.col("tavg").str.strip_chars().cast(pl.Float64),
-            pl.col("prcp").str.strip_chars().cast(pl.Float64)
-        ])
-        .with_columns([
-            pl.col("date").dt.year().alias("year"),
-            pl.col("date").dt.month().alias("month")
-        ])
-        .filter(pl.col("year") >= START_YEAR - 1)
-    )
-    return (all_daily,)
-
-
-@app.cell
-def _(END_YEAR, N_BINS, N_PRCP_BINS, START_YEAR, WET_DAY_MM, all_daily, pl):
-    # Compute decile breakpoints (pooled from all county-years)
-    df_bounds = all_daily.filter(
-        pl.col("year") >= START_YEAR,
-        pl.col("year") <= END_YEAR
-    )
-
-    # TAVG breaks
-    tavg_series = df_bounds.filter(pl.col("tavg").is_not_null())["tavg"]
-    tavg_probs = [i / N_BINS for i in range(1, N_BINS)]
-    tavg_bin_breaks = [tavg_series.quantile(p, interpolation="linear") for p in tavg_probs]
-
-    # PRCP breaks (wet days only)
-    prcp_series = df_bounds.filter((pl.col("prcp") >= WET_DAY_MM) & pl.col("prcp").is_not_null())["prcp"]
-    prcp_probs =[i / N_PRCP_BINS for i in range(1, N_PRCP_BINS)]
-    prcp_bin_breaks =[prcp_series.quantile(p, interpolation="linear") for p in prcp_probs]
-    return df_bounds, prcp_bin_breaks, tavg_bin_breaks
-
-
-@app.cell
-def _(df_bounds, pl):
-    # Compute annual metrics
-    base_group_cols = ["fips", "year"]
-
-    # Annual Temperature 
-    ann_temp = df_bounds.group_by(base_group_cols).agg([
-        pl.col("tmin").mean().alias("tmin_ann"),
-        pl.col("tmax").mean().alias("tmax_ann"),
-        pl.col("tavg").mean().alias("tavg_ann"),
-        pl.col("tavg").is_not_null().sum().alias("n_days")
-    ])
-    return ann_temp, base_group_cols
-
-
-@app.cell
-def _(CROPS, START_YEAR, all_daily, base_group_cols, pl):
-    # Crop GDDs
-    crop_aggs =[]
-    for crop, params in CROPS.items():
-        b_C, c_C = params["base_C"], params["cap_C"]
-
-        tmin_adj = pl.max_horizontal(pl.col("tmin"), b_C)
-        tmax_adj = pl.min_horizontal(pl.col("tmax"), c_C) if c_C is not None else pl.col("tmax")
-        daily_gdd = pl.max_horizontal((tmin_adj + tmax_adj) / 2.0 - b_C, 0.0)
-
-        df_crop = all_daily.filter(pl.col("month").is_in(params["months"]))
-
-        if params["cross_year"]:
-            harvest_yr = pl.when(pl.col("month") >= 10).then(pl.col("year") + 1).otherwise(pl.col("year"))
-        else:
-            harvest_yr = pl.col("year")
-
-        agg = df_crop.with_columns(
-            daily_gdd.alias("gdd"),
-            harvest_yr.alias("year")
-        ).filter(
-            pl.col("year") >= START_YEAR
-        ).group_by(base_group_cols).agg([
-            pl.col("gdd").sum().alias(f"GDD_{crop}"),
-            pl.col("gdd").is_not_null().sum().alias(f"n_{crop}")
-        ])
-        crop_aggs.append(agg)
-    return (crop_aggs,)
-
-
-@app.cell
-def _(N_BINS, base_group_cols, df_bounds, pl, tavg_bin_breaks):
-    # Temperature Bins
-    t_breaks =[-float('inf')] + tavg_bin_breaks + [float('inf')]
-    bin_labels =[f"days_D{i:02d}" for i in range(1, N_BINS + 1)]
-    t_bin_exprs =[]
-    for _i in range(N_BINS):
-        if _i == 0:
-            cond = pl.col("tavg") < t_breaks[_i+1]
-        elif _i == N_BINS - 1:
-            cond = pl.col("tavg") >= t_breaks[_i]
-        else:
-            cond = (pl.col("tavg") >= t_breaks[_i]) & (pl.col("tavg") < t_breaks[_i+1])
-        t_bin_exprs.append(cond.sum().alias(bin_labels[_i]))
-
-    temp_bins = df_bounds.group_by(base_group_cols).agg(t_bin_exprs)
-    return bin_labels, temp_bins
-
-
-@app.cell
-def _(WET_DAY_MM, base_group_cols, df_bounds, pl):
-    # Precipitation Metrics
-    prcp_metrics = df_bounds.group_by(base_group_cols).agg([
-        pl.col("prcp").sum().alias("prcp_ann"),
-        (pl.col("prcp") >= WET_DAY_MM).sum().alias("n_wet_days"),
-        pl.when(pl.col("month").is_in([4,5,6,7,8,9])).then(pl.col("prcp")).otherwise(0.0).sum().alias("prcp_gs"),
-        pl.when(pl.col("month").is_in([3,4,5])).then(pl.col("prcp")).otherwise(0.0).sum().alias("prcp_spring")
-    ])
-    return (prcp_metrics,)
-
-
-@app.cell
-def _(WET_DAY_MM, base_group_cols, df_bounds, pl):
-    # Consecutive Dry Days (max_cdd_gs) in Apr-Sep
-    cdd_df = df_bounds.filter(
-        pl.col("month").is_in([4, 5, 6, 7, 8, 9])
-    ).sort(["fips", "date"]).with_columns(
-        pl.when(pl.col("prcp").is_null()).then(False).when(pl.col("prcp") < WET_DAY_MM).then(True).otherwise(False).alias("is_dry")
-    ).with_columns(
-        (~pl.col("is_dry")).cum_sum().over(["fips", "year"]).alias("run_id")
-    ).filter(
-        pl.col("is_dry")
-    ).group_by(
-        base_group_cols +["run_id"]
-    ).agg(
-        pl.len().alias("cdd_len")
-    ).group_by(base_group_cols).agg(
-        pl.col("cdd_len").max().alias("max_cdd_gs")
-    )
-    return (cdd_df,)
+def _(SEASON_HARMONICS):
+    season_cols = []
+    for h in range(1, SEASON_HARMONICS + 1):
+        season_cols.extend([f"season_sin_{h}", f"season_cos_{h}"])
+    return (season_cols,)
 
 
 @app.cell
 def _(
-    N_PRCP_BINS,
+    CACHE_DIR,
+    NORMAL_END_YEAR,
+    NORMAL_START_YEAR,
+    PRCP_N_KNOTS,
+    SPLINE_DEGREE,
+    SPLINE_EXTRAPOLATION,
+    SplineTransformer,
+    TEMP_N_KNOTS,
+    TEMP_SPLINE_VAR,
     WET_DAY_MM,
-    base_group_cols,
-    df_bounds,
+    np,
     pl,
-    prcp_bin_breaks,
 ):
-    # Precipitation Bins (Wet Days Only)
-    p_breaks = [-float('inf')] + prcp_bin_breaks + [float('inf')]
-    prcp_labels = [f"days_P{_i:02d}" for _i in range(1, N_PRCP_BINS + 1)]
-    p_bin_exprs = []
-    for _i in range(N_PRCP_BINS):
-        if _i == 0:
-            _cond = pl.col("prcp") < p_breaks[_i+1]
-        elif _i == N_PRCP_BINS - 1:
-            _cond = pl.col("prcp") >= p_breaks[_i]
-        else:
-            _cond = (pl.col("prcp") >= p_breaks[_i]) & (pl.col("prcp") < p_breaks[_i+1])
-        p_bin_exprs.append(_cond.sum().alias(prcp_labels[_i]))
+    def read_normal_period_values(cache_file):
+        year = int(cache_file.stem[:4])
+        if year < NORMAL_START_YEAR or year > NORMAL_END_YEAR:
+            return None, None
 
-    prcp_bins = df_bounds.filter(
-        (pl.col("prcp") >= WET_DAY_MM) & pl.col("prcp").is_not_null()
-    ).group_by(base_group_cols).agg(p_bin_exprs)
-    return prcp_bins, prcp_labels
+        chunk = (
+            pl.read_parquet(
+                cache_file,
+                columns=["date", TEMP_SPLINE_VAR, "prcp"],
+            )
+            .select(
+                [
+                    pl.col("date"),
+                    pl.col(TEMP_SPLINE_VAR).str.strip_chars().cast(pl.Float32),
+                    pl.col("prcp").str.strip_chars().cast(pl.Float32),
+                ]
+            )
+            .with_columns(pl.col("date").dt.year().alias("year"))
+            .filter(
+                (pl.col("year") >= NORMAL_START_YEAR) & (pl.col("year") <= NORMAL_END_YEAR)
+            )
+        )
+
+        temp_part = (
+            chunk.filter(pl.col(TEMP_SPLINE_VAR).is_not_null())
+            .select(TEMP_SPLINE_VAR)
+            .to_numpy()
+            .astype(np.float32)
+        )
+        prcp_part = (
+            chunk.filter(pl.col("prcp") >= WET_DAY_MM)
+            .select(pl.col("prcp").log1p().alias("log_prcp"))
+            .to_numpy()
+            .astype(np.float32)
+        )
+        return temp_part, prcp_part
+
+
+    temp_parts = []
+    prcp_parts = []
+    for _cache_file in sorted(CACHE_DIR.glob("*.parquet")):
+        temp_part, prcp_part = read_normal_period_values(_cache_file)
+        if temp_part is not None and temp_part.size:
+            temp_parts.append(temp_part)
+        if prcp_part is not None and prcp_part.size:
+            prcp_parts.append(prcp_part)
+
+    temp_fit = np.vstack(temp_parts)
+    prcp_fit = np.vstack(prcp_parts)
+    temp_fill_value = float(temp_fit.mean())
+
+    temp_spline = SplineTransformer(
+        n_knots=TEMP_N_KNOTS,
+        degree=SPLINE_DEGREE,
+        include_bias=False,
+        knots="quantile",
+        extrapolation=SPLINE_EXTRAPOLATION,
+    ).fit(temp_fit)
+
+    prcp_spline = SplineTransformer(
+        n_knots=PRCP_N_KNOTS,
+        degree=SPLINE_DEGREE,
+        include_bias=False,
+        knots="quantile",
+        extrapolation=SPLINE_EXTRAPOLATION,
+    ).fit(prcp_fit)
+    return prcp_spline, temp_fill_value, temp_spline
 
 
 @app.cell
 def _(
-    CROPS,
+    CACHE_DIR,
     END_YEAR,
-    ann_temp,
-    base_group_cols,
-    bin_labels,
-    cdd_df,
-    crop_aggs,
+    NORMAL_END_YEAR,
+    NORMAL_START_YEAR,
+    START_YEAR,
+    TEMP_SPLINE_VAR,
+    WET_DAY_MM,
+    np,
     pl,
-    prcp_bins,
-    prcp_labels,
-    prcp_metrics,
-    temp_bins,
+    prcp_spline,
+    season_cols,
+    temp_fill_value,
+    temp_spline,
 ):
-    # Combine, format output
-    final_df = ann_temp
-    for agg_df in crop_aggs + [temp_bins, prcp_metrics, cdd_df, prcp_bins]:
-        final_df = final_df.join(agg_df, on=base_group_cols, how="left")
+    temp_basis_cols = [
+        f"temp_{TEMP_SPLINE_VAR}_b{k:02d}" for k in range(temp_spline.n_features_out_)
+    ]
+    prcp_basis_cols = [f"prcp_log1p_b{k:02d}" for k in range(prcp_spline.n_features_out_)]
 
-    final_df = final_df.with_columns(pl.col("max_cdd_gs").fill_null(0))
-    for p_label in prcp_labels:
-        final_df = final_df.with_columns(pl.col(p_label).fill_null(0))
+    climate_basis_cols = []
+    for c in temp_basis_cols + prcp_basis_cols:
+        climate_basis_cols.append(f"cb_{c}")
+    for c in temp_basis_cols:
+        for s in season_cols:
+            climate_basis_cols.append(f"cb_{c}_x_{s}")
+    for c in prcp_basis_cols:
+        for s in season_cols:
+            climate_basis_cols.append(f"cb_{c}_x_{s}")
 
-    # Break FIPS back into components if desired
-    final_df = final_df.with_columns([
-        pl.col("fips").str.slice(0, 2).alias("state_fips"),
-        pl.col("fips").str.slice(2, 3).alias("county_fips")
-    ])
 
-    # Reorder columns
-    select_cols =["year", "fips", "state_fips", "county_fips", "tmin_ann", "tmax_ann", "tavg_ann", "n_days"]
-    for _crop in CROPS.keys():
-        select_cols +=[f"GDD_{_crop}", f"n_{_crop}"]
-    select_cols += bin_labels +["prcp_ann", "prcp_gs", "prcp_spring", "n_wet_days", "max_cdd_gs"] + prcp_labels
+    def build_monthly_basis_sums(cache_file):
+        year = int(cache_file.stem[:4])
+        if year < START_YEAR or year > END_YEAR:
+            return None
 
-    final_df = final_df.select(select_cols).sort(["fips", "year"]).filter(pl.col("year") <= END_YEAR)
-    return (final_df,)
+        chunk = (
+            pl.read_parquet(
+                cache_file,
+                columns=["fips", "date", TEMP_SPLINE_VAR, "prcp"],
+            )
+            .select(
+                [
+                    pl.col("fips"),
+                    pl.col("date"),
+                    pl.col(TEMP_SPLINE_VAR).str.strip_chars().cast(pl.Float32),
+                    pl.col("prcp").str.strip_chars().cast(pl.Float32),
+                ]
+            )
+            .with_columns(
+                [
+                    pl.col("date").dt.year().alias("year"),
+                    pl.col("date").dt.ordinal_day().alias("doy"),
+                    pl.when(pl.col("prcp").is_not_null() & (pl.col("prcp") > 0))
+                    .then(pl.col("prcp"))
+                    .otherwise(0.0)
+                    .alias("prcp0"),
+                ]
+            )
+            .filter((pl.col("year") >= START_YEAR) & (pl.col("year") <= END_YEAR))
+        )
+        if chunk.is_empty():
+            return None
+
+        temp_basis = temp_spline.transform(
+            chunk.select(pl.col(TEMP_SPLINE_VAR).fill_null(temp_fill_value)).to_numpy()
+        ).astype(np.float32)
+
+        log_prcp = chunk.select(pl.col("prcp0").log1p().alias("log_prcp"))
+        wet_mask = (chunk["prcp0"].to_numpy() >= WET_DAY_MM).astype(np.float32)[:, None]
+        prcp_basis = (
+            prcp_spline.transform(log_prcp.to_numpy()).astype(np.float32) * wet_mask
+        )
+
+        season_values = []
+        doy = chunk["doy"].to_numpy()
+        for h in range(1, (len(season_cols) // 2) + 1):
+            angle = doy * 2 * h * np.pi / 365.25
+            season_values.append(np.sin(angle).astype(np.float32))
+            season_values.append(np.cos(angle).astype(np.float32))
+        season_basis = np.column_stack(season_values)
+
+        arrays = {}
+        for j, c in enumerate(temp_basis_cols):
+            arrays[f"cb_{c}"] = temp_basis[:, j]
+        for j, c in enumerate(prcp_basis_cols):
+            arrays[f"cb_{c}"] = prcp_basis[:, j]
+
+        for j, c in enumerate(temp_basis_cols):
+            for s_idx, s in enumerate(season_cols):
+                arrays[f"cb_{c}_x_{s}"] = temp_basis[:, j] * season_basis[:, s_idx]
+
+        for j, c in enumerate(prcp_basis_cols):
+            for s_idx, s in enumerate(season_cols):
+                arrays[f"cb_{c}_x_{s}"] = prcp_basis[:, j] * season_basis[:, s_idx]
+
+        basis_chunk = pl.DataFrame(
+            {
+                "fips": chunk["fips"],
+                "year": chunk["year"],
+                **arrays,
+            }
+        )
+
+        return basis_chunk.group_by(["fips", "year"]).agg(
+            [pl.col(c).sum().alias(c) for c in climate_basis_cols]
+            + [pl.len().alias("_n_cb_days")]
+        )
+
+
+    annual_parts = []
+    for _cache_file in sorted(CACHE_DIR.glob("*.parquet")):
+        part = build_monthly_basis_sums(_cache_file)
+        if part is not None:
+            annual_parts.append(part)
+
+    climate_basis_sums = (
+        pl.concat(annual_parts, how="vertical")
+        .group_by(["fips", "year"])
+        .agg(
+            [pl.col(c).sum().alias(c) for c in climate_basis_cols]
+            + [pl.col("_n_cb_days").sum().alias("n_climate_days")]
+        )
+    )
+
+    climate_basis_annual = climate_basis_sums.with_columns(
+        [
+            (pl.col(c) / pl.col("n_climate_days")).cast(pl.Float32).alias(c)
+            for c in climate_basis_cols
+        ]
+    )
+
+    climate_normal_cols = [f"normal_{c}" for c in climate_basis_cols]
+    climate_basis_normals = (
+        climate_basis_annual.filter(
+            (pl.col("year") >= NORMAL_START_YEAR) & (pl.col("year") <= NORMAL_END_YEAR)
+        )
+        .group_by("fips")
+        .agg([pl.col(c).mean().alias(f"normal_{c}") for c in climate_basis_cols])
+    )
+
+    climate_basis_annual = climate_basis_annual.join(
+        climate_basis_normals, on="fips", how="left"
+    )
+    return climate_basis_annual, climate_basis_cols, climate_normal_cols
 
 
 @app.cell
-def _(END_YEAR, OUTPUT_FILE, START_YEAR, final_df):
-    # Save
+def _(
+    END_YEAR,
+    OUTPUT_FILE,
+    START_YEAR,
+    climate_basis_annual,
+    climate_basis_cols,
+    climate_normal_cols,
+    pl,
+):
+    select_cols = (
+        ["year", "fips", "state_fips", "county_fips", "n_climate_days"]
+        + climate_basis_cols
+        + climate_normal_cols
+    )
+
+    final_df = (
+        climate_basis_annual.with_columns(
+            [
+                pl.col("fips").str.slice(0, 2).alias("state_fips"),
+                pl.col("fips").str.slice(2, 3).alias("county_fips"),
+            ]
+        )
+        .select(select_cols)
+        .sort(["fips", "year"])
+        .filter((pl.col("year") >= START_YEAR) & (pl.col("year") <= END_YEAR))
+    )
+
     final_df.write_parquet(OUTPUT_FILE)
 
-    print(f"\nDone! {final_df.height} rows | {final_df.select('fips').n_unique()} unique counties | years {START_YEAR}-{END_YEAR}")
+    print(
+        f"\nDone! {final_df.height} rows | "
+        f"{final_df.select('fips').n_unique()} unique counties | "
+        f"years {START_YEAR}-{END_YEAR}"
+    )
+    print(f"Annual basis columns: {len(climate_basis_cols)}")
+    print(f"Normal basis columns: {len(climate_normal_cols)}")
     print(f"Saved to: {OUTPUT_FILE}")
-    return
-
-
-@app.cell
-def _():
     return
 
 

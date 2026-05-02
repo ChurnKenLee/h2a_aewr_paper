@@ -1,7 +1,9 @@
-{ pkgs ? import <nixpkgs> {} }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 
 pkgs.mkShell {
-  packages = with pkgs;[
+  packages = with pkgs; [
     # --- R Environment ---
     R
     rPackages.languageserver
@@ -20,10 +22,17 @@ pkgs.mkShell {
 
     # Graphics
     rPackages.ggplot2
+    rPackages.cowplot
+    rPackages.ggthemes
+    rPackages.ggfixest
 
     # Faster tools
     rPackages.collapse
     rPackages.fixest
+
+    # Geospatial tools
+    rPackages.sf
+    rPackages.ggspatial
 
     # --- Python Environment ---
     uv
@@ -38,7 +47,16 @@ pkgs.mkShell {
   # Safely set up environment variables just for this project
   shellHook = ''
     # Provide C-libraries for uv wheels AND preserve NVIDIA OpenGL drivers
-    export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath (with pkgs;[ expat zlib stdenv.cc.cc.lib ])}:/run/opengl-driver/lib:\$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="${
+      pkgs.lib.makeLibraryPath (
+        with pkgs;
+        [
+          expat
+          zlib
+          stdenv.cc.cc.lib
+        ]
+      )
+    }:/run/opengl-driver/lib:\$LD_LIBRARY_PATH"
 
     # Tell uv to use a custom venv name for this project
     export UV_PROJECT_ENVIRONMENT=".venv-nixos"
