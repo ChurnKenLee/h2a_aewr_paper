@@ -731,106 +731,6 @@ ggsave(
 )
 
 gc()
-#### Exhibit 7: Exposure Map: Counties by Sample Classification ----------------
-
-## DDD Sample Map
-
-head(county_df)
-
-ddd_map_data <- county_df %>%
-  dplyr::select(
-    countyfips,
-    high_h2a_share_75,
-    high_h2a_share_50,
-    any_cropland_2007
-  )
-
-ddd_map <- merge(
-  x = county_map,
-  y = ddd_map_data,
-  by = "countyfips",
-  all.x = T,
-  all.y = F
-)
-
-ddd_map <- ddd_map %>%
-  transform(
-    high_h2a_share_75 = ifelse(any_cropland_2007 == 1, high_h2a_share_75, NA),
-    high_h2a_share_50 = ifelse(high_h2a_share_50 == 1, high_h2a_share_50, NA)
-  )
-
-ddd_samp_map <- ggplot(ddd_map) +
-  geom_sf(aes(fill = as.factor(high_h2a_share_75))) +
-  theme(
-    panel.grid.major = element_line(
-      color = gray(0.5),
-      linetype = "dashed",
-      size = 0.5
-    ),
-    panel.background = element_rect(fill = "aliceblue")
-  ) +
-  theme_bw() +
-  scale_fill_manual(
-    values = c("#f4a582", "#4393c3"),
-    na.value = "#E5E4E2",
-    name = "Top Quartile\nin H2A Use\nPre-2012"
-  ) +
-  annotation_north_arrow(
-    location = "bl",
-    which_north = "true",
-    pad_x = unit(0.05, "in"),
-    pad_y = unit(0.25, "in"),
-    style = north_arrow_fancy_orienteering
-  ) +
-  annotation_scale(location = "bl", width_hint = 0.4)
-ddd_samp_map
-
-ggsave(
-  filename = paste0(folder_output, "map_aewr_ddd_sample_dropnocropland.png"),
-  ddd_samp_map,
-  device = "png"
-)
-
-
-#### Exhibit 8: AEWR TS Difference from Trend by Region ------------------------
-
-# input data is made with the map above
-
-plot_aewr_reg_ts <- ggplot(
-  aewr_reg_ts_data,
-  aes(
-    x = year,
-    y = aewr_ppi_chbase_detrend,
-    group = as.factor(aewr_region_num),
-    color = aewr_high_growth
-  )
-) +
-  geom_line() +
-  theme_clean() +
-  scale_color_gradient2(
-    low = muted("#2166ac"),
-    mid = "white",
-    midpoint = 0,
-    high = muted("#b2182b"),
-    name = "AEWR Deviation from Trend"
-  ) +
-  theme(legend.position = "none") +
-  xlab("Year") +
-  ylab("AEWR Difference from National Trend") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  scale_y_continuous(
-    breaks = c(-1, -.5, 0, .5, 1),
-    labels = c("-100%", "-50%", "0%", "+50%", "+100%"),
-    limits = c(-1, 1)
-  ) +
-  geom_vline(xintercept = 2012, linetype = "dashed", color = "black")
-plot_aewr_reg_ts
-
-ggsave(
-  filename = paste0(folder_output, "fig_ts_aewr_region_change_from_trend.png"),
-  plot_aewr_reg_ts,
-  device = "png"
-)
 
 #### Exhibit 6B: AEWR p25 Bite Change 2008–2022 (County-Level Map) ## ----------
 
@@ -902,124 +802,167 @@ ggsave(
   device = "png"
 )
 
-#### Exhibit 9: DDD by Graph a la Jeff -----------------------------------------
+#### Exhibit 7: Exposure Map: Counties by Sample Classification ----------------
+## DDD Sample Map
 
-# # need to make the ts graph using the trend growth as a dummy
+head(county_df)
 
-# head(aewr_reg_ts_data)
+ddd_map_data <- county_df %>%
+  dplyr::select(
+    countyfips,
+    high_h2a_share_75,
+    high_h2a_share_50,
+    any_cropland_2007
+  )
 
-# aewr_reg_ts_data <- aewr_reg_ts_data %>%
-#   mutate(
-#     aewr_high_growth_p50 = ifelse(
-#       aewr_high_growth >= median(aewr_reg_ts_data_color$aewr_high_growth),
-#       1,
-#       0
-#     ),
-#     aewr_high_growth_positive = ifelse(aewr_high_growth > 0, 1, 0)
-#   )
+ddd_map <- merge(
+  x = county_map,
+  y = ddd_map_data,
+  by = "countyfips",
+  all.x = T,
+  all.y = F
+)
 
-# # need: nbr_workers_requested_start_year, high / low dummy, growth dummy, year
+ddd_map <- ddd_map %>%
+  transform(
+    high_h2a_share_75 = ifelse(any_cropland_2007 == 1, high_h2a_share_75, NA),
+    high_h2a_share_50 = ifelse(high_h2a_share_50 == 1, high_h2a_share_50, NA)
+  )
 
-# names(county_df)
+ddd_samp_map <- ggplot(ddd_map) +
+  geom_sf(aes(fill = as.factor(high_h2a_share_75))) +
+  theme(
+    panel.grid.major = element_line(
+      color = gray(0.5),
+      linetype = "dashed",
+      size = 0.5
+    ),
+    panel.background = element_rect(fill = "aliceblue")
+  ) +
+  theme_bw() +
+  scale_fill_manual(
+    values = c("#f4a582", "#4393c3"),
+    na.value = "#E5E4E2",
+    name = "Top Quartile\nin H2A Use\nPre-2012"
+  ) +
+  annotation_north_arrow(
+    location = "bl",
+    which_north = "true",
+    pad_x = unit(0.05, "in"),
+    pad_y = unit(0.25, "in"),
+    style = north_arrow_fancy_orienteering
+  ) +
+  annotation_scale(location = "bl", width_hint = 0.4)
+ddd_samp_map
 
-# aewr_reg_ts_h2a <- county_df %>%
-#   select(
-#     year,
-#     aewr_region_num,
-#     nbr_workers_certified_start_year,
-#     high_h2a_share_75,
-#     high_h2a_share_66,
-#     high_h2a_share_50
-#   )
+ggsave(
+  filename = paste0(folder_output, "map_aewr_ddd_sample_dropnocropland.png"),
+  ddd_samp_map,
+  device = "png"
+)
 
-# aewr_reg_ts_data <- merge(
-#   x = aewr_reg_ts_h2a,
-#   y = aewr_reg_ts_data,
-#   by = c("aewr_region_num", "year"),
-#   all = T
-# )
+#### Exhibit 8: AEWR TS Difference from Trend by Region ------------------------
 
-# # collapse
+# input data is made with the map above
 
-# aewr_reg_ts_data_collapse <- aewr_reg_ts_data %>%
-#   group_by(high_h2a_share_75, aewr_high_growth_p50, year) %>%
-#   summarise(
-#     nbr_workers_certified_start_year = sum(
-#       nbr_workers_certified_start_year,
-#       na.rm = T
-#     )
-#   )
+plot_aewr_reg_ts <- ggplot(
+  aewr_reg_ts_data,
+  aes(
+    x = year,
+    y = aewr_ppi_chbase_detrend,
+    group = as.factor(aewr_region_num),
+    color = aewr_high_growth
+  )
+) +
+  geom_line() +
+  theme_clean() +
+  scale_color_gradient2(
+    low = muted("#2166ac"),
+    mid = "white",
+    midpoint = 0,
+    high = muted("#b2182b"),
+    name = "AEWR Deviation from Trend"
+  ) +
+  theme(legend.position = "none") +
+  xlab("Year") +
+  ylab("AEWR Difference from National Trend") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_y_continuous(
+    breaks = c(-1, -.5, 0, .5, 1),
+    labels = c("-100%", "-50%", "0%", "+50%", "+100%"),
+    limits = c(-1, 1)
+  ) +
+  geom_vline(xintercept = 2012, linetype = "dashed", color = "black")
+plot_aewr_reg_ts
 
-# # index to 2012
+ggsave(
+  filename = paste0(folder_output, "fig_ts_aewr_region_change_from_trend.png"),
+  plot_aewr_reg_ts,
+  device = "png"
+)
 
-# aewr_reg_ts_data_base <- aewr_reg_ts_data_collapse %>%
-#   filter(year == 2011)
+#### Exhibit 9: Distribution of AEWR - p10 wage --------------------------------
+# Calculate diffs
+distribution_of_aewr_changes <- county_df %>%
+  select(
+    countyfips,
+    year,
+    aewr_cz_p10,
+    aewr_cz_p10_l1,
+    aewr_cz_p25,
+    aewr_cz_p25_l1,
+    aewr_cz_p50,
+    aewr_cz_p50_l1
+  ) %>%
+  mutate(
+    aewr_cz_p10_d1 = aewr_cz_p10 - aewr_cz_p10_l1,
+    aewr_cz_p25_d1 = aewr_cz_p25 - aewr_cz_p25_l1,
+    aewr_cz_p50_d1 = aewr_cz_p50 - aewr_cz_p50_l1,
+  )
 
-# aewr_reg_ts_data_base <- aewr_reg_ts_data_base %>%
-#   rename(nbr_workers_certified_base = nbr_workers_certified_start_year) %>%
-#   select(-year)
+# CZ 10th percentile wage
+plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
+  ggplot(aes(x = aewr_cz_p10_d1)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("1 year change in AEWR-CZ 10th percentile wage")
 
-# aewr_reg_ts_data_collapse <- merge(
-#   x = aewr_reg_ts_data_collapse,
-#   y = aewr_reg_ts_data_base,
-#   by = c("high_h2a_share_75", "aewr_high_growth_p50")
-# )
+plot_aewr_cz_diff %>%
+  ggsave(
+    filename = paste0(folder_output, "aewr_cz_p10_wage_change_1year.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
 
-# aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
-#   mutate(
-#     nbr_workers_certified_indx2011 = nbr_workers_certified_start_year /
-#       nbr_workers_certified_base
-#   )
+# CZ 25th percentile wage
+plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
+  ggplot(aes(x = aewr_cz_p25_d1)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("1 year change in AEWR-CZ 25th percentile wage")
 
-# aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
-#   mutate(
-#     group_lab = ifelse(
-#       high_h2a_share_75 == 1 & aewr_high_growth_p50 == 1,
-#       "High AEWR Growth, High Exposure",
-#       ifelse(
-#         high_h2a_share_75 == 1 & aewr_high_growth_p50 == 0,
-#         "Low AEWR Growth, High Exposure",
-#         ifelse(
-#           high_h2a_share_75 == 0 & aewr_high_growth_p50 == 1,
-#           "High AEWR Growth, Low Exposure",
-#           "Low AEWR Growth, Low Exposure"
-#         )
-#       )
-#     )
-#   )
+plot_aewr_cz_diff %>%
+  ggsave(
+    filename = paste0(folder_output, "aewr_cz_p25_wage_change_1year.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
 
-# plot_aewr_use_ts_DDD <- ggplot(
-#   aewr_reg_ts_data_collapse,
-#   aes(
-#     x = year,
-#     y = nbr_workers_certified_indx2011,
-#     linetype = as.factor(group_lab),
-#     color = as.factor(group_lab)
-#   )
-# ) +
-#   geom_line() +
-#   theme_classic() +
-#   scale_color_manual(values = c("#b2182b", "#b2182b", "#2166ac", "#2166ac")) +
-#   scale_linetype_manual(values = c(1, 5, 3, 4)) +
-#   labs(color = "group_lab", linetype = "group_lab") +
-#   guides(
-#     color = guide_legend(ncol = 2, byrow = TRUE),
-#     linetype = guide_legend(ncol = 2, byrow = TRUE),
-#   ) +
-#   theme(legend.position = "bottom") +
-#   theme(legend.title = element_blank()) +
-#   geom_hline(yintercept = 1, alpha = 0.5) +
-#   ylab("Number of H2-A Workers Requested\n(Indexed to 2011)")
-# plot_aewr_use_ts_DDD
+# CZ 50th percentile wage
+plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
+  ggplot(aes(x = aewr_cz_p50_d1)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("1 year change in AEWR-CZ 50th percentile wage")
 
-# ggsave(
-#   plot_aewr_use_ts_DDD,
-#   filename = paste0(folder_output, "fig_ts_aewr_growth_exposure_DDD.png")
-# )
+plot_aewr_cz_diff %>%
+  ggsave(
+    filename = paste0(folder_output, "aewr_cz_p50_wage_change_1year.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
 
-# head(aewr_reg_ts_data_collapse)
-
-#### Exhibit 9B: DDD by Graph with predicted usage -----------------------
+#### Exhibit 10: DDD by Graph with predicted usage -----------------------
 # need to make the ts graph using the trend growth as a dummy
 
 head(aewr_reg_ts_data)
@@ -1087,24 +1030,6 @@ aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
       nbr_workers_certified_base
   )
 
-# aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
-#   mutate(
-#     group_lab = case_when(
-#       (county_treatment_group_classification == "always takers") &
-#         (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Always Takers",
-#       (county_treatment_group_classification == "always takers") &
-#         (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Always Takers",
-#       (county_treatment_group_classification == "adopters") &
-#         (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Adopters",
-#       (county_treatment_group_classification == "adopters") &
-#         (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Adopters",
-#       (county_treatment_group_classification == "never takers") &
-#         (aewr_high_growth_p50 == 1) ~ "High AEWR Growth, Never Takers",
-#       (county_treatment_group_classification == "never takers") &
-#         (aewr_high_growth_p50 == 0) ~ "Low AEWR Growth, Never Takers"
-#     )
-#   )
-
 aewr_reg_ts_data_collapse <- aewr_reg_ts_data_collapse %>%
   mutate(
     group_lab = case_when(
@@ -1163,7 +1088,7 @@ ggsave(
 
 head(aewr_reg_ts_data_collapse)
 
-#### Exhibit 9B New: CZ x AEWR Region Deviation from Trend (Deciles) ## -------
+#### Exhibit 11: CZ x AEWR Region Deviation from Trend (Deciles) ## -------
 
 # Aggregate aewr_cz_p25 to CZ x AEWR region x year
 aewr_cz_p25_czreg_ts_data <- county_df %>%
@@ -1246,7 +1171,7 @@ ggsave(
   device = "png"
 )
 
-#### Exhibit 9C: DD Visual - Indexed H-2A Use, Above vs Below Trend ## ---------
+#### Exhibit 12: DD Visual - Indexed H-2A Use, Above vs Below Trend ## ---------
 
 # Merge stable above/below classification (based on 2022 endpoint) to county_df
 county_df_dd_vis <- county_df %>%
@@ -1323,7 +1248,7 @@ ggsave(
   device = "png"
 )
 
-## Exhibit 10: DD Main Results -------------------------------------------------
+## Exhibit 13: DD Main Results -------------------------------------------------
 
 samp_base <- county_df %>%
   filter(
@@ -1407,10 +1332,10 @@ dd_4 <- feols(
 # How many total ag workers are there within each AEWR region?
 samp_no_large_cz <- samp_base %>%
   group_by(aewr_region_num, year) %>%
-  mutate(aewr_region_year_total_emp_farm = sum(emp_farm, na.rm = FALSE)) %>%
+  mutate(aewr_region_year_total_emp_farm = sum(emp_farm, na.rm = TRUE)) %>%
   ungroup() %>%
   group_by(cz_fe, year) %>%
-  mutate(cz_year_total_emp_farm = sum(emp_farm, na.rm = FALSE)) %>%
+  mutate(cz_year_total_emp_farm = sum(emp_farm, na.rm = TRUE)) %>%
   ungroup()
 
 cz_share_of_aewr_region_farm_emp <- samp_no_large_cz %>%
@@ -1426,22 +1351,47 @@ cz_share_of_aewr_region_farm_emp <- samp_no_large_cz %>%
     cz_share_farm_emp = cz_year_total_emp_farm / aewr_region_year_total_emp_farm
   )
 
-cz_share_of_aewr_region_farm_emp %>%
+plot_cz_share_of_aewr_region_farm_emp <- cz_share_of_aewr_region_farm_emp %>%
   ggplot(aes(x = cz_share_farm_emp)) +
-  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8)
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("CZ share of total farm employment within AEWR region")
 
-# Pick arbitrary cutoff of 0.1 for now
-cz_to_keep <- cz_share_of_aewr_region_farm_emp %>%
+plot_cz_share_of_aewr_region_farm_emp %>%
+  ggsave(
+    filename = paste0(folder_output, "cz_share_of_farm_emp_in_aewr_region.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
+
+# Pick arbitrary cutoff of 0.1
+cz_to_keep_share_below_10 <- cz_share_of_aewr_region_farm_emp %>%
   filter(cz_share_farm_emp < 0.1) %>%
   select(aewr_region_num, cz_fe, year)
 
-samp_no_large_cz <- samp_no_large_cz %>%
-  inner_join(cz_to_keep)
+samp_cz_share_below_10 <- samp_no_large_cz %>%
+  inner_join(cz_to_keep_share_below_10)
 
 dd_5 <- feols(
   h2a_cert_share_farm_workers_2011_start_year ~
     aewr_cz_p25_l1 * postdummy | county_fe + year_fe,
-  data = samp_no_large_cz,
+  data = samp_cz_share_below_10,
+  vcov = ~cz_aewr_region_fe,
+  demeaned = TRUE
+)
+
+# What if we just dropped the largest CZ within each AEWR region?
+cz_to_keep_not_largest <- cz_share_of_aewr_region_farm_emp %>%
+  group_by(aewr_region_num, year) %>%
+  filter(cz_share_farm_emp != max(cz_share_farm_emp, na.rm = TRUE))
+
+samp_cz_no_largest <- samp_no_large_cz %>%
+  inner_join(cz_to_keep_not_largest)
+
+dd_6 <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    aewr_cz_p25_l1 * postdummy | county_fe + year_fe,
+  data = samp_cz_no_largest,
   vcov = ~cz_aewr_region_fe,
   demeaned = TRUE
 )
@@ -1477,8 +1427,9 @@ summary(dd_2)
 summary(dd_3)
 summary(dd_4)
 summary(dd_5)
+summary(dd_6)
 
-## Exhibit 11: Event Study (Flexible DD, Base Year = 2011) --------------------
+## Exhibit 14: Event Study (Flexible DD, Base Year = 2011) --------------------
 
 es_rhs <- paste(
   "aewr_cz_p25_l1 * yeardummy_2008",
@@ -1569,7 +1520,7 @@ table_2 <- etable(
   replace = TRUE
 )
 
-## Exhibit 12: Event Study Coefficient Plots -----------------------------------
+## Exhibit 15: Event Study Coefficient Plots -----------------------------------
 
 make_coefplot <- function(model) {
   coef_names <- grep(
@@ -1654,7 +1605,7 @@ ggsave(
   device = "png"
 )
 
-## Exhibit 13: Summary Statistics Table -----------------------------------------
+## Exhibit 16: Summary Statistics Table -----------------------------------------
 
 sumstats_vars <- list(
   "H-2A share of 2011 farm employment" = "h2a_cert_share_farm_workers_2011_start_year",
@@ -1707,7 +1658,7 @@ writeLines(
   con = paste0(folder_output, "table_sumstats_dd_variables.tex")
 )
 
-#### Exhibit 14: Fisher Price Index Time Series -----------------------------------
+#### Exhibit 17: Fisher Price Index Time Series -----------------------------------
 
 fisher_ts <- samp_base %>%
   filter(!is.na(fisher_index_ppi)) %>%
@@ -1742,7 +1693,7 @@ ggsave(
   device = "png"
 )
 
-#### Exhibit 15: DD Regressions — Fisher Price Index as Outcome ------------------
+#### Exhibit 18: DD Regressions — Fisher Price Index as Outcome ------------------
 
 price_dd_1 <- feols(
   fisher_index_ppi ~
@@ -1805,7 +1756,7 @@ table_fisher_price <- etable(
   replace = TRUE
 )
 
-#### Exhibit 16: County Map — Fisher Price Index Ratio 2022 / 2008 ---------------
+#### Exhibit 19: County Map — Fisher Price Index Ratio 2022 / 2008 ---------------
 
 fisher_map_data <- samp_base %>%
   filter(year %in% c(2011, 2022), !is.na(fisher_index_ppi)) %>%
