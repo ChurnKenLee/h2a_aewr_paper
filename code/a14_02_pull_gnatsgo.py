@@ -22,10 +22,16 @@ def _():
 
 @app.cell
 def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    binary_path = root_path / 'binaries'
-    gnatsgo_path = root_path / 'data' / 'gnatsgo' / 'gNATSGO_gpkg_01_30_2026'
-    census_shp_path = root_path / 'data' / 'county_shapefile' / 'tl_2010_us_county10' / 'tl_2010_us_county10.shp'
+    root_path = pyprojroot.find_root(criterion="pyproject.toml")
+    binary_path = root_path / "binaries"
+    gnatsgo_path = root_path / "data" / "gnatsgo" / "gNATSGO_gpkg_01_30_2026"
+    census_shp_path = (
+        root_path
+        / "data"
+        / "county_shapefile"
+        / "tl_2010_us_county10"
+        / "tl_2010_us_county10.shp"
+    )
     return binary_path, census_shp_path, gnatsgo_path
 
 
@@ -44,7 +50,9 @@ def _(gnatsgo_path, np, rasterio):
 
     # We only want to run this conversion once. Check if the converted file exists.
     if not converted_raster.exists():
-        print(f"Converting {input_raster} from uint32 to int32. This may take a few minutes...")
+        print(
+            f"Converting {input_raster} from uint32 to int32. This may take a few minutes..."
+        )
 
         with rasterio.open(input_raster) as _src:
             _profile = _src.profile
@@ -57,13 +65,10 @@ def _(gnatsgo_path, np, rasterio):
                 _nodata_val = -1
 
             # Update the raster _profile to int32
-            _profile.update(
-                dtype=rasterio.int32,
-                nodata=_nodata_val
-            )
+            _profile.update(dtype=rasterio.int32, nodata=_nodata_val)
 
             # Read and write block-by-block to avoid loading a ~24GB CONUS raster into RAM
-            with rasterio.open(converted_raster, 'w', **_profile) as _dst:
+            with rasterio.open(converted_raster, "w", **_profile) as _dst:
                 for _ji, _window in _src.block_windows(1):
                     # Read chunk
                     _data = _src.read(1, window=_window)
@@ -100,7 +105,7 @@ def _(census_shp_path, converted_raster, gpd, rasterio):
     county_id_col = "GEOID10"
 
     # Pixel acreage
-    pixel_width, pixel_height = src.res # this is in meters
+    pixel_width, pixel_height = src.res  # this is in meters
     sq_meters_per_pixel = abs(pixel_width * pixel_height)
     sq_meters_per_acre = 4046.872
     acres_per_pixel = sq_meters_per_pixel / sq_meters_per_acre
@@ -128,20 +133,17 @@ def _(
     pl,
     src,
 ):
-    table_a_parquet = binary_path / 'county_mapunit_pixel_count_exactextract.parquet'
+    table_a_parquet = binary_path / "county_mapunit_pixel_count_exactextract.parquet"
 
     if not table_a_parquet.exists():
         print("Extracting raster pixels per county using exactextract...")
-        # exact_extract evaluates operations requested in a list. 
+        # exact_extract evaluates operations requested in a list.
         # "values" = raw pixel array, "coverage" = exact intersection fraction array.
         extracted_features = exactextract.exact_extract(
-            src,
-            counties,
-            ["values", "coverage"],
-            include_cols=[county_id_col]
+            src, counties, ["values", "coverage"], include_cols=[county_id_col]
         )
 
-        table_a_rows =[]
+        table_a_rows = []
 
         for feature in extracted_features:
             props = feature["properties"]
@@ -152,10 +154,7 @@ def _(
             cov_key = next((k for k in props.keys() if "coverage" in k), "coverage")
 
             # Create a Polars DataFrame for this specific county
-            df_county = pl.DataFrame({
-                "mukey": props[val_key],
-                "fraction": props[cov_key]
-            })
+            df_county = pl.DataFrame({"mukey": props[val_key], "fraction": props[cov_key]})
 
             # Filter out NoData gaps
             if nodata_val is not None:
@@ -164,10 +163,10 @@ def _(
                 )
 
             # Group by Map Unit Key (mukey), sum exact fractions to get "pixel count"
-            df_county_agg = df_county.group_by("mukey").agg(
-                pl.col("fraction").sum().alias("pixel_count")
-            ).with_columns(
-                pl.lit(geoid).alias("county_id")
+            df_county_agg = (
+                df_county.group_by("mukey")
+                .agg(pl.col("fraction").sum().alias("pixel_count"))
+                .with_columns(pl.lit(geoid).alias("county_id"))
             )
 
             table_a_rows.append(df_county_agg)
@@ -176,10 +175,12 @@ def _(
         table_a = pl.concat(table_a_rows)
 
         # Convert pixel counts to acres and cast mukeys to String for relational join later
-        table_a = table_a.with_columns([
-            (pl.col("pixel_count") * acres_per_pixel).alias("mapunit_acres"),
-            pl.col("mukey").cast(pl.String)
-        ])
+        table_a = table_a.with_columns(
+            [
+                (pl.col("pixel_count") * acres_per_pixel).alias("mapunit_acres"),
+                pl.col("mukey").cast(pl.String),
+            ]
+        )
 
         table_a.write_parquet(table_a_parquet)
         print("Extraction and aggregation complete")
@@ -199,9 +200,11 @@ def _(mo):
 
 @app.cell
 def _(gnatsgo_path, pl, sqlite3):
-    gpkg_path = gnatsgo_path / 'gNATSGO_02_13_2026.gpkg'
-    conn = sqlite3.connect(gpkg_path)
-    tables_query = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+    gpkg_path = gnatsgo_path / "gNATSGO_02_13_2026.gpkg"
+    conn = sqlite3.connect(f"file:{gpkg_path.resolve()}?mode=ro", uri=True)
+    tables_query = (
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+    )
     tables = pl.read_database(tables_query, connection=conn)
     return (conn,)
 
@@ -216,157 +219,238 @@ def _(mo):
 
 @app.cell
 def _(conn, pl):
-    joined_query = """
+    component_query = """
     SELECT
-        mapunit.mukey,
-        mapunit.muname,
-        component.compname,
-        component.comppct_r,
-        component.majcompflag,
-        component.taxorder,
-        component.taxsuborder,
-        component.taxgrtgroup,
-        component.slope_r,
-        component.drainagecl,
-        component.nirrcapcl,
-        corestrictions.resdept_r,
-        component.cropprodindex,   -- The general exogenous crop productivity index (NCCPI)
-        muaggatt.aws0150wta        -- Exogenous Available Water Storage (0-150cm)
-    FROM
-        mapunit
-        INNER JOIN component ON mapunit.mukey = component.mukey
-        LEFT JOIN corestrictions ON component.cokey = corestrictions.cokey
-        LEFT JOIN muaggatt ON mapunit.mukey = muaggatt.mukey
+        mukey,
+        cokey,
+        compname,
+        comppct_r,
+        majcompflag,
+        taxorder,
+        taxsuborder,
+        taxgrtgroup,
+        taxsubgrp,
+        taxpartsize,
+        taxreaction,
+        slope_r,
+        drainagecl,
+        hydgrp,
+        hydricrating,
+        nirrcapcl,
+        irrcapcl,
+        cropprodindex
+    FROM component
     """
-    joined_table = pl.read_database(query=joined_query, infer_schema_length = None, connection=conn)
+
+    mapunit_query = """
+    SELECT
+        mukey,
+        muname
+    FROM mapunit
+    """
+
+    restriction_query = """
+    SELECT
+        cokey,
+        resdept_r
+    FROM corestrictions
+    """
+
+    muaggatt_query = """
+    SELECT
+        mukey,
+        slopegradwta,
+        aws025wta,
+        aws050wta,
+        aws0100wta,
+        aws0150wta,
+        wtdepannmin,
+        wtdepaprjunmin,
+        brockdepmin,
+        flodfreqmax,
+        pondfreqprs
+    FROM muaggatt
+    """
+
+    component = pl.read_database(
+        query=component_query, infer_schema_length=None, connection=conn
+    )
+    mapunit = pl.read_database(
+        query=mapunit_query, infer_schema_length=None, connection=conn
+    )
+    restriction = pl.read_database(
+        query=restriction_query, infer_schema_length=None, connection=conn
+    )
+    muaggatt = pl.read_database(
+        query=muaggatt_query, infer_schema_length=None, connection=conn
+    )
+
+    # Each cokey can have multiple resdept_r because restrictions have types
+    # Need to aggregate to min depth before joining or we will create duplicate rows
+    restriction = restriction.group_by("cokey").agg(
+        pl.col("resdept_r").min().alias("resdept_r")
+    )
+
+    joined_table = (
+        component.join(mapunit, on="mukey", how="inner")
+        .join(restriction, on="cokey", how="left")
+        .join(muaggatt, on="mukey", how="left")
+    )
     return (joined_table,)
-
-
-@app.cell
-def _(joined_table, pl):
-    # Bin continuous variables
-    table_b = joined_table.with_columns(
-        # USDA uses 8% gradient as cutoff for machine contour farming
-        pl.when(
-            pl.col('slope_r') > 8
-        ).then(
-            pl.lit('steep')
-        ).when(
-            pl.col('slope_r') <= 8
-        ).then(
-            pl.lit('flat')
-        ).otherwise(
-            pl.lit('no_grade')
-        ).alias('slope'),
-        # USDA classification of root depths
-        pl.when(
-            pl.col('resdept_r') < 20
-        ).then(
-            pl.lit('too_shallow')
-        ).when(
-            (pl.col('resdept_r') >= 20) & (pl.col('resdept_r') < 50 )
-        ).then(
-            pl.lit('shallow')
-        ).when(
-            (pl.col('resdept_r') >= 50) & (pl.col('resdept_r') < 100 )
-        ).then(
-            pl.lit('moderate')
-        ).when(
-            (pl.col('resdept_r') >= 100) & (pl.col('resdept_r') < 150 )
-        ).then(
-            pl.lit('deep')
-        ).when(
-            pl.col('resdept_r') >= 150
-        ).then(
-            pl.lit('very_deep')
-        ).otherwise(
-            pl.lit('no_depth')
-        ).alias('root_depth')
-    )
-
-    table_b_cat = table_b.select([
-        'mukey', 'comppct_r',
-        'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope', 'drainagecl', 'root_depth',
-        'nirrcapcl'
-    ]).group_by([
-        'mukey',
-        'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope', 'drainagecl', 'root_depth',
-        'nirrcapcl'
-    ]).agg(
-        pl.col('comppct_r').sum()
-    )
-
-    table_b_cont = table_b.select([
-        'mukey', 'comppct_r',
-        'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope_r', 'drainagecl', 'resdept_r',
-        'nirrcapcl', 'cropprodindex', 'aws0150wta'
-    ]).group_by([
-        'mukey',
-        'taxorder', 'taxsuborder', 'taxgrtgroup',
-        'slope_r', 'drainagecl', 'resdept_r',
-        'nirrcapcl', 'cropprodindex', 'aws0150wta'
-    ]).agg(
-        pl.col('comppct_r').sum()
-    )
-    return (table_b_cont,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Join tables, export
+    # County soil cells
     """)
     return
 
 
 @app.cell
-def _(pl, table_a, table_b_cont):
-    # Inner join connects every component inside every map unit located in our counties
-    final_df = table_a.with_columns(
-        pl.col('mukey').cast(pl.Int64).alias('mukey')
-    ).join(
-        table_b_cont, on="mukey", how="inner"
-    )
-
-    # Component acreage: (Map Unit Area) * (Component Percentage / 100)
-    final_df = final_df.with_columns([
-        (pl.col("mapunit_acres") * (pl.col("comppct_r") / 100.0)).alias("component_acres")
-    ])
-
-    # Summary characteristics
-    # Note that slope_r and resdept_r are unbinned raw values
-    # slope and root_depth are binned categoricals
-    classification_cols_cat =[
-        'taxorder',
-        'slope', 'drainagecl', 'root_depth',
-        'nirrcapcl', 'cropprodindex', 'aws0150wta'
+def _():
+    soil_cell_cols = [
+        "taxorder",
+        "taxsuborder",
+        "taxgrtgroup",
+        "drainagecl",
+        "hydgrp",
+        "nirrcapcl",
     ]
 
-    classification_cols_cont =[
-        'taxorder',
-        'slope_r', 'drainagecl', 'resdept_r',
-        'nirrcapcl', 'cropprodindex', 'aws0150wta'
+    optional_cat_cols = [
+        "taxsubgrp",
+        "taxpartsize",
+        "taxreaction",
+        "hydricrating",
+        "irrcapcl",
+        "flodfreqmax",
+        "pondfreqprs",
     ]
 
-    # Final acreage grouping by county and soil characteristics
-    county_level_acreage = final_df.group_by(
-        ["county_id"] + classification_cols_cont
-    ).agg(
-        pl.col("component_acres").sum().alias("total_acres")
-    ).sort(
-        ["county_id", "total_acres"], descending=[False, True]
-    ).rename({
-        'county_id':'county_ansi'
-    })
-    return (county_level_acreage,)
+    cont_cols = [
+        "slope_r",
+        "slopegradwta",
+        "resdept_r",
+        "aws025wta",
+        "aws050wta",
+        "aws0100wta",
+        "aws0150wta",
+        "wtdepannmin",
+        "wtdepaprjunmin",
+        "brockdepmin",
+        "cropprodindex",
+    ]
+    return cont_cols, optional_cat_cols, soil_cell_cols
 
 
 @app.cell
-def _(binary_path, county_level_acreage):
-    county_level_acreage.write_parquet(binary_path / 'county_h2a_prediction_gnatsgo.parquet')
+def _(cont_cols, joined_table, optional_cat_cols, pl, soil_cell_cols, table_a):
+    component_panel = (
+        table_a.with_columns(pl.col("mukey").cast(pl.Int64).alias("mukey"))
+        .join(joined_table, on="mukey", how="inner")
+        .with_columns(
+            [pl.col(_col).fill_null("MISSING").cast(pl.String) for _col in soil_cell_cols]
+            + [
+                pl.col(_col).fill_null("MISSING").cast(pl.String)
+                for _col in optional_cat_cols
+            ]
+            + [
+                pl.col("mapunit_acres").cast(pl.Float32),
+                pl.col("comppct_r").fill_null(0).clip(0, 100).cast(pl.Float32),
+            ]
+            + [pl.col(_col).cast(pl.Float32) for _col in cont_cols]
+        )
+        .with_columns(
+            (pl.col("mapunit_acres") * pl.col("comppct_r") / 100.0).alias("component_acres")
+        )
+        .filter(pl.col("component_acres") > 0)
+    )
+
+    weighted_exprs = []
+    for _col in cont_cols:
+        _valid_acres = (
+            pl.when(pl.col(_col).is_not_null())
+            .then(pl.col("component_acres"))
+            .otherwise(0.0)
+        )
+        _weighted_sum = (
+            pl.when(pl.col(_col).is_not_null())
+            .then(pl.col(_col) * pl.col("component_acres"))
+            .otherwise(0.0)
+        )
+        weighted_exprs.extend(
+            [
+                (_weighted_sum.sum() / _valid_acres.sum()).cast(pl.Float32).alias(_col),
+                (_valid_acres.sum() / pl.col("component_acres").sum())
+                .cast(pl.Float32)
+                .alias(f"{_col}_obs_share"),
+            ]
+        )
+
+    optional_mode_exprs = []
+    for _col in optional_cat_cols:
+        optional_mode_exprs.append(
+            pl.col(_col)
+            .sort_by("component_acres", descending=True)
+            .first()
+            .alias(f"dominant_{_col}")
+        )
+
+    county_soil_cells = (
+        component_panel.group_by(["county_id"] + soil_cell_cols)
+        .agg(
+            [
+                pl.col("component_acres").sum().cast(pl.Float32).alias("total_acres"),
+                pl.col("mukey").n_unique().alias("n_mapunits"),
+                pl.col("cokey").n_unique().alias("n_components"),
+            ]
+            + weighted_exprs
+            + optional_mode_exprs
+        )
+        .rename({"county_id": "county_ansi"})
+        .with_columns(pl.concat_str(soil_cell_cols, separator="|").alias("soil_cell_id"))
+        .with_columns(
+            pl.col("total_acres").sum().over("county_ansi").alias("county_soil_acres")
+        )
+        .with_columns(
+            (pl.col("total_acres") / pl.col("county_soil_acres"))
+            .cast(pl.Float32)
+            .alias("acreage_frac")
+        )
+        .select(
+            [
+                "county_ansi",
+                "soil_cell_id",
+                *soil_cell_cols,
+                "total_acres",
+                "county_soil_acres",
+                "acreage_frac",
+                "n_mapunits",
+                "n_components",
+                *cont_cols,
+                *[f"{_col}_obs_share" for _col in cont_cols],
+                *[f"dominant_{_col}" for _col in optional_cat_cols],
+            ]
+        )
+        .sort(["county_ansi", "total_acres"], descending=[False, True])
+    )
+    return (county_soil_cells,)
+
+
+@app.cell
+def _(binary_path, county_soil_cells):
+    output_file = binary_path / "county_h2a_prediction_gnatsgo_soil_cells.parquet"
+    county_soil_cells.write_parquet(output_file)
+    print(
+        f"Saved {county_soil_cells.height} county-soil cells "
+        f"for {county_soil_cells.select('county_ansi').n_unique()} counties to {output_file}"
+    )
+    return
+
+
+@app.cell
+def _():
     return
 
 

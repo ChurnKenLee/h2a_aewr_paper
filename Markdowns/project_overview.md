@@ -416,3 +416,20 @@ H2A_share ~ AEWR_l1 × yeardummy_t × HighH2A_75th_inverse + controls | county_f
 - Geographic unit: US counties (FIPS codes), sometimes aggregated to commuting zones or AEWR regions
 - Sample years: 2008–2022 (census periods: 2007, 2012, 2017, 2022)
 - Base/policy year: 2011
+
+## Modeling choices
+
+- Exogenous shocks that are relevant for our model:
+- Demand for specialty crops (universal)
+- Farm productivity (weather? climate? region/crop specific)
+- AEWR realization (potentially endogenized, region specific)
+- These are heterogeneities in shocks that we can use to calibrate our model
+- Copulas to model the distributions that the farms are drawing from
+- Rig the model in a way that regression estimates map to model parameters
+- Choice of crop-specific model vs revenues?
+- Do farms choose crops? Seems difficult, we may not need that to endogenize prices
+- Things we want to endogenize: we want workers wages and quantities
+- Can model how binding AEWR is? Bunching in data
+- Obtain: elasticity, size of distortion caused by this policy
+- Welfare estimates using simple demand system
+- BIG thing: choice of what variables are choices: crop choice, capital/mechanization

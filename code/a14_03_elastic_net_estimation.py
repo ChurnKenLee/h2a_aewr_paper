@@ -23,7 +23,6 @@ def _():
     from functools import partial
 
     return (
-        cs,
         itertools,
         jax,
         jnp,
@@ -98,40 +97,24 @@ def _(binary_path, pl):
 
 
 @app.cell
-def _(binary_path, cs, pl):
-    # Grab climate variables we actually want to use
+def _(binary_path, pl):
+    # Use pre-period climate-normal spline/Fourier basis features from a14_01.
+    # These are time-invariant (2000-2011) averages
+    # Can consider using annual data instead; think averages capture county primitives better?
     climate = pl.read_parquet(
-        binary_path / "county_h2a_prediction_climate_gdd_annual.parquet"
+        binary_path / "county_h2a_prediction_climate_basis_annual.parquet"
     )
     climate = (
-        climate.select(
-            [
-                "year",
-                "fips",
-                cs.contains("days_D"),
-                cs.contains("days_P"),
-                cs.starts_with("GDD_"),
-                "tmin_ann",
-                "tmax_ann",
-                "tavg_ann",
-                "prcp_ann",
-                "prcp_gs",
-                "prcp_spring",
-                "n_wet_days",
-                "max_cdd_gs",
-            ]
-        )
+        climate.select(["year", "fips", pl.col("^normal_cb_.*$")])
         .filter(pl.col("year") >= 2008, pl.col("year") <= 2011)
         .rename({"fips": "county_ansi"})
-    ).drop(
-        ["GDD_sorghum", "GDD_barley"]
-    )  # Duplicates: GDD sorghum = GDD corn, GDD barley = GDD spring wheat
+    )
     return (climate,)
 
 
 @app.cell
 def _(binary_path, pl):
-    soil = pl.read_parquet(binary_path / "county_h2a_prediction_gnatsgo.parquet")
+    soil = pl.read_parquet(binary_path / "county_h2a_prediction_gnatsgo_soil_cells.parquet")
     return (soil,)
 
 
@@ -141,14 +124,35 @@ def _(climate):
     county_cont_cols.remove("year")
     county_cont_cols.remove("county_ansi")
 
+    # Remember that obs_share merely captures the share within each cell that the variable is missing
     patch_cont_cols = [
         "slope_r",
+        "slopegradwta",
         "resdept_r",
-        "cropprodindex",
+        "aws025wta",
+        "aws050wta",
+        "aws0100wta",
         "aws0150wta",
+        "wtdepannmin",
+        "wtdepaprjunmin",
+        "brockdepmin",
+        "cropprodindex",
+        "slope_r_obs_share",
+        "slopegradwta_obs_share",
+        "resdept_r_obs_share",
+        "aws025wta_obs_share",
+        "aws050wta_obs_share",
+        "aws0100wta_obs_share",
+        "aws0150wta_obs_share",
+        "wtdepannmin_obs_share",
+        "wtdepaprjunmin_obs_share",
+        "brockdepmin_obs_share",
+        "cropprodindex_obs_share",
     ]
+
+    # Not using order + suborder for now, to keep # of categoricals small, to keep JAX forward pass manageable (for now)
     cat_cols = [
-        "taxorder",
+        "taxgrtgroup",
         "drainagecl",
         "nirrcapcl",
     ]
@@ -191,12 +195,20 @@ def _(itertools, jnp, np, pl):
             (pl.col("h2a_rate") * pl.col("bea_farm_emp_2011")).alias("h2a_target_count")
         )
 
-        # For continuous variables, fill missing with the column mean
+        continuous_cols = county_cont_cols + patch_cont_cols
+
+        # For continuous variables, fill missing with the column mean. Weighted
+        # soil summaries can contain NaN when a soil cell has no observed acreage
+        # for that attribute, so normalize NaN to null first.
         # For categorical variables, create new missing category for missing
         merged = (
             merged.with_columns(
-                pl.col(c).fill_null(pl.col(c).mean()) for c in county_cont_cols
+                [
+                    pl.when(pl.col(c).is_nan()).then(None).otherwise(pl.col(c)).alias(c)
+                    for c in continuous_cols
+                ]
             )
+            .with_columns(pl.col(c).fill_null(pl.col(c).mean()) for c in county_cont_cols)
             .with_columns(pl.col(c).fill_null(pl.col(c).mean()) for c in patch_cont_cols)
             .with_columns(pl.col(c).fill_null("MISSING") for c in cat_cols)
         )
@@ -249,27 +261,51 @@ def _(itertools, jnp, np, pl):
         )
         X_patch_cont = jnp.array(X_patch_cont, dtype=jnp.float32)
 
-        # Build categorical interaction matrices
+        # Build categorical interaction matrices plus parent-specific heredity metadata
         feature_ids = {}
         feature_sizes = {}
         feature_names = {}
+        feature_lookup = {}
+        feature_meta = {}
+        parent_ids = {}
+
+        _KEY_SEP = "\x1f"
 
         for order in range(1, max_order + 1):
             cols = list(itertools.combinations(cat_cols, order))
+
             order_id_matrix = []
             order_names = []
+            order_meta = []
             current_offset = 0
+
             for combo in cols:
-                combined_str = merged.select(
-                    pl.concat_str(pl.col(combo), separator="|")
+                combo_df = merged.select(list(combo))
+                combined_str = combo_df.select(
+                    pl.concat_str(pl.all(), separator=_KEY_SEP)
                 ).to_series()
+            current_offset = 0
+
+            for combo in cols:
+                combo_df = merged.select(list(combo))
+                combined_str = combo_df.select(
+                    pl.concat_str(pl.all(), separator=_KEY_SEP)
+                ).to_series()
+
                 uniques, integer_ids = np.unique(combined_str, return_inverse=True)
 
-                # Create readable labels
                 combo_label = "|".join(combo)
-                readable_names = [f"{combo_label}: {val}" for val in uniques]
-                order_names.extend(readable_names)
+                readable_names = []
 
+                for local_id, key in enumerate(uniques):
+                    value_tuple = tuple(str(key).split(_KEY_SEP))
+                    feature_id = current_offset + local_id
+
+                    feature_lookup[(order, combo, value_tuple)] = feature_id
+                    order_meta.append((feature_id, combo, value_tuple))
+                    readable_names.append(f"{combo_label}: {'|'.join(value_tuple)}")
+
+                order_names.extend(readable_names)
                 order_id_matrix.append((integer_ids + current_offset).astype(np.int32))
                 current_offset += len(uniques)
 
@@ -278,11 +314,33 @@ def _(itertools, jnp, np, pl):
             )
             feature_sizes[order] = current_offset
             feature_names[order] = order_names
+            feature_meta[order] = order_meta
+
+        # Parent maps for heredity
+        # For order 2, parents are order-1 terms
+        # For order 3, parents are order-2 terms
+        for order in range(2, max_order + 1):
+            parent_id_rows = []
+
+            for _, combo, value_tuple in sorted(feature_meta[order], key=lambda x: x[0]):
+                row_parent_ids = []
+
+                for parent_positions in itertools.combinations(range(order), order - 1):
+                    parent_combo = tuple(combo[i] for i in parent_positions)
+                    parent_values = tuple(value_tuple[i] for i in parent_positions)
+                    row_parent_ids.append(
+                        feature_lookup[(order - 1, parent_combo, parent_values)]
+                    )
+
+                parent_id_rows.append(row_parent_ids)
+
+            parent_ids[order] = jnp.array(parent_id_rows, dtype=jnp.int32)
 
         return (
             feature_ids,
             feature_sizes,
             feature_names,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -347,23 +405,31 @@ def _(jnp):
         Computes log(worker) for EACH specific soil group in a county.
         """
         num_county = X_county_cont.shape[1]
-        log_mu = params["bias"]
+        X_county_by_patch = X_county_cont[group_ids]
 
-        for order in feature_ids.keys():
-            gathered_weights = params["weights"][order][feature_ids[order]]
-            intercepts = gathered_weights[:, :, 0]
-            slopes = gathered_weights[:, :, 1:]
+        log_mu = jnp.full(
+            (group_ids.shape[0],),
+            params["bias"],
+            dtype=jnp.float32,
+        )
 
-            county_slopes = slopes[:, :, :num_county]
-            patch_slopes = slopes[:, :, num_county:]
+        for order in sorted(feature_ids):
+            ids_for_order = feature_ids[order]
+            w_order = params["weights"][order]
 
-            log_mu += jnp.sum(intercepts, axis=1)
+            for combo_idx in range(ids_for_order.shape[1]):
+                ids = ids_for_order[:, combo_idx]
+                gathered = w_order[ids]
 
-            # 'nkc' is slopes, 'nc' is X_cont. We multiply them and sum over 'k' and 'c' for each 'n'
-            # county effects
-            log_mu += jnp.einsum("nkc,nc->n", county_slopes, X_county_cont[group_ids])
-            # patch effects
-            log_mu += jnp.einsum("nkc,nc->n", patch_slopes, X_patch_cont)
+                log_mu += gathered[:, 0]
+                log_mu += jnp.sum(
+                    gathered[:, 1 : 1 + num_county] * X_county_by_patch,
+                    axis=1,
+                )
+                log_mu += jnp.sum(
+                    gathered[:, 1 + num_county :] * X_patch_cont,
+                    axis=1,
+                )
 
         return jnp.clip(log_mu, max=15.0)  # Clipped per-acre rates to prevent overflow
 
@@ -371,10 +437,11 @@ def _(jnp):
 
 
 @app.cell
-def _(compute_patch_log_worker, jax, jnp):
+def _(compute_patch_log_worker, heredity_multiplier, jax, jnp):
     def ppml_objective_compositional(
         params: dict,
         feature_ids: dict,
+        parent_ids: dict,
         X_county_cont: jnp.ndarray,
         X_patch_cont: jnp.ndarray,
         patch_exposure: jnp.ndarray,
@@ -413,13 +480,7 @@ def _(compute_patch_log_worker, jax, jnp):
             w_matrix = params["weights"][k]
 
             # Exact L1 Heredity Multiplier
-            if k == 1:
-                multiplier = 1.0
-            else:
-                parent_magnitude = jax.lax.stop_gradient(
-                    jnp.mean(params["weights"][k - 1] ** 2)
-                )
-                multiplier = jnp.maximum(1.0, 1e-3 / (parent_magnitude + 1e-8))
+            multiplier = heredity_multiplier(params, k, parent_ids)
 
             # EXACT L1 (jnp.abs) instead of Softplus approximation, so not differentiable
             l1_penalty = l1_rates[k] * jnp.sum(multiplier * jnp.abs(w_matrix))
@@ -471,6 +532,34 @@ def _(compute_patch_log_worker, jax, jnp):
     return (ppml_objective_compositional_smooth_only,)
 
 
+@app.cell
+def _(jax, jnp):
+    def heredity_multiplier(params, order, parent_ids, mode="strong"):
+        """
+        Returns a scalar multiplier for order 1 and a per-feature-row
+        multiplier with shape (n_features_order, 1) for higher orders.
+        """
+        if order == 1:
+            return jnp.array(1.0, dtype=jnp.float32)
+
+        parent_w = params["weights"][order - 1][parent_ids[order]]
+        parent_strengths = jnp.mean(parent_w**2, axis=2)
+
+        if mode == "strong":
+            parent_strength = jnp.min(parent_strengths, axis=1)
+        elif mode == "weak":
+            parent_strength = jnp.max(parent_strengths, axis=1)
+        elif mode == "mean":
+            parent_strength = jnp.mean(parent_strengths, axis=1)
+        else:
+            raise ValueError(f"Unknown heredity mode: {mode}")
+
+        parent_strength = jax.lax.stop_gradient(parent_strength)
+        return jnp.maximum(1.0, 1e-3 / (parent_strength + 1e-8))[:, None]
+
+    return (heredity_multiplier,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -480,13 +569,15 @@ def _(mo):
 
 
 @app.cell
-def _(jax, jnp):
+def _(heredity_multiplier, jnp):
     # This replaces softplus function used to make L1 penalty differentiable
     # Adds L1 penalty parameters to objective function using soft-thresholding and imposes heredity on higher order interaction terms
+    # Also implements inheritance (global penalty multiplier currently)
     def prox_g(
         param_pytree,
         step_size,
         l1_rates,
+        parent_ids,
     ):
         """
         Applies soft-thresholding to weights, considering heredity and zero-padding for bias.
@@ -507,20 +598,8 @@ def _(jax, jnp):
             w_matrix = param_pytree["weights"][order]
             l1_rate_k = l1_rates[order]
 
-            if order == 1:
-                # No parent for order 1, multiplier is 1.0
-                multiplier = 1.0
-            else:
-                # Heredity: use stop_gradient on parent magnitude from the *reference* params
-                # This ensures we don't take gradients through the thresholding logic for heredity
-                parent_magnitude = jax.lax.stop_gradient(
-                    jnp.mean(param_pytree["weights"][order - 1] ** 2)
-                )
-                multiplier = jnp.maximum(
-                    1.0, 1e-3 / (parent_magnitude + 1e-8)
-                )  # Ensure multiplier >= 1.0
-
-            # Calculate dynamic threshold
+            # Impose heredity penalty
+            multiplier = heredity_multiplier(param_pytree, order, parent_ids)
             threshold = step_size * l1_rate_k * multiplier
 
             # Apply EXACT SOFT-THRESHOLDING (Vectorized in JAX)
@@ -548,6 +627,7 @@ def _(
     def train_model_inner(
         init_params,
         feature_ids,
+        parent_ids,
         X_county_cont,
         X_patch_cont,
         patch_exposure,
@@ -617,6 +697,7 @@ def _(
                     grad_y_at_L,
                     1.0 / L_bt_current,
                     l1_rates,
+                    parent_ids,
                 )
 
                 # Re-evaluate loss_p_next_candidate with the new p_next_candidate_val
@@ -675,6 +756,7 @@ def _(
                 grad_y,
                 1.0 / L_final_bt,
                 l1_rates,
+                parent_ids,
             )
 
             # --- Adaptive Restart Check ---
@@ -711,6 +793,7 @@ def _(
                 full_loss = ppml_objective_compositional(
                     p_next,
                     feature_ids,
+                    parent_ids,
                     X_county_cont,
                     X_patch_cont,
                     patch_exposure,
@@ -771,6 +854,7 @@ def _(
 
 @app.cell
 def _(
+    heredity_multiplier,
     jax,
     jnp,
     lx,
@@ -784,6 +868,7 @@ def _(
     def train_model_cpu(
         init_params,
         feature_ids,
+        parent_ids,
         X_county_cont,
         X_patch_cont,
         patch_exposure,
@@ -799,6 +884,7 @@ def _(
         return train_model_inner(
             init_params,
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -817,6 +903,7 @@ def _(
     def train_fwd(
         init_params,
         feature_ids,
+        parent_ids,
         X_county_cont,
         X_patch_cont,
         patch_exposure,
@@ -832,6 +919,7 @@ def _(
         opt_params = train_model_inner(
             init_params,
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -853,6 +941,7 @@ def _(
             opt_params,
             active_mask,
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -874,6 +963,7 @@ def _(
             opt_params,
             active_mask,
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -985,14 +1075,7 @@ def _(
             active_sub_mask_k = active_mask["weights"][k]
 
             # Recalculate heredity multiplier at the optimum for this order (from opt_params)
-            if k == 1:
-                multiplier_k = 1.0
-            else:
-                # Use stop_gradient on the parent magnitude at the *optimum*
-                parent_magnitude_k = jax.lax.stop_gradient(
-                    jnp.mean(opt_params["weights"][k - 1] ** 2)
-                )
-                multiplier_k = jnp.maximum(1.0, 1e-3 / (parent_magnitude_k + 1e-8))
+            multiplier_k = heredity_multiplier(opt_params, k, parent_ids)
 
             # Partial derivative of ALO w.r.t. L1_k (for active components)
             # This is: sum_j in S_k { w_j * multiplier_j * sign(beta_j) }
@@ -1017,6 +1100,7 @@ def _(
         return (
             None,  # init_params
             None,  # feature_ids
+            None,  # parent_ids
             None,  # X_county_cont
             None,  # X_patch_cont
             None,  # patch_exposure
@@ -1041,6 +1125,168 @@ def _(mo):
     # ALO-CV using lineax to take advantage of JAX autodiff
     """)
     return
+
+
+@app.cell
+def _(compute_patch_log_worker, jax, jnp, lx, np, ravel_pytree):
+    def compute_alo_compositional_active_only(
+        params,
+        feature_ids,
+        X_county_cont,
+        X_patch_cont,
+        patch_exposure,
+        group_ids,
+        y_county_year,
+        num_groups,
+        l1_rates,
+        l2_rates,
+        alo_k=1,
+        alo_cg_rtol=1e-2,
+        alo_cg_atol=1e-2,
+        alo_cg_max_steps=150,
+        active_threshold=1e-6,
+        alo_row_chunk_size=50_000,
+    ):
+        flat_p, unravel_fn = ravel_pytree(params)
+        n_obs = group_ids.shape[0]
+        num_chunks = (n_obs + alo_row_chunk_size - 1) // alo_row_chunk_size
+        padded_n = num_chunks * alo_row_chunk_size
+        pad_n = padded_n - n_obs
+
+        X_patch_pad = jnp.pad(X_patch_cont, ((0, pad_n), (0, 0)))
+        exposure_pad = jnp.pad(patch_exposure, (0, pad_n))
+        group_ids_pad = jnp.pad(group_ids, (0, pad_n))
+        row_mask_pad = jnp.arange(padded_n) < n_obs
+
+        # Build active indices on the host so the reduced parameter vector has
+        # the true active-set size. This function is intended for post-fit
+        # diagnostics, not for the jitted bilevel loop.
+        active_tree = jax.tree_util.tree_map(
+            lambda x: jnp.abs(x) > active_threshold, params
+        )
+        active_tree["bias"] = jnp.array(True)
+        flat_active_mask, _ = ravel_pytree(active_tree)
+
+        active_mask_host = np.asarray(jax.device_get(flat_active_mask), dtype=bool)
+        active_idx_host = np.flatnonzero(active_mask_host).astype(np.int32)
+        print(
+            f"  -> [Active-set ALO] Active params: "
+            f"{active_idx_host.size:,} / {flat_p.size:,}"
+        )
+        active_idx = jnp.array(active_idx_host, dtype=jnp.int32)
+        theta0 = flat_p[active_idx]
+
+        def expand_active(theta):
+            flat_full = flat_p.at[active_idx].set(theta)
+            return unravel_fn(flat_full)
+
+        def chunked_mu(p):
+            def scan_chunk(mu_acc, chunk_idx):
+                start = chunk_idx * alo_row_chunk_size
+                X_patch_chunk = jax.lax.dynamic_slice_in_dim(
+                    X_patch_pad,
+                    start,
+                    alo_row_chunk_size,
+                    axis=0,
+                )
+                exposure_chunk = jax.lax.dynamic_slice_in_dim(
+                    exposure_pad,
+                    start,
+                    alo_row_chunk_size,
+                    axis=0,
+                )
+                group_chunk = jax.lax.dynamic_slice_in_dim(
+                    group_ids_pad,
+                    start,
+                    alo_row_chunk_size,
+                    axis=0,
+                )
+                mask_chunk = jax.lax.dynamic_slice_in_dim(
+                    row_mask_pad,
+                    start,
+                    alo_row_chunk_size,
+                    axis=0,
+                )
+
+                log_w = compute_patch_log_worker(
+                    p,
+                    feature_ids,
+                    X_county_cont,
+                    X_patch_chunk,
+                    group_chunk,
+                )
+                workers = jnp.where(
+                    mask_chunk,
+                    exposure_chunk * jnp.exp(log_w),
+                    0.0,
+                )
+                mu_acc += jax.ops.segment_sum(workers, group_chunk, num_groups)
+                return mu_acc, None
+
+            mu0 = jnp.zeros((num_groups,), dtype=patch_exposure.dtype)
+            mu, _ = jax.lax.scan(scan_chunk, mu0, jnp.arange(num_chunks))
+            return mu
+
+        def group_nlls_from_mu(mu_cy):
+            return mu_cy - y_county_year * jnp.log(mu_cy + 1e-7)
+
+        def group_nlls_active(theta):
+            return group_nlls_from_mu(chunked_mu(expand_active(theta)))
+
+        def smooth_loss_active(theta):
+            p = expand_active(theta)
+            group_nlls = group_nlls_from_mu(chunked_mu(p))
+            total_l2_penalty = 0.0
+            for k in feature_ids.keys():
+                total_l2_penalty += l2_rates[k] * jnp.sum(p["weights"][k] ** 2)
+            return jnp.mean(group_nlls) + total_l2_penalty
+
+        group_nlls = group_nlls_active(theta0)
+
+        if alo_k == 0:
+            return jnp.mean(group_nlls)
+
+        def hvp_active(v):
+            _, hvp = jax.jvp(
+                jax.grad(smooth_loss_active),
+                (theta0,),
+                (v,),
+            )
+            return hvp + 0.1 * v
+
+        hessian_op = lx.FunctionLinearOperator(
+            hvp_active,
+            jax.eval_shape(lambda: theta0),
+            tags=lx.positive_semidefinite_tag,
+        )
+        solver = lx.CG(
+            rtol=alo_cg_rtol,
+            atol=alo_cg_atol,
+            max_steps=alo_cg_max_steps,
+        )
+
+        key = jax.random.PRNGKey(42)
+        Z = jax.random.rademacher(key, (alo_k, num_groups), dtype=theta0.dtype)
+
+        def compute_trace_sample(z):
+            def z_weighted_nll(theta):
+                return jnp.sum(z * group_nlls_active(theta))
+
+            v = jax.grad(z_weighted_nll)(theta0)
+            sol = lx.linear_solve(hessian_op, v, solver=solver, throw=False)
+            sol_value = jnp.where(jnp.isnan(sol.value), 0.0, sol.value)
+            return jnp.dot(v, sol_value)
+
+        def scan_trace(total, z):
+            return total + compute_trace_sample(z), None
+
+        trace_total, _ = jax.lax.scan(scan_trace, jnp.array(0.0, theta0.dtype), Z)
+        trace_est = trace_total / alo_k
+        alo_score = jnp.mean(group_nlls) + trace_est / (num_groups**2)
+
+        return alo_score
+
+    return (compute_alo_compositional_active_only,)
 
 
 @app.cell
@@ -1212,7 +1458,7 @@ def _(jnp):
 
 
 @app.cell
-def _(compute_alo_compositional, jax, train_model_cpu):
+def _(compute_alo_compositional, jax, parent_ids, train_model_cpu):
     def meta_loss_fn(
         raw_l1,
         raw_l2,
@@ -1243,6 +1489,7 @@ def _(compute_alo_compositional, jax, train_model_cpu):
         opt_params = train_model_cpu(
             init_params,
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             acreage,
@@ -1802,6 +2049,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
         initialize_params,
         train_model_inner,
         feature_ids,
+        parent_ids,
         X_county_cont,
         X_patch_cont,
         patch_exposure,
@@ -1839,6 +2087,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
         best_inner_params = train_model_inner(
             loaded["inner_params"],
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -1871,7 +2120,12 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
 
 
 @app.cell
-def _(get_hparam_templates, jax, load_meta_checkpoint):
+def _(
+    compute_alo_compositional_active_only,
+    get_hparam_templates,
+    jax,
+    load_meta_checkpoint,
+):
     def evaluate_checkpoint_best_hparams(
         checkpoint_path,
         *,
@@ -1880,6 +2134,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint):
         train_model_inner,
         compute_alo_compositional,
         feature_ids,
+        parent_ids,
         X_county_cont,
         X_patch_cont,
         patch_exposure,
@@ -1894,6 +2149,9 @@ def _(get_hparam_templates, jax, load_meta_checkpoint):
         alo_cg_rtol=1e-2,
         alo_cg_atol=1e-2,
         alo_cg_max_steps=150,
+        use_active_alo=True,
+        active_threshold=1e-6,
+        alo_row_chunk_size=50_000,
     ):
         hparams_template, state_template = get_hparam_templates(
             meta_optimizer,
@@ -1917,6 +2175,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint):
         params = train_model_inner(
             loaded["inner_params"],
             feature_ids,
+            parent_ids,
             X_county_cont,
             X_patch_cont,
             patch_exposure,
@@ -1930,22 +2189,42 @@ def _(get_hparam_templates, jax, load_meta_checkpoint):
             inner_tol=inner_tol,
         )
 
-        alo = compute_alo_compositional(
-            params,
-            feature_ids,
-            X_county_cont,
-            X_patch_cont,
-            patch_exposure,
-            group_ids,
-            y_target_count,
-            num_groups,
-            best_l1,
-            best_l2,
-            alo_k,
-            alo_cg_rtol,
-            alo_cg_atol,
-            alo_cg_max_steps,
-        )
+        if use_active_alo:
+            alo = compute_alo_compositional_active_only(
+                params,
+                feature_ids,
+                X_county_cont,
+                X_patch_cont,
+                patch_exposure,
+                group_ids,
+                y_target_count,
+                num_groups,
+                best_l1,
+                best_l2,
+                alo_k,
+                alo_cg_rtol,
+                alo_cg_atol,
+                alo_cg_max_steps,
+                active_threshold=active_threshold,
+                alo_row_chunk_size=alo_row_chunk_size,
+            )
+        else:
+            alo = compute_alo_compositional(
+                params,
+                feature_ids,
+                X_county_cont,
+                X_patch_cont,
+                patch_exposure,
+                group_ids,
+                y_target_count,
+                num_groups,
+                best_l1,
+                best_l2,
+                alo_k,
+                alo_cg_rtol,
+                alo_cg_atol,
+                alo_cg_max_steps,
+            )
 
         return alo, params, best_l1, best_l2
 
@@ -1977,6 +2256,7 @@ def _(
         feature_ids,
         feature_sizes,
         feature_names,
+        parent_ids,
         X_county_cont,
         X_patch_cont,
         patch_exposure,
@@ -2001,6 +2281,17 @@ def _(
     assert not np.isinf(y_target_count).any(), "Infs detected in target count!"
     print(f"Target Max Count: {np.max(y_target_count):.4f}")
     print(f"Target Min Count: {np.min(y_target_count):.4f}")
+
+    # Check inheritance parent lookup
+    for order in sorted(k for k in feature_sizes if k > 1):
+        assert order in parent_ids, f"Missing parent_ids[{order}]"
+        assert int(parent_ids[order].min()) >= 0
+        assert int(parent_ids[order].max()) < feature_sizes[order - 1]
+        print(
+            f"Order {order}: parent_ids shape={parent_ids[order].shape}, "
+            f"max parent id={int(parent_ids[order].max())}, "
+            f"parent feature size={feature_sizes[order - 1]}"
+        )
     return (
         X_county_cont,
         X_patch_cont,
@@ -2009,6 +2300,7 @@ def _(
         group_ids,
         merged_df,
         num_groups,
+        parent_ids,
         patch_exposure,
         y_target_count,
     )
@@ -2088,6 +2380,7 @@ def _(
     jax_inv_softplus,
     make_meta_optimizer,
     num_groups,
+    parent_ids,
     patch_exposure,
     train_model_inner,
     y_target_count,
@@ -2100,6 +2393,7 @@ def _(
         train_model_inner=train_model_inner,
         compute_alo_compositional=compute_alo_compositional,
         feature_ids=feature_ids,
+        parent_ids=parent_ids,
         X_county_cont=X_county_cont,
         X_patch_cont=X_patch_cont,
         patch_exposure=patch_exposure,
@@ -2110,7 +2404,7 @@ def _(
         jax_inv_softplus=jax_inv_softplus,
         inner_iters=1000,
         inner_tol=1e-6,
-        alo_k=2,
+        alo_k=1,
         alo_cg_rtol=1e-2,
         alo_cg_atol=1e-2,
         alo_cg_max_steps=150,
@@ -2130,11 +2424,11 @@ def _(mo):
 
 
 @app.cell
-def _(jnp, trained_params):
+def _(final_inner_param, jnp):
     print("\nSparsity Report (Threshold 1e-3):")
-    for order, w in sorted(trained_params["weights"].items()):
-        active_weights = jnp.sum(jnp.abs(w) > 1e-3)
-        print(f"  Order {order} total weights active: {active_weights} / {w.size}")
+    for _order, _w in sorted(final_inner_param["weights"].items()):
+        _active_weights = jnp.sum(jnp.abs(_w) > 1e-3)
+        print(f"  Order {_order} total weights active: {_active_weights} / {_w.size}")
     return
 
 

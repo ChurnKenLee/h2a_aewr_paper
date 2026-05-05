@@ -12,6 +12,8 @@ library(cowplot)
 library(ggthemes)
 library(fixest)
 library(ggfixest)
+library(MatchIt)
+library(writexl)
 
 Sys.sleep(1)
 
@@ -918,13 +920,16 @@ distribution_of_aewr_changes <- county_df %>%
     aewr_cz_p10_d1 = aewr_cz_p10 - aewr_cz_p10_l1,
     aewr_cz_p25_d1 = aewr_cz_p25 - aewr_cz_p25_l1,
     aewr_cz_p50_d1 = aewr_cz_p50 - aewr_cz_p50_l1,
+    aewr_cz_p10_pd1 = (aewr_cz_p10 - aewr_cz_p10_l1) / aewr_cz_p10_l1,
+    aewr_cz_p25_pd1 = (aewr_cz_p25 - aewr_cz_p25_l1) / aewr_cz_p25_l1,
+    aewr_cz_p50_pd1 = (aewr_cz_p50 - aewr_cz_p50_l1) / aewr_cz_p50_l1,
   )
 
 # CZ 10th percentile wage
 plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
   ggplot(aes(x = aewr_cz_p10_d1)) +
   geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
-  xlab("1 year change in AEWR-CZ 10th percentile wage")
+  xlab("1 year change in AEWR-CZ 10th percentile wage (USD)")
 
 plot_aewr_cz_diff %>%
   ggsave(
@@ -938,7 +943,7 @@ plot_aewr_cz_diff %>%
 plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
   ggplot(aes(x = aewr_cz_p25_d1)) +
   geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
-  xlab("1 year change in AEWR-CZ 25th percentile wage")
+  xlab("1 year change in AEWR-CZ 25th percentile wage (USD)")
 
 plot_aewr_cz_diff %>%
   ggsave(
@@ -952,7 +957,7 @@ plot_aewr_cz_diff %>%
 plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
   ggplot(aes(x = aewr_cz_p50_d1)) +
   geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
-  xlab("1 year change in AEWR-CZ 50th percentile wage")
+  xlab("1 year change in AEWR-CZ 50th percentile wage (USD)")
 
 plot_aewr_cz_diff %>%
   ggsave(
@@ -962,6 +967,55 @@ plot_aewr_cz_diff %>%
     device = "png"
   )
 
+## % CH
+
+# CZ 10th percentile wage
+plot_aewr_cz_pdiff <- distribution_of_aewr_changes %>%
+  filter(!is.na(aewr_cz_p10_pd1) & !is.infinite(aewr_cz_p10_pd1) & !is.na(aewr_cz_p10_l1) & aewr_cz_p10_l1 != 0) %>% 
+  ggplot(aes(x = aewr_cz_p10_pd1)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("1 year change in AEWR-CZ 10th percentile wage (%)")+
+  scale_x_continuous(limits = c(-2,2))
+
+plot_aewr_cz_pdiff %>%
+  ggsave(
+    filename = paste0(folder_output, "aewr_cz_p10_wage_pchange_1year.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
+
+# CZ 25th percentile wage
+plot_aewr_cz_pdiff <- distribution_of_aewr_changes %>%
+  filter(!is.na(aewr_cz_p25_pd1) & !is.infinite(aewr_cz_p25_pd1) & !is.na(aewr_cz_p25_pd1) & aewr_cz_p25_pd1 != 0) %>% 
+  ggplot(aes(x = aewr_cz_p25_pd1)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("1 year change in AEWR-CZ 25th percentile wage (%)")+
+  scale_x_continuous(limits = c(-2,2))
+
+plot_aewr_cz_pdiff %>%
+  ggsave(
+    filename = paste0(folder_output, "aewr_cz_p25_wage_pchange_1year.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
+
+# CZ 50th percentile wage
+plot_aewr_cz_pdiff <- distribution_of_aewr_changes %>%
+  filter(!is.na(aewr_cz_p50_pd1) & !is.infinite(aewr_cz_p50_pd1) & !is.na(aewr_cz_p50_pd1) & aewr_cz_p50_pd1 != 0) %>% 
+  ggplot(aes(x = aewr_cz_p50_pd1)) +
+  geom_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  xlab("1 year change in AEWR-CZ 50th percentile wage (%)")+
+  scale_x_continuous(limits = c(-2,2))
+
+plot_aewr_cz_pdiff %>%
+  ggsave(
+    filename = paste0(folder_output, "aewr_cz_p50_wage_pchange_1year.png"),
+    width = 8,
+    height = 5,
+    device = "png"
+  )
 #### Exhibit 10: DDD by Graph with predicted usage -----------------------
 # need to make the ts graph using the trend growth as a dummy
 
@@ -1818,3 +1872,542 @@ ggsave(
   map_fisher_price_ratio,
   device = "png"
 )
+
+#### Exhibit 20: Fisher Price Index Investigation — Labor Share DD --------------
+# Fisher price index (fisher_index_ppi) construction:
+#   Script: code/b02_01_price_index_nass_synthetic_cdl.py
+#   Inputs: CDL county-crop acreage (croplandcros_county_crop_acres.parquet)
+#           + NASS synthetic prices/yields per crop (state, then national fallback)
+#   Method: chained bilateral Fisher — geometric mean of Laspeyres and Paasche,
+#           matched set = crops present in both consecutive years (inner join).
+#           Base year 2011 = 100. Forward chain 2012-2022; backward 2010-2008.
+#   Deflation: fisher_index_ppi = fisher_index / ppi_2012 [Build Dataset L1700]
+#
+# Quantity/composition proxy available in county_df:
+#   share_farm_laborexp_prodexp = farm_laborexpense / farm_prodexp (BEA CAINC45)
+#   This is a genuine share [0,1]. If AEWR increases shift production toward less
+#   labor-intensive crops (substitution away from H-2A-intensive crops), this
+#   share should fall. CDL crop-level acreage shares are NOT in county_df
+#   (only any_cropland_2007); could be added from cdl_cropshares.parquet.
+
+laborshare_dd_1 <- feols(
+  share_farm_laborexp_prodexp ~
+    aewr_cz_p25_l1 * postdummy | county_fe + year_fe,
+  data = samp_base,
+  vcov = ~cz_aewr_region_fe
+)
+
+laborshare_dd_2 <- feols(
+  share_farm_laborexp_prodexp ~
+    aewr_cz_p25_l1 * postdummy + ln_pop_census + emp_pop_ratio |
+    county_fe + year_fe,
+  data = samp_base,
+  vcov = ~cz_aewr_region_fe
+)
+
+laborshare_dd_3 <- feols(
+  share_farm_laborexp_prodexp ~
+    aewr_cz_p25_l1 * postdummy | county_fe + year_fe,
+  data = samp_no_border,
+  vcov = ~cz_aewr_region_fe
+)
+
+laborshare_dd_4 <- feols(
+  share_farm_laborexp_prodexp ~
+    aewr_cz_p25_l1 * postdummy + ln_pop_census + emp_pop_ratio |
+    county_fe + year_fe,
+  data = samp_no_border,
+  vcov = ~cz_aewr_region_fe
+)
+
+etable(
+  laborshare_dd_1, laborshare_dd_2, laborshare_dd_3, laborshare_dd_4,
+  tex     = TRUE,
+  title   = "The Effect of the AEWR Wage Premium on Farm Labor Share of Production Expense",
+  headers = c("No Controls", "Controls", "No Border, No Controls", "No Border, Controls"),
+  dict    = c(
+    "share_farm_laborexp_prodexp" = "Labor share of farm production expense",
+    "aewr_cz_p25_l1"              = "Lagged AEWR vs 25th pct wage gap",
+    "postdummy"                   = "Post",
+    "ln_pop_census"               = "Log population",
+    "emp_pop_ratio"               = "Employment-to-pop ratio"
+  ),
+  signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
+  file    = paste0(folder_output, "table_laborshare_dd.tex"),
+  replace = TRUE
+)
+
+#### Exhibit 21: Stacked Matched Staggered DiD — Treatment Classification ------
+
+## Step 1: Sample and % change variable ----------------------------------------
+
+stacked_sample <- county_df %>%
+  filter(
+    any_cropland_2007 == 1,
+    county_simple_treatment_groups != "always takers"
+  ) %>%
+  arrange(countyfips, year) %>%
+  mutate(
+    aewr_cz_p25_pd1 = (aewr_cz_p25 - aewr_cz_p25_l1) / aewr_cz_p25_l1
+    # Inf when aewr_cz_p25_l1 == 0; filtered below
+  )
+
+## Step 2: Quartile thresholds from finite observations ------------------------
+
+pd1_clean <- stacked_sample %>%
+  filter(!is.na(aewr_cz_p25_pd1), is.finite(aewr_cz_p25_pd1))
+
+q25_cut <- quantile(pd1_clean$aewr_cz_p25_pd1, 0.25)
+q75_cut <- quantile(pd1_clean$aewr_cz_p25_pd1, 0.75)
+cat("Stacked DiD thresholds (% change in AEWR-CZ p25 bite):\n")
+cat("  q25 (large decrease threshold):", round(q25_cut, 4), "\n")
+cat("  q75 (large increase threshold):", round(q75_cut, 4), "\n")
+cat("  N obs (finite):", nrow(pd1_clean), "of", nrow(stacked_sample), "\n")
+
+## Step 3: Tag large changes by county-year ------------------------------------
+
+events_df <- stacked_sample %>%
+  mutate(
+    large_increase = !is.na(aewr_cz_p25_pd1) & is.finite(aewr_cz_p25_pd1) &
+      aewr_cz_p25_pd1 >= q75_cut,
+    large_decrease = !is.na(aewr_cz_p25_pd1) & is.finite(aewr_cz_p25_pd1) &
+      aewr_cz_p25_pd1 <= q25_cut
+  )
+
+## Step 4: County-level event classification -----------------------------------
+
+county_events <- events_df %>%
+  group_by(countyfips) %>%
+  summarise(
+    first_increase_year = if (any(large_increase, na.rm = TRUE))
+      min(year[large_increase], na.rm = TRUE) else NA_integer_,
+    first_decrease_year = if (any(large_decrease, na.rm = TRUE))
+      min(year[large_decrease], na.rm = TRUE) else NA_integer_,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    tied = !is.na(first_increase_year) & !is.na(first_decrease_year) &
+      first_increase_year == first_decrease_year,
+    t_increase = case_when(
+      tied                                                                   ~ 0L,
+      !is.na(first_increase_year) & is.na(first_decrease_year)              ~ 1L,
+      !is.na(first_increase_year) & first_increase_year < first_decrease_year ~ 1L,
+      TRUE                                                                   ~ 0L
+    ),
+    t_decrease = case_when(
+      tied                                                                   ~ 0L,
+      !is.na(first_decrease_year) & is.na(first_increase_year)              ~ 1L,
+      !is.na(first_decrease_year) & first_decrease_year < first_increase_year ~ 1L,
+      TRUE                                                                   ~ 0L
+    ),
+    y_increase    = ifelse(t_increase == 1L, first_increase_year, NA_integer_),
+    y_decrease    = ifelse(t_decrease == 1L, first_decrease_year, NA_integer_),
+    never_treated = (t_increase == 0L & t_decrease == 0L & !tied)
+  )
+
+cat("\n=== County event classification ===\n")
+cat("Increase counties (t_increase=1):", sum(county_events$t_increase), "\n")
+cat("Decrease counties (t_decrease=1):", sum(county_events$t_decrease), "\n")
+cat("Tied (excluded from both):",        sum(county_events$tied, na.rm = TRUE), "\n")
+cat("Never-treated (controls):",         sum(county_events$never_treated, na.rm = TRUE), "\n")
+cat("Total counties:",                   nrow(county_events), "\n")
+
+## Step 5: Subsequent change variables ----------------------------------------
+
+increase_subsequent <- events_df %>%
+  inner_join(
+    county_events %>% filter(t_increase == 1L) %>% select(countyfips, y_increase),
+    by = "countyfips"
+  ) %>%
+  filter(year > y_increase) %>%
+  group_by(countyfips) %>%
+  summarise(
+    subsequent_n_increases         = sum(large_increase, na.rm = TRUE),
+    y_next_increase                = if (any(large_increase, na.rm = TRUE))
+      min(year[large_increase], na.rm = TRUE) else NA_integer_,
+    n_decreases_post_increase      = sum(large_decrease, na.rm = TRUE),
+    y_first_decrease_post_increase = if (any(large_decrease, na.rm = TRUE))
+      min(year[large_decrease], na.rm = TRUE) else NA_integer_,
+    .groups = "drop"
+  )
+
+decrease_subsequent <- events_df %>%
+  inner_join(
+    county_events %>% filter(t_decrease == 1L) %>% select(countyfips, y_decrease),
+    by = "countyfips"
+  ) %>%
+  filter(year > y_decrease) %>%
+  group_by(countyfips) %>%
+  summarise(
+    subsequent_n_decreases         = sum(large_decrease, na.rm = TRUE),
+    y_next_decrease                = if (any(large_decrease, na.rm = TRUE))
+      min(year[large_decrease], na.rm = TRUE) else NA_integer_,
+    n_increases_post_decrease      = sum(large_increase, na.rm = TRUE),
+    y_first_increase_post_decrease = if (any(large_increase, na.rm = TRUE))
+      min(year[large_increase], na.rm = TRUE) else NA_integer_,
+    .groups = "drop"
+  )
+
+county_events <- county_events %>%
+  left_join(increase_subsequent, by = "countyfips") %>%
+  left_join(decrease_subsequent, by = "countyfips")
+
+cat("\n=== Subsequent changes (increase counties) ===\n")
+print(table(county_events$subsequent_n_increases[county_events$t_increase == 1L],
+            useNA = "ifany"))
+cat("\n=== Subsequent changes (decrease counties) ===\n")
+print(table(county_events$subsequent_n_decreases[county_events$t_decrease == 1L],
+            useNA = "ifany"))
+
+#### Exhibit 21b: Treatment status by year figure ------------------------------
+# Motivates the "not-yet-treated" control group strategy.
+# Blue = not-yet-treated counties in the same design (proposed control pool).
+
+status_data <- stacked_sample %>%
+  select(countyfips, year) %>%
+  inner_join(
+    county_events %>%
+      select(countyfips, t_increase, t_decrease, tied, never_treated,
+             first_increase_year, first_decrease_year),
+    by = "countyfips"
+  ) %>%
+  mutate(
+    status_increase = case_when(
+      t_increase == 1L & year >= first_increase_year ~ "Already treated",
+      t_increase == 1L & year <  first_increase_year ~ "Not yet treated",
+      t_decrease == 1L                               ~ "First change is decrease",
+      never_treated                                  ~ "Never treated",
+      TRUE                                           ~ "Other (tied)"
+    ),
+    status_decrease = case_when(
+      t_decrease == 1L & year >= first_decrease_year ~ "Already treated",
+      t_decrease == 1L & year <  first_decrease_year ~ "Not yet treated",
+      t_increase == 1L                               ~ "First change is increase",
+      never_treated                                  ~ "Never treated",
+      TRUE                                           ~ "Other (tied)"
+    )
+  )
+
+share_increase <- status_data %>%
+  group_by(year, status = status_increase) %>%
+  summarise(n = n_distinct(countyfips), .groups = "drop") %>%
+  group_by(year) %>%
+  mutate(share = n / sum(n), design = "Large increase design") %>%
+  ungroup()
+
+share_decrease <- status_data %>%
+  group_by(year, status = status_decrease) %>%
+  summarise(n = n_distinct(countyfips), .groups = "drop") %>%
+  group_by(year) %>%
+  mutate(share = n / sum(n), design = "Large decrease design") %>%
+  ungroup()
+
+status_combined <- bind_rows(share_increase, share_decrease) %>%
+  mutate(status = factor(status, levels = c(
+    "Already treated",
+    "Not yet treated",
+    "First change is decrease",
+    "First change is increase",
+    "Never treated",
+    "Other (tied)"
+  )))
+
+# Print not-yet-treated pool size at key years
+cat("\n=== Not-yet-treated pool size (increase design) ===\n")
+pool_inc <- share_increase %>%
+  filter(status == "Not yet treated") %>%
+  select(year, n) %>%
+  arrange(year)
+print(pool_inc)
+
+cat("\n=== Not-yet-treated pool size (decrease design) ===\n")
+pool_dec <- share_decrease %>%
+  filter(status == "Not yet treated") %>%
+  select(year, n) %>%
+  arrange(year)
+print(pool_dec)
+
+fig_treatment_status <- ggplot(
+  status_combined,
+  aes(x = year, y = share, fill = status)
+) +
+  geom_col(position = "stack", width = 0.85) +
+  scale_fill_manual(
+    values = c(
+      "Already treated"          = "#d62728",
+      "Not yet treated"          = "#1f77b4",
+      "First change is decrease" = "#ff7f0e",
+      "First change is increase" = "#2ca02c",
+      "Never treated"            = "#7f7f7f",
+      "Other (tied)"             = "#bcbd22"
+    ),
+    drop = FALSE
+  ) +
+  scale_x_continuous(breaks = seq(2008, 2022, 2)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  facet_wrap(~design, ncol = 1) +
+  labs(
+    title = "Treatment Group Status by Year",
+    x = "Year", y = "Share of counties", fill = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom", legend.text = element_text(size = 9))
+
+ggsave(
+  filename = paste0(folder_output, "fig_stacked_dd_treatment_status_by_year.png"),
+  plot     = fig_treatment_status,
+  width    = 9, height = 7, dpi = 300
+)
+cat("\nSaved: fig_stacked_dd_treatment_status_by_year.png\n")
+
+#### Exhibit 22: Correlation Matrix → Excel ------------------------------------
+
+corr_vars <- c(
+  "aewr_cz_p25_l1",
+  "h2a_cert_share_farm_workers_2011_start_year",
+  "nbr_workers_certified_start_year_l1",
+  "ln_pop_census",
+  "emp_pop_ratio",
+  "share_farm_crop_cashandinc",
+  "share_farm_animal_cashandinc",
+  "share_farm_laborexp_prodexp",
+  "emp_farm",
+  "fisher_index_ppi"
+)
+
+corr_data <- samp_base %>%
+  filter(year <= 2011) %>%
+  select(all_of(corr_vars)) %>%
+  mutate(across(everything(), ~ as.numeric(scale(.)))) %>%
+  filter(if_all(everything(), ~ !is.na(.) & is.finite(.)))
+
+corr_matrix <- cor(corr_data)
+
+write_xlsx(
+  as.data.frame(round(corr_matrix, 3)) %>%
+    tibble::rownames_to_column("variable"),
+  path = paste0(folder_output, "corr_matrix_matching_controls.xlsx")
+)
+
+cat("\n=== Correlation matrix (z-scored, pre-2012 obs) ===\n")
+print(round(corr_matrix, 2))
+
+#### Exhibit 23: Propensity Score Matching -------------------------------------
+# Review corr_matrix_matching_controls.xlsx before running.
+# Edit PSM_VARS to swap covariates in/out. Avoid pairs with |r| > 0.7.
+# All variables are z-scored before matching (MatchIt does NOT do this itself).
+
+PSM_VARS <- c(
+  "aewr_cz_p25_l1",
+  "h2a_cert_share_farm_workers_2011_start_year",
+  "ln_pop_census",
+  "emp_pop_ratio",
+  "share_farm_crop_cashandinc",
+  "share_farm_laborexp_prodexp"
+)
+
+psm_base_cs <- samp_base %>%
+  filter(year == 2011) %>%
+  select(countyfips, all_of(PSM_VARS)) %>%
+  inner_join(
+    county_events %>% select(countyfips, t_increase, t_decrease, never_treated, tied),
+    by = "countyfips"
+  ) %>%
+  filter(!tied) %>%
+  mutate(across(all_of(PSM_VARS), ~ as.numeric(scale(.))))
+
+psm_formula <- reformulate(PSM_VARS)
+
+# --- Increase group vs never-treated ---
+psm_df_increase <- psm_base_cs %>%
+  filter(t_increase == 1L | never_treated) %>%
+  filter(if_all(all_of(PSM_VARS), ~ !is.na(.) & is.finite(.)))
+
+m_increase <- matchit(
+  update(psm_formula, t_increase ~ .),
+  data     = psm_df_increase,
+  method   = "nearest",
+  ratio    = 1,
+  distance = "logit"
+)
+
+cat("\n=== PSM Balance: Increase group ===\n")
+print(summary(m_increase, standardize = TRUE))
+
+matched_increase <- match.data(m_increase)
+
+# --- Decrease group vs never-treated ---
+psm_df_decrease <- psm_base_cs %>%
+  filter(t_decrease == 1L | never_treated) %>%
+  filter(if_all(all_of(PSM_VARS), ~ !is.na(.) & is.finite(.)))
+
+m_decrease <- matchit(
+  update(psm_formula, t_decrease ~ .),
+  data     = psm_df_decrease,
+  method   = "nearest",
+  ratio    = 1,
+  distance = "logit"
+)
+
+cat("\n=== PSM Balance: Decrease group ===\n")
+print(summary(m_decrease, standardize = TRUE))
+
+matched_decrease <- match.data(m_decrease)
+
+#### Exhibits 24-27: Stacked DiD Event Studies ---------------------------------
+# Specification: i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id
+# unit_cohort_id = countyfips × cohort, so control counties that appear in
+# multiple cohort stacks get separate unit FEs per cohort (clean stacking).
+# Cluster: cz_aewr_region_fe (same as main DD).
+
+EVENT_WINDOW <- 3
+
+make_stacked_df <- function(matched_data, treatment_col,
+                              event_year_df, full_panel, window = EVENT_WINDOW) {
+  treated_fips <- matched_data$countyfips[matched_data[[treatment_col]] == 1L]
+  control_fips <- unique(matched_data$countyfips[matched_data[[treatment_col]] == 0L])
+
+  treated_events <- event_year_df %>%
+    filter(countyfips %in% treated_fips)
+
+  year_range <- range(full_panel$year)
+
+  valid_cohorts <- treated_events %>%
+    filter(
+      event_year - window >= year_range[1],
+      event_year + window <= year_range[2]
+    )
+
+  stack_list <- lapply(unique(valid_cohorts$event_year), function(ey) {
+    cohort_fips <- valid_cohorts$countyfips[valid_cohorts$event_year == ey]
+
+    treat_rows <- full_panel %>%
+      filter(countyfips %in% cohort_fips,
+             year >= ey - window, year <= ey + window) %>%
+      mutate(treated = 1L, cohort_id = ey, rel_year = year - ey)
+
+    ctrl_rows <- full_panel %>%
+      filter(countyfips %in% control_fips,
+             year >= ey - window, year <= ey + window) %>%
+      mutate(treated = 0L, cohort_id = ey, rel_year = year - ey)
+
+    bind_rows(treat_rows, ctrl_rows)
+  })
+
+  bind_rows(stack_list) %>%
+    mutate(unit_cohort_id = paste0(countyfips, "_", cohort_id))
+}
+
+stacked_increase <- make_stacked_df(
+  matched_data  = matched_increase,
+  treatment_col = "t_increase",
+  event_year_df = county_events %>%
+    filter(t_increase == 1L) %>%
+    select(countyfips, event_year = y_increase),
+  full_panel    = stacked_sample
+)
+
+stacked_decrease <- make_stacked_df(
+  matched_data  = matched_decrease,
+  treatment_col = "t_decrease",
+  event_year_df = county_events %>%
+    filter(t_decrease == 1L) %>%
+    select(countyfips, event_year = y_decrease),
+  full_panel    = stacked_sample
+)
+
+cat("\n=== Stacked dataset sizes ===\n")
+cat("Increase stacked rows:", nrow(stacked_increase), "\n")
+cat("Decrease stacked rows:", nrow(stacked_decrease), "\n")
+
+# Event study regressions — H-2A utilization
+es_stacked_h2a_increase <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
+  data = stacked_increase,
+  vcov = ~cz_aewr_region_fe
+)
+
+es_stacked_h2a_decrease <- feols(
+  h2a_cert_share_farm_workers_2011_start_year ~
+    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
+  data = stacked_decrease,
+  vcov = ~cz_aewr_region_fe
+)
+
+# Event study regressions — Fisher price index
+es_stacked_price_increase <- feols(
+  fisher_index_ppi ~
+    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
+  data = stacked_increase,
+  vcov = ~cz_aewr_region_fe
+)
+
+es_stacked_price_decrease <- feols(
+  fisher_index_ppi ~
+    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
+  data = stacked_decrease,
+  vcov = ~cz_aewr_region_fe
+)
+
+# Coefficient plots
+make_stacked_coefplot <- function(model, title = "") {
+  cn   <- names(coef(model))
+  keep <- grep(":treated$", cn, value = TRUE)
+  ct   <- model$coeftable[keep, , drop = FALSE]
+
+  rel_years_fit <- as.integer(
+    sub("^rel_year::([^:]+):treated$", "\\1", rownames(ct))
+  )
+  all_rel <- sort(unique(c(-1L, rel_years_fit)))
+
+  coeff_df <- data.frame(rel_year = all_rel) %>%
+    mutate(
+      beta = ifelse(rel_year == -1L, 0,
+        ct[match(paste0("rel_year::", rel_year, ":treated"), rownames(ct)), 1]),
+      se   = ifelse(rel_year == -1L, 0,
+        ct[match(paste0("rel_year::", rel_year, ":treated"), rownames(ct)), 2])
+    ) %>%
+    mutate(upper_ci = beta + 1.96 * se, lower_ci = beta - 1.96 * se)
+
+  ggplot(coeff_df, aes(x = rel_year)) +
+    geom_hline(yintercept = 0, color = "grey40") +
+    geom_vline(xintercept = -0.5, linetype = "dashed", color = "grey40") +
+    geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci),
+                alpha = 0.2, fill = "steelblue") +
+    geom_line(aes(y = beta), color = "steelblue", lwd = 1.2) +
+    geom_point(aes(y = beta), color = "steelblue", size = 2) +
+    labs(
+      x     = "Years Relative to Event",
+      y     = "Coef. (treated × rel_year)",
+      title = title
+    ) +
+    theme_clean() +
+    scale_x_continuous(breaks = all_rel)
+}
+
+p24 <- make_stacked_coefplot(
+  es_stacked_h2a_increase,
+  "H-2A Utilization — Large AEWR Bite Increase"
+)
+p25 <- make_stacked_coefplot(
+  es_stacked_h2a_decrease,
+  "H-2A Utilization — Large AEWR Bite Decrease"
+)
+p26 <- make_stacked_coefplot(
+  es_stacked_price_increase,
+  "Fisher Price Index — Large AEWR Bite Increase"
+)
+p27 <- make_stacked_coefplot(
+  es_stacked_price_decrease,
+  "Fisher Price Index — Large AEWR Bite Decrease"
+)
+
+ggsave(paste0(folder_output, "coefplot_stacked_dd_h2a_increase.png"),
+       p24, width = 8, height = 5, device = "png")
+ggsave(paste0(folder_output, "coefplot_stacked_dd_h2a_decrease.png"),
+       p25, width = 8, height = 5, device = "png")
+ggsave(paste0(folder_output, "coefplot_stacked_dd_price_increase.png"),
+       p26, width = 8, height = 5, device = "png")
+ggsave(paste0(folder_output, "coefplot_stacked_dd_price_decrease.png"),
+       p27, width = 8, height = 5, device = "png")
