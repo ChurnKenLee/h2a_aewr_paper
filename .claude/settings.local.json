@@ -29,7 +29,12 @@
       "WebFetch(domain:migration.ucdavis.edu)",
       "WebFetch(domain:www.wilsoncenter.org)",
       "WebFetch(domain:www.ncaeonline.org)",
-      "Bash(C:/Program Files/R/R-4.4.0/bin/Rscript.exe *)"
+      "Bash(C:/Program Files/R/R-4.4.0/bin/Rscript.exe *)",
+      "Bash(dir \"C:\\\\Users\\\\pghox\\\\Dropbox\\\\H-2A Paper\")",
+      "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" \"C:/Users/pghox/Dropbox/H-2A Paper/Do/H2A Analysis Figs and Tables.R\")",
+      "Bash(Select-String -Pattern \"Error|error in|Execution halted|cannot open|not found|Warning in\")",
+      "Bash(Select-Object -Last 30)",
+      "Bash(echo \"Exit: $?\")"
     ]
   }
 }
