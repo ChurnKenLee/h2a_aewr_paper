@@ -1,13 +1,12 @@
 library(dplyr)
 library(tidyverse)
-library(purrr)
 library(fredr)
 library(arrow)
 
 # You need your FRED API key
 fredr_set_key("925af4f1c2cbc732cfb528ddab32861f")
 
-# The FRED series ID for federal minimum wage (annual) 
+# The FRED series ID for federal minimum wage (annual)
 federal_series <- "STTMINWGFG"
 
 # folder_data <- "R:/Hoxie/H-2A Paper/Data Int/"
@@ -17,9 +16,9 @@ state_fips <- read_csv(paste0(folder_data, "fips_codes.csv"))
 # A lookup of state FRED series id and FIPS
 # You'll need to fill this out for all 50 states. As an example:
 
-state_fred <- state_fips %>% 
-  mutate(series_id = str_trim(paste0("STTMINWG", state_abbrev))) %>% 
-  filter(fips <= 56) 
+state_fred <- state_fips %>%
+  mutate(series_id = str_trim(paste0("STTMINWG", state_abbrev))) %>%
+  filter(fips <= 56)
 
 # state_fred <- tibble(
 #   state = c("California", "Texas", "New York"),  # add other states
@@ -31,8 +30,8 @@ state_fred <- state_fips %>%
 get_min_wage <- function(series_id) {
   fredr(
     series_id = series_id,
-    observation_start = as.Date("1968-01-01"),  # adjust start year as needed
-    frequency = "a"  # annual
+    observation_start = as.Date("1968-01-01"), # adjust start year as needed
+    frequency = "a" # annual
   ) %>%
     select(date, value) %>%
     mutate(year = lubridate::year(date)) %>%
@@ -56,10 +55,10 @@ for (i in 1:length(state_fred$fips)) {
   series_id <- state_fred$series_id[i]
   fips <- state_fred$fips[i]
   state <- state_fred$state_abbrev[i]
-  
+
   # Assign the result of tryCatch to temp
   temp <- tryCatch(
-    { 
+    {
       get_min_wage(state_fred$series_id[i])
     },
     error = function(e) {
@@ -68,23 +67,24 @@ for (i in 1:length(state_fred$fips)) {
         year = 1968:2025,
         state_min_wage = NA,
         fips = fips,
-        state = state))
+        state = state
+      ))
     }
   )
-  
+
   # Check if temp is NULL or contains all NAs
   if (is.null(temp) || all(is.na(temp$state_min_wage))) {
     temp <- tibble(
       year = 1968:2025,
       state_min_wage = NA,
       fips = fips,
-      state = state)
+      state = state
+    )
   }
-  
-  temp <- temp %>% 
-    mutate(fips = fips, 
-           state = state)
-  
+
+  temp <- temp %>%
+    mutate(fips = fips, state = state)
+
   results <- bind_rows(results, temp)
   print(i)
 }
@@ -106,8 +106,8 @@ write_parquet(final_df, paste0(folder_data, "fred_state_minwages.parquet"))
 
 str_detect(ls(), "folder_")
 
-objects <- data.frame(name = ls(), keep = str_detect(ls(), "folder_")) %>% 
+objects <- data.frame(name = ls(), keep = str_detect(ls(), "folder_")) %>%
   filter(keep == F)
 
-rm(list = objects[,1])
+rm(list = objects[, 1])
 gc()
