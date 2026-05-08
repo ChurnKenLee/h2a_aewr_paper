@@ -2,6 +2,14 @@
 ## Phil Hoxie
 ## 1/31/24
 
+## Run standalone or via H2A Master.R
+if (!exists("folder_dir")) {
+  folder_dir    <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
+  folder_do     <- paste0(folder_dir, "Do/")
+  folder_data   <- paste0(folder_dir, "Data Int/")
+  folder_output <- paste0(folder_dir, "Output/")
+}
+
 gc()
 
 library(sf)
@@ -29,19 +37,8 @@ date <- paste0(
 
 cnt_shp <- st_read(paste0(folder_data, "tl_2020_us_county.shp"))
 
-fips_codes <- read_csv(paste0(folder_data, "fips_codes.csv"))
-
-aewr_df <- read_parquet(paste0(folder_data, "aewr.parquet"))
-
-border_df <- read_parquet(paste0(folder_data, "border_df_analysis.parquet"))
-aewr_data <- read_parquet(paste0(folder_data, "aewr_data.parquet"))
 h2a_data_ts <- read_parquet(paste0(folder_data, "h2a_data_ts.parquet"))
 h2a_data <- read_parquet(paste0(folder_data, "h2a_data.parquet"))
-
-border_df_yearly <- read_parquet(paste0(
-  folder_data,
-  "border_df_analysis_year.parquet"
-))
 aewr_data_full <- read_parquet(paste0(folder_data, "aewr_data_full.parquet"))
 
 #### County DDD Design -----------------------------------------------------------
@@ -1325,6 +1322,9 @@ samp_base <- county_df %>%
     county_simple_treatment_groups != "always takers"
   )
 
+cat("samp_base rows:", nrow(samp_base), "\n")
+stopifnot(nrow(samp_base) > 1000)
+
 samp_no_border <- samp_base %>% filter(border_cz == 0)
 
 # DD model 1: no controls, all CZs
@@ -1341,7 +1341,14 @@ xbar = dd_1$X_demeaned
 ybar = dd_1$y_demeaned
 ybar
 
-new_table <- bind_cols(samp_base, xbar) %>%
+samp_base_dd1 <- samp_base %>%
+  filter(
+    !is.na(h2a_cert_share_farm_workers_2011_start_year),
+    !is.na(aewr_cz_p25_l1),
+    !is.na(postdummy)
+  )
+
+new_table <- bind_cols(samp_base_dd1, xbar) %>%
   mutate(ybar = ybar) %>%
   group_by(year) %>%
   mutate(

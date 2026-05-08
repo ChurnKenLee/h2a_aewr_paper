@@ -34,7 +34,8 @@
       "Bash(\"C:/Program Files/R/R-4.4.0/bin/Rscript.exe\" \"C:/Users/pghox/Dropbox/H-2A Paper/Do/H2A Analysis Figs and Tables.R\")",
       "Bash(Select-String -Pattern \"Error|error in|Execution halted|cannot open|not found|Warning in\")",
       "Bash(Select-Object -Last 30)",
-      "Bash(echo \"Exit: $?\")"
+      "Bash(echo \"Exit: $?\")",
+      "Bash(powershell *)"
     ]
   }
 }
