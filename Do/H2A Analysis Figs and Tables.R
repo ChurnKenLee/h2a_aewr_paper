@@ -4,9 +4,9 @@
 
 ## Run standalone or via H2A Master.R
 if (!exists("folder_dir")) {
-  folder_dir    <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
-  folder_do     <- paste0(folder_dir, "Do/")
-  folder_data   <- paste0(folder_dir, "Data Int/")
+  folder_dir <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
+  folder_do <- paste0(folder_dir, "Do/")
+  folder_data <- paste0(folder_dir, "Data Int/")
   folder_output <- paste0(folder_dir, "Output/")
 }
 

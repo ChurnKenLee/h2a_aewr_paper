@@ -1156,6 +1156,9 @@ def _(compute_patch_log_worker, jax, jnp, lx, np, ravel_pytree):
         X_patch_pad = jnp.pad(X_patch_cont, ((0, pad_n), (0, 0)))
         exposure_pad = jnp.pad(patch_exposure, (0, pad_n))
         group_ids_pad = jnp.pad(group_ids, (0, pad_n))
+        feature_ids_pad = {
+            order: jnp.pad(ids, ((0, pad_n), (0, 0))) for order, ids in feature_ids.items()
+        }
         row_mask_pad = jnp.arange(padded_n) < n_obs
 
         # Build active indices on the host so the reduced parameter vector has
@@ -1207,10 +1210,19 @@ def _(compute_patch_log_worker, jax, jnp, lx, np, ravel_pytree):
                     alo_row_chunk_size,
                     axis=0,
                 )
+                feature_ids_chunk = {
+                    order: jax.lax.dynamic_slice_in_dim(
+                        ids,
+                        start,
+                        alo_row_chunk_size,
+                        axis=0,
+                    )
+                    for order, ids in feature_ids_pad.items()
+                }
 
                 log_w = compute_patch_log_worker(
                     p,
-                    feature_ids,
+                    feature_ids_chunk,
                     X_county_cont,
                     X_patch_chunk,
                     group_chunk,
@@ -2338,7 +2350,7 @@ def _(
         chunk_size=10,
         inner_iters=500,
         inner_tol=1e-4,
-        alo_k=1,
+        alo_k=2,
         alo_cg_rtol=5e-2,
         alo_cg_atol=5e-2,
         alo_cg_max_steps=50,
@@ -2404,7 +2416,7 @@ def _(
         jax_inv_softplus=jax_inv_softplus,
         inner_iters=1000,
         inner_tol=1e-6,
-        alo_k=1,
+        alo_k=2,
         alo_cg_rtol=1e-2,
         alo_cg_atol=1e-2,
         alo_cg_max_steps=150,
@@ -2424,9 +2436,9 @@ def _(mo):
 
 
 @app.cell
-def _(final_inner_param, jnp):
+def _(jnp, trained_params):
     print("\nSparsity Report (Threshold 1e-3):")
-    for _order, _w in sorted(final_inner_param["weights"].items()):
+    for _order, _w in sorted(trained_params["weights"].items()):
         _active_weights = jnp.sum(jnp.abs(_w) > 1e-3)
         print(f"  Order {_order} total weights active: {_active_weights} / {_w.size}")
     return
@@ -2496,13 +2508,20 @@ def _(
         .group_by("county_ansi")
         .agg(pl.mean("predicted_h2a_count"))
     )
-    results_df.write_parquet(binary_path / "h2a_prediction_using_elastic_net.parquet")
+    results_df.write_parquet(
+        binary_path / "h2a_prediction_using_elastic_net_continuous_basis.parquet"
+    )
     return (results_df,)
 
 
 @app.cell
 def _(results_df):
     results_df
+    return
+
+
+@app.cell
+def _():
     return
 
 
