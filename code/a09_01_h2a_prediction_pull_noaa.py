@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.4"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -10,24 +10,21 @@ def _():
     import urllib.error
     import urllib.request
     from pathlib import Path
-
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import numpy as np
     import polars as pl
     import pyprojroot
     from sklearn.preprocessing import SplineTransformer
 
-    return Path, SplineTransformer, np, pl, pyprojroot, ssl, urllib
+    return INTERMEDIATE, Path, RAW, SplineTransformer, np, pl, ssl, urllib
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion="pyproject.toml")
-
-    CACHE_DIR = root_path / "data" / "epinoaa_nclimgrid"
+def _(INTERMEDIATE, RAW):
+    CACHE_DIR = RAW / "epinoaa_nclimgrid"
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    OUT_DIR = root_path / "binaries"
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    OUT_DIR = INTERMEDIATE
     OUTPUT_FILE = OUT_DIR / "county_h2a_prediction_climate_basis_annual.parquet"
     return CACHE_DIR, OUTPUT_FILE
 

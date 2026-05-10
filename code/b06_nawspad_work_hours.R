@@ -11,9 +11,9 @@ library(tidycensus)
 rm(list = ls())
 
 # Import NAWSPAD data from CSV
-nawspad1_df <- read.csv(here("Data", "nawspad", "NAWS_A2E197.csv")) %>%
+nawspad1_df <- read_csv(here("Data", "nawspad", "NAWS_A2E197.csv")) %>%
   clean_names()
-nawspad2_df <- read.csv(here("Data", "nawspad", "NAWS_F2Y197.csv")) %>%
+nawspad2_df <- read_csv(here("Data", "nawspad", "NAWS_F2Y197.csv")) %>%
   clean_names()
 
 # Combine NAWSPAD data
@@ -108,7 +108,7 @@ nawspad_df_crop_seasonal <- nawspad_df %>%
   ungroup()
 
 # Add states and FIPS code
-region_state_df <- read.csv(here("Data", "nawspad", "nawspad_region6.csv")) %>%
+region_state_df <- read_csv(here("Data", "nawspad", "nawspad_region6.csv")) %>%
   clean_names() %>%
   separate_longer_delim(states, delim = ", ")
 

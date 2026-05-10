@@ -8,7 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE
     import itertools
     import polars as pl
     import polars.selectors as cs
@@ -23,6 +23,8 @@ def _():
     from functools import partial
 
     return (
+        CODE,
+        INTERMEDIATE,
         itertools,
         jax,
         jnp,
@@ -33,17 +35,15 @@ def _():
         optax,
         partial,
         pl,
-        pyprojroot,
         ravel_pytree,
         time,
     )
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion="pyproject.toml")
-    binary_path = root_path / "binaries"
-    code_path = root_path / "code"
+def _(CODE, INTERMEDIATE):
+    binary_path = INTERMEDIATE
+    code_path = CODE
     return binary_path, code_path
 
 

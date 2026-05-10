@@ -1,21 +1,18 @@
+rm(list = ls())
 library(here)
 library(arrow)
 library(tidyverse)
-library(dplyr)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
-library(readxl)
-
-rm(list = ls())
+source(here::here("code", "paths.R"))
 
 # Load crosswalks
-oews_area_definitions_df <- read_parquet(here(
-  "binaries",
+oews_area_definitions_df <- read_parquet(path_int(
   "oews_area_definitions.parquet"
 ))
 
 # Load OEWS data
-oews_df <- read_parquet(here("binaries", "oews.parquet"))
+oews_df <- read_parquet(path_int("oews.parquet"))
 
 # Keep only the "Big Six" SOCs used to calculate the AEWR, as detailed in the DOL OFLC final rule for AEWR determination:
 # https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/2023%20AEWR%20Rule%20FAQ%20-%20Round%202%20-%207-11-2023.pdf

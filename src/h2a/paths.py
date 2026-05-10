@@ -29,6 +29,7 @@ DATA = ROOT / "data"
 RAW = DATA / "raw"
 INTERMEDIATE = DATA / "intermediate"
 PROCESSED = DATA / "processed"
+CACHE = DATA / "intermediate" / "cache"
 
 OUTPUTS = ROOT / "outputs"
 FIGURES = OUTPUTS / "figures"

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.2"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -8,7 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import dotenv, os
     import polars as pl
     import polars.selectors as cs
@@ -19,34 +19,37 @@ def _():
     from exactextract import exact_extract, operation
     import time
 
-    return cs, exact_extract, gpd, pd, pl, pyprojroot, rio
+    return INTERMEDIATE, RAW, cs, exact_extract, gpd, pd, pl, rio
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    cdl_path = root_path / 'data' / 'croplandcros_cdl'
-    return cdl_path, root_path
+def _(RAW):
+    cdl_path = RAW / "croplandcros_cdl"
+    county_shapefile_path = (
+        RAW / "county_shapefile" / "tl_2010_us_county10" / "tl_2010_us_county10.shp"
+    )
+    return cdl_path, county_shapefile_path
 
 
 @app.cell
 def _(cdl_path, rio):
     cdl_files = {}
     for _year in range(2008, 2025):
-        _cropland_data_layer_path = cdl_path / f'{_year}_30m_cdls/{_year}_30m_cdls.tif'  # CDL path
+        _cropland_data_layer_path = (
+            cdl_path / f"{_year}_30m_cdls/{_year}_30m_cdls.tif"
+        )  # CDL path
         cdl_files[_year] = _cropland_data_layer_path
         _cropland_data_layer = rio.open(_cropland_data_layer_path)
         _cdl_crs_epsg = _cropland_data_layer.crs.to_epsg()
-        print(f'{_year} has EPSG {_cdl_crs_epsg}')  # Open connection to raster file
+        print(f"{_year} has EPSG {_cdl_crs_epsg}")  # Open connection to raster file
         _cropland_data_layer.close()  # CRS for crop data  # Close connection
     return (cdl_files,)
 
 
 @app.cell
-def _(cdl_files, gpd, rio, root_path):
+def _(cdl_files, county_shapefile_path, gpd, rio):
     # Reproject county shapefile to match CDL CRS
     # Read county border vector file
-    county_shapefile_path = root_path / 'data' / 'county_shapefile' / 'tl_2010_us_county10' / 'tl_2010_us_county10.shp'
     county_borders = gpd.read_file(county_shapefile_path)
 
     # 3. Open rasters and ensure CRS match
@@ -58,45 +61,49 @@ def _(cdl_files, gpd, rio, root_path):
 
     # We only want CONUS
     statefp_drop_list = [
-        '02', # AK
-        '11', # DC
-        '15', # HI
-        '60', # AS
-        '66', # GU
-        '69', # MP
-        '72', # PR
-        '78', # VI
-        '74' #UM
+        "02",  # AK
+        "11",  # DC
+        "15",  # HI
+        "60",  # AS
+        "66",  # GU
+        "69",  # MP
+        "72",  # PR
+        "78",  # VI
+        "74",  # UM
     ]
 
-    county_borders_conus = county_borders[~county_borders['STATEFP10'].isin(statefp_drop_list)]
-    county_borders_conus = county_borders_conus[['GEOID10', 'geometry']].reset_index(drop=True)
+    county_borders_conus = county_borders[
+        ~county_borders["STATEFP10"].isin(statefp_drop_list)
+    ]
+    county_borders_conus = county_borders_conus[["GEOID10", "geometry"]].reset_index(
+        drop=True
+    )
     return (county_borders_conus,)
 
 
 @app.cell
-def _(cdl_files, county_borders_conus, exact_extract, pd, pl, root_path):
+def _(INTERMEDIATE, cdl_files, county_borders_conus, exact_extract, pd, pl):
     # We open all years simultaneously and pass them as a list
     # exactextract will compute weights once and apply to all bands (years)
-    print('Starting extraction (this may take a while for CONUS)...')
+    print("Starting extraction (this may take a while for CONUS)...")
     raster_handles = [path for path in cdl_files.values()]
 
     # Calculate zonal stats if not already done
-    temp_ee = root_path / 'binaries' / 'temp_exactextract.parquet'
+    temp_ee = INTERMEDIATE / "temp_exactextract.parquet"
     if temp_ee.is_file():
-        print('Zonal stats already exist')
+        print("Zonal stats already exist")
         results = pd.read_parquet(temp_ee)
 
     else:
         results = exact_extract(
-            rast=raster_handles, 
-            vec=county_borders_conus, 
-            ops=['count', 'unique', 'frac'], 
-            include_cols=['GEOID10'],
-            output='pandas'
+            rast=raster_handles,
+            vec=county_borders_conus,
+            ops=["count", "unique", "frac"],
+            include_cols=["GEOID10"],
+            output="pandas",
         )
         results.to_parquet(temp_ee)
-        print('Finished extracting')
+        print("Finished extracting")
 
     results = pl.from_pandas(results)
     return (results,)
@@ -106,12 +113,12 @@ def _(cdl_files, county_borders_conus, exact_extract, pd, pl, root_path):
 def _(cs, pl):
     # Define a function that unpivots each column type separately
     def unpivot_to_long_metric(df, suffix, value_name):
-        long_df = df.select(
-            ["GEOID10", cs.contains(suffix)]
-        ).unpivot(
-            index="GEOID10", variable_name="year", value_name=value_name
-        ).with_columns(
-            pl.col("year").str.extract(r"^(\d{4})", 1) # Extract 2008, 2009, etc.
+        long_df = (
+            df.select(["GEOID10", cs.contains(suffix)])
+            .unpivot(index="GEOID10", variable_name="year", value_name=value_name)
+            .with_columns(
+                pl.col("year").str.extract(r"^(\d{4})", 1)  # Extract 2008, 2009, etc.
+            )
         )
 
         return long_df
@@ -125,30 +132,28 @@ def _(results, unpivot_to_long_metric):
     # This avoids the type errors because each df has consistent types
     df_counts = unpivot_to_long_metric(results, "_count", "county_pixel_count")
     df_unique = unpivot_to_long_metric(results, "_unique", "crop_code")
-    df_fracs  = unpivot_to_long_metric(results, "_frac", "fraction")
+    df_fracs = unpivot_to_long_metric(results, "_frac", "fraction")
     return df_counts, df_fracs, df_unique
 
 
 @app.cell
-def _(df_counts, df_fracs, df_unique, pl, root_path):
+def _(INTERMEDIATE, df_counts, df_fracs, df_unique, pl):
     # Join them back together on GEOID and Year
     # Using a join ensures that 2008 count matches 2008 unique
-    long_df = df_counts.join(
-        df_unique, on=["GEOID10", "year"]
-    ).join(
+    long_df = df_counts.join(df_unique, on=["GEOID10", "year"]).join(
         df_fracs, on=["GEOID10", "year"]
     )
 
     # Explode the lists and calculate pixel counts
     # Note: Polars handles multiple list explosions in parallel if they have the same length
-    long_df = long_df.explode(
-        ["crop_code", "fraction"]
-    ).with_columns(
-            (pl.col("fraction") * pl.col("county_pixel_count")).alias("crop_pixel_count")
+    long_df = long_df.explode(["crop_code", "fraction"]).with_columns(
+        (pl.col("fraction") * pl.col("county_pixel_count")).alias("crop_pixel_count")
     )
 
     # Export as parquet
-    binary_file_path = root_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
+    binary_file_path = (
+        INTERMEDIATE / "county_crop_pixel_count_2008_2024_exactextract.parquet"
+    )
     long_df.write_parquet(binary_file_path)
     return
 

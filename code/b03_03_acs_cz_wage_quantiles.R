@@ -1,17 +1,15 @@
+rm(list = ls())
 library(here)
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
-library(janitor)
-library(collapse)
-library(haven)
 library(readxl)
-
-rm(list = ls())
+library(haven)
+library(collapse)
+source(here::here("code", "paths.R"))
 
 # PUMA 2010 and PUMA 2020 xwalk from IPUMS
-puma_xwalk <- read_excel(here(
-  "data",
+puma_xwalk <- read_excel(path_raw(
   "acs",
   "PUMA2010_PUMA2020_crosswalk.xls"
 )) %>%
@@ -23,22 +21,20 @@ puma_xwalk <- read_excel(here(
   select(puma2010, puma2020, pPUMA20_Pop20)
 
 # PUMA to CZ xwalk from David Autor
-puma_2000_czone_xwalk <- read_dta(here(
-  "data",
+puma_2000_czone_xwalk <- read_dta(path_raw(
   "acs",
   "cw_puma2000_czone.dta"
 )) %>%
   rename(czone2000 = czone, afactor2000 = afactor)
 
-puma_2010_czone_xwalk <- read_dta(here(
-  "data",
+puma_2010_czone_xwalk <- read_dta(path_raw(
   "acs",
   "cw_puma2010_czone.dta"
 )) %>%
   rename(czone2010 = czone, afactor2010 = afactor)
 
 # CZ to county crosswalk from Fabian Eckert
-czone_1990_county_xwalk <- read_csv(here("data", "acs", "cz_crosswalk.csv"))
+czone_1990_county_xwalk <- read_csv(path_raw("acs", "cz_crosswalk.csv"))
 
 #### Assign CZ to each county
 # Add county ANSI to xwalk
@@ -60,7 +56,7 @@ czone_1990_county_2010_xwalk <- czone_1990_county_xwalk %>%
 #### Calculate hourly wage quantiles ####
 acs_ds <-
   open_dataset(
-    here("binaries", "acs_1year_for_wage_quantiles.parquet")
+    path_int("acs_1year_for_wage_quantiles.parquet")
   )
 
 acs_ds <- acs_ds %>%
@@ -151,7 +147,7 @@ acs2020 <- acs2020 %>%
 
 acs_df <- bind_rows(acs2000, acs2010, acs2020)
 
-# These are PUMA 77777 in state 22 (LA)
+# PUMA 77777 in state 22 (LA), for people displaced by Hurricane Katrina
 test <- acs_df %>% filter(is.na(afactor))
 
 wage_quantiles_czone <- acs_df %>%
@@ -202,4 +198,4 @@ wage_quantiles_county <- wage_quantiles_czone %>%
   arrange(county_ansi)
 
 wage_quantiles_county %>%
-  write_parquet(here("binaries", "acs_czone_wage_quantiles.parquet"))
+  write_parquet(path_int("acs_czone_wage_quantiles.parquet"))

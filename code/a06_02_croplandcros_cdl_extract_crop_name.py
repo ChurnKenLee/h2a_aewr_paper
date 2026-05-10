@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.2"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -8,14 +8,14 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE
     import dotenv, os
     import polars as pl
     import numpy as np
     from bs4 import BeautifulSoup
     import re
 
-    return BeautifulSoup, mo, pl, pyprojroot, re
+    return BeautifulSoup, INTERMEDIATE, RAW, mo, pl, re
 
 
 @app.cell(hide_code=True)
@@ -27,10 +27,9 @@ def _(mo):
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    cdl_path = root_path / 'data' / 'croplandcros_cdl'
-    return cdl_path, root_path
+def _(RAW):
+    cdl_path = RAW / "croplandcros_cdl"
+    return (cdl_path,)
 
 
 @app.cell
@@ -38,14 +37,14 @@ def _(BeautifulSoup, cdl_path, re):
     # Iterate over years and place crop codes in a DataFrame
     rows_list = []
     for _year in range(2008, 2025):
-        year_cdl_path = cdl_path / f'{_year}_30m_cdls'
-        metadata_path = list(year_cdl_path.glob('*.htm'))
+        year_cdl_path = cdl_path / f"{_year}_30m_cdls"
+        metadata_path = list(year_cdl_path.glob("*.htm"))
 
         with open(metadata_path[0]) as fp:
-            soup = BeautifulSoup(fp, features='html.parser')  # Extract table
+            soup = BeautifulSoup(fp, features="html.parser")  # Extract table
             # The categorization codes for the crop types are in tables that are in preformatted blocks of text
             # Get the last block, which should be the categorization table
-            cat_table = soup.find_all('pre')[-1].string
+            cat_table = soup.find_all("pre")[-1].string
 
         for line in cat_table.splitlines():
             # Regex match number enclosed in double quotes
@@ -57,20 +56,22 @@ def _(BeautifulSoup, cdl_path, re):
                 # Number in quotes is crop code
                 crop_code = re.search(r'"(\d+)"', line)[0].strip('"')
                 # Alphabetical chars after is crop name
-                crop_name = re.search(r'[A-Z].*', line)[0]
-                crop_code_dict['year'] = _year  # Extract lines with crop and categorization code
-                crop_code_dict['crop_code'] = crop_code
-                crop_code_dict['crop_name'] = crop_name
+                crop_name = re.search(r"[A-Z].*", line)[0]
+                crop_code_dict["year"] = (
+                    _year  # Extract lines with crop and categorization code
+                )
+                crop_code_dict["crop_code"] = crop_code
+                crop_code_dict["crop_name"] = crop_name
                 rows_list.append(crop_code_dict.copy())
             else:
                 continue
 
         if _year < 2022:
             grass_dict = {}
-            grass_dict['year'] = _year  
+            grass_dict["year"] = _year
             # For years prior to 2022, code 176 is not defined for some reason
-            grass_dict['crop_code'] = '176'
-            grass_dict['crop_name'] = 'Grassland/Pasture'
+            grass_dict["crop_code"] = "176"
+            grass_dict["crop_name"] = "Grassland/Pasture"
             rows_list.append(grass_dict)
     return (rows_list,)
 
@@ -91,14 +92,13 @@ def _(pl, rows_list):
 
 
 @app.cell
-def _(pl, root_path):
+def _(INTERMEDIATE, pl):
     # Read CDL county aggregates
-    cdl_pixel_file = root_path / 'binaries' / 'county_crop_pixel_count_2008_2024_exactextract.parquet'
+    cdl_pixel_file = INTERMEDIATE / "county_crop_pixel_count_2008_2024_exactextract.parquet"
     cdl_pixel = pl.read_parquet(cdl_pixel_file)
     # Change type to match crop code data
     cdl_pixel = cdl_pixel.with_columns(
-        pl.col('crop_code').cast(pl.String),
-        pl.col('year').cast(pl.Int64)
+        pl.col("crop_code").cast(pl.String), pl.col("year").cast(pl.Int64)
     )
     return (cdl_pixel,)
 
@@ -107,10 +107,7 @@ def _(pl, root_path):
 def _(cdl_pixel, crop_code_keys, pl):
     # Merge
     county_crop = cdl_pixel.join(
-        other=crop_code_keys,
-        on=['crop_code', 'year'],
-        how='inner',
-        validate='m:1'
+        other=crop_code_keys, on=["crop_code", "year"], how="inner", validate="m:1"
     )
 
     # Convert pixels to acres
@@ -118,22 +115,20 @@ def _(cdl_pixel, crop_code_keys, pl):
     # 1 acre = 4046.86m^2
     # 900m^2 = 900/4046.86 acres = 0.22239464671 acres
     county_crop = county_crop.with_columns(
-        (pl.col('crop_pixel_count')*900/4046.86).alias('acres')
+        (pl.col("crop_pixel_count") * 900 / 4046.86).alias("acres")
     )
 
     # Keep relevant columns and export
-    county_crop = county_crop.rename(
-        {'GEOID10':'fips'}
-    ).select(
-        ['fips', 'year', 'crop_code', 'crop_name', 'acres']
+    county_crop = county_crop.rename({"GEOID10": "fips"}).select(
+        ["fips", "year", "crop_code", "crop_name", "acres"]
     )
     return (county_crop,)
 
 
 @app.cell
-def _(county_crop, root_path):
+def _(INTERMEDIATE, county_crop):
     # Save binary
-    county_crop.write_parquet(root_path / 'binaries' / 'croplandcros_county_crop_acres.parquet')
+    county_crop.write_parquet(INTERMEDIATE / "croplandcros_county_crop_acres.parquet")
     return
 
 

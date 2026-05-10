@@ -1,19 +1,14 @@
+rm(list = ls())
 library(here)
 library(arrow)
 library(tidyverse)
-library(dplyr)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
-library(readxl)
-library(foreign)
-library(ipumsr)
-library(haven)
-
-rm(list = ls())
+source(here::here("code", "paths.R"))
 
 # Load ACS file
 acs_df <- read_parquet(
-  here("binaries", "acs_5year_for_immigrant_status_imputation.parquet"),
+  path_int("acs_5year_for_immigrant_status_imputation.parquet"),
   col_select = c(
     "BPL",
     "CITIZEN",
@@ -230,35 +225,40 @@ acs_df <- acs_df %>%
 
 # Load GEOCORR crosswalk
 # Have to skip the 2nd row
-all_content <- readLines(here(
-  "Data",
-  "geocorr",
-  "geocorr2014_puma2000_county2010.csv"
+geocorr_2000_path <- path_raw("geocorr", "geocorr2014_puma2000_county2010.csv")
+
+geocorr_2000_names <- names(read_csv(
+  geocorr_2000_path,
+  n_max = 0,
+  show_col_types = FALSE
 ))
-skip_second <- all_content[-2]
-geocorr_2000_df <- read.csv(
-  textConnection(skip_second),
-  header = TRUE,
-  stringsAsFactors = FALSE
-)
-geocorr_2000_df <- geocorr_2000_df %>%
+
+geocorr_2000_df <- read_csv(
+  geocorr_2000_path,
+  skip = 2,
+  col_names = geocorr_2000_names,
+  show_col_types = FALSE
+) %>%
   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
   select(-c(state, puma2k))
 
-all_content <- readLines(here(
-  "Data",
-  "geocorr",
-  "geocorr2018_puma2010_county2010.csv"
+geocorr_2012_path <- path_raw("geocorr", "geocorr2018_puma2010_county2010.csv")
+
+geocorr_2012_names <- names(read_csv(
+  geocorr_2012_path,
+  n_max = 0,
+  show_col_types = FALSE
 ))
-skip_second <- all_content[-2]
-geocorr_2012_df <- read.csv(
-  textConnection(skip_second),
-  header = TRUE,
-  stringsAsFactors = FALSE
+
+geocorr_2012_df <- read_csv(
+  geocorr_2012_path,
+  skip = 2,
+  col_names = geocorr_2012_names,
+  show_col_types = FALSE
 ) %>%
-  mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
-  mutate(puma = str_pad(puma12, 5, side = c("left"), pad = "0")) %>%
+  mutate(statefip = str_pad(state, 2, side = "left", pad = "0")) %>%
+  mutate(puma = str_pad(puma12, 5, side = "left", pad = "0")) %>%
   select(-c(state, puma12))
 
 # Split by survey year, then merge with GEOCORR
@@ -271,15 +271,15 @@ acs_puma_2012_df <- acs_df %>%
   left_join(geocorr_2012_df, by = c("statefip", "puma"))
 
 # Combine back into one df
-acs_df <- bind_rows(acs_puma_2000_df, acs_puma_2012_df)
+acs_puma_2000_2012_df <- bind_rows(acs_puma_2000_df, acs_puma_2012_df)
 
 # Add group identifiers we care about
-acs_df <- acs_df %>%
+acs_puma_2000_2012_df <- acs_puma_2000_2012_df %>%
   mutate(prime_age = between(age, 25, 64)) %>%
   mutate(sex = if_else(sex == 1, "male", "female"))
 
 # Aggregate to county level
-acs_agg_df <- acs_df %>%
+acs_agg_df <- acs_puma_2000_2012_df %>%
   mutate(county_perwt = perwt * afact) %>%
   group_by(year, county, sex, prime_age, immigrant_type) %>%
   summarise(pop = sum(county_perwt)) %>%
@@ -298,4 +298,4 @@ acs_agg_df <- acs_agg_df %>%
 
 # Export
 acs_agg_df %>%
-  write_parquet(here("binaries", "acs_immigrant_imputed.parquet"))
+  write_parquet(path_int("acs_immigrant_imputed.parquet"))

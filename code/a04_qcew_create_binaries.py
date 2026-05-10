@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.2"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -8,20 +8,19 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import dotenv, os
     import io
     import polars as pl
     import py7zr
 
-    return io, mo, pl, py7zr, pyprojroot
+    return INTERMEDIATE, RAW, io, mo, pl, py7zr
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    binary_path = root_path / 'binaries'
-    qcew_path = root_path / 'data' / 'qcew'
+def _(INTERMEDIATE, RAW):
+    binary_path = INTERMEDIATE
+    qcew_path = RAW / "qcew"
     return binary_path, qcew_path
 
 
@@ -36,17 +35,17 @@ def _(mo):
 @app.cell
 def _(pl):
     qcew_dtype_dict = {
-        'area_fips': pl.String,
-        'own_code': pl.String,
-        'industry_code': pl.String,
-        'agglvl_code': pl.String,
-        'size_code': pl.String,
-        'year': pl.Int16,
-        'qtr': pl.String,
-        'disclosure_code': pl.String,
-        'annual_avg_estabs': pl.Float32,
-        'annual_avg_emplvl': pl.Float32,
-        'total_annual_wages': pl.Float32
+        "area_fips": pl.String,
+        "own_code": pl.String,
+        "industry_code": pl.String,
+        "agglvl_code": pl.String,
+        "size_code": pl.String,
+        "year": pl.Int16,
+        "qtr": pl.String,
+        "disclosure_code": pl.String,
+        "annual_avg_estabs": pl.Float32,
+        "annual_avg_emplvl": pl.Float32,
+        "total_annual_wages": pl.Float32,
     }
     qcew_cols_list = list(qcew_dtype_dict.keys())
     return qcew_cols_list, qcew_dtype_dict
@@ -61,13 +60,13 @@ def _(io):
             py7zr expects a .size() method on the IO object.
             """
             return self.getbuffer().nbytes
-    
+
         def close(self):
             """
             Block py7zr from closing the buffer so Polars can still read it.
             """
-            pass 
-        
+            pass
+
         def force_close(self):
             """
             A method to actually clear the memory when we are done.
@@ -102,33 +101,32 @@ def _(
     qcew_dtype_dict,
     qcew_path,
 ):
+    qcew_df = pl.DataFrame()
     for t in range(2005, 2018):
         print(t)
         sevenz_path = qcew_path / f"{t}_annual_singlefile.7z"
-        target_csv = f'{t}.annual.singlefile.csv'
+        target_csv = f"{t}.annual.singlefile.csv"
         mem_factory = PolarsMemoryFactory()
 
         # Extract straight into memory
-        with py7zr.SevenZipFile(sevenz_path, mode='r') as zf:
+        with py7zr.SevenZipFile(sevenz_path, mode="r") as zf:
             zf.extract(targets=[target_csv], factory=mem_factory)
-    
+
         extracted_buffer = mem_factory.buffers[target_csv]
 
         # Rewind the buffer to the beginning
         extracted_buffer.seek(0)
 
         # Read straight from the RAM buffer using Polars
-        qcew_df = pl.read_csv(
-            extracted_buffer,
-            columns=qcew_cols_list,
-            schema_overrides=qcew_dtype_dict
+        _df = pl.read_csv(
+            extracted_buffer, columns=qcew_cols_list, schema_overrides=qcew_dtype_dict
         )
-    
-        # Write to Parquet using Polars
-        qcew_df.write_parquet(binary_path / f'qcew_{t}.parquet')
-    
+        qcew_df = pl.concat([qcew_df, _df])
+
         # Flush the memory buffer before the next iteration
         extracted_buffer.force_close()
+
+    qcew_df.write_parquet(binary_path / "qcew.parquet")
     return
 
 

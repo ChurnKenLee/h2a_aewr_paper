@@ -1,16 +1,13 @@
+rm(list = ls())
 library(here)
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(readxl)
-library(foreign)
-library(ipumsr)
+source(here::here("code", "paths.R"))
 
-rm(list = ls())
-
-acs_df <- read_parquet(here(
-  "binaries",
+acs_df <- read_parquet(path_int(
   "acs_5year_for_immigrant_status_imputation.parquet"
 )) %>%
   clean_names()
@@ -31,37 +28,43 @@ acs_df <- acs_df %>%
   mutate(statefip = str_pad(statefip, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma, 5, side = c("left"), pad = "0"))
 
+
 # Load GEOCORR crosswalk
 # Have to skip the 2nd row
-all_content <- readLines(here(
-  "Data",
-  "geocorr",
-  "geocorr2014_puma2000_county2010.csv"
+geocorr_2000_path <- path_raw("geocorr", "geocorr2014_puma2000_county2010.csv")
+
+geocorr_2000_names <- names(read_csv(
+  geocorr_2000_path,
+  n_max = 0,
+  show_col_types = FALSE
 ))
-skip_second <- all_content[-2]
-geocorr_2000_df <- read.csv(
-  textConnection(skip_second),
-  header = TRUE,
-  stringsAsFactors = FALSE
-)
-geocorr_2000_df <- geocorr_2000_df %>%
+
+geocorr_2000_df <- read_csv(
+  geocorr_2000_path,
+  skip = 2,
+  col_names = geocorr_2000_names,
+  show_col_types = FALSE
+) %>%
   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
   select(-c(state, puma2k))
 
-all_content <- readLines(here(
-  "Data",
-  "geocorr",
-  "geocorr2018_puma2010_county2010.csv"
+geocorr_2012_path <- path_raw("geocorr", "geocorr2018_puma2010_county2010.csv")
+
+geocorr_2012_names <- names(read_csv(
+  geocorr_2012_path,
+  n_max = 0,
+  show_col_types = FALSE
 ))
-skip_second <- all_content[-2]
-geocorr_2012_df <- read.csv(
-  textConnection(skip_second),
-  header = TRUE,
-  stringsAsFactors = FALSE
+
+geocorr_2012_df <- read_csv(
+  geocorr_2012_path,
+  skip = 2,
+  col_names = geocorr_2012_names,
+  show_col_types = FALSE
 ) %>%
-  mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
-  mutate(puma = str_pad(puma12, 5, side = c("left"), pad = "0")) %>%
+  mutate(statefip = str_pad(state, 2, side = "left", pad = "0")) %>%
+  mutate(puma = str_pad(puma12, 5, side = "left", pad = "0")) %>%
   select(-c(state, puma12))
 
 # Split by survey year, then merge with GEOCORR
@@ -73,38 +76,29 @@ acs_puma_2012_df <- acs_df %>%
   filter(multyear > 2011) %>%
   left_join(geocorr_2012_df, by = c("statefip", "puma"))
 
-# Combine back into one df
-acs_df <- bind_rows(acs_puma_2000_df, acs_puma_2012_df)
-
-# Aggregate to county level
-acs_df <- acs_df %>%
+# Combine back into one df and aggregate to county level
+acs_agg <- bind_rows(acs_puma_2000_df, acs_puma_2012_df) %>%
   mutate(county_perwt = perwt * afact) %>%
   group_by(year, county, industry) %>%
   summarise(n_emp = sum(county_perwt)) %>%
   ungroup()
 
-acs_df <- acs_df %>%
+acs_agg <- acs_agg %>%
   pivot_wider(names_from = industry, values_from = n_emp)
 
 # Fill in missing with 0, these are PUMAs with no obs in NAICS 111 or 112
-# acs_df <- acs_df %>%
+# acs_agg <- acs_agg %>%
 #   mutate_at(c("acs_crop_emp", "acs_animal_emp"), ~replace_na(.,0))
 
 # Read in QCEW data
-qcew_binaries_list <- list.files(
-  here("binaries"),
-  pattern = "qcew_.*\\.parquet$",
-  full.names = TRUE
-)
-qcew_df <- map(qcew_binaries_list, read_parquet) %>%
-  reduce(bind_rows)
+qcew_df <- read_parquet(path_int("qcew.parquet"))
 
 # Filter to private sector, county-level, NAICS 111 and 112, and not suppressed
 qcew_df <- qcew_df %>%
-  filter(own_code == "5") %>% #private
+  filter(own_code == "5") %>% # private
   filter(agglvl_code == "75") %>% # county 3-digit NAICS
   filter(industry_code == "111" | industry_code == "112") %>%
-  filter(is.na(disclosure_code))
+  filter(disclosure_code == "")
 
 # Reshape to wide
 qcew_df <- qcew_df %>%
@@ -125,7 +119,7 @@ qcew_df <- qcew_df %>%
 
 # Merge QCEW with ACS
 # Pad county ACS FIPS code for merging with QCEW
-acs_df <- acs_df %>%
+acs_agg <- acs_agg %>%
   mutate(
     state_county_fips_code = str_pad(county, 5, side = c("left"), pad = "0")
   )
@@ -133,7 +127,7 @@ acs_df <- acs_df %>%
 qcew_df <- qcew_df %>%
   filter(year %in% c(2007, 2012, 2017))
 
-acs_qcew_df <- acs_df %>%
+acs_qcew_df <- acs_agg %>%
   full_join(
     qcew_df,
     by = c("year" = "year", "state_county_fips_code" = "area_fips")
@@ -148,12 +142,12 @@ acs_qcew_df <- acs_qcew_df %>%
 
 # Export
 acs_qcew_df %>%
-  write_parquet(here("binaries", "acs_qcew.parquet"))
+  write_parquet(path_int("acs_qcew.parquet"))
 
 # # As a test, try comparing aggregates at the PUMA level
 # all_content <- readLines(here("Data", "geocorr2000_county_puma.csv"))
 # skip_second <- all_content[-2]
-# geocorr_2000_df <- read.csv(textConnection(skip_second), header = TRUE, stringsAsFactors = FALSE)
+# geocorr_2000_df <- read_csv(textConnection(skip_second), header = TRUE, stringsAsFactors = FALSE)
 # geocorr_2000_df <- geocorr_2000_df %>%
 #   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
 #   mutate(countyfip = str_pad(county, 5, side = c("left"), pad = "0")) %>%
@@ -163,7 +157,7 @@ acs_qcew_df %>%
 #
 # all_content <- readLines(here("Data", "geocorr2018_county_puma.csv"))
 # skip_second <- all_content[-2]
-# geocorr_2012_df <- read.csv(textConnection(skip_second), header = TRUE, stringsAsFactors = FALSE)
+# geocorr_2012_df <- read_csv(textConnection(skip_second), header = TRUE, stringsAsFactors = FALSE)
 # geocorr_2012_df <- geocorr_2012_df %>%
 #   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
 #   mutate(countyfip = str_pad(county, 5, side = c("left"), pad = "0")) %>%

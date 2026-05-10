@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.2"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -8,7 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import dotenv, os
     import pandas as pd
     import numpy as np
@@ -17,20 +17,21 @@ def _():
     import requests
     import urllib
     import time
+
+    DC_STATEHOOD = 1  # Enables DC to be included in the state list
     import addfips
     import us
-    DC_STATEHOOD = 1 # Enables DC to be included in the state list
-    return dotenv, mo, os, pd, pyprojroot, requests, us
+
+    return CODE, INTERMEDIATE, dotenv, mo, os, pd, requests, us
 
 
 @app.cell
-def _(dotenv, os, pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    binary_path = root_path / 'binaries'
-    code_path = root_path / 'code'
+def _(CODE, INTERMEDIATE, dotenv, os):
+    binary_path = INTERMEDIATE
+    code_path = CODE
     dotenv.load_dotenv()
-    fred_api_key = os.getenv('FRED_API_KEY') # FRED API key from my account
-    return fred_api_key, root_path
+    fred_api_key = os.getenv("FRED_API_KEY")  # FRED API key from my account
+    return (fred_api_key,)
 
 
 @app.cell(hide_code=True)
@@ -45,18 +46,20 @@ def _(mo):
 def _(fred_api_key, requests):
     # Get release ID of state minimum wages
     # Grab release ID of all releases
-    fred_release_api_url = 'https://api.stlouisfed.org/fred/releases'
-    release_params = {
-        'api_key': fred_api_key,
-        'file_type': 'json'
-        }
+    fred_release_api_url = "https://api.stlouisfed.org/fred/releases"
+    release_params = {"api_key": fred_api_key, "file_type": "json"}
 
-    fred_release = requests.get(fred_release_api_url, params = release_params)
-    release_list = fred_release.json()['releases']
+    fred_release = requests.get(fred_release_api_url, params=release_params)
+    release_list = fred_release.json()["releases"]
 
     # Take the release id of the state minimum wage series
-    state_minimum_wage_release = list(filter(lambda release_dict: release_dict['name'] == 'Minimum Wage Rate by State', release_list))
-    state_minimum_wage_release_id = state_minimum_wage_release[0]['id']
+    state_minimum_wage_release = list(
+        filter(
+            lambda release_dict: release_dict["name"] == "Minimum Wage Rate by State",
+            release_list,
+        )
+    )
+    state_minimum_wage_release_id = state_minimum_wage_release[0]["id"]
     state_minimum_wage_release_id
     return
 
@@ -64,17 +67,12 @@ def _(fred_api_key, requests):
 @app.cell
 def _(fred_api_key):
     # Base URL to call API
-    fred_observations_api_url = 'https://api.stlouisfed.org/fred/v2/release/observations'
+    fred_observations_api_url = "https://api.stlouisfed.org/fred/v2/release/observations"
 
     # Bearer token has to go in request header
-    fred_observations_headers = {
-        'Authorization': f'Bearer {fred_api_key}'
-    }
+    fred_observations_headers = {"Authorization": f"Bearer {fred_api_key}"}
 
-    fred_observations_params = {
-        'release_id': '387',
-        'format': 'json'
-    }
+    fred_observations_params = {"release_id": "387", "format": "json"}
     return (
         fred_observations_api_url,
         fred_observations_headers,
@@ -90,8 +88,12 @@ def _(
     requests,
 ):
     # Get all state-level observations
-    response = requests.get(fred_observations_api_url, headers= fred_observations_headers, params = fred_observations_params)
-    list_obs = response.json()['series']
+    response = requests.get(
+        fred_observations_api_url,
+        headers=fred_observations_headers,
+        params=fred_observations_params,
+    )
+    list_obs = response.json()["series"]
     return (list_obs,)
 
 
@@ -99,14 +101,14 @@ def _(
 def _(list_obs, pd):
     # Convert from JSON to dataframe
     df = pd.json_normalize(list_obs).reset_index(drop=True)
-    df = df.explode('observations', ignore_index = True)
+    df = df.explode("observations", ignore_index=True)
     return (df,)
 
 
 @app.cell
 def _(df, pd):
     # Observations column is still in JSON, unpack that as well as a separate dataframe, then merge back into original dataframe
-    obs = pd.json_normalize(df.pop('observations')).reset_index(drop=True)
+    obs = pd.json_normalize(df.pop("observations")).reset_index(drop=True)
     df_1 = pd.concat([df, obs], axis=1)
     return (df_1,)
 
@@ -122,22 +124,31 @@ def _(mo):
 @app.cell
 def _(df_1):
     # Add state name, abbreviation, and year
-    df_1['state_name'] = df_1['title'].str.split('for ', expand=True)[1]
-    df_1['year'] = df_1['date'].str[0:4]
-    df_1['state_abbreviation'] = df_1['series_id'].str[-2:]
-    fed = df_1['series_id'] == 'STTMINWGFG'
+    df_1["state_name"] = df_1["title"].str.split("for ", expand=True)[1]
+    df_1["year"] = df_1["date"].str[0:4]
+    df_1["state_abbreviation"] = df_1["series_id"].str[-2:]
+    fed = df_1["series_id"] == "STTMINWGFG"
     # Federal minimum wage
-    df_1.loc[fed, 'state_name'] = 'USA'
-    df_1.loc[fed, 'state_abbreviation'] = 'US'
+    df_1.loc[fed, "state_name"] = "USA"
+    df_1.loc[fed, "state_abbreviation"] = "US"
     # Georgia has monthly observations that we can remove
-    df_2 = df_1[df_1['frequency'] == 'Annual']
+    df_2 = df_1[df_1["frequency"] == "Annual"]
     return (df_2,)
 
 
 @app.cell
 def _(df_2):
     # min_wage_df = min_wage_df[min_wage_df['year'] > '1999']
-    min_wage_df = df_2[['state_name', 'state_abbreviation', 'year', 'value', 'units', 'seasonal_adjustment']].copy()
+    min_wage_df = df_2[
+        [
+            "state_name",
+            "state_abbreviation",
+            "year",
+            "value",
+            "units",
+            "seasonal_adjustment",
+        ]
+    ].copy()
     return (min_wage_df,)
 
 
@@ -151,24 +162,46 @@ def _(mo):
 
 @app.cell
 def _(min_wage_df):
-    ag_exemption_list = ['AK', 'DE', 'GA', 'IN', 'KS', 'KY', 'ME', 'MA', 'NE', 'NH', 'NJ', 'OK', 'RI', 'VT', 'VA', 'WA', 'WV', 'WY']
-    min_wage_df['agriculture_exemption'] = min_wage_df['state_abbreviation'].isin(ag_exemption_list)
+    ag_exemption_list = [
+        "AK",
+        "DE",
+        "GA",
+        "IN",
+        "KS",
+        "KY",
+        "ME",
+        "MA",
+        "NE",
+        "NH",
+        "NJ",
+        "OK",
+        "RI",
+        "VT",
+        "VA",
+        "WA",
+        "WV",
+        "WY",
+    ]
+    min_wage_df["agriculture_exemption"] = min_wage_df["state_abbreviation"].isin(
+        ag_exemption_list
+    )
     return
 
 
 @app.cell
 def _(min_wage_df, us):
     # Add state FIPS code and export
-    min_wage_df['state_fips'] = min_wage_df['state_name'].map(us.states.mapping('name', 'fips'))
-    min_wage_df_1 = min_wage_df.rename(columns={'state_fips': 'state_fips_code'})
+    min_wage_df["state_fips"] = min_wage_df["state_name"].map(
+        us.states.mapping("name", "fips")
+    )
+    min_wage_df_1 = min_wage_df.rename(columns={"state_fips": "state_fips_code"})
     min_wage_df_1
     return (min_wage_df_1,)
 
 
 @app.cell
-def _(min_wage_df_1, root_path):
-    min_wage_df_1.to_parquet(root_path / 'Data Int' / 'state_year_min_wage.parquet', index=False)
-    min_wage_df_1.to_parquet(root_path / 'binaries' / 'state_year_min_wage.parquet', index=False)
+def _(INTERMEDIATE, min_wage_df_1):
+    min_wage_df_1.to_parquet(INTERMEDIATE / "state_year_min_wage.parquet", index=False)
     return
 
 

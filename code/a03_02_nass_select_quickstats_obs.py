@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.2"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -8,7 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import dotenv, os
     import ibis
     import ibis.selectors as s
@@ -23,7 +23,9 @@ def _():
 
     return (
         BaseModel,
+        CACHE,
         Field,
+        INTERMEDIATE,
         List,
         dspy,
         ibis,
@@ -31,26 +33,19 @@ def _():
         mo,
         os,
         pl,
-        pyprojroot,
         time,
         tqdm,
     )
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion='pyproject.toml')
-    binary_path = root_path / 'binaries'
-    return binary_path, root_path
-
-
-@app.cell
-def _(dspy, os):
-    # Configure Gemini
-    gemini_api_key = os.getenv('GOOGLE_GEMINI_API_KEY')
-    gemini = dspy.LM('gemini/gemini-3-flash-preview', api_key=gemini_api_key)
+def _(CACHE, INTERMEDIATE, dspy, os):
+    binary_path = INTERMEDIATE
+    json_path = CACHE
+    gemini_api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    gemini = dspy.LM("gemini/gemini-3-flash-preview", api_key=gemini_api_key)
     dspy.configure(lm=gemini)
-    return
+    return binary_path, json_path
 
 
 @app.cell(hide_code=True)
@@ -64,60 +59,41 @@ def _(mo):
 @app.cell
 def _(binary_path, ibis):
     con = ibis.polars.connect()
-    survey_crops = con.read_parquet(binary_path / 'qs_survey_crops.parquet')
-    census_crops = con.read_parquet(binary_path / 'qs_census_crops.parquet')
+    survey_crops = con.read_parquet(binary_path / "qs_survey_crops.parquet")
+    census_crops = con.read_parquet(binary_path / "qs_census_crops.parquet")
 
     # We only care about years >= 2007
     # Filter to national, state, and county level of aggregation
     # Do not want counts of operations by stat range
     # Convert values to numeric
-    census_crops = (
-        census_crops
-            .filter(
-                _.year >= 2007,
-                _.agg_level_desc.isin(['NATIONAL', 'STATE', 'COUNTY']),
-                _.unit_desc != 'OPERATIONS',
-                _.freq_desc == 'ANNUAL'
-            ).mutate(
-                numeric_value = _.value.re_replace(r',', '').try_cast('float64')
-            )
-    )
+    census_crops = census_crops.filter(
+        _.year >= 2007,
+        _.agg_level_desc.isin(["NATIONAL", "STATE", "COUNTY"]),
+        _.unit_desc != "OPERATIONS",
+        _.freq_desc == "ANNUAL",
+    ).mutate(numeric_value=_.value.re_replace(r",", "").try_cast("float64"))
 
-    survey_crops = (
-        survey_crops
-            .filter(
-                _.year >= 2007,
-                _.agg_level_desc.isin(['NATIONAL', 'STATE', 'COUNTY']),
-                _.unit_desc != 'OPERATIONS',
-                _.freq_desc == 'ANNUAL'
-            ).mutate(
-                numeric_value = _.value.re_replace(r',', '').try_cast('float64')
-            )
-    )
+    survey_crops = survey_crops.filter(
+        _.year >= 2007,
+        _.agg_level_desc.isin(["NATIONAL", "STATE", "COUNTY"]),
+        _.unit_desc != "OPERATIONS",
+        _.freq_desc == "ANNUAL",
+    ).mutate(numeric_value=_.value.re_replace(r",", "").try_cast("float64"))
 
-    census_crops = (
-        census_crops.drop(
-            _.value
-        ).rename(
-            {'value':'numeric_value'}
-        )
-    )
+    census_crops = census_crops.drop(_.value).rename({"value": "numeric_value"})
 
-    survey_crops = (
-        survey_crops.drop(
-            _.value
-        ).rename(
-            {'value':'numeric_value'}
-        )
-    )
+    survey_crops = survey_crops.drop(_.value).rename({"value": "numeric_value"})
 
     # Define the categorization logic for Census Crops
     census_crops = census_crops.mutate(
         observation_type=ibis.cases(
-            ((_.unit_desc == "ACRES") & (_.statisticcat_desc != "AREA NON-BEARING"), "area"),
+            (
+                (_.unit_desc == "ACRES") & (_.statisticcat_desc != "AREA NON-BEARING"),
+                "area",
+            ),
             (_.statisticcat_desc == "PRODUCTION", "production"),
             (_.statisticcat_desc == "YIELD", "yield"),
-            else_=None
+            else_=None,
         )
     )
 
@@ -128,7 +104,7 @@ def _(binary_path, ibis):
             (_.statisticcat_desc == "PRICE RECEIVED", "price"),
             (_.statisticcat_desc == "PRODUCTION", "production"),
             (_.statisticcat_desc == "YIELD", "yield"),
-            else_=None
+            else_=None,
         )
     )
     return census_crops, survey_crops
@@ -137,34 +113,38 @@ def _(binary_path, ibis):
 @app.cell
 def _(census_crops, survey_crops):
     # Preprocessing: It's helpful to have a view of unique combinations and their counts to speed up the LLM's "browsing"
-    unique_census_crops_summary = census_crops.group_by([
-        "group_desc", 
-        "commodity_desc", 
-        "class_desc", 
-        "prodn_practice_desc", 
-        "util_practice_desc", 
-        "observation_type", 
-        "agg_level_desc"
-    ]).aggregate(
+    unique_census_crops_summary = census_crops.group_by(
+        [
+            "group_desc",
+            "commodity_desc",
+            "class_desc",
+            "prodn_practice_desc",
+            "util_practice_desc",
+            "observation_type",
+            "agg_level_desc",
+        ]
+    ).aggregate(
         count=_.count(),
         min_year=_.year.min(),
         max_year=_.year.max(),
-        unique_counties=_.county_name.nunique()
+        unique_counties=_.county_name.nunique(),
     )
 
-    unique_survey_crops_summary = survey_crops.group_by([
-        "group_desc", 
-        "commodity_desc", 
-        "class_desc", 
-        "prodn_practice_desc", 
-        "util_practice_desc", 
-        "observation_type", 
-        "agg_level_desc"
-    ]).aggregate(
+    unique_survey_crops_summary = survey_crops.group_by(
+        [
+            "group_desc",
+            "commodity_desc",
+            "class_desc",
+            "prodn_practice_desc",
+            "util_practice_desc",
+            "observation_type",
+            "agg_level_desc",
+        ]
+    ).aggregate(
         count=_.count(),
         min_year=_.year.min(),
         max_year=_.year.max(),
-        unique_counties=_.county_name.nunique()
+        unique_counties=_.county_name.nunique(),
     )
 
     t = survey_crops
@@ -185,14 +165,25 @@ def _(BaseModel, Field, List):
     # Structured output defintion
     # This is a crop for any given group-commodity
     class CropDefinition(BaseModel):
-        class_desc: str = Field(description="The class name from USDA QuickStats, e.g., class WINTER for commodity WHEAT")
-        prodn_practice_desc: str = Field(description="The production practice, e.g., ALL PRODUCTION PRACTICES")
+        class_desc: str = Field(
+            description="The class name from USDA QuickStats, e.g., class WINTER for commodity WHEAT"
+        )
+        prodn_practice_desc: str = Field(
+            description="The production practice, e.g., ALL PRODUCTION PRACTICES"
+        )
         util_practice_desc: str = Field(description="The utilization practice, e.g., GRAIN")
-        reasoning: str = Field(description="Briefly explain why this is a canonical crop based on coverage.")
-        semantic_label: str = Field(description="A simplified, plain-English name for this crop (e.g., 'Winter Wheat' or 'Strawberries'). This will be used for future cross-dataset mapping.")
+        reasoning: str = Field(
+            description="Briefly explain why this is a canonical crop based on coverage."
+        )
+        semantic_label: str = Field(
+            description="A simplified, plain-English name for this crop (e.g., 'Winter Wheat' or 'Strawberries'). This will be used for future cross-dataset mapping."
+        )
+
 
     class CanonicalCropOutput(BaseModel):
-        definitions: List[CropDefinition] = Field(description="A list of the identified canonical crop definitions.")
+        definitions: List[CropDefinition] = Field(
+            description="A list of the identified canonical crop definitions."
+        )
 
     return (CanonicalCropOutput,)
 
@@ -218,8 +209,13 @@ def _(CanonicalCropOutput, dspy):
         7. CDL COMPATIBILITY: The Cropland Data Layer (CDL) usually maps to (commodity + class), but not always. Sometimes maps to commodity alone, so need to choose representative class. Avoid overly specific class, production practice, and utilization practice unless they are the only ones with data.
         8. THE 'ALL CLASSES' TRAP: If 'ALL CLASSES' has Price data but specific subclasses do not, favor 'ALL CLASSES' to ensure the Price variable is available for the merge.
         """
-        group = dspy.InputField(desc="The broad USDA sector, e.g., FIELD CROPS vs VEGETABLES.")
-        commodity = dspy.InputField(desc="The specific commodity being analyzed. The highest level classification of crops in any USDA group sector.")
+
+        group = dspy.InputField(
+            desc="The broad USDA sector, e.g., FIELD CROPS vs VEGETABLES."
+        )
+        commodity = dspy.InputField(
+            desc="The specific commodity being analyzed. The highest level classification of crops in any USDA group sector."
+        )
         # Pass the data (agg summary table) as a formatted string (Markdown table)
         data_table = dspy.InputField(desc="A Markdown table containing summary counts.")
 
@@ -241,11 +237,14 @@ def _(DefineCanonicalCrops, dspy):
 def _():
     # A list of test commodities with known issues
     test_cases = [
-        {"group": "FIELD CROPS", "commodity": "WHEAT"}, # Multiple Classes (Winter/Spring)
-        {"group": "VEGETABLES", "commodity": "TOMATOES"}, # Utilization (Fresh vs Proc)
-        {"group": "FIELD CROPS", "commodity": "SOYBEANS"}, # Simple Class, complex practices
-        {"group": "VEGETABLES", "commodity": "BEANS"}, # Overlapping Class names
-        {"group": "VEGETABLES", "commodity": "MELONS"} # Class identifies distinct crops
+        {"group": "FIELD CROPS", "commodity": "WHEAT"},  # Multiple Classes (Winter/Spring)
+        {"group": "VEGETABLES", "commodity": "TOMATOES"},  # Utilization (Fresh vs Proc)
+        {
+            "group": "FIELD CROPS",
+            "commodity": "SOYBEANS",
+        },  # Simple Class, complex practices
+        {"group": "VEGETABLES", "commodity": "BEANS"},  # Overlapping Class names
+        {"group": "VEGETABLES", "commodity": "MELONS"},  # Class identifies distinct crops
     ]
 
     # group_val = test_cases[3]['group']
@@ -273,12 +272,13 @@ def _(ibis, summary_t):
     # Create markdown table (using pandas + tabulate)
     # Get summary stats from Ibis/Polars table
     def markdown_summary_table(group_val, comm_val):
-        summary_df = (summary_t
-            .filter([
+        summary_df = summary_t.filter(
+            [
                 ibis._.group_desc == group_val,
                 ibis._.commodity_desc == comm_val,
-                ibis._.observation_type.notnull() # Only include categorized obs to save on tokens
-            ]).to_polars())
+                ibis._.observation_type.notnull(),  # Only include categorized obs to save on tokens
+            ]
+        ).to_polars()
 
         if summary_df.is_empty():
             return None
@@ -293,23 +293,20 @@ def _(ibis, summary_t):
 @app.cell
 def _(summary_t):
     # Extract all unique tasks from summary table
-    all_tasks = (summary_t
-        .select("group_desc", "commodity_desc")
-        .distinct()
-        .to_polars()
-        .to_dicts())
+    all_tasks = (
+        summary_t.select("group_desc", "commodity_desc").distinct().to_polars().to_dicts()
+    )
     return (all_tasks,)
 
 
 @app.cell
-def _(json, root_path):
+def _(json, json_path):
     # Store LM response results in json
-    json_path = root_path / 'code' / 'json'
-    mapping_file = json_path / 'nass_quickstats_survey_obs_selection.json'
+    mapping_file = json_path / "nass_quickstats_survey_obs_selection.json"
 
     # Load existing results to resume a partial run
     if mapping_file.exists():
-        with open(mapping_file, 'r') as _f:
+        with open(mapping_file, "r") as _f:
             master_results = json.load(_f)
     else:
         master_results = {}
@@ -333,9 +330,9 @@ def capture_full_prediction(prediction, task_key, group, commodity):
 
         # Check if the value is a Pydantic V2 model
         if hasattr(val, "model_dump"):
-            record[key] = val.model_dump() # output goes here
+            record[key] = val.model_dump()  # output goes here
         else:
-            record[key] = val # reasoning goes here
+            record[key] = val  # reasoning goes here
 
     return record
 
@@ -352,8 +349,8 @@ def _(
     tqdm,
 ):
     for task in tqdm.tqdm(all_tasks, desc="Processing Commodities"):
-        g_val = task['group_desc']
-        c_val = task['commodity_desc']
+        g_val = task["group_desc"]
+        c_val = task["commodity_desc"]
 
         # Create a unique key for the dictionary
         task_key = f"{g_val}||{c_val}"
@@ -361,7 +358,7 @@ def _(
 
         # Skip if already processed
         if task_key in master_results:
-            print(f'{task_key} already processed')
+            print(f"{task_key} already processed")
             continue
 
         # Generate the markdown table that provides summary obs counts to LM
@@ -369,23 +366,21 @@ def _(
 
         # No statistic available for this particular group-commodity
         if table_str is None:
-            print(f'{task_key} has no available observation types')
+            print(f"{task_key} has no available observation types")
             continue
 
         try:
             # Run the LLM
-            prediction = analyzer(
-                group=g_val,
-                commodity=c_val,
-                data_table=table_str
-            )
+            prediction = analyzer(group=g_val, commodity=c_val, data_table=table_str)
 
             # Store as a dict that is straight JSON
-            master_results[task_key] = capture_full_prediction(prediction, task_key, g_val, c_val)
+            master_results[task_key] = capture_full_prediction(
+                prediction, task_key, g_val, c_val
+            )
 
             # Autosave every 10 iterations to prevent data loss
             if len(master_results) % 10 == 0:
-                with open(mapping_file, 'w') as _f:
+                with open(mapping_file, "w") as _f:
                     json.dump(master_results, _f, indent=2)
 
         except Exception as e:
@@ -394,7 +389,7 @@ def _(
             time.sleep(5)
 
     # Save the responses
-    with open(mapping_file, 'w') as f:
+    with open(mapping_file, "w") as f:
         json.dump(master_results, f, indent=4)
     return
 
@@ -410,21 +405,32 @@ def _(mo):
 @app.cell
 def _(json, mapping_file, pl):
     # NASS crop definitions
-    with open(mapping_file, 'r') as _f:
+    with open(mapping_file, "r") as _f:
         nass_obs_selection_json = json.load(_f)
-    nass_obs_selection = pl.from_dicts(list(nass_obs_selection_json.values())) # Unpack JSON in pl df
-    nass_obs_selection = (nass_obs_selection
-        .drop('reasoning') # shares same name with column inside definitions
-        .unnest('output') # output only has 1 item inside: definitions of crops selected
-        .explode('definitions') # definitions has multiple entries, each definition is a selected crop
-        .unnest('definitions') # each crop has multiple elements within each definition (class, prodn, util)
-        .rename(mapping={
-            'task_key':'nass_id',
-            'group':'group_desc',
-            'commodity':'commodity_desc',
-            'reasoning':'nass_reasoning',
-            'semantic_label':'nass_semantic_label'
-        }))
+    nass_obs_selection = pl.from_dicts(
+        list(nass_obs_selection_json.values())
+    )  # Unpack JSON in pl df
+    nass_obs_selection = (
+        nass_obs_selection.drop(
+            "reasoning"
+        )  # shares same name with column inside definitions
+        .unnest("output")  # output only has 1 item inside: definitions of crops selected
+        .explode(
+            "definitions"
+        )  # definitions has multiple entries, each definition is a selected crop
+        .unnest(
+            "definitions"
+        )  # each crop has multiple elements within each definition (class, prodn, util)
+        .rename(
+            mapping={
+                "task_key": "nass_id",
+                "group": "group_desc",
+                "commodity": "commodity_desc",
+                "reasoning": "nass_reasoning",
+                "semantic_label": "nass_semantic_label",
+            }
+        )
+    )
     return (nass_obs_selection,)
 
 
@@ -433,23 +439,27 @@ def _(census_crops, nass_obs_selection, survey_crops):
     census_selected_crops = census_crops.to_polars()
     census_selected_crops = census_selected_crops.join(
         nass_obs_selection,
-        how='inner',
-        on=['group_desc',
-            'commodity_desc',
-            'class_desc',
-            'prodn_practice_desc',
-            'util_practice_desc']
+        how="inner",
+        on=[
+            "group_desc",
+            "commodity_desc",
+            "class_desc",
+            "prodn_practice_desc",
+            "util_practice_desc",
+        ],
     )
 
     survey_selected_crops = survey_crops.to_polars()
     survey_selected_crops = survey_selected_crops.join(
         nass_obs_selection,
-        how='inner',
-        on=['group_desc',
-            'commodity_desc',
-            'class_desc',
-            'prodn_practice_desc',
-            'util_practice_desc']
+        how="inner",
+        on=[
+            "group_desc",
+            "commodity_desc",
+            "class_desc",
+            "prodn_practice_desc",
+            "util_practice_desc",
+        ],
     )
     return census_selected_crops, survey_selected_crops
 
@@ -465,42 +475,36 @@ def _(mo):
 @app.cell
 def _(binary_path, census_selected_crops, pl, survey_selected_crops):
     census_economics = pl.read_parquet(binary_path / "qs_census_economics.parquet")
-    census_economics = (census_economics
-        .filter(
-            (pl.col("freq_desc") == "ANNUAL") & 
-            (pl.col("agg_level_desc").is_in(["NATIONAL", "STATE", "COUNTY"]))
+    census_economics = (
+        census_economics.filter(
+            (pl.col("freq_desc") == "ANNUAL")
+            & (pl.col("agg_level_desc").is_in(["NATIONAL", "STATE", "COUNTY"]))
         )
         .with_columns(
-            pl.when(pl.col("value") == "(Z)") # "(Z)" means less than 0.5
-                .then(pl.lit(0.0))
-                .otherwise(
-                    pl.col("value")
-                        .str.replace_all(",", "")
-                        .cast(pl.Float64, strict=False)
-                )
-                .alias("value")
+            pl.when(pl.col("value") == "(Z)")  # "(Z)" means less than 0.5
+            .then(pl.lit(0.0))
+            .otherwise(
+                pl.col("value").str.replace_all(",", "").cast(pl.Float64, strict=False)
+            )
+            .alias("value")
         )
         .filter(pl.col("value").is_not_null())
     )
 
     # 3. Create Cropland Subset
-    census_cropland = (census_economics
-        .filter(
-            (pl.col("commodity_desc").is_in(["FARM OPERATIONS", "AG LAND"])) &
-            (pl.col("short_desc") == "AG LAND, CROPLAND - ACRES") &
-            (pl.col("domain_desc") == "TOTAL")
-        )
-        .with_columns(
-            pl.lit('cropland_asset').alias('observation_type')
-        ))
+    census_cropland = census_economics.filter(
+        (pl.col("commodity_desc").is_in(["FARM OPERATIONS", "AG LAND"]))
+        & (pl.col("short_desc") == "AG LAND, CROPLAND - ACRES")
+        & (pl.col("domain_desc") == "TOTAL")
+    ).with_columns(pl.lit("cropland_asset").alias("observation_type"))
 
     # Convert from categorical to string for concatenating
-    census_cropland = census_cropland.with_columns(
-        pl.col(pl.Categorical).cast(pl.String)
-    )
+    census_cropland = census_cropland.with_columns(pl.col(pl.Categorical).cast(pl.String))
 
     # Combine crop and asset observations
-    census_selected_obs = pl.concat([census_selected_crops, census_cropland], how="diagonal")
+    census_selected_obs = pl.concat(
+        [census_selected_crops, census_cropland], how="diagonal"
+    )
     survey_selected_obs = survey_selected_crops
     return census_selected_obs, survey_selected_obs
 
@@ -518,24 +522,26 @@ def _(census_selected_obs, pl, survey_selected_obs):
     # Only code change was in South Dakota
     census_2010_def = census_selected_obs.with_columns(
         pl.when(
-            (pl.col('state_fips_code')=='46') & 
-            (pl.col('county_code')=='102') # Oglala Lakota County
-        ).then(
-            pl.lit('113') # Shannon County
-        ).otherwise(
-            pl.col('county_code')
-        ).alias('county_code')
+            (pl.col("state_fips_code") == "46")
+            & (pl.col("county_code") == "102")  # Oglala Lakota County
+        )
+        .then(
+            pl.lit("113")  # Shannon County
+        )
+        .otherwise(pl.col("county_code"))
+        .alias("county_code")
     )
 
     survey_2010_def = survey_selected_obs.with_columns(
         pl.when(
-            (pl.col('state_fips_code')=='46') & 
-            (pl.col('county_code')=='102') # Oglala Lakota County
-        ).then(
-            pl.lit('113') # Shannon County
-        ).otherwise(
-            pl.col('county_code')
-        ).alias('county_code')
+            (pl.col("state_fips_code") == "46")
+            & (pl.col("county_code") == "102")  # Oglala Lakota County
+        )
+        .then(
+            pl.lit("113")  # Shannon County
+        )
+        .otherwise(pl.col("county_code"))
+        .alias("county_code")
     )
     return census_2010_def, survey_2010_def
 
@@ -547,11 +553,6 @@ def _(binary_path, census_2010_def, survey_2010_def):
     # Since the parquet file is massively reduced in size, should not blow up memory usage in R
     census_2010_def.write_parquet(binary_path / "qs_census_selected_obs.parquet")
     survey_2010_def.write_parquet(binary_path / "qs_survey_selected_obs.parquet")
-    return
-
-
-@app.cell
-def _():
     return
 
 

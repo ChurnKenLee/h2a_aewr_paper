@@ -1,12 +1,10 @@
+rm(list = ls())
 library(here)
 library(arrow)
-library(dplyr)
+library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(ipumsr)
-library(haven)
-library(readr)
-
-rm(list = ls())
+source(here::here("code", "paths.R"))
 
 #### Submit extract request and download ####
 # acs1_samples <- c()
@@ -46,7 +44,7 @@ rm(list = ls())
 #### Load extracts and save as parquets ####
 # usa_00035 is ACS 1-year for wage quantiles
 acs_data <- read_ipums_micro(
-  here("data", "acs", "usa_00035.xml")
+  path_raw("acs", "usa_00035.xml")
 )
 
 acs_data <- acs_data %>%
@@ -55,12 +53,12 @@ acs_data <- acs_data %>%
 
 acs_data %>%
   write_parquet(
-    here("binaries", "acs_1year_for_wage_quantiles.parquet")
+    path_int("acs_1year_for_wage_quantiles.parquet")
   )
 
 # usa_00034 is ACS 5-year for immigrant status imputation
 acs_data <- read_ipums_micro(
-  here("data", "acs", "usa_00034.xml")
+  path_raw("acs", "usa_00034.xml")
 )
 
 acs_data <- acs_data %>%
@@ -68,7 +66,6 @@ acs_data <- acs_data %>%
   zap_label()
 
 acs_data %>%
-  write_parquet(here(
-    "binaries",
+  write_parquet(path_int(
     "acs_5year_for_immigrant_status_imputation.parquet"
   ))

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.4"
+__generated_with = "0.23.5"
 app = marimo.App(width="full")
 
 
@@ -8,7 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    import pyprojroot
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import polars as pl
     import geopandas as gpd
     import numpy as np
@@ -17,20 +17,15 @@ def _():
     import exactextract
     import sqlite3
 
-    return exactextract, gpd, mo, np, pl, pyprojroot, rasterio, sqlite3
+    return INTERMEDIATE, RAW, exactextract, gpd, mo, np, pl, rasterio, sqlite3
 
 
 @app.cell
-def _(pyprojroot):
-    root_path = pyprojroot.find_root(criterion="pyproject.toml")
-    binary_path = root_path / "binaries"
-    gnatsgo_path = root_path / "data" / "gnatsgo" / "gNATSGO_gpkg_01_30_2026"
+def _(INTERMEDIATE, RAW):
+    binary_path = INTERMEDIATE
+    gnatsgo_path = RAW / "gnatsgo" / "gNATSGO_gpkg_01_30_2026"
     census_shp_path = (
-        root_path
-        / "data"
-        / "county_shapefile"
-        / "tl_2010_us_county10"
-        / "tl_2010_us_county10.shp"
+        RAW / "county_shapefile" / "tl_2010_us_county10" / "tl_2010_us_county10.shp"
     )
     return binary_path, census_shp_path, gnatsgo_path
 
@@ -446,11 +441,6 @@ def _(binary_path, county_soil_cells):
         f"Saved {county_soil_cells.height} county-soil cells "
         f"for {county_soil_cells.select('county_ansi').n_unique()} counties to {output_file}"
     )
-    return
-
-
-@app.cell
-def _():
     return
 
 

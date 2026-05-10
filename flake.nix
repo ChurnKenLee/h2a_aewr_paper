@@ -49,6 +49,7 @@
 
         # Data download
         fredr
+        ipumsr
       ];
 
       nativeLibraries = with pkgs; [

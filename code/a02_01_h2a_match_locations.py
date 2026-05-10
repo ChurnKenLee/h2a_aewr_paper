@@ -8,7 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    from h2a.paths import CODE, RAW, INTERMEDIATE
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import polars as pl
     import numpy as np
     import json
@@ -25,7 +25,19 @@ def _():
     from functools import partial
     import io
 
-    return INTERMEDIATE, Path, RAW, addfips, json, mo, pl, rapidfuzz, re, us
+    return (
+        CACHE,
+        INTERMEDIATE,
+        Path,
+        RAW,
+        addfips,
+        json,
+        mo,
+        pl,
+        rapidfuzz,
+        re,
+        us,
+    )
 
 
 @app.cell(hide_code=True)
@@ -37,11 +49,12 @@ def _(mo):
 
 
 @app.cell
-def _(INTERMEDIATE, RAW):
-    json_path = INTERMEDIATE / "cache"
+def _(CACHE, INTERMEDIATE, RAW):
+    binary_path = INTERMEDIATE
+    json_path = CACHE
     h2a_path = RAW / "h2a"
     census_code_path = RAW / "census_geographic_definitions"
-    return census_code_path, h2a_path, json_path
+    return binary_path, census_code_path, h2a_path, json_path
 
 
 @app.cell
