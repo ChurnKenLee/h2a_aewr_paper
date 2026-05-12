@@ -64,16 +64,20 @@
         packages =
           with pkgs;
           [
-            # Keep R itself separate from rPackages so Positron sees the
-            # standard R shell launcher on PATH instead of nixpkgs rWrapper.
+            # R environment
             R
+          ]
+          ++ rPackages
+          ++ [
+
+            # Python environment
             uv
             python3
           ]
-          ++ rPackages
           ++ nativeLibraries;
 
         LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath nativeLibraries}:/run/opengl-driver/lib";
+        UV_PROJECT_ENVIRONMENT = ".venv-nixos";
       };
     };
 }
