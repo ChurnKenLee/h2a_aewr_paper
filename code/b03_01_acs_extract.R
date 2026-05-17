@@ -4,6 +4,7 @@ library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(ipumsr)
+library(haven)
 source(here::here("code", "paths.R"))
 
 #### Submit extract request and download ####

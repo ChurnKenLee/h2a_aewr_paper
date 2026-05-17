@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -40,6 +40,7 @@ def _(bea, pl, year_cols):
                 value_name=value_name,
             )
             .with_columns(
+                pl.col("GeoFIPS").str.strip_chars().str.strip_chars('"').str.zfill(5),
                 pl.col("year").cast(pl.Int32),
                 pl.col(value_name).str.replace_all(",", "").cast(pl.Float64, strict=False),
             )

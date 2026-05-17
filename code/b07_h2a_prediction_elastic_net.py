@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -184,6 +184,11 @@ def _(itertools, jnp, np, pl):
         merged = merged.filter(
             pl.col("bea_farm_emp_2011").is_not_null() & (pl.col("bea_farm_emp_2011") > 0)
         )
+        if merged.height == 0:
+            raise ValueError(
+                "No rows remain after joining soil, climate, H-2A, and BEA data. "
+                "Check that county_ansi/year keys overlap and BEA farm employment is positive."
+            )
 
         # Optional: cap target rate at a reasonable ceiling like 2.0 to prevent
         # extreme BEA data artifacts from destroying gradient magnitudes
@@ -2517,11 +2522,6 @@ def _(
 @app.cell
 def _(results_df):
     results_df
-    return
-
-
-@app.cell
-def _():
     return
 
 

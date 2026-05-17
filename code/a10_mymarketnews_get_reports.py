@@ -33,14 +33,41 @@ def _(CACHE, HTTPBasicAuth, RAW, os):
 
 
 @app.cell
-def _(CACHE, api_auth, base_url, pl, requests):
+def _(requests, time):
+    def get_json(url, auth, *, timeout=(20, 300), max_attempts=6):
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = requests.get(url=url, auth=auth, timeout=timeout)
+                response.raise_for_status()
+                return response.json()
+            except (requests.exceptions.RequestException, ValueError) as exc:
+                last_error = exc
+                if attempt == max_attempts:
+                    break
+
+                delay = min(300, 5 * 2 ** (attempt - 1))
+                print(
+                    f"Request failed on attempt {attempt}/{max_attempts}; "
+                    f"retrying in {delay}s: {url}"
+                )
+                time.sleep(delay)
+
+        raise RuntimeError(
+            f"Request failed after {max_attempts} attempts: {url}"
+        ) from last_error
+
+    return (get_json,)
+
+
+@app.cell
+def _(CACHE, api_auth, base_url, get_json, pl):
     manifest_file = CACHE / "mymarketnews_reports_manifest.parquet"
     if manifest_file.exists():
         print("Manifest already downloaded")
         manifest = pl.read_parquet(manifest_file)
     else:
-        _r = requests.get(url=base_url, auth=api_auth)
-        manifest_json = _r.json()
+        manifest_json = get_json(base_url, api_auth)
         manifest = pl.from_dicts(manifest_json)
         manifest.write_parquet(manifest_file)
     return (manifest,)
@@ -73,9 +100,9 @@ def _(manifest, pl):
 def _(
     api_auth,
     base_url,
+    get_json,
     pl,
     reports_path,
-    requests,
     terminal_market_slugs,
     time,
 ):
@@ -90,10 +117,9 @@ def _(
             print(request_url)
 
             # Make request
-            _r = requests.get(url=request_url, auth=api_auth)
+            report_header_json = get_json(request_url, api_auth)
 
             # Put response into dataframe
-            report_header_json = _r.json()
             _df = pl.from_dicts(
                 report_header_json["results"], infer_schema_length=None
             ).fill_null("")
@@ -111,11 +137,10 @@ def _(
 def _(
     api_auth,
     base_url,
+    get_json,
     pl,
     reports_path,
-    requests,
     shipping_point_slugs,
-    sleep,
     terminal_market_slugs,
 ):
     # Grab reports
@@ -130,7 +155,7 @@ def _(
     }
 
     for report_type, slug_list in slug_dict.items():
-        for year in range(2024, 2026):
+        for year in range(2004, 2024):
             year_path = reports_path / str(year)
             try:
                 year_path.mkdir()
@@ -150,14 +175,7 @@ def _(
                     + f"report_begin_date=01/01/{year}:12/31/{year}"
                     + "&allSections=true"
                 )
-                slug_response = requests.get(url=slug_request_url, auth=api_auth)
-                try:
-                    slug_json = slug_response.json()
-                except:
-                    sleep(1)
-                    slug_response = requests.get(url=slug_request_url, auth=api_auth)
-
-                slug_json = slug_response.json()
+                slug_json = get_json(slug_request_url, api_auth)
 
                 if slug_json[1]["stats"]["totalRows"] == 0:
                     print(f"No results available for slug {slug}")
@@ -173,8 +191,7 @@ def _(
                         + f"report_begin_date=01/01/{year}:06/30/{year}"
                         + "&allSections=true"
                     )
-                    slug1_response = requests.get(url=slug1_request_url, auth=api_auth)
-                    slug1_json = slug1_response.json()
+                    slug1_json = get_json(slug1_request_url, api_auth)
                     slug1_report_details = pl.from_dicts(
                         slug1_json[1]["results"], infer_schema_length=None
                     ).fill_null("")
@@ -190,8 +207,7 @@ def _(
                         + f"report_begin_date=07/01/{year}:12/31/{year}"
                         + "&allSections=true"
                     )
-                    slug2_response = requests.get(url=slug2_request_url, auth=api_auth)
-                    slug2_json = slug2_response.json()
+                    slug2_json = get_json(slug2_request_url, api_auth)
                     slug2_report_details = pl.from_dicts(
                         slug2_json[1]["results"], infer_schema_length=None
                     ).fill_null("")

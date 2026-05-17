@@ -1,5 +1,14 @@
 {
-  description = "Python + R project environment";
+  description = "Python + R + CUDA project environment";
+
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.nixos-cuda.org"
+    ];
+    extra-trusted-public-keys = [
+      "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+    ];
+  };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -11,6 +20,8 @@
         inherit system;
         config.allowUnfree = true;
       };
+
+      cudaShell = import ./nix/cuda-shell.nix { inherit pkgs; };
 
       rPackages = with pkgs.rPackages; [
         # Language support
@@ -51,29 +62,10 @@
         fredr
         ipumsr
       ];
-
-      nativeLibraries = with pkgs; [
-        # Required C libraries for uv-downloaded wheels.
-        expat
-        zlib
-        stdenv.cc.cc.lib
-      ];
     in
     {
-      devShells.${system}.default = pkgs.mkShell {
-        packages =
-          with pkgs;
-          [
-            # Keep R itself separate from rPackages so Positron sees the
-            # standard R shell launcher on PATH instead of nixpkgs rWrapper.
-            R
-            uv
-            python3
-          ]
-          ++ rPackages
-          ++ nativeLibraries;
-
-        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath nativeLibraries}:/run/opengl-driver/lib";
+      devShells.${system}.default = cudaShell.mkPythonCudaShell {
+        extraPackages = [ pkgs.R ] ++ rPackages;
       };
     };
 }
