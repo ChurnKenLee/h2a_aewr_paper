@@ -26,6 +26,7 @@ if (!is_project_root(ROOT)) {
 
 path_root <- function(...) file.path(ROOT, ...)
 path_code <- function(...) file.path(ROOT, "code", ...)
+path_json <- function(...) file.path(ROOT, "code", "json", ...)
 path_raw <- function(...) file.path(ROOT, "data", "raw", ...)
 path_int <- function(...) file.path(ROOT, "data", "intermediate", ...)
 path_output <- function(...) file.path(ROOT, "output", ...)

@@ -119,4 +119,4 @@ oews_combined <- oews_combined %>%
 
 # Export
 oews_combined %>%
-  write_parquet(here("binaries", "oews_county_aggregated.parquet"))
+  write_parquet(path_int("oews_county_aggregated.parquet"))

@@ -1,19 +1,16 @@
+rm(list = ls())
 library(here)
 library(arrow)
 library(tidyverse)
-library(dplyr)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
-library(readxl)
-library(foreign)
 library(tidycensus)
-
-rm(list = ls())
+source(here::here("code", "paths.R"))
 
 # Import NAWSPAD data from CSV
-nawspad1_df <- read_csv(here("Data", "nawspad", "NAWS_A2E197.csv")) %>%
+nawspad1_df <- read_csv(path_raw("nawspad", "NAWS_A2E197.csv")) %>%
   clean_names()
-nawspad2_df <- read_csv(here("Data", "nawspad", "NAWS_F2Y197.csv")) %>%
+nawspad2_df <- read_csv(path_raw("nawspad", "NAWS_F2Y197.csv")) %>%
   clean_names()
 
 # Combine NAWSPAD data
@@ -108,7 +105,7 @@ nawspad_df_crop_seasonal <- nawspad_df %>%
   ungroup()
 
 # Add states and FIPS code
-region_state_df <- read_csv(here("Data", "nawspad", "nawspad_region6.csv")) %>%
+region_state_df <- read_csv(path_raw("nawspad", "nawspad_region6.csv")) %>%
   clean_names() %>%
   separate_longer_delim(states, delim = ", ")
 
@@ -136,4 +133,4 @@ nawspad_state_df <- nawspad_state_df %>%
 
 # Export
 nawspad_state_df %>%
-  write_parquet(here("binaries", "nawspad.parquet"))
+  write_parquet(path_int("nawspad.parquet"))

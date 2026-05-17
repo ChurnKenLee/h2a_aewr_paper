@@ -61,6 +61,7 @@
         # Data download
         fredr
         ipumsr
+        tidycensus
       ];
     in
     {

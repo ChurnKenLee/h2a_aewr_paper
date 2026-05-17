@@ -10,43 +10,36 @@
 # ACS wage quantiles
 # BEA farm employment
 # NAWSPAD
-
+rm(list = ls())
 library(here)
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
-library(readxl)
 library(foreign)
 library(haven)
+source(here::here("code", "paths.R"))
 
-rm(list = ls())
 
-h2a <- read_parquet(here("binaries", "h2a_aggregated.parquet"))
-h2a_predict <- read_parquet(here(
-    "binaries",
-    "h2a_prediction_using_elastic_net.parquet"
+h2a <- read_parquet(path_int("h2a_aggregated.parquet"))
+h2a_predict <- read_parquet(path_int(
+    "h2a_prediction_using_elastic_net_continuous_basis.parquet"
 ))
-cz_wage_quantiles <- read_parquet(here(
-    "binaries",
+cz_wage_quantiles <- read_parquet(path_int(
     "acs_czone_wage_quantiles.parquet"
 ))
-qs_census <- read_parquet(here(
-    "binaries",
+qs_census <- read_parquet(path_int(
     "qs_census_selected_obs.parquet"
 ))
-cdl_acreage <- read_parquet(here(
-    "binaries",
+cdl_acreage <- read_parquet(path_int(
     "croplandcros_county_crop_acres.parquet"
 ))
-acs_qcew <- read_parquet(here("binaries", "acs_qcew.parquet"))
-oews_agg <- read_parquet(here("binaries", "oews_county_aggregated.parquet"))
-acs_immigrant_imputed <- read_parquet(here(
-    "binaries",
+acs_qcew <- read_parquet(path_int("acs_qcew.parquet"))
+oews_agg <- read_parquet(path_int("oews_county_aggregated.parquet"))
+acs_immigrant_imputed <- read_parquet(path_int(
     "acs_immigrant_imputed.parquet"
 ))
-bea_farm_nonfarm <- read_parquet(here(
-    "binaries",
+bea_farm_nonfarm <- read_parquet(path_int(
     "bea_farm_nonfarm_emp.parquet"
 ))
 
@@ -54,10 +47,10 @@ bea_farm_nonfarm <- read_parquet(here(
 # Construct FIPS crosswalk following Phil
 # This is just adjusting for BEA's Virginia coding
 bea_fips_xwalk <- read_csv(
-    here("Data Int", "bea_fips_xwalk.csv")
+    path_raw("census_geographic_definitions", "bea_fips_xwalk.csv")
 )
 full_county_set <- read_csv(
-    here("Data Int", "county_adjacency2010.csv")
+    path_raw("census_geographic_definitions", "county_adjacency2010.csv")
 )
 county_list <- unique(select(full_county_set, fipscounty, countyname)) %>% # all county fips and names
     mutate(indata = 1)
@@ -103,8 +96,7 @@ bea_harmonized <- bea_harmonized %>%
     )
 # Save harmonized BEA emp
 bea_harmonized %>%
-    write_parquet(here("binaries", "bea_farm_nonfarm_emp.parquet")) %>%
-    write_parquet(here("Data Int", "bea_farm_nonfarm_emp.parquet"))
+    write_parquet(path_int("bea_farm_nonfarm_emp.parquet"))
 test <- bea_harmonized %>% filter(county_fips == "46102")
 
 #### 2010 county spine ####
@@ -142,21 +134,17 @@ unmatched_h2a <- h2a %>% filter(!county_ansi %in% county_vec)
 
 # Save H-2A data
 h2a %>%
-    write_parquet(here("binaries", "h2a_aggregated.parquet")) %>%
-    write_parquet(here("Data Int", "h2a_aggregated.parquet"))
+    write_parquet(path_int("h2a_aggregated.parquet"))
 h2a_predict %>%
-    write_parquet(here(
-        "binaries",
-        "h2a_prediction_using_elastic_net.parquet"
-    )) %>%
-    write_parquet(here("Data Int", "h2a_prediction_using_elastic_net.parquet"))
+    write_parquet(path_int(
+        "h2a_prediction_using_elastic_net_continuous_basis.parquet"
+    ))
 
 #### Commuting Zone wage quantiles ####
 unmatched_cz <- cz_wage_quantiles %>% filter(!county_ansi %in% county_vec)
 # CZ okay
 cz_wage_quantiles %>%
-    write_parquet(here("binaries", "acs_czone_wage_quantiles.parquet")) %>%
-    write_parquet(here("Data Int", "acs_czone_wage_quantiles.parquet"))
+    write_parquet(path_int("acs_czone_wage_quantiles.parquet"))
 
 #### USDA QuickStats Census and Survey ####
 qs_census_counties <- qs_census %>%
@@ -165,20 +153,14 @@ qs_census_counties <- qs_census %>%
 unmatched_qs <- qs_census_counties %>% filter(!county_ansi %in% county_vec)
 # Only unmatched county is in Alaska, we are good
 qs_census %>%
-    write_parquet(here("binaries", "qs_census_selected_obs.parquet")) %>%
-    write_parquet(here("Data Int", "qs_census_selected_obs.parquet"))
+    write_parquet(path_int("qs_census_selected_obs.parquet"))
 
 #### CroplandCROS CDL ####
 cdl_counties <- cdl_acreage %>% distinct(fips)
 unmatched_cdl <- cdl_counties %>% filter(!fips %in% county_vec)
 # CDL OK
 cdl_acreage %>%
-    write_parquet(here(
-        "binaries",
-        "croplandcros_county_crop_acres.parquet"
-    )) %>%
-    write_parquet(here(
-        "Data Int",
+    write_parquet(path_int(
         "croplandcros_county_crop_acres.parquet"
     ))
 
@@ -198,8 +180,7 @@ acs_qcew_counties <- acs_qcew %>%
 unmatched_acs_qcew <- acs_qcew_counties %>% filter(!county_ansi %in% county_vec)
 # Only unmatched location is in Alaska, ACS-QCEW ok
 acs_qcew %>%
-    write_parquet(here("binaries", "acs_qcew.parquet")) %>%
-    write_parquet(here("Data Int", "acs_qcew.parquet"))
+    write_parquet(path_int("acs_qcew.parquet"))
 
 #### OEWS ####
 # FL Dade to Miami-Dade
@@ -212,5 +193,4 @@ unmatched_oews <- oews_counties %>%
     arrange()
 # Only unmatched counties are in Alaska and Puerto Rico, OEWS OK
 oews_agg %>%
-    write_parquet(here("binaries", "oews_county_aggregated.parquet")) %>%
-    write_parquet(here("Data Int", "oews_county_aggregated.parquet"))
+    write_parquet(path_int("oews_county_aggregated.parquet"))
