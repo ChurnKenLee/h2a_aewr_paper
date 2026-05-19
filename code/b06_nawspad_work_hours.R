@@ -1,11 +1,14 @@
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(tidycensus)
-source(here::here("code", "paths.R"))
 
 # Import NAWSPAD data from CSV
 nawspad1_df <- read_csv(path_raw("nawspad", "NAWS_A2E197.csv")) %>%

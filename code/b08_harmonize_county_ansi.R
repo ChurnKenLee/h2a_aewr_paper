@@ -11,15 +11,17 @@
 # BEA farm employment
 # NAWSPAD
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+    source("paths.R")
+} else {
+    source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(foreign)
 library(haven)
-source(here::here("code", "paths.R"))
-
 
 h2a <- read_parquet(path_int("h2a_aggregated.parquet"))
 h2a_predict <- read_parquet(path_int(

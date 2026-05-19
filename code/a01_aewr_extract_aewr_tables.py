@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -23,7 +23,19 @@ def _():
     import fitz
     from bs4 import BeautifulSoup
 
-    return BeautifulSoup, INTERMEDIATE, Path, RAW, alt, httpx, mo, pl, re, us
+    return (
+        BeautifulSoup,
+        INTERMEDIATE,
+        Path,
+        RAW,
+        alt,
+        httpx,
+        mo,
+        pdfplumber,
+        pl,
+        re,
+        us,
+    )
 
 
 @app.cell
@@ -40,6 +52,100 @@ def _(Path, RAW):
     Path(aewr_path / "xml").mkdir(parents=True, exist_ok=True)
     xml_path = aewr_path / "xml"
     return aewr_path, xml_path
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # 1990 to 2008
+    """)
+    return
+
+
+@app.cell
+def _(aewr_path):
+    crs_report = aewr_path / "20080326_RL32861_9a486634f79a5f9c680cc5ba021e579cc67210a5.pdf"
+    return (crs_report,)
+
+
+@app.cell
+def _(pdfplumber, pl):
+    def clean_pdf_number(value):
+        if value is None:
+            return None
+
+        value = value.strip().replace("$", "").replace(",", "")
+        if value in {"", "-", "\u2013", "\u2014"}:
+            return None
+
+        # CRS Table 1 extracts North Dakota's 2000 AEWR as "7/49".
+        return float(value.replace("/", "."))
+
+
+    def extract_pdf_table(pdf_path, page_numbers, columns):
+        rows = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_number in page_numbers:
+                table = pdf.pages[page_number - 1].extract_tables()[0]
+                for row in table[1:]:
+                    if len(row) != len(columns):
+                        raise ValueError(
+                            f"Page {page_number} row has {len(row)} columns, "
+                            f"expected {len(columns)}: {row}"
+                        )
+                    rows.append(dict(zip(columns, row)))
+
+        return pl.DataFrame(rows)
+
+    return clean_pdf_number, extract_pdf_table
+
+
+@app.cell
+def _(clean_pdf_number, crs_report, extract_pdf_table, pl):
+    crs_aewr_year_cols = [str(year) for year in range(1990, 2009)]
+    crs_aewr_wide = extract_pdf_table(
+        crs_report,
+        page_numbers=[10, 11],
+        columns=["state_name", *crs_aewr_year_cols],
+    ).with_columns(
+        [
+            pl.col(col).map_elements(clean_pdf_number, return_dtype=pl.Float64)
+            for col in crs_aewr_year_cols
+        ]
+    )
+
+    if crs_aewr_wide.height != 49:
+        raise ValueError(
+            f"Expected 49 state rows in CRS Table 1, got {crs_aewr_wide.height}"
+        )
+
+    crs_aewr_long = (
+        crs_aewr_wide.unpivot(
+            index="state_name",
+            variable_name="year",
+            value_name="aewr",
+        )
+        .with_columns(
+            pl.col("year").cast(pl.Int64),
+            pl.lit("20080326_RL32861").alias("document_number"),
+        )
+        .select(["state_name", "aewr", "year", "document_number"])
+    )
+    return (crs_aewr_long,)
+
+
+@app.cell
+def _(crs_aewr_long):
+    crs_aewr_long
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # 2009 onward
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -367,12 +473,24 @@ def _(aewr_2009, all_data, pl, us):
 
     # Harmonize name for exporting
     aewr_df = aewr_df.rename({"state": "state_name", "policy_year": "year"})
-    return (aewr_df,)
+    return aewr_df, name_fips_dict
 
 
 @app.cell
-def _(aewr_df, aewr_path, pl):
-    # Validate with USDA data
+def _(aewr_df, crs_aewr_long, name_fips_dict, pl):
+    # Concat with pre-2009 AEWR from CRS report
+    crs_aewr = crs_aewr_long.with_columns(
+        pl.col("state_name").replace(name_fips_dict).alias("state_fips_code")
+    )
+
+    aewr_1990_2025 = pl.concat([crs_aewr, aewr_df])
+    aewr_1990_2025
+    return (aewr_1990_2025,)
+
+
+@app.cell
+def _(aewr_1990_2025, aewr_path, pl):
+    # Validate with USDA data from https://www.usda.gov/about-usda/general-information/staff-offices/office-chief-economist/labor-affairs/data-sources
     usda_aewr = pl.read_excel(aewr_path / "AEWR-2025.xlsx")
     usda_aewr = (
         usda_aewr.unpivot(
@@ -391,12 +509,11 @@ def _(aewr_df, aewr_path, pl):
     )
 
     check_df = (
-        aewr_df.join(usda_aewr, on=["state_name", "year"], how="right")
+        aewr_1990_2025.join(usda_aewr, on=["state_name", "year"], how="right")
         .with_columns(error=abs(pl.col("aewr") - pl.col("usda_aewr")))
         .filter(pl.col("year") >= 2000)
         .sort(pl.col("error"))
     )
-
     check_df
     return (check_df,)
 
@@ -421,7 +538,7 @@ def _(mo):
 
 
 @app.cell
-def _(aewr_df, alt, pl):
+def _(aewr_1990_2025, alt, pl):
     # Clean and Aggregate in Polars
     # Assuming 'year' and 'income' are strings
     quantiles = [0.05, 0.25, 0.50, 0.75, 0.95]
@@ -431,7 +548,7 @@ def _(aewr_df, alt, pl):
     agg_exprs.append(pl.col("aewr").mean().alias("mean_val"))
 
     stats_df = (
-        aewr_df.with_columns(
+        aewr_1990_2025.with_columns(
             [
                 pl.col("year").cast(pl.Int32, strict=False),
                 pl.col("aewr").cast(pl.Float64, strict=False),
@@ -488,10 +605,10 @@ def _(aewr_df, alt, pl):
 
 
 @app.cell
-def _(aewr_df, pl):
+def _(aewr_1990_2025, pl):
     # 1. Clean data and calculate annual changes per ID
     processed_df = (
-        aewr_df.with_columns(
+        aewr_1990_2025.with_columns(
             [
                 pl.col("state_fips_code").cast(pl.Utf8),
                 pl.col("year").cast(pl.Int32, strict=False),
@@ -551,11 +668,6 @@ def _(alt, ecdf_df):
     )
 
     faceted_chart.show()
-    return
-
-
-@app.cell
-def _():
     return
 
 

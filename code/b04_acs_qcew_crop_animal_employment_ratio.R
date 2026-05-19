@@ -1,11 +1,14 @@
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(readxl)
-source(here::here("code", "paths.R"))
 
 acs_df <- read_parquet(path_int(
   "acs_5year_for_immigrant_status_imputation.parquet"

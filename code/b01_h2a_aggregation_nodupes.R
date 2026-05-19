@@ -1,10 +1,13 @@
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
-source(here::here("code", "paths.R"))
 
 Mode <- function(x, na.rm = FALSE) {
   if (na.rm) {
@@ -421,7 +424,6 @@ sanity_check_total_2 <- h2a_combined %>%
     nbr_workers_requested = sum(adjusted_nbr_workers_requested, na.rm = TRUE),
   )
 # Sanity check numbers match, we are good
-
 #### Clean before aggregating into county years ####
 h2a_combined <- h2a_combined %>%
   mutate(fips = if_else(is.na(fips), "00000", fips)) %>%

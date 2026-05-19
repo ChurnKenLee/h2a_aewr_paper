@@ -1,11 +1,14 @@
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(ipumsr)
 library(haven)
-source(here::here("code", "paths.R"))
 
 # #### Submit extract request and download ####
 # acs1_samples <- c()

@@ -16,5 +16,19 @@
 - .venv/**
 - __marimo__/**
 
-# Raw data
-- data/**
+# Big raw data files
+- data/raw/acs/**
+- data/raw/county_shapefile/**
+- data/raw/crop_weight_conversions/**
+- data/raw/croplandcros_cdl/**
+- data/raw/epinoaa_nclimgrid/**
+- data/raw/gnatsgo/**
+- data/raw/h2a/**
+- data/raw/mymarketnews_reports/**
+- data/raw/nawspad/**
+- data/raw/oews/**
+- data/raw/qcew/**
+- data/raw/quickstats/**
+- data/raw/risk_management_agency/**
+- data/raw/trac/**
+- data/raw/whd_enforcement/**

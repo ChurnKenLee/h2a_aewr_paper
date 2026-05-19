@@ -1,10 +1,13 @@
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
-source(here::here("code", "paths.R"))
 
 # Load crosswalks
 oews_area_definitions_df <- read_parquet(path_int(

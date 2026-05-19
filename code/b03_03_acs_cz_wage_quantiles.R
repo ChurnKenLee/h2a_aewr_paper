@@ -1,12 +1,15 @@
 rm(list = ls())
-library(here)
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
+}
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(readxl)
 library(haven)
 library(collapse)
-source(here::here("code", "paths.R"))
 
 # PUMA 2010 and PUMA 2020 xwalk from IPUMS
 puma_xwalk <- read_excel(path_raw(

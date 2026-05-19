@@ -22,47 +22,7 @@
       };
 
       cudaShell = import ./nix/cuda-shell.nix { inherit pkgs; };
-
-      rPackages = with pkgs.rPackages; [
-        # Language support
-        languageserver
-
-        # Data input
-        here
-        arrow
-        haven
-        readxl
-        writexl
-        foreign
-        janitor
-
-        # Tidyverse
-        tidyverse
-        tidylog
-
-        # Graphics
-        ggplot2
-        cowplot
-        ggthemes
-        ggfixest
-        scales
-
-        # Faster tools
-        collapse
-
-        # Inference
-        fixest
-        MatchIt
-
-        # Geospatial tools
-        sf
-        ggspatial
-
-        # Data download
-        fredr
-        ipumsr
-        tidycensus
-      ];
+      rPackages = import ./nix/r-packages.nix { inherit pkgs; };
     in
     {
       devShells.${system}.default = cudaShell.mkPythonCudaShell {

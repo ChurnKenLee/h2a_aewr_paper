@@ -1,32 +1,90 @@
 # code/paths.R
 
+PROJECT_MARKERS <- c(".env", ".here", "pyproject.toml")
+
 is_project_root <- function(path) {
-  dir.exists(file.path(path, "code")) &&
-    file.exists(file.path(path, ".here")) &&
-    file.exists(file.path(path, "pyproject.toml"))
+  all(file.exists(file.path(path, PROJECT_MARKERS))) &&
+    file.exists(file.path(path, "code", "paths.R"))
 }
 
-env_root <- Sys.getenv("H2A_PROJECT_ROOT")
+candidate_roots <- unique(c(
+  Sys.getenv("H2A_PROJECT_ROOT", unset = NA_character_),
+  "/mnt/storage/Dropbox/projects/H-2A Paper", # Ken's root path
+  paste0("C:/Users/", Sys.info()[["user"]], "/Dropbox/H-2A Paper"), # Phil's root path
+  # Try other candidate paths if necessary
+  file.path(Sys.getenv("HOME", unset = ""), "Dropbox/projects/H-2A Paper"),
+  file.path(Sys.getenv("HOME", unset = ""), "Dropbox/H-2A Paper"),
+  file.path(Sys.getenv("USERPROFILE", unset = ""), "Dropbox/H-2A Paper"),
+  file.path(
+    Sys.getenv("USERPROFILE", unset = ""),
+    "OneDrive/Dropbox/H-2A Paper"
+  ),
+  file.path(Sys.getenv("OneDrive", unset = ""), "Dropbox/H-2A Paper"),
+  file.path(Sys.getenv("OneDriveCommercial", unset = ""), "Dropbox/H-2A Paper"),
+  getwd(),
+  dirname(getwd())
+))
 
-if (nzchar(env_root)) {
-  ROOT <- env_root
-} else {
-  ROOT <- here::here()
-}
+candidate_roots <- candidate_roots[
+  !is.na(candidate_roots) & nzchar(candidate_roots)
+]
+candidate_roots <- normalizePath(
+  path.expand(candidate_roots),
+  winslash = "/",
+  mustWork = FALSE
+)
 
-ROOT <- normalizePath(ROOT, winslash = "/", mustWork = TRUE)
+root_hits <- candidate_roots[vapply(
+  candidate_roots,
+  is_project_root,
+  logical(1)
+)]
 
-if (!is_project_root(ROOT)) {
+if (length(root_hits) == 0) {
   stop(
     "Could not find H-2A project root. ",
-    "Set H2A_PROJECT_ROOT to the project folder, e.g. ",
-    "H2A_PROJECT_ROOT=C:/Users/<name>/Dropbox/H-2A Paper"
+    "Add this machine's root path to candidate_roots in code/paths.R."
   )
 }
 
+ROOT <- root_hits[[1]]
+
 path_root <- function(...) file.path(ROOT, ...)
+path_do <- function(...) file.path(ROOT, "Do", ...)
 path_code <- function(...) file.path(ROOT, "code", ...)
 path_json <- function(...) file.path(ROOT, "code", "json", ...)
+
+path_data <- function(...) file.path(ROOT, "data", ...)
 path_raw <- function(...) file.path(ROOT, "data", "raw", ...)
 path_int <- function(...) file.path(ROOT, "data", "intermediate", ...)
-path_output <- function(...) file.path(ROOT, "output", ...)
+path_processed <- function(...) file.path(ROOT, "data", "processed", ...)
+path_cache <- function(...) {
+  file.path(ROOT, "data", "intermediate", "cache", ...)
+}
+
+path_outputs <- function(...) file.path(ROOT, "outputs", ...)
+path_figures <- function(...) file.path(ROOT, "outputs", "figures", ...)
+path_tables <- function(...) file.path(ROOT, "outputs", "tables", ...)
+path_logs <- function(...) file.path(ROOT, "outputs", "logs", ...)
+
+library(dotenv)
+dotenv::load_dot_env(file = path_root(".env"))
+
+ensure_project_dirs <- function() {
+  dirs <- c(
+    path_raw(),
+    path_int(),
+    path_processed(),
+    path_cache(),
+    path_outputs(),
+    path_figures(),
+    path_tables(),
+    path_logs()
+  )
+
+  invisible(lapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE))
+}
+
+as_dir <- function(path) {
+  paste0(normalizePath(path, winslash = "/", mustWork = FALSE), "/")
+}
