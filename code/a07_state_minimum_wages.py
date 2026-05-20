@@ -7,14 +7,11 @@ app = marimo.App(width="full")
 @app.cell
 def _():
     import marimo as mo
-    from pathlib import Path
     from h2a.paths import CODE, RAW, INTERMEDIATE
     import dotenv, os
-    import pandas as pd
     import polars as pl
     import numpy as np
     import json
-    from pandas.api.types import union_categoricals
     import requests
     import urllib
     import time

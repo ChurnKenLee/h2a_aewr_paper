@@ -12,7 +12,6 @@ def _():
     from pathlib import Path
     from h2a.paths import CODE, RAW, INTERMEDIATE
     import polars as pl
-    import pandas as pd
     import requests
     import httpx
     import us
@@ -20,7 +19,6 @@ def _():
     import matplotlib.pyplot as plt
     import altair as alt
     import pdfplumber
-    import fitz
     from bs4 import BeautifulSoup
 
     return (

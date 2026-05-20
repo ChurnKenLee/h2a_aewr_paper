@@ -9,30 +9,97 @@ def _():
     import marimo as mo
     from h2a.paths import RAW, INTERMEDIATE
     import polars as pl
+    import zipfile
 
-    return INTERMEDIATE, RAW, pl
+    return INTERMEDIATE, RAW, pl, zipfile
+
+
+@app.cell
+def _(RAW):
+    caemp_zip = RAW / "bea" / "CAEMP25N.zip"
+    cainc_zip = RAW / "bea" / "CAINC45.zip"
+    return caemp_zip, cainc_zip
 
 
 @app.cell
 def _(RAW, pl):
-    bea = pl.read_csv(
-        RAW / "bea" / "CAEMP25N__ALL_AREAS_2001_2022.csv",
-        infer_schema_length=0,
-        schema_overrides={
-            "GeoFIPS": pl.String,
-            "LineCode": pl.String,
-        },
+    phil_caemp = pl.read_csv(
+        RAW / "bea" / "phil_original" / "CAEMP25N__ALL_AREAS_2001_2022_trim.csv",
+        infer_schema=False,
         encoding="cp1252",
     )
-    year_cols = [c for c in bea.columns if c.startswith("20")]
-    return bea, year_cols
+    phil_cainc = pl.read_csv(
+        RAW / "bea" / "phil_original" / "CAINC45__ALL_AREAS_1969_2022_trim.csv",
+        infer_schema=False,
+        encoding="cp1252",
+    )
+    return phil_caemp, phil_cainc
 
 
 @app.cell
-def _(bea, pl, year_cols):
-    def employment_long(line_code: str, value_name: str) -> pl.DataFrame:
+def _(caemp_zip, cainc_zip, pl, zipfile):
+    # We have to extract csv as raw data before passing to polars
+    # Tis because polars does not apply encoding when streamed data
+    with zipfile.ZipFile(caemp_zip) as _z:
+        _data = _z.read("CAEMP25N__ALL_AREAS_2001_2022.csv")
+        caemp_raw = pl.read_csv(
+            _data,
+            infer_schema=False,
+            schema_overrides={
+                "GeoFIPS": pl.String,
+                "LineCode": pl.String,
+            },
+            encoding="cp1252",
+        )
+    with zipfile.ZipFile(cainc_zip) as _z:
+        _data = _z.read("CAINC45__ALL_AREAS_1969_2022.csv")
+        cainc_raw = pl.read_csv(
+            _data,
+            infer_schema=False,
+            schema_overrides={
+                "GeoFIPS": pl.String,
+                "LineCode": pl.String,
+            },
+            encoding="cp1252",
+        )
+    return caemp_raw, cainc_raw
+
+
+@app.cell
+def _(caemp_raw, cainc_raw, phil_caemp, phil_cainc, pl):
+    # Remove footers and prepend "y" to year columns
+    # This is needed for Phil's code, as he previously cleaned this by hand
+    caemp_year_cols = [_c for _c in caemp_raw.columns if _c.startswith("1")] + [
+        _c for _c in caemp_raw.columns if _c.startswith("2")
+    ]
+    caemp = caemp_raw.filter(
+        # pl.col("GeoName") != "United States",
+        pl.col("GeoName").is_not_null()
+    )
+    caemp_trim = caemp.with_columns(pl.col(caemp_year_cols).name.prefix("y")).drop(
+        pl.col(caemp_year_cols)
+    )
+    print(phil_caemp.equals(caemp_trim))
+
+    cainc_year_cols = [_c for _c in cainc_raw.columns if _c.startswith("1")] + [
+        _c for _c in cainc_raw.columns if _c.startswith("2")
+    ]
+    cainc = cainc_raw.filter(
+        # pl.col("GeoName") != "United States",
+        pl.col("GeoName").is_not_null()
+    )
+    cainc_trim = cainc.with_columns(pl.col(cainc_year_cols).name.prefix("y")).drop(
+        pl.col(cainc_year_cols)
+    )
+    print(phil_cainc.equals(cainc_trim))
+    return caemp, caemp_year_cols
+
+
+@app.cell
+def _(pl):
+    def employment_long(df, year_cols, line_code: str, value_name: str) -> pl.DataFrame:
         return (
-            bea.filter(pl.col("LineCode") == line_code)
+            df.filter(pl.col("LineCode") == line_code)
             .unpivot(
                 index="GeoFIPS",
                 on=year_cols,
@@ -51,10 +118,9 @@ def _(bea, pl, year_cols):
 
 
 @app.cell
-def _(INTERMEDIATE, employment_long):
-    bea_farm = employment_long("70", "bea_farm_emp")
-    bea_nonfarm = employment_long("80", "bea_nonfarm_emp")
-
+def _(INTERMEDIATE, caemp, caemp_year_cols, employment_long):
+    bea_farm = employment_long(caemp, caemp_year_cols, "70", "bea_farm_emp")
+    bea_nonfarm = employment_long(caemp, caemp_year_cols, "80", "bea_nonfarm_emp")
     bea_farm_nonfarm = bea_farm.join(
         bea_nonfarm, on=["GeoFIPS", "year"], how="left"
     ).rename({"GeoFIPS": "county_fips"})

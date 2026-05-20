@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -53,7 +53,7 @@ def _(CACHE, INTERMEDIATE, RAW):
     binary_path = INTERMEDIATE
     json_path = CACHE
     h2a_path = RAW / "h2a"
-    census_code_path = RAW / "census_geographic_definitions"
+    census_code_path = RAW / "geographic_crosswalks" / "census"
     return binary_path, census_code_path, h2a_path, json_path
 
 
@@ -133,7 +133,6 @@ def _(census_code_path, pl, place_suffix_pattern, read_census_file):
         .filter(pl.col("county") != "")
         .with_columns(pl.col("county").str.replace_all(place_suffix_pattern, ""))
     )
-    census_county_2020
     return
 
 
@@ -159,7 +158,6 @@ def _(census_code_path, pl, place_suffix_pattern):
         .filter(pl.col("county") != "")
         .with_columns(pl.col("county").str.replace_all(place_suffix_pattern, ""))
     )
-    census_county_2010
     return (census_county_2010,)
 
 
@@ -204,7 +202,6 @@ def _(census_code_path, census_county_2010, pl, place_suffix_pattern):
     census_place_agg_2010 = census_place_agg_2010.group_by(["state", "place"]).agg(
         pl.col("fips").str.join(",")
     )
-    census_place_agg_2010
     return (census_place_agg_2010,)
 
 
@@ -224,7 +221,6 @@ def _(census_code_path, pl, place_suffix_pattern, read_census_file):
         .filter(pl.col("place") != "")
         .with_columns(pl.col("place").str.replace_all(place_suffix_pattern, ""))
     )
-    census_place_agg_2020.filter(pl.col("state") == "AL").sort("place")
     return
 
 
@@ -238,7 +234,6 @@ def _(census_code_path, pl):
         .group_by("zip")
         .agg(pl.col("fips").str.join(","))
     )
-    census_zip_agg_2010
     return (census_zip_agg_2010,)
 
 
@@ -252,7 +247,6 @@ def _(census_code_path, pl, read_census_file):
         .filter(pl.col("GEOID_ZCTA5_20") != "")
         .rename({"GEOID_ZCTA5_20": "zip", "GEOID_COUNTY_20": "fips"})
     )
-    census_zip_agg_2020
     return
 
 
@@ -1241,7 +1235,6 @@ def _(
         h2a_df,
         ["worksite_city", "worksite_county", "worksite_state", "worksite_zip"],
     )
-    h2a_with_fips_df
     return (h2a_with_fips_df,)
 
 
@@ -1259,7 +1252,6 @@ def _(
         add_b_df,
         ["worksite_city", "worksite_state", "worksite_zip"],
     )
-    add_b_with_fips_df
     return (add_b_with_fips_df,)
 
 

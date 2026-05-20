@@ -1,0 +1,176 @@
+id: acs
+  name: American Community Survey
+  provider: IPUMS
+  coverage:
+    years: "2000-2024"
+  access:
+    method: "IPUMS API via ipumsr package"
+  notes: "ipumsr takes manifest defined in code/json: acs_immigrant_status_imputation_extract_spec.json and acs_wage_quantile_extract_spect.json, and produces a request spec that is sent to the IPUMS API"
+id: aewr
+  name: Adverse Effect Wage Rate
+  provider: Department of Labor OFLC
+  coverage:
+    years: "1990-2025"
+  access:
+    url: ""
+    access_date: ""
+    method: "Extracted from notices posted in the Federal Register by the Department of Labor, and a CRS report"
+id: bea
+  name: BEA tables
+  provider: Bureau of Economic Analysis
+  coverage:
+    years: ""
+  access:
+    url:
+      CAEMP25N: "https://apps.bea.gov/regional/histdata/releases/1123lapi/CAEMP25N.zip"
+      CAINC45: "https://apps.bea.gov/regional/histdata/releases/1123lapi/CAINC45.zip"
+    access_date: ""
+    method: ""
+id: census_population_estimates
+  name: Census Population Estimates
+  provider: Census Bureau
+  coverage:
+    years: "2009, 2019, 2024"
+  access:
+    url: "https://www2.census.gov/programs-surveys/popest/datasets/"
+    access_date: ""
+    method: ""
+id: county_shapefile
+  name: TIGER/Line Shapefiles
+  provider: Census Bureau
+  coverage:
+    years: "2010, 2020"
+  access:
+    url: 
+      2020: "https://www2.census.gov/geo/tiger/TIGER2020/COUNTY/tl_2020_us_county.zip"
+      2010: "https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/tl_2010_us_county10.zip"
+id: croplandcros_cdl
+  name: CroplandCROS CDL
+  provider: USDA
+  coverage:
+    years: "2008-2025"
+  access:
+    url: "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/index.php"
+    access_date: ""
+    method: ""
+id: epinoaa_nclimgrid
+  name: NOAA Daily ‘Analysis Ready’ NClimGrid Climate Dataset at County Scale
+  coverage:
+    years: "1990-2025"
+  access:
+    url: "https://noaa-nclimgrid-daily-pds.s3.amazonaws.com/index.html"
+    access_date: ""
+    method: ""
+  notes: "EpiNOAA is a cleaned analysis-ready version of NClimGrid produced by the North Carolina Institute for Climate Studies"
+id: fred
+  name: Producer Price Index by Commodity, Farm Products (WPU01)
+  provider: FRED
+  coverage:
+    years: "1913-2025"
+  access:
+    url: "https://fred.stlouisfed.org/series/WPU01"
+    access_date: ""
+    method: ""
+id: gnatsgo
+  name: Gridded National Soil Survey Geographic Database (gNATSGO)
+  provider: USDA Natural Resources Conservation Service
+  access:
+    url: "https://www.nrcs.usda.gov/resources/data-and-reports/gridded-national-soil-survey-geographic-database-gnatsgo"
+id: h2a
+  name: H-2A disclosure data
+  provider: DOL OFLC
+  coverage:
+    years: "2008-2025"
+  access:
+    url: "https://www.dol.gov/agencies/eta/foreign-labor/performance"
+    access_date: ""
+    method: ""
+id: mymarketnews_reports
+  name: My Market News
+  provider: USDA AMS
+  coverage:
+    years: "2004-2025"
+  access:
+    url: "https://mymarketnews.ams.usda.gov/"
+    access_date: ""
+    method: "API call using USDA AMS API and API key"
+id: oews
+  name: Occupational Employment and Wage Statistics
+  coverage:
+    years: "1997-2021"
+  access:
+    url: "https://www.bls.gov/oes/tables.htm"
+    access_date: ""
+    method: ""
+id: qcew
+  name: Quarterly Census of Employment and Wages
+  coverage:
+    years: "2005-2017"
+  access:
+    url: "https://www.bls.gov/cew/downloadable-data-files.htm"
+    access_date: ""
+    method: ""
+id: quickstats
+  name: USDA QuickStats
+  coverage:
+    years: "2000-2025"
+  access:
+    url: "https://www.nass.usda.gov/datasets/"
+    access_date: ""
+    method: ""
+id: rma_adm
+  name: USDA Risk Management Agency - Actuarial Data Master
+  coverage:
+    years: "2000-2023"
+  access:
+    url: "https://pubfs-rma.fpac.usda.gov/pub/References/actuarial_data_master/index.html"
+    access_date: ""
+    method: ""
+id: rma_sob
+  name: USDA Risk Management Agency - Summary of Business
+  coverage:
+    years: "2000-2025"
+  access:
+    url: "https://www.rma.usda.gov/tools-reports/summary-of-business/state-county-crop-summary-business"
+    access_date: ""
+    method: ""
+id: geo_xwalk
+  - name: PUMA to 1990 CZ crosswalk
+      provider: David Dorn
+      coverage: "PUMA 2000 and PUMA 2010"
+      url: "https://www.ddorn.net/data.htm"
+  - name: CZ to county crosswalk
+      provider: Fabian Eckert
+      coverage:
+        years: "1790-1990"
+      url: "http://fpeckert.me/eglp/Materials/Crosswalk%20Files/eglp_cz_crosswalk_endyr_1990.csv"
+  - name: PUMA to county crosswalk
+      provider: Geocorr
+      coverage: "PUMA 2000 to 2010 county, PUMA 2010 to 2010 county"
+      url: "https://mcdc.missouri.edu/applications/geocorr.html"
+  - name: PUMA to PUMA crosswalk
+      provider: IPUMS
+      coverage: "PUMA 2010 to PUMA 2020"
+      url: "https://usa.ipums.org/usa/volii/pumas20.shtml"
+  - name: County to CZ crosswalk
+      provider: Penn State Commuting Zones / Labor Markets data repository
+      coverage: "2010 counties to 2010 CZs"
+      url: "https://sites.psu.edu/psucz/files/2018/09/counties10-zqvz0r.csv"
+  - name: County adjacency
+      provider: Census Bureau
+      coverage: "2010 counties"
+      url: "https://www2.census.gov/geo/docs/reference/county_adjacency/county_adjacency2010.txt"
+  - name: County names and codes
+      provider: Census Bureau
+      coverage: "2010 counties, 2020 counties"
+      url: "https://www.census.gov/library/reference/code-lists/ansi.2010.html"
+  - name: Census places
+      provider: Census Bureau
+      coverage: "2010 places, 2020 places"
+      url: "https://www.census.gov/library/reference/code-lists/ansi.html"
+  - name: Zipcode to county crosswalk
+      provider: Census Bureau
+      coverage: "2010 counties, 2020 counties"
+      url:
+        2010: "https://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt"
+        2020: "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta510_zcta520_natl.txt"

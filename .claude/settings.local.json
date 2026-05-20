@@ -35,7 +35,10 @@
       "Bash(Select-String -Pattern \"Error|error in|Execution halted|cannot open|not found|Warning in\")",
       "Bash(Select-Object -Last 30)",
       "Bash(echo \"Exit: $?\")",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Skill(run-r)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Remove-Item *)"
     ]
   }
 }
