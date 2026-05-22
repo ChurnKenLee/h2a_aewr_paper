@@ -1885,7 +1885,7 @@ ggsave(
 # Fisher price index (fisher_index_ppi) construction:
 #   Script: code/b02_01_price_index_nass_synthetic_cdl.py
 #   Inputs: CDL county-crop acreage (croplandcros_county_crop_acres.parquet)
-#           + NASS synthetic prices/yields per crop (state, then national fallback)
+#   with NASS synthetic prices/yields per crop (state, then national fallback)
 #   Method: chained bilateral Fisher — geometric mean of Laspeyres and Paasche,
 #           matched set = crops present in both consecutive years (inner join).
 #           Base year 2011 = 100. Forward chain 2012-2022; backward 2010-2008.
