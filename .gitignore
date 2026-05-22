@@ -1,7 +1,6 @@
 # ==========================================================================
 # SYSTEM FILES
 # ==========================================================================
-.vscode/
 .positron/
 .DS_Store
 desktop.ini
@@ -10,14 +9,16 @@ desktop.ini
 .direnv/
 .envrc
 
+# DO NOT ignore flakes
+!flake.nix
+!nix/
+
+
 # ==========================================================================
 # PYTHON (uv venv)
 # ==========================================================================
 .venv
-.venv-wsl
-.venv-windows
-.venv-nixos
-__pycache__
+**/__pycache__/
 *.py[cod]
 *$py.class
 .python-version
@@ -45,7 +46,6 @@ __pycache__
 # ==========================================================================
 # POSITRON / VS CODE
 # ==========================================================================
-.vscode/
 .positron/
 
 # ==========================================================================
@@ -54,7 +54,6 @@ __pycache__
 
 # Data
 data/
-binaries/
 *.dta
 *.csv
 *.xlsx
@@ -65,20 +64,15 @@ binaries/
 *.zip
 *.gz
 
-# Processed binaries
-files_for_phil/
-binaries/
-
 # Large intermediate crosswalks
 code/json/
 
+# Pictures
+outputs/figures/
+
 # PDFs
 papers/
-
-# Phil's folders
-Data Int/
-Literature/
-Output/
+literature/
 
 # LaTeX auxiliary files
 draft/*
