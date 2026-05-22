@@ -5,8 +5,8 @@ The parser is base R's own parser (`getParseData(parse(...))`). Python and
 Polars handle indexing, section detection, provenance, and reconstruction.
 
 This is intentionally conservative: generated modules preserve original source
-text slices, avoid deparsing R, and only remove the legacy per-script path
-bootstrap/`rm(list = ls())` lines that are unsafe after splitting.
+text slices and avoid deparsing R. All source transformations are applied
+through the JSONL patch table.
 """
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ PATCH_SCHEMA = {
     "payload": pl.String,
     "reason": pl.String,
     "enabled": pl.Boolean,
+    "allow_missing": pl.Boolean,
 }
 
 
@@ -54,10 +55,13 @@ def read_patches(path: Path) -> pl.DataFrame:
     for name, dtype in PATCH_SCHEMA.items():
         if name not in patches.columns:
             default = True if dtype == pl.Boolean and name == "enabled" else None
+            if dtype == pl.Boolean and name == "allow_missing":
+                default = False
             patches = patches.with_columns(pl.lit(default, dtype=dtype).alias(name))
 
     return patches.with_columns(
-        pl.col("enabled").fill_null(True)
+        pl.col("enabled").fill_null(True),
+        pl.col("allow_missing").fill_null(False),
     ).select([pl.col(name).cast(dtype, strict=False) for name, dtype in PATCH_SCHEMA.items()])
 
 
@@ -69,12 +73,16 @@ def apply_patch_text(text: str, patch: dict) -> str:
     if op == "insert_before":
         idx = text.find(selector)
         if idx < 0:
+            if patch.get("allow_missing"):
+                return text
             raise ValueError(f"Selector not found for insert_before: {selector}")
         return text[:idx] + payload + text[idx:]
 
     if op == "insert_after":
         idx = text.find(selector)
         if idx < 0:
+            if patch.get("allow_missing"):
+                return text
             raise ValueError(f"Selector not found for insert_after: {selector}")
         idx += len(selector)
         return text[:idx] + payload + text[idx:]
@@ -82,6 +90,8 @@ def apply_patch_text(text: str, patch: dict) -> str:
     if op == "replace_regex":
         new_text, n = re.subn(selector, payload, text, flags=re.MULTILINE | re.DOTALL)
         if n == 0:
+            if patch.get("allow_missing"):
+                return text
             raise ValueError(f"Regex selector matched nothing: {selector}")
         return new_text
 
@@ -96,7 +106,7 @@ def apply_patch_text(text: str, patch: dict) -> str:
 def apply_module_patches(module_path: str, text: str, patches: pl.DataFrame) -> str:
     module_patches = (
         patches
-        .filter((pl.col("module") == module_path) & pl.col("enabled"))
+        .filter((pl.col("module").is_in([module_path, "*"])) & pl.col("enabled"))
         .to_dicts()
     )
 
@@ -115,6 +125,7 @@ def append_patch(path: Path, patch: dict[str, object]) -> None:
         "payload": patch.get("payload", ""),
         "reason": patch.get("reason", ""),
         "enabled": bool(patch.get("enabled", True)),
+        "allow_missing": bool(patch.get("allow_missing", False)),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
@@ -252,11 +263,6 @@ ARTIFACT_RE = re.compile(
     r")\b"
 )
 LIBRARY_RE = re.compile(r"^\s*library\s*\(\s*([A-Za-z0-9_.]+)")
-PATH_SOURCE_START_RE = re.compile(
-    r'^\s*if\s*\(\s*(?:!exists\("path_int"\)|file\.exists\("paths\.R"\))\s*\)\s*\{'
-)
-RM_LIST_LS_RE = re.compile(r"^\s*\ufeff?\s*rm\s*\(\s*list\s*=\s*ls\s*\(\s*\)\s*\)\s*$")
-FREDR_SET_KEY_RE = re.compile(r'^\s*fredr_set_key\s*\(\s*["\'][^"\']+["\']\s*\)\s*$')
 
 
 def project_root_from_script() -> Path:
@@ -403,52 +409,6 @@ def collect_libraries(lines_by_source: dict[str, list[str]]) -> list[str]:
     return libs
 
 
-def balanced_block_end(lines: list[str], start_idx_0: int) -> int:
-    depth = 0
-    saw_open = False
-    for idx in range(start_idx_0, len(lines)):
-        line = lines[idx]
-        depth += line.count("{") - line.count("}")
-        saw_open = saw_open or "{" in line
-        if saw_open and depth <= 0:
-            return idx
-    return start_idx_0
-
-
-def sanitize_chunk(lines: list[str]) -> list[str]:
-    """Remove source-script bootstrap that is unsafe inside split modules."""
-    output: list[str] = []
-    idx = 0
-    while idx < len(lines):
-        line = lines[idx]
-        stripped = line.lstrip("\ufeff")
-        if RM_LIST_LS_RE.match(stripped):
-            idx += 1
-            continue
-        if PATH_SOURCE_START_RE.match(stripped):
-            idx = balanced_block_end(lines, idx) + 1
-            continue
-        if FREDR_SET_KEY_RE.match(stripped):
-            output.extend(
-                [
-                    'fred_api_key <- Sys.getenv("FRED_API_KEY")\n',
-                    'if (!nzchar(fred_api_key)) {\n',
-                    '  stop("FRED_API_KEY must be set in .env or the environment.")\n',
-                    '}\n',
-                    "fredr_set_key(fred_api_key)\n",
-                ]
-            )
-            idx += 1
-            continue
-        output.append(stripped)
-        idx += 1
-    while output and not output[0].strip():
-        output.pop(0)
-    while output and not output[-1].strip():
-        output.pop()
-    return output
-
-
 def source_sha(lines: Iterable[str]) -> str:
     return hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
 
@@ -560,7 +520,7 @@ def build_modules(lines_by_source: dict[str, list[str]]) -> list[dict[str, objec
         if start > end:
             raise ValueError(f"Invalid split range for {spec.path}: {start}-{end}")
         original = lines[start - 1 : end]
-        sanitized = sanitize_chunk(original)
+        content = "".join(original)
         modules.append(
             {
                 "path": spec.path,
@@ -570,8 +530,8 @@ def build_modules(lines_by_source: dict[str, list[str]]) -> list[dict[str, objec
                 "end_line": end,
                 "line_count": end - start + 1,
                 "source_sha256": source_sha(original),
-                "generated_sha256": source_sha(sanitized),
-                "content": "".join(sanitized) + "\n",
+                "generated_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+                "content": content if content.endswith("\n") else f"{content}\n",
             }
         )
     return modules
@@ -583,7 +543,7 @@ def apply_patches_to_modules(modules: list[dict[str, object]], patches: pl.DataF
         patch_count = 0
         if patches.width > 0 and patches.height > 0:
             patch_count = patches.filter(
-                (pl.col("module") == module["path"]) & pl.col("enabled")
+                (pl.col("module").is_in([module["path"], "*"])) & pl.col("enabled")
             ).height
         content = apply_module_patches(str(module["path"]), str(module["content"]), patches)
         patched = dict(module)

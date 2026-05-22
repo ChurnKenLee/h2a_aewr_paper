@@ -16,7 +16,6 @@ if (!nzchar(fred_api_key)) {
   stop("FRED_API_KEY must be set in .env or the environment.")
 }
 fredr_set_key(fred_api_key)
-
 # The FRED series ID for federal minimum wage (annual)
 federal_series <- "STTMINWGFG"
 
@@ -124,4 +123,3 @@ objects <- data.frame(name = ls(), keep = str_detect(ls(), "folder_")) %>%
 
 rm(list = objects[, 1])
 gc()
-

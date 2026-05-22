@@ -638,4 +638,3 @@ save_stacked_plot(p24, "coefplot_stacked_dd_h2a_increase.png")
 save_stacked_plot(p25, "coefplot_stacked_dd_h2a_decrease.png")
 save_stacked_plot(p26, "coefplot_stacked_dd_price_increase.png")
 save_stacked_plot(p27, "coefplot_stacked_dd_price_decrease.png")
-

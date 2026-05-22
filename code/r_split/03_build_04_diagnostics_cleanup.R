@@ -32,4 +32,3 @@ objects <- data.frame(name = ls(), keep = str_detect(ls(), "folder_")) %>%
 rm(list = objects[, 1])
 gc()
 rm(objects)
-

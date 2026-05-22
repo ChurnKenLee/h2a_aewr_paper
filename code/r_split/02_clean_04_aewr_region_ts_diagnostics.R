@@ -203,3 +203,4 @@ combo_plot <- ggplot(
   geom_vline(xintercept = 2007)
 combo_plot
 
+

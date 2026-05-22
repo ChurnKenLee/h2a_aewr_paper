@@ -107,9 +107,21 @@ def _(mo):
         placeholder="Short audit note",
     )
     enabled_input = mo.ui.checkbox(value=True, label="Enabled")
+    allow_missing_input = mo.ui.checkbox(
+        value=False,
+        label="Allow missing selector",
+    )
 
-    mo.vstack([op_picker, selector_input, payload_input, reason_input, enabled_input])
+    mo.vstack([
+        op_picker,
+        selector_input,
+        payload_input,
+        reason_input,
+        enabled_input,
+        allow_missing_input,
+    ])
     return (
+        allow_missing_input,
         enabled_input,
         op_picker,
         payload_input,
@@ -120,6 +132,7 @@ def _(mo):
 
 @app.cell
 def _(
+    allow_missing_input,
     enabled_input,
     module_picker,
     op_picker,
@@ -134,6 +147,7 @@ def _(
         "payload": payload_input.value,
         "reason": reason_input.value,
         "enabled": enabled_input.value,
+        "allow_missing": allow_missing_input.value,
     }
     return (proposed_patch,)
 
