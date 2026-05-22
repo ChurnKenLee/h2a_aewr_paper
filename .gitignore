@@ -68,7 +68,7 @@ data/
 code/json/
 
 # Pictures
-outputs/figures/
+/outputs/figures/*
 
 # PDFs
 papers/
