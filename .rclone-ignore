@@ -32,3 +32,6 @@
 - data/raw/risk_management_agency/**
 - data/raw/trac/**
 - data/raw/whd_enforcement/**
+
+# Large intermediate cache
+- data/intermediate/cache/**

@@ -1,17 +1,17 @@
 ## H2A: Analysis Figures and Tables
 ## Phil Hoxie
 ## 1/31/24
-
-## Run standalone or via H2A Master.R
-if (!exists("folder_dir")) {
-  folder_dir <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
-  folder_do <- paste0(folder_dir, "Do/")
-  folder_data <- paste0(folder_dir, "Data Int/")
-  folder_output <- paste0(folder_dir, "Output/")
+rm(list = ls())
+if (!exists("path_int")) {
+  if (file.exists("paths.R")) {
+    source("paths.R")
+  } else {
+    source(file.path("code", "paths.R"))
+  }
 }
+ensure_project_dirs()
 
-gc()
-
+library(arrow)
 library(sf)
 library(tidyverse)
 library(ggspatial)
@@ -23,8 +23,6 @@ library(ggfixest)
 library(MatchIt)
 library(writexl)
 
-Sys.sleep(1)
-
 set.seed(12345)
 
 date <- paste0(
@@ -34,19 +32,17 @@ date <- paste0(
 )
 
 #### Load and Clean County Shape Files -------------------------------------------
+zip_path <- path_raw("county_shapefile", "tl_2020_us_county.zip")
+unzip(zip_path, exdir = tempdir())
+cnt_shp <- st_read(file.path(tempdir(), "tl_2020_us_county.shp"))
 
-cnt_shp <- st_read(paste0(folder_data, "tl_2020_us_county.shp"))
-
-h2a_data_ts <- read_parquet(paste0(folder_data, "h2a_data_ts.parquet"))
-h2a_data <- read_parquet(paste0(folder_data, "h2a_data.parquet"))
-aewr_data_full <- read_parquet(paste0(folder_data, "aewr_data_full.parquet"))
+h2a_data_ts <- read_parquet(path_processed("h2a_data_ts.parquet"))
+h2a_data <- read_parquet(path_processed("h2a_data.parquet"))
+aewr_data_full <- read_parquet(path_processed("aewr_data_full.parquet"))
 
 #### County DDD Design -----------------------------------------------------------
 
-county_df <- read_parquet(paste0(
-  folder_data,
-  "county_df_analysis_year.parquet"
-))
+county_df <- read_parquet(path_processed("county_df_analysis_year.parquet"))
 
 names(county_df)
 
@@ -81,7 +77,7 @@ ggplot(bite_long, aes(x = bite)) +
   theme_clean()
 
 ggsave(
-  paste0(folder_output, "hist_aewr_cz_bite_variables.png"),
+  path_figures("hist_aewr_cz_bite_variables.png"),
   width = 7,
   height = 8
 )
@@ -103,7 +99,6 @@ county_map <- st_simplify(
 
 ggplot(county_map) +
   geom_sf()
-f
 county_map$countyfips <- as.numeric(str_c(
   county_map$STATEFP,
   county_map$COUNTYFP
@@ -124,7 +119,7 @@ aewr_ts <- ggplot(data = aewr_data_full_ts, aes(x = year, y = aewr_ppi)) +
   geom_vline(xintercept = 2011, linetype = "dashed")
 aewr_ts
 ggsave(
-  filename = paste0(folder_output, "ts_national_aewr_real.png"),
+  filename = path_figures("ts_national_aewr_real.png"),
   aewr_ts,
   device = "png"
 )
@@ -140,7 +135,7 @@ aewr_ts_nom <- ggplot(data = aewr_data_full_ts, aes(x = year, y = aewr)) +
   geom_vline(xintercept = 2011, linetype = "dashed")
 aewr_ts_nom
 ggsave(
-  filename = paste0(folder_output, "ts_national_aewr_nominal.png"),
+  filename = path_figures("ts_national_aewr_nominal.png"),
   aewr_ts_nom,
   device = "png"
 )
@@ -167,7 +162,7 @@ aewr_bite_ts <- ggplot(
 aewr_bite_ts
 
 ggsave(
-  filename = paste0(folder_output, "ts_national_aewr_cz_p25_bite.png"),
+  filename = path_figures("ts_national_aewr_cz_p25_bite.png"),
   aewr_bite_ts,
   device = "png"
 )
@@ -275,12 +270,12 @@ h2a_indx_ts <- ggplot(
 h2a_indx_ts
 
 ggsave(
-  filename = paste0(folder_output, "fig_line_ts_h2a_workers_certified.png"),
+  filename = path_figures("fig_line_ts_h2a_workers_certified.png"),
   h2a_ts,
   device = "png"
 )
 ggsave(
-  filename = paste0(folder_output, "fig_line_ts_h2a_indexes.png"),
+  filename = path_figures("fig_line_ts_h2a_indexes.png"),
   h2a_indx_ts,
   device = "png"
 )
@@ -374,7 +369,7 @@ h2a_map_data_2012 <- ggplot(h2a_map_data) +
 h2a_map_data_2012
 
 ggsave(
-  filename = paste0(folder_output, "map_H2A_workers_2012.png"),
+  filename = path_figures("map_h2a_workers_2012.png"),
   h2a_map_data_2012,
   device = "png"
 )
@@ -414,7 +409,7 @@ h2a_map_data_2012_nolog <- ggplot(h2a_map_data) +
 h2a_map_data_2012_nolog
 
 ggsave(
-  filename = paste0(folder_output, "map_H2A_workers_2012_nolog.png"),
+  filename = path_figures("map_h2a_workers_2012_nolog.png"),
   h2a_map_data_2012_nolog,
   device = "png"
 )
@@ -452,7 +447,7 @@ hist_pred <- ggplot(
 hist_pred
 
 ggsave(
-  filename = paste0(folder_output, "hist_h2a_predicted_share_2011.png"),
+  filename = path_figures("hist_h2a_predicted_share_2011.png"),
   hist_pred,
   device = "png"
 )
@@ -494,7 +489,7 @@ pred_h2a_Map <- ggplot(pred_h2a_Map_data) +
 pred_h2a_Map
 
 ggsave(
-  filename = paste0(folder_output, "map_predicted_h2a_groups.png"),
+  filename = path_figures("map_predicted_h2a_groups.png"),
   pred_h2a_Map,
   device = "png"
 )
@@ -559,7 +554,7 @@ h2a_map_data_ch2012 <- ggplot(h2a_change_map_data) +
 h2a_map_data_ch2012
 
 ggsave(
-  filename = paste0(folder_output, "map_H2A_workers_ch2022_2012.png"),
+  filename = path_figures("map_h2a_workers_ch2022_2012.png"),
   h2a_map_data_ch2012,
   device = "png"
 )
@@ -595,10 +590,7 @@ h2a_map_data_ch2012_new <- ggplot(h2a_change_map_data) +
 h2a_map_data_ch2012_new
 
 ggsave(
-  filename = paste0(
-    folder_output,
-    "map_H2A_workers_ch2022_2012_newcounties.png"
-  ),
+  filename = path_figures("map_h2a_workers_ch2022_2012_newcounties.png"),
   h2a_map_data_ch2012_new,
   device = "png"
 )
@@ -724,7 +716,7 @@ aewr_map_data_growth
 
 
 ggsave(
-  filename = paste0(folder_output, "map_aewr_change_from_trend_2022_2008.png"),
+  filename = path_figures("map_aewr_change_from_trend_2022_2008.png"),
   aewr_map_data_growth,
   device = "png"
 )
@@ -741,6 +733,7 @@ county_bite_change <- county_df %>%
     year %in% c(2008, 2022)
   ) %>%
   select(countyfips, year, aewr_cz_p25) %>%
+  distinct(countyfips, year, .keep_all = TRUE) %>%
   pivot_wider(
     names_from = year,
     values_from = aewr_cz_p25,
@@ -793,10 +786,7 @@ map_aewr_cz_p25_bite_change <- ggplot(county_map_bite) +
 map_aewr_cz_p25_bite_change
 
 ggsave(
-  filename = paste0(
-    folder_output,
-    "map_aewr_cz_p25_change_from_trend_2022_2008.png"
-  ),
+  filename = path_figures("map_aewr_cz_p25_change_from_trend_2022_2008.png"),
   map_aewr_cz_p25_bite_change,
   device = "png"
 )
@@ -855,7 +845,7 @@ ddd_samp_map <- ggplot(ddd_map) +
 ddd_samp_map
 
 ggsave(
-  filename = paste0(folder_output, "map_aewr_ddd_sample_dropnocropland.png"),
+  filename = path_figures("map_aewr_ddd_sample_dropnocropland.png"),
   ddd_samp_map,
   device = "png"
 )
@@ -895,7 +885,7 @@ plot_aewr_reg_ts <- ggplot(
 plot_aewr_reg_ts
 
 ggsave(
-  filename = paste0(folder_output, "fig_ts_aewr_region_change_from_trend.png"),
+  filename = path_figures("fig_ts_aewr_region_change_from_trend.png"),
   plot_aewr_reg_ts,
   device = "png"
 )
@@ -930,7 +920,7 @@ plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
 
 plot_aewr_cz_diff %>%
   ggsave(
-    filename = paste0(folder_output, "aewr_cz_p10_wage_change_1year.png"),
+    filename = path_figures("aewr_cz_p10_wage_change_1year.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -944,7 +934,7 @@ plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
 
 plot_aewr_cz_diff %>%
   ggsave(
-    filename = paste0(folder_output, "aewr_cz_p25_wage_change_1year.png"),
+    filename = path_figures("aewr_cz_p25_wage_change_1year.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -958,7 +948,7 @@ plot_aewr_cz_diff <- distribution_of_aewr_changes %>%
 
 plot_aewr_cz_diff %>%
   ggsave(
-    filename = paste0(folder_output, "aewr_cz_p50_wage_change_1year.png"),
+    filename = path_figures("aewr_cz_p50_wage_change_1year.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -981,7 +971,7 @@ plot_aewr_cz_pdiff <- distribution_of_aewr_changes %>%
 
 plot_aewr_cz_pdiff %>%
   ggsave(
-    filename = paste0(folder_output, "aewr_cz_p10_wage_pchange_1year.png"),
+    filename = path_figures("aewr_cz_p10_wage_pchange_1year.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -1002,7 +992,7 @@ plot_aewr_cz_pdiff <- distribution_of_aewr_changes %>%
 
 plot_aewr_cz_pdiff %>%
   ggsave(
-    filename = paste0(folder_output, "aewr_cz_p25_wage_pchange_1year.png"),
+    filename = path_figures("aewr_cz_p25_wage_pchange_1year.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -1023,7 +1013,7 @@ plot_aewr_cz_pdiff <- distribution_of_aewr_changes %>%
 
 plot_aewr_cz_pdiff %>%
   ggsave(
-    filename = paste0(folder_output, "aewr_cz_p50_wage_pchange_1year.png"),
+    filename = path_figures("aewr_cz_p50_wage_pchange_1year.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -1146,10 +1136,7 @@ plot_aewr_use_ts_DDD
 
 ggsave(
   plot_aewr_use_ts_DDD,
-  filename = paste0(
-    folder_output,
-    "fig_ts_aewr_growth_exposure_using_predicted_DDD.png"
-  )
+  filename = path_figures("fig_ts_aewr_growth_exposure_using_predicted_ddd.png")
 )
 
 head(aewr_reg_ts_data_collapse)
@@ -1227,10 +1214,7 @@ plot_czreg_decile_ts <- ggplot(
 plot_czreg_decile_ts
 
 ggsave(
-  filename = paste0(
-    folder_output,
-    "fig_ts_aewr_cz_p25_czregion_deviations_deciles.png"
-  ),
+  filename = path_figures("fig_ts_aewr_cz_p25_czregion_deviations_deciles.png"),
   plot_czreg_decile_ts,
   width = 8,
   height = 5,
@@ -1307,7 +1291,7 @@ plot_dd_indexed_h2a <- ggplot(
 plot_dd_indexed_h2a
 
 ggsave(
-  filename = paste0(folder_output, "fig_ts_aewr_cz_p25_dd_indexed_h2a.png"),
+  filename = path_figures("fig_ts_aewr_cz_p25_dd_indexed_h2a.png"),
   plot_dd_indexed_h2a,
   width = 7,
   height = 5,
@@ -1434,7 +1418,7 @@ plot_cz_share_of_aewr_region_farm_emp <- cz_share_of_aewr_region_farm_emp %>%
 
 plot_cz_share_of_aewr_region_farm_emp %>%
   ggsave(
-    filename = paste0(folder_output, "cz_share_of_farm_emp_in_aewr_region.png"),
+    filename = path_figures("cz_share_of_farm_emp_in_aewr_region.png"),
     width = 8,
     height = 5,
     device = "png"
@@ -1494,7 +1478,7 @@ table_1 <- etable(
     "emp_pop_ratio" = "Employment-to-pop ratio"
   ),
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
-  file = paste0(folder_output, "table_1_main_results.tex"),
+  file = path_tables("table_1_main_results.tex"),
   replace = TRUE
 )
 
@@ -1592,7 +1576,7 @@ table_2 <- etable(
   ),
   dict = es_dict,
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
-  file = paste0(folder_output, "table_2_event_study.tex"),
+  file = path_tables("table_2_event_study.tex"),
   replace = TRUE
 )
 
@@ -1651,7 +1635,7 @@ p_es_4 <- make_coefplot(es_4)
 
 ggsave(
   p_es_1,
-  filename = paste0(folder_output, "coefplot_dd_no_controls.png"),
+  filename = path_figures("coefplot_dd_no_controls.png"),
   width = 8,
   height = 5,
   device = "png"
@@ -1659,7 +1643,7 @@ ggsave(
 
 ggsave(
   p_es_2,
-  filename = paste0(folder_output, "coefplot_dd_controls.png"),
+  filename = path_figures("coefplot_dd_controls.png"),
   width = 8,
   height = 5,
   device = "png"
@@ -1667,7 +1651,7 @@ ggsave(
 
 ggsave(
   p_es_3,
-  filename = paste0(folder_output, "coefplot_dd_no_border_no_controls.png"),
+  filename = path_figures("coefplot_dd_no_border_no_controls.png"),
   width = 8,
   height = 5,
   device = "png"
@@ -1675,7 +1659,7 @@ ggsave(
 
 ggsave(
   p_es_4,
-  filename = paste0(folder_output, "coefplot_dd_no_border_controls.png"),
+  filename = path_figures("coefplot_dd_no_border_controls.png"),
   width = 8,
   height = 5,
   device = "png"
@@ -1731,7 +1715,7 @@ sumstats_tex <- c(
 
 writeLines(
   sumstats_tex,
-  con = paste0(folder_output, "table_sumstats_dd_variables.tex")
+  con = path_tables("table_sumstats_dd_variables.tex")
 )
 
 #### Exhibit 17: Fisher Price Index Time Series -----------------------------------
@@ -1764,7 +1748,7 @@ ts_fisher_price <- ggplot(fisher_ts, aes(x = year, y = mean_price)) +
 ts_fisher_price
 
 ggsave(
-  filename = paste0(folder_output, "ts_fisher_price_index_ppi.png"),
+  filename = path_figures("ts_fisher_price_index_ppi.png"),
   ts_fisher_price,
   device = "png"
 )
@@ -1828,7 +1812,7 @@ table_fisher_price <- etable(
     "emp_pop_ratio" = "Employment-to-pop ratio"
   ),
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
-  file = paste0(folder_output, "table_fisher_price_dd.tex"),
+  file = path_tables("table_fisher_price_dd.tex"),
   replace = TRUE
 )
 
@@ -1837,7 +1821,9 @@ table_fisher_price <- etable(
 fisher_map_data <- samp_base %>%
   filter(year %in% c(2011, 2022), !is.na(fisher_index_ppi)) %>%
   select(countyfips, year, fisher_index_ppi) %>%
+  distinct(countyfips, year, .keep_all = TRUE) %>%
   pivot_wider(
+    id_cols = countyfips,
     names_from = year,
     values_from = fisher_index_ppi,
     names_prefix = "price_"
@@ -1890,7 +1876,7 @@ map_fisher_price_ratio <- ggplot(fisher_county_map) +
 map_fisher_price_ratio
 
 ggsave(
-  filename = paste0(folder_output, "map_fisher_price_ratio_2022_2011.png"),
+  filename = path_figures("map_fisher_price_ratio_2022_2011.png"),
   map_fisher_price_ratio,
   device = "png"
 )
@@ -1969,13 +1955,15 @@ etable(
     "emp_pop_ratio" = "Employment-to-pop ratio"
   ),
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
-  file = paste0(folder_output, "table_laborshare_dd.tex"),
+  file = path_tables("table_laborshare_dd.tex"),
   replace = TRUE
 )
 
 #### Exhibit 21: Stacked Matched Staggered DiD — Treatment Classification ------
 
 ## Step 1: Sample and % change variable ----------------------------------------
+
+EVENT_WINDOW <- 3
 
 stacked_sample <- county_df %>%
   filter(
@@ -2052,9 +2040,34 @@ county_events <- events_df %>%
     never_treated = (t_increase == 0L & t_decrease == 0L & !tied)
   )
 
+valid_event_min <- min(stacked_sample$year, na.rm = TRUE) + EVENT_WINDOW
+valid_event_max <- max(stacked_sample$year, na.rm = TRUE) - EVENT_WINDOW
+
+county_events <- county_events %>%
+  mutate(
+    eligible_increase = t_increase == 1L &
+      !is.na(y_increase) &
+      y_increase >= valid_event_min &
+      y_increase <= valid_event_max,
+    eligible_decrease = t_decrease == 1L &
+      !is.na(y_decrease) &
+      y_decrease >= valid_event_min &
+      y_decrease <= valid_event_max
+  )
+
 cat("\n=== County event classification ===\n")
 cat("Increase counties (t_increase=1):", sum(county_events$t_increase), "\n")
 cat("Decrease counties (t_decrease=1):", sum(county_events$t_decrease), "\n")
+cat(
+  "Eligible increase counties (full event window):",
+  sum(county_events$eligible_increase, na.rm = TRUE),
+  "\n"
+)
+cat(
+  "Eligible decrease counties (full event window):",
+  sum(county_events$eligible_decrease, na.rm = TRUE),
+  "\n"
+)
 cat("Tied (excluded from both):", sum(county_events$tied, na.rm = TRUE), "\n")
 cat(
   "Never-treated (controls):",
@@ -2239,10 +2252,7 @@ fig_treatment_status <- ggplot(
   theme(legend.position = "bottom", legend.text = element_text(size = 9))
 
 ggsave(
-  filename = paste0(
-    folder_output,
-    "fig_stacked_dd_treatment_status_by_year.png"
-  ),
+  filename = path_figures("fig_stacked_dd_treatment_status_by_year.png"),
   plot = fig_treatment_status,
   width = 9,
   height = 7,
@@ -2276,7 +2286,7 @@ corr_matrix <- cor(corr_data)
 write_xlsx(
   as.data.frame(round(corr_matrix, 3)) %>%
     tibble::rownames_to_column("variable"),
-  path = paste0(folder_output, "corr_matrix_matching_controls.xlsx")
+  path = path_tables("corr_matrix_matching_controls.xlsx")
 )
 
 cat("\n=== Correlation matrix (z-scored, pre-2012 obs) ===\n")
@@ -2298,52 +2308,73 @@ PSM_VARS <- c(
 
 psm_base_cs <- samp_base %>%
   filter(year == 2011) %>%
+  distinct(countyfips, .keep_all = TRUE) %>%
   select(countyfips, all_of(PSM_VARS)) %>%
   inner_join(
     county_events %>%
-      select(countyfips, t_increase, t_decrease, never_treated, tied),
+      select(
+        countyfips,
+        t_increase,
+        t_decrease,
+        eligible_increase,
+        eligible_decrease,
+        never_treated,
+        tied
+      ),
     by = "countyfips"
   ) %>%
   filter(!tied) %>%
   mutate(across(all_of(PSM_VARS), ~ as.numeric(scale(.))))
 
-psm_formula <- reformulate(PSM_VARS)
+run_psm <- function(psm_df, treatment_col, label) {
+  treated_n <- sum(psm_df[[treatment_col]] == 1L, na.rm = TRUE)
+  control_n <- sum(psm_df[[treatment_col]] == 0L, na.rm = TRUE)
+
+  cat("\n=== PSM Balance:", label, "group ===\n")
+
+  if (treated_n == 0L || control_n == 0L) {
+    cat(
+      "Skipped: need both treated and controls after the event-window filter; ",
+      "treated = ",
+      treated_n,
+      ", controls = ",
+      control_n,
+      "\n",
+      sep = ""
+    )
+    return(list(model = NULL, matched = NULL))
+  }
+
+  model <- matchit(
+    reformulate(PSM_VARS, response = treatment_col),
+    data = psm_df,
+    method = "nearest",
+    ratio = 1,
+    distance = "logit"
+  )
+
+  print(summary(model, standardize = TRUE))
+
+  list(model = model, matched = match.data(model))
+}
 
 # --- Increase group vs never-treated ---
 psm_df_increase <- psm_base_cs %>%
-  filter(t_increase == 1L | never_treated) %>%
+  filter(eligible_increase | never_treated) %>%
   filter(if_all(all_of(PSM_VARS), ~ !is.na(.) & is.finite(.)))
 
-m_increase <- matchit(
-  update(psm_formula, t_increase ~ .),
-  data = psm_df_increase,
-  method = "nearest",
-  ratio = 1,
-  distance = "logit"
-)
-
-cat("\n=== PSM Balance: Increase group ===\n")
-print(summary(m_increase, standardize = TRUE))
-
-matched_increase <- match.data(m_increase)
+psm_increase <- run_psm(psm_df_increase, "t_increase", "Increase")
+m_increase <- psm_increase$model
+matched_increase <- psm_increase$matched
 
 # --- Decrease group vs never-treated ---
 psm_df_decrease <- psm_base_cs %>%
-  filter(t_decrease == 1L | never_treated) %>%
+  filter(eligible_decrease | never_treated) %>%
   filter(if_all(all_of(PSM_VARS), ~ !is.na(.) & is.finite(.)))
 
-m_decrease <- matchit(
-  update(psm_formula, t_decrease ~ .),
-  data = psm_df_decrease,
-  method = "nearest",
-  ratio = 1,
-  distance = "logit"
-)
-
-cat("\n=== PSM Balance: Decrease group ===\n")
-print(summary(m_decrease, standardize = TRUE))
-
-matched_decrease <- match.data(m_decrease)
+psm_decrease <- run_psm(psm_df_decrease, "t_decrease", "Decrease")
+m_decrease <- psm_decrease$model
+matched_decrease <- psm_decrease$matched
 
 #### Exhibits 24-27: Stacked DiD Event Studies ---------------------------------
 # Specification: i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id
@@ -2351,7 +2382,15 @@ matched_decrease <- match.data(m_decrease)
 # multiple cohort stacks get separate unit FEs per cohort (clean stacking).
 # Cluster: cz_aewr_region_fe (same as main DD).
 
-EVENT_WINDOW <- 3
+empty_stacked_df <- function(full_panel) {
+  full_panel[0, , drop = FALSE] %>%
+    mutate(
+      treated = integer(),
+      cohort_id = integer(),
+      rel_year = integer(),
+      unit_cohort_id = character()
+    )
+}
 
 make_stacked_df <- function(
   matched_data,
@@ -2360,6 +2399,10 @@ make_stacked_df <- function(
   full_panel,
   window = EVENT_WINDOW
 ) {
+  if (is.null(matched_data) || nrow(matched_data) == 0L) {
+    return(empty_stacked_df(full_panel))
+  }
+
   treated_fips <- matched_data$countyfips[matched_data[[treatment_col]] == 1L]
   control_fips <- unique(matched_data$countyfips[
     matched_data[[treatment_col]] == 0L
@@ -2372,9 +2415,14 @@ make_stacked_df <- function(
 
   valid_cohorts <- treated_events %>%
     filter(
+      !is.na(event_year),
       event_year - window >= year_range[1],
       event_year + window <= year_range[2]
     )
+
+  if (nrow(valid_cohorts) == 0L) {
+    return(empty_stacked_df(full_panel))
+  }
 
   stack_list <- lapply(unique(valid_cohorts$event_year), function(ey) {
     cohort_fips <- valid_cohorts$countyfips[valid_cohorts$event_year == ey]
@@ -2424,38 +2472,49 @@ cat("\n=== Stacked dataset sizes ===\n")
 cat("Increase stacked rows:", nrow(stacked_increase), "\n")
 cat("Decrease stacked rows:", nrow(stacked_decrease), "\n")
 
-# Event study regressions — H-2A utilization
-es_stacked_h2a_increase <- feols(
-  h2a_cert_share_farm_workers_2011_start_year ~
-    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
-  data = stacked_increase,
-  vcov = ~cz_aewr_region_fe
-)
+fit_stacked_es <- function(stacked_data, outcome, label) {
+  if (nrow(stacked_data) == 0L) {
+    cat("Skipping", label, "- no valid stacked cohorts.\n")
+    return(NULL)
+  }
 
-es_stacked_h2a_decrease <- feols(
-  h2a_cert_share_farm_workers_2011_start_year ~
-    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
-  data = stacked_decrease,
-  vcov = ~cz_aewr_region_fe
-)
+  feols(
+    as.formula(paste0(
+      outcome,
+      " ~ i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id"
+    )),
+    data = stacked_data,
+    vcov = ~cz_aewr_region_fe
+  )
+}
 
-# Event study regressions — Fisher price index
-es_stacked_price_increase <- feols(
-  fisher_index_ppi ~
-    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
-  data = stacked_increase,
-  vcov = ~cz_aewr_region_fe
+es_stacked_h2a_increase <- fit_stacked_es(
+  stacked_increase,
+  "h2a_cert_share_farm_workers_2011_start_year",
+  "H-2A increase event study"
 )
-
-es_stacked_price_decrease <- feols(
-  fisher_index_ppi ~
-    i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id,
-  data = stacked_decrease,
-  vcov = ~cz_aewr_region_fe
+es_stacked_h2a_decrease <- fit_stacked_es(
+  stacked_decrease,
+  "h2a_cert_share_farm_workers_2011_start_year",
+  "H-2A decrease event study"
+)
+es_stacked_price_increase <- fit_stacked_es(
+  stacked_increase,
+  "fisher_index_ppi",
+  "price increase event study"
+)
+es_stacked_price_decrease <- fit_stacked_es(
+  stacked_decrease,
+  "fisher_index_ppi",
+  "price decrease event study"
 )
 
 # Coefficient plots
 make_stacked_coefplot <- function(model, title = "") {
+  if (is.null(model)) {
+    return(NULL)
+  }
+
   cn <- names(coef(model))
   keep <- grep(":treated$", cn, value = TRUE)
   ct <- model$coeftable[keep, , drop = FALSE]
@@ -2516,31 +2575,22 @@ p27 <- make_stacked_coefplot(
   "Fisher Price Index — Large AEWR Bite Decrease"
 )
 
-ggsave(
-  paste0(folder_output, "coefplot_stacked_dd_h2a_increase.png"),
-  p24,
-  width = 8,
-  height = 5,
-  device = "png"
-)
-ggsave(
-  paste0(folder_output, "coefplot_stacked_dd_h2a_decrease.png"),
-  p25,
-  width = 8,
-  height = 5,
-  device = "png"
-)
-ggsave(
-  paste0(folder_output, "coefplot_stacked_dd_price_increase.png"),
-  p26,
-  width = 8,
-  height = 5,
-  device = "png"
-)
-ggsave(
-  paste0(folder_output, "coefplot_stacked_dd_price_decrease.png"),
-  p27,
-  width = 8,
-  height = 5,
-  device = "png"
-)
+save_stacked_plot <- function(plot, filename) {
+  if (is.null(plot)) {
+    cat("Skipping", filename, "- no valid model.\n")
+    return(invisible(NULL))
+  }
+
+  ggsave(
+    path_figures(filename),
+    plot,
+    width = 8,
+    height = 5,
+    device = "png"
+  )
+}
+
+save_stacked_plot(p24, "coefplot_stacked_dd_h2a_increase.png")
+save_stacked_plot(p25, "coefplot_stacked_dd_h2a_decrease.png")
+save_stacked_plot(p26, "coefplot_stacked_dd_price_increase.png")
+save_stacked_plot(p27, "coefplot_stacked_dd_price_decrease.png")

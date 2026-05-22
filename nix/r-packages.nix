@@ -42,4 +42,5 @@ with pkgs.rPackages;
   # Data download
   fredr
   ipumsr
+  tidycensus
 ]

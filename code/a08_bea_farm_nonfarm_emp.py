@@ -22,21 +22,6 @@ def _(RAW):
 
 
 @app.cell
-def _(RAW, pl):
-    phil_caemp = pl.read_csv(
-        RAW / "bea" / "phil_original" / "CAEMP25N__ALL_AREAS_2001_2022_trim.csv",
-        infer_schema=False,
-        encoding="cp1252",
-    )
-    phil_cainc = pl.read_csv(
-        RAW / "bea" / "phil_original" / "CAINC45__ALL_AREAS_1969_2022_trim.csv",
-        infer_schema=False,
-        encoding="cp1252",
-    )
-    return phil_caemp, phil_cainc
-
-
-@app.cell
 def _(caemp_zip, cainc_zip, pl, zipfile):
     # We have to extract csv as raw data before passing to polars
     # Tis because polars does not apply encoding when streamed data
@@ -66,7 +51,7 @@ def _(caemp_zip, cainc_zip, pl, zipfile):
 
 
 @app.cell
-def _(caemp_raw, cainc_raw, phil_caemp, phil_cainc, pl):
+def _(INTERMEDIATE, caemp_raw, cainc_raw, pl):
     # Remove footers and prepend "y" to year columns
     # This is needed for Phil's code, as he previously cleaned this by hand
     caemp_year_cols = [_c for _c in caemp_raw.columns if _c.startswith("1")] + [
@@ -79,7 +64,7 @@ def _(caemp_raw, cainc_raw, phil_caemp, phil_cainc, pl):
     caemp_trim = caemp.with_columns(pl.col(caemp_year_cols).name.prefix("y")).drop(
         pl.col(caemp_year_cols)
     )
-    print(phil_caemp.equals(caemp_trim))
+    caemp_trim.write_parquet(INTERMEDIATE / "bea_CAEMP25N_trim.parquet")
 
     cainc_year_cols = [_c for _c in cainc_raw.columns if _c.startswith("1")] + [
         _c for _c in cainc_raw.columns if _c.startswith("2")
@@ -91,7 +76,7 @@ def _(caemp_raw, cainc_raw, phil_caemp, phil_cainc, pl):
     cainc_trim = cainc.with_columns(pl.col(cainc_year_cols).name.prefix("y")).drop(
         pl.col(cainc_year_cols)
     )
-    print(phil_cainc.equals(cainc_trim))
+    cainc_trim.write_parquet(INTERMEDIATE / "bea_CAINC45_trim.parquet")
     return caemp, caemp_year_cols
 
 

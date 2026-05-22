@@ -6,19 +6,20 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    import marimo as mo
-    from pathlib import Path
-    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
-    import dotenv, os
+    import hashlib
     import json
+    import os
+    import time
+    from pathlib import Path
+    from typing import Optional, get_args, get_origin
+
+    import dotenv
     import polars as pl
     from google import genai
     from google.genai import types
-    from google.genai._transformers import process_schema
-    from typing import Optional, List, get_args, get_origin
     from pydantic import BaseModel, Field, ValidationError
-    import hashlib
-    import time
+
+    from h2a.paths import CACHE
 
     return (
         BaseModel,
@@ -84,12 +85,10 @@ def _(BaseModel, Field, Optional, get_args, get_origin):
             ..., description="High/Medium/Low confidence in the correction."
         )
 
-
     try:
         from types import UnionType
     except ImportError:
         UnionType = object()
-
 
     def to_gemini_schema(model_class):
         properties = {}
@@ -143,7 +142,6 @@ def _(BaseModel, Field, Optional, get_args, get_origin):
             },
         }
 
-
     genai_schema = to_gemini_schema(CleanedLocation)
     return CleanedLocation, genai_schema
 
@@ -161,7 +159,9 @@ def _(json, pd):
     ):
 
         if df_original_id not in df.columns:
-            raise Exception("Missing ID in input dataframe for matching rows with output")
+            raise Exception(
+                "Missing ID in input dataframe for matching rows with output"
+            )
 
         total_chunks = (len(df) // chunk_size) + 1
         print(f"Writing {total_chunks} requests (chunks) to {jsonl_file_path}")
@@ -176,7 +176,7 @@ def _(json, pd):
 
             # Define prompt here
             prompt_string = f"""
-            You are an expert data cleaning assistant. 
+            You are an expert data cleaning assistant.
             I have a list of US locations that contain errors such as typos, swapped columns, blank entries, or formatting issues.
             Your goal is to clean these locations so they can be successfully queried against the Google Places API to find the County and FIPS code.
 
@@ -285,7 +285,9 @@ def _(client, time):
                 # Results are in a JSONL file
                 result_file_name = batch_job.dest.file_name
                 print(f"Downloading results file: {result_file_name}")
-                file_content = client.files.download(file=result_file_name).decode("utf-8")
+                file_content = client.files.download(file=result_file_name).decode(
+                    "utf-8"
+                )
 
         else:
             print(f"Job did not succeed. Final state: {batch_job.state.name}")
@@ -361,7 +363,10 @@ def _(
         finished_job = poll_genai_job(batch_job.name, sleep_duration, temp_output_file)
 
         # 6. Append new results to the master cache file
-        if finished_job.state.name == "JOB_STATE_SUCCEEDED" and temp_output_file.exists():
+        if (
+            finished_job.state.name == "JOB_STATE_SUCCEEDED"
+            and temp_output_file.exists()
+        ):
             with open(temp_output_file, "r", encoding="utf-8") as temp_f:
                 new_content = temp_f.read()
 
@@ -481,13 +486,11 @@ def _(Path):
         with open(tracking_file, "w", encoding="utf-8") as f:
             f.write(job_id)
 
-
     def load_job_id(tracking_file: Path) -> str:
         if tracking_file.exists():
             with open(tracking_file, "r", encoding="utf-8") as f:
                 return f.read().strip()
         return None
-
 
     def clear_job_id(tracking_file: Path):
         if tracking_file.exists():
@@ -537,7 +540,9 @@ def _(
         new_df = df_to_clean.filter(~pl.col(hash_col).is_in(already_processed_hashes))
 
         if len(new_df) == 0:
-            print(f"All locations already cached for {job_display_name}! No job needed.")
+            print(
+                f"All locations already cached for {job_display_name}! No job needed."
+            )
             return None
 
         # 3. Submit the job
@@ -581,7 +586,9 @@ def _(Path, clear_job_id, client, load_job_id, parse_results, pl):
         ]
 
         if batch_job.state.name not in completed_states:
-            print(f"Job {job_name} is currently: {batch_job.state.name}. Check back later.")
+            print(
+                f"Job {job_name} is currently: {batch_job.state.name}. Check back later."
+            )
             return parse_results(cache_file)
 
         print(f"Job {job_name} finished with state: {batch_job.state.name}")
@@ -591,7 +598,9 @@ def _(Path, clear_job_id, client, load_job_id, parse_results, pl):
             if batch_job.dest and batch_job.dest.file_name:
                 result_file_name = batch_job.dest.file_name
                 print(f"Downloading results file: {result_file_name}")
-                file_content = client.files.download(file=result_file_name).decode("utf-8")
+                file_content = client.files.download(file=result_file_name).decode(
+                    "utf-8"
+                )
 
                 # Append to master cache file
                 with open(cache_file, "a", encoding="utf-8") as cache_f:
@@ -679,7 +688,9 @@ def _(
         .drop("location_hash")
     )
 
-    h2a_with_suggestions.write_csv(Path(json_path / "unmatched_h2a_with_suggestions.csv"))
+    h2a_with_suggestions.write_csv(
+        Path(json_path / "unmatched_h2a_with_suggestions.csv")
+    )
     return
 
 

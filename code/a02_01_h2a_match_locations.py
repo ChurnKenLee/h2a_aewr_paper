@@ -6,24 +6,20 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    import marimo as mo
-    from pathlib import Path
-    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
-    import polars as pl
-    import numpy as np
     import json
     import re
+    from pathlib import Path
+
     import addfips
-    import requests
-    import urllib
-    import time
+    import marimo as mo
+    import polars as pl
+
+    from h2a.paths import CACHE, INTERMEDIATE, RAW
 
     DC_STATEHOOD = 1  # Enables DC to be included in the state list
-    import us
-    import pickle
+
     import rapidfuzz
-    from functools import partial
-    import io
+    import us
 
     return (
         CACHE,
@@ -140,7 +136,9 @@ def _(census_code_path, pl, place_suffix_pattern, read_census_file):
 def _(census_code_path, pl, place_suffix_pattern):
     census_county_2010 = (
         pl.read_csv(
-            census_code_path / "national_county.txt", has_header=False, infer_schema=False
+            census_code_path / "national_county.txt",
+            has_header=False,
+            infer_schema=False,
         )
         .rename(
             {
@@ -818,7 +816,10 @@ def _(
         # 2. Match via Census ZIP (Join instead of Map)
         df = df.join(
             census_zip_df.select(
-                [pl.col("zip").alias("xzip"), pl.col("fips").alias("fips_from_census_zip")]
+                [
+                    pl.col("zip").alias("xzip"),
+                    pl.col("fips").alias("fips_from_census_zip"),
+                ]
             ),
             on="xzip",
             how="left",
@@ -1010,7 +1011,8 @@ def _(
 
 
     export_unmatched_locations_pl(
-        h2a_worksite_locations_added_fips, Path(json_path / "unmatched_h2a_locations.csv")
+        h2a_worksite_locations_added_fips,
+        Path(json_path / "unmatched_h2a_locations.csv"),
     )
     export_unmatched_locations_pl(
         add_b_worksite_locations_added_fips,
@@ -1082,7 +1084,7 @@ def _(pl, placeid_to_county_map):
 
 
 @app.cell
-def _(addfips, binary_path, pl, process_dataframe):
+def _(CACHE, addfips, pl, process_dataframe):
     # Function converts list of county names to one string of FIPS codes joined with ','
     af = addfips.AddFIPS(vintage=2010)
 
@@ -1136,8 +1138,8 @@ def _(addfips, binary_path, pl, process_dataframe):
 
 
     # Apply to both dataframes
-    h2a_placeid = pl.read_parquet(binary_path / "h2a_location_placeids.parquet")
-    add_b_placeid = pl.read_parquet(binary_path / "add_b_location_placeids.parquet")
+    h2a_placeid = pl.read_parquet(CACHE / "h2a_location_placeids.parquet")
+    add_b_placeid = pl.read_parquet(CACHE / "add_b_location_placeids.parquet")
 
     h2a_placeid = process_dataframe(h2a_placeid)
     add_b_placeid = process_dataframe(add_b_placeid)

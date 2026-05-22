@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -48,7 +48,7 @@ def _(CACHE, INTERMEDIATE, dotenv, os):
 
     binary_path = INTERMEDIATE
     json_path = CACHE
-    return api_key, binary_path, json_path
+    return api_key, json_path
 
 
 @app.cell
@@ -126,7 +126,7 @@ def _(mo):
 
 
 @app.cell
-def _(binary_path, client, json, json_path, pl, places_v1, process_df, time):
+def _(CACHE, client, json, json_path, pl, places_v1, process_df, time):
     # Load cleaned unmatched locations, clean state names, and concat place names to get location name
     h2a_df = pl.read_csv(
         json_path / "unmatched_h2a_with_suggestions.csv", infer_schema=False
@@ -244,8 +244,8 @@ def _(binary_path, client, json, json_path, pl, places_v1, process_df, time):
     )
 
     # # Save to Parquet using Polars write method
-    h2a_df.write_parquet(binary_path / "h2a_location_placeids.parquet")
-    add_b_df.write_parquet(binary_path / "add_b_location_placeids.parquet")
+    h2a_df.write_parquet(CACHE / "h2a_location_placeids.parquet")
+    add_b_df.write_parquet(CACHE / "add_b_location_placeids.parquet")
 
 
     # Define the operation as an expression to reuse it

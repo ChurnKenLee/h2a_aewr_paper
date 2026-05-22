@@ -19,7 +19,7 @@ def _():
 @app.cell
 def _(INTERMEDIATE, RAW):
     binary_path = INTERMEDIATE
-    oews_path = RAW / "oews_area_definitions"
+    oews_path = RAW / "oews"
     return binary_path, oews_path
 
 
@@ -33,9 +33,9 @@ def _(mo):
 
 @app.cell
 def _(oews_path, pl):
-    oews_df = pl.read_excel(oews_path / "area_definitions.xlsx").select(
-        pl.all().cast(pl.String)
-    )
+    oews_df = pl.read_excel(
+        oews_path / "oews_area_definitions" / "area_definitions.xlsx"
+    ).select(pl.all().cast(pl.String))
     oews_df = oews_df.rename(
         {
             "FIPS": "oews_state_fips",
@@ -127,9 +127,9 @@ def _(oews_path, pl):
     oews_df_list = []
     for y in range(2019, 2023):
         # Read excel and cast to string to maintain consistency
-        oews_df_1 = pl.read_excel(oews_path / f"area_definitions_m{y}.xlsx").select(
-            pl.all().cast(pl.String)
-        )
+        oews_df_1 = pl.read_excel(
+            oews_path / "oews_area_definitions" / f"area_definitions_m{y}.xlsx"
+        ).select(pl.all().cast(pl.String))
 
         area_name_variable = f"May {y} MSA name"
         area_code_variable = f"May {y} MSA code "
@@ -171,9 +171,9 @@ def _(mo):
 
 
 @app.cell
-def _(RAW, pl):
+def _(INTERMEDIATE, pl):
     full_county_set = (
-        pl.read_csv(RAW / "census_geographic_definitions" / "county_adjacency2010.csv")
+        pl.read_parquet(INTERMEDIATE / "county_adjacency2010.parquet")
         .select(["fipscounty", "countyname"])
         .unique()
         .cast(pl.String)

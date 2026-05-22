@@ -1,21 +1,22 @@
-﻿## Run standalone or via H2A Master.R
-if (!exists("folder_dir")) {
-  folder_dir    <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
-  folder_do     <- paste0(folder_dir, "Do/")
-  folder_data   <- paste0(folder_dir, "Data Int/")
-  folder_output <- paste0(folder_dir, "Output/")
-  library(tidyverse)
-  library(arrow)
-  library(tidylog, warn.conflicts = FALSE)
+rm(list = ls())
+if (file.exists("paths.R")) {
+  source("paths.R")
+} else {
+  source(file.path("code", "paths.R"))
 }
-
+ensure_project_dirs()
+library(tidyverse)
+library(arrow)
+library(tidylog, warn.conflicts = FALSE)
 ## H2A: Load and clean datasets
 ## Phil Hoxie
 ## 1/11/24
 
 ## New Price Data (20260417) ----------------------
 
-price_data <- read_parquet(paste0(folder_data, "price_index_fisher_county_year_nass_price_yield_cdl_acres.parquet")) %>%
+price_data <- read_parquet(path_int(
+  "price_index_fisher_county_year.parquet"
+)) %>%
   mutate(
     countyfips = as.numeric(fips),
     year = as.integer(year)
@@ -23,7 +24,10 @@ price_data <- read_parquet(paste0(folder_data, "price_index_fisher_county_year_n
   select(countyfips, year, fisher_index) %>%
   filter(year >= 2008 & year <= 2022)
 
-write_parquet(price_data, paste0(folder_data, "nass_fisher_price_index.parquet"))
+write_parquet(
+  price_data,
+  path_processed("nass_fisher_price_index.parquet")
+)
 head(price_data)
 rm(price_data)
 
@@ -33,36 +37,27 @@ rm(price_data)
 
 ## CZ wage quantile ------------------------------------
 
-cz_wage_quantiles <- read_parquet(paste0(
-  folder_data,
-  "acs_czone_wage_quantiles.parquet"
-))
+cz_wage_quantiles <- read_parquet(path_int("acs_czone_wage_quantiles.parquet"))
 
 ## state min wages ------------------------------------
 
-state_minwages <- read_parquet(paste0(
-  folder_data,
-  "fred_state_minwages.parquet"
-))
+state_minwages <- read_parquet(path_processed("fred_state_minwages.parquet"))
 
 ## Alt Min Wage from Ken -------------------------------
 
-state_min_alt <- read_parquet(paste0(
-  folder_data,
-  "state_year_min_wage.parquet"
-))
+state_min_alt <- read_parquet(path_int("state_year_min_wage.parquet"))
 
 ## Fips Codes ------------------------------------------
 
 fips_codes <- read.csv(
-  file = paste0(folder_data, "fips_codes.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
   stringsAsFactors = F
 )
 
 ## AEWR Regions ----------------------------------------
 
 aewr_regions <- read.csv(
-  file = paste0(folder_data, "aewr_regions.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
   stringsAsFactors = F
 )
 
@@ -71,27 +66,27 @@ aewr_regions <- read.csv(
 # source: https://sites.psu.edu/psucz/data/
 
 cz_file <- read.csv(
-  file = paste0(folder_data, "counties10-zqvz0r.csv"),
+  file = path_raw("geographic_crosswalks", "penn", "counties10-zqvz0r.csv"),
   stringsAsFactors = F
 )
 
 cz_file <- cz_file %>%
   rename(countyfips = FIPS, cz_out10 = OUT10)
 
-write_parquet(cz_file, paste0(folder_data, "cz_file_2010.parquet"))
+write_parquet(cz_file, path_processed("cz_file_2010.parquet"))
 
 
 cz_file_small <- cz_file %>%
   select(countyfips, cz_out10)
 
-write_parquet(cz_file_small, paste0(folder_data, "cz_file_2010_small.parquet"))
+write_parquet(cz_file_small, path_processed("cz_file_2010_small.parquet"))
 
 
 ## PPI --------------------------------------------------
 # Source: https://fred.stlouisfed.org/series/WPU01
 
 ppi_data <- read.csv(
-  file = paste0(folder_data, "WPU01.csv"),
+  file = path_raw("fred", "WPU01.csv"),
   stringsAsFactors = F
 )
 
@@ -117,24 +112,21 @@ ggplot(data = ppi_data, aes(y = ppi_2012, x = year)) +
 ppi_data <- ppi_data %>%
   select(year, ppi_2012)
 
-write_parquet(ppi_data, paste0(folder_data, "ppi_2012.parquet"))
+write_parquet(ppi_data, path_processed("ppi_2012.parquet"))
 
 ## County Boundary ------------------------------------
 
 # cleaned in the original stata file
 state_border_pairs <- read.csv(
-  file = paste0(folder_data, "state_border_pairs.csv"),
+  file = path_raw("geographic_crosswalks", "state_border_pairs.csv"),
   stringsAsFactors = F
 )
 border_counties_allmatches <- read.csv(
-  file = paste0(folder_data, "border_counties_allmatches.csv"),
+  file = path_raw("geographic_crosswalks", "border_counties_allmatches.csv"),
   stringsAsFactors = F
 )
 
-full_county_set <- read.csv(
-  file = paste0(folder_data, "county_adjacency2010.csv"),
-  stringsAsFactors = F
-)
+full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
 
 # state minimum wages --------------------------------------
 
@@ -202,21 +194,21 @@ gc()
 
 write_parquet(
   state_minwage_ppi,
-  paste0(folder_data, "state_real_minwages.parquet")
+  path_processed("state_real_minwages.parquet")
 )
 
 ## H2A Data -------------------------------------------
 h2a_data <- read_parquet(
-  file = paste0(folder_data, "h2a_aggregated.parquet")
+  file = path_int("h2a_aggregated.parquet")
 )
 h2a_predict <- read_parquet(
-  file = paste0(folder_data, "h2a_prediction_using_elastic_net.parquet")
+  file = path_int("h2a_prediction_using_elastic_net_continuous_basis.parquet")
 ) %>%
   mutate(
     countyfips = as.numeric(county_ansi)
   ) %>%
   select(-county_ansi) %>%
-  write_parquet(paste0(folder_data, "h2a_predict.parquet"))
+  write_parquet(path_processed("h2a_predict.parquet"))
 
 # census period
 h2a_data <- h2a_data %>%
@@ -327,12 +319,12 @@ h2a_data <- h2a_data %>%
   )
 
 
-write_parquet(h2a_data, paste0(folder_data, "h2a_data.parquet"))
+write_parquet(h2a_data, path_processed("h2a_data.parquet"))
 
 # yearly, for TS
 
 h2a_data_ts <- read_parquet(
-  paste0(folder_data, "h2a_aggregated.parquet"),
+  path_int("h2a_aggregated.parquet"),
   stringsAsFactors = F
 )
 
@@ -356,18 +348,15 @@ h2a_data_ts <- h2a_data_ts %>%
 h2a_data_ts <- h2a_data_ts %>%
   rename(case_year = year)
 
-write_parquet(h2a_data_ts, paste0(folder_data, "h2a_data_ts.parquet"))
+write_parquet(h2a_data_ts, path_processed("h2a_data_ts.parquet"))
 
 ## Cropland Crocs Data Layer (CDL) -------------------------------------------
 
 cdl_codes <- read_csv(
-  file = paste0(folder_data, "croplandcros_cdl_crop_category.csv")
+  file = path_raw("croplandcros_cdl", "croplandcros_cdl_crop_category.csv")
 )
 
-cdl_data <- read_parquet(paste0(
-  folder_data,
-  "croplandcros_county_crop_acres.parquet"
-))
+cdl_data <- read_parquet(path_int("croplandcros_county_crop_acres.parquet"))
 head(cdl_data)
 # need to put this in a wider format
 
@@ -408,12 +397,12 @@ cdl_data_collapse <- cdl_data_collapse %>%
   mutate(countyfips = as.numeric(fips)) %>%
   dplyr::select(-fips)
 
-write_parquet(cdl_data_collapse, paste0(folder_data, "cdl_cropshares.parquet"))
+write_parquet(cdl_data_collapse, path_processed("cdl_cropshares.parquet"))
 
 ## NAWSPAD ---------------------------------------------
 # state level data
 nawspad_data <- read_parquet(
-  paste0(folder_data, "nawspad.parquet"),
+  path_int("nawspad.parquet"),
   stringsAsFactors = F
 )
 
@@ -424,7 +413,7 @@ nawspad_data %>%
 ## OEWS ------------------------------------------------
 # wages
 oews_agg_data <- read_parquet(
-  file = paste0(folder_data, "oews_county_aggregated.parquet"),
+  file = path_int("oews_county_aggregated.parquet"),
   stringsAsFactors = F
 )
 
@@ -435,38 +424,35 @@ oews_agg_data <- read_parquet(
 ## Fips Codes ------------------------------------------
 
 fips_codes <- read.csv(
-  file = paste0(folder_data, "fips_codes.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
   stringsAsFactors = F
 )
 
 ## AEWR Regions ----------------------------------------
 
 aewr_regions <- read.csv(
-  file = paste0(folder_data, "aewr_regions.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
   stringsAsFactors = F
 )
 
 ## PPI --------------------------------------------------
 # Source: https://fred.stlouisfed.org/series/WPU01
 
-ppi_data <- read_parquet(paste0(folder_data, "ppi_2012.parquet"))
+ppi_data <- read_parquet(path_processed("ppi_2012.parquet"))
 
 ## County Boundary ------------------------------------
 
 # cleaned in the original stata file
 state_border_pairs <- read.csv(
-  file = paste0(folder_data, "state_border_pairs.csv"),
+  file = path_raw("geographic_crosswalks", "state_border_pairs.csv"),
   stringsAsFactors = F
 )
 border_counties_allmatches <- read.csv(
-  file = paste0(folder_data, "border_counties_allmatches.csv"),
+  file = path_raw("geographic_crosswalks", "border_counties_allmatches.csv"),
   stringsAsFactors = F
 )
 
-full_county_set <- read.csv(
-  file = paste0(folder_data, "county_adjacency2010.csv"),
-  stringsAsFactors = F
-)
+full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
 
 dim(state_border_pairs)
 dim(border_counties_allmatches)
@@ -475,8 +461,7 @@ dim(full_county_set)
 ## Census of Agriculture ------------------------------
 
 options(arrow.skip_nul = TRUE)
-census_of_agriculture <- read_parquet(paste0(
-  folder_data,
+census_of_agriculture <- read_parquet(path_int(
   "qs_census_selected_obs.parquet"
 ))
 
@@ -526,7 +511,7 @@ census_of_agriculture_cropland <- census_of_agriculture_trim %>%
 head(census_of_agriculture_trim)
 
 census_of_agriculture_cropland %>%
-  write_parquet(paste0(folder_data, "census_ag_cropland_year.parquet"))
+  write_parquet(path_processed("census_ag_cropland_year.parquet"))
 
 rm(census_of_agriculture_trim)
 
@@ -536,14 +521,14 @@ census_of_agriculture_cropland_base <- census_of_agriculture_cropland %>%
   select(-year)
 
 census_of_agriculture_cropland_base %>%
-  write_parquet(paste0(folder_data, "census_ag_cropland_2007_year.parquet"))
+  write_parquet(path_processed("census_ag_cropland_2007_year.parquet"))
 
 rm(census_of_agriculture_cropland_base)
 
 ## H2A Data -------------------------------------------
 
 h2a_data <- read_parquet(
-  paste0(folder_data, "h2a_aggregated.parquet"),
+  path_int("h2a_aggregated.parquet"),
   stringsAsFactors = F
 )
 
@@ -588,13 +573,13 @@ h2a_data <- h2a_data %>%
 
 head(h2a_data)
 
-write_parquet(h2a_data, paste0(folder_data, "h2a_data_year.parquet"))
+write_parquet(h2a_data, path_processed("h2a_data_year.parquet"))
 cat("h2a_data_year:", nrow(h2a_data), "rows,", ncol(h2a_data), "cols\n")
 
 ## AEWR -------------------------------------------------
 
 aewr_data <- read_parquet(
-  paste0(folder_data, "aewr.parquet"),
+  path_int("aewr.parquet"),
   stringsAsFactors = F
 )
 
@@ -649,53 +634,20 @@ aewr_data <- aewr_data %>%
 
 head(aewr_data)
 
-write_parquet(aewr_data, paste0(folder_data, "aewr_data_year.parquet"))
+write_parquet(aewr_data, path_processed("aewr_data_year.parquet"))
 cat("aewr_data_year:", nrow(aewr_data), "rows,", ncol(aewr_data), "cols\n")
 
 # full for TS
 
-# pre 1995 source (CRS): https://www.everycrsreport.com/files/20080326_RL32861_9a486634f79a5f9c680cc5ba021e579cc67210a5.pdf
-
-aewr_pre_1995 <- read.csv(
-  file = paste0(folder_data, "aewr_crs_1990_2008.csv"),
-  stringsAsFactors = F
-)
-
-aewr_pre_1995 <- aewr_pre_1995 %>%
-  pivot_longer(
-    cols = starts_with("X"),
-    names_to = "year",
-    names_prefix = "X",
-    values_to = "aewr",
-    values_drop_na = F
-  )
-
-aewr_pre_1995 <- merge(
-  x = aewr_pre_1995,
-  y = fips_codes,
-  by.x = "State",
-  by.y = "state",
-  all.x = T,
-  all.y = F
-)
-
-aewr_pre_1995 <- aewr_pre_1995 %>%
-  select(fips, year, aewr) %>%
-  rename(state_fips_code = fips) %>%
-  transform(year = as.numeric(year)) %>%
-  filter(year < 1995)
-
 aewr_data <- read_parquet(
-  paste0(folder_data, "aewr.parquet"),
+  path_int("aewr.parquet"),
   stringsAsFactors = F
 ) %>%
   mutate(aewr = as.numeric(aewr)) %>%
   mutate(year = as.numeric(year)) %>%
   mutate(state_fips_code = as.numeric(state_fips_code))
 
-# append dataseries
-
-aewr_data <- bind_rows(aewr_data, aewr_pre_1995) %>%
+aewr_data <- aewr_data %>%
   arrange(state_fips_code, year)
 
 aewr_data %>% group_by(year) %>% tally()
@@ -762,7 +714,7 @@ head(aewr_data)
 aewr_data <- aewr_data %>%
   filter(!is.na(aewr_region_num))
 
-write_parquet(aewr_data, paste0(folder_data, "aewr_data_full.parquet"))
+write_parquet(aewr_data, path_processed("aewr_data_full.parquet"))
 cat("aewr_data_full:", nrow(aewr_data), "rows,", ncol(aewr_data), "cols\n")
 
 # leav one out averages
@@ -802,6 +754,8 @@ head(aewr_data)
 
 ## AEWR Region TS --------------------------------------------------------------
 
+dir.create(path_figures("aewr_ts"), recursive = TRUE, showWarnings = FALSE)
+
 for (i in 1:17) {
   plot <- ggplot(
     data = subset(aewr_data, aewr_region_num == i),
@@ -812,7 +766,10 @@ for (i in 1:17) {
     xlab("Log AEWR (nominal)")
   plot
   ggsave(
-    filename = paste0(folder_output, "AEWR TS/ts_ln_aewr_nominal_", i, ".png"),
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_ln_aewr_nominal_", i, ".png")
+    ),
     plot,
     device = "png"
   )
@@ -827,11 +784,9 @@ for (i in 1:17) {
     xlab("Log Change AEWR (nominal)")
   plot
   ggsave(
-    filename = paste0(
-      folder_output,
-      "AEWR TS/ts_ln_aewr_l1_nominal_",
-      i,
-      ".png"
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_ln_aewr_l1_nominal_", i, ".png")
     ),
     plot,
     device = "png"
@@ -849,11 +804,9 @@ for (i in 1:17) {
     xlab("AEWR (nominal) difference from LOO trend")
   plot
   ggsave(
-    filename = paste0(
-      folder_output,
-      "AEWR TS/ts_aewr_diffloo_nominal_",
-      i,
-      ".png"
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_aewr_diffloo_nominal_", i, ".png")
     ),
     plot,
     device = "png"
@@ -869,11 +822,9 @@ for (i in 1:17) {
     xlab("AEWR (real) difference from LOO trend")
   plot
   ggsave(
-    filename = paste0(
-      folder_output,
-      "AEWR TS/ts_aewr_diffloo_real_",
-      i,
-      ".png"
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_aewr_diffloo_real_", i, ".png")
     ),
     plot,
     device = "png"
@@ -892,7 +843,7 @@ for (i in 1:17) {
     xlab("AEWR (nominal)")
   plot
   ggsave(
-    filename = paste0(folder_output, "AEWR TS/ts_aewr_nominal_", i, ".png"),
+    filename = path_figures("aewr_ts", paste0("ts_aewr_nominal_", i, ".png")),
     plot,
     device = "png"
   )
@@ -907,7 +858,7 @@ for (i in 1:17) {
     xlab("AEWR (real)")
   plot
   ggsave(
-    filename = paste0(folder_output, "AEWR TS/ts_aewr_real_", i, ".png"),
+    filename = path_figures("aewr_ts", paste0("ts_aewr_real_", i, ".png")),
     plot,
     device = "png"
   )
@@ -922,11 +873,9 @@ for (i in 1:17) {
     xlab("Change AEWR (nominal)")
   plot
   ggsave(
-    filename = paste0(
-      folder_output,
-      "AEWR TS/ts_change_aewr_nominal_",
-      i,
-      ".png"
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_change_aewr_nominal_", i, ".png")
     ),
     plot,
     device = "png"
@@ -943,7 +892,10 @@ for (i in 1:17) {
   plot
 
   ggsave(
-    filename = paste0(folder_output, "AEWR TS/ts_change_aewr_real_", i, ".png"),
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_change_aewr_real_", i, ".png")
+    ),
     plot,
     device = "png"
   )
@@ -958,11 +910,9 @@ for (i in 1:17) {
     xlab("Percent Change AEWR (nominal)")
   plot
   ggsave(
-    filename = paste0(
-      folder_output,
-      "AEWR TS/ts_percentchange_aewr_nominal_",
-      i,
-      ".png"
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_percentchange_aewr_nominal_", i, ".png")
     ),
     plot,
     device = "png"
@@ -979,11 +929,9 @@ for (i in 1:17) {
   plot
 
   ggsave(
-    filename = paste0(
-      folder_output,
-      "AEWR TS/ts_percentchange_aewr_real_",
-      i,
-      ".png"
+    filename = path_figures(
+      "aewr_ts",
+      paste0("ts_percentchange_aewr_real_", i, ".png")
     ),
     plot,
     device = "png"
@@ -1008,10 +956,7 @@ combo_plot
 ## BEA Data ---------------------------------------------
 
 # job count data
-bea_caemp25n_data <- read.csv(
-  file = paste0(folder_data, "CAEMP25N/CAEMP25N__ALL_AREAS_2001_2022_trim.csv"),
-  stringsAsFactors = F
-)
+bea_caemp25n_data <- read_parquet(path_int("bea_CAEMP25N_trim.parquet"))
 # save lines: 10 50 70 80 90
 
 bea_caemp25n_data <- bea_caemp25n_data %>%
@@ -1077,7 +1022,7 @@ bea_caemp25n_data <- bea_caemp25n_data %>%
 # from: https://www.economy.com/support/blog/getfile.asp?did=869A03D1-5D74-4376-A606-00A8C64DDB0B&fid=a18d6d4873834f749d42ded633850a5e.xlsx
 
 bea_fips_xwalk <- read.csv(
-  file = paste0(folder_data, "bea_fips_xwalk.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
   stringsAsFactors = F
 )
 
@@ -1130,15 +1075,18 @@ head(bea_caemp25n_data)
 
 write_parquet(
   bea_caemp25n_data,
-  paste0(folder_data, "bea_caemp25n_data_year.parquet")
+  path_processed("bea_caemp25n_data_year.parquet")
 )
-cat("bea_caemp25n_data_year:", nrow(bea_caemp25n_data), "rows,", ncol(bea_caemp25n_data), "cols\n")
+cat(
+  "bea_caemp25n_data_year:",
+  nrow(bea_caemp25n_data),
+  "rows,",
+  ncol(bea_caemp25n_data),
+  "cols\n"
+)
 
 # farm finance
-bea_cainc45_data <- read.csv(
-  file = paste0(folder_data, "CAINC45/CAINC45__ALL_AREAS_1969_2022_trim.csv"),
-  stringsAsFactors = F
-)
+bea_cainc45_data <- read_parquet(path_int("bea_CAINC45_trim.parquet"))
 # save lines: 20 60 130 210 270 150
 
 bea_cainc45_data <- bea_cainc45_data %>%
@@ -1255,33 +1203,39 @@ bea_cainc45_data <- bea_cainc45_data %>%
 
 write_parquet(
   bea_cainc45_data,
-  paste0(folder_data, "bea_cainc45_data_year.parquet")
+  path_processed("bea_cainc45_data_year.parquet")
 )
-cat("bea_cainc45_data_year:", nrow(bea_cainc45_data), "rows,", ncol(bea_cainc45_data), "cols\n")
+cat(
+  "bea_cainc45_data_year:",
+  nrow(bea_cainc45_data),
+  "rows,",
+  ncol(bea_cainc45_data),
+  "cols\n"
+)
 
 
 ## County Pop estimates ---------------------------------
 # documentation: https://www2.census.gov/programs-surveys/popest/technical-documentation/file-layouts/2000-2009/co-est2009-alldata.pdf
 
 census_pop_2000 <- read.csv(
-  paste0(folder_data, "co-est2009-alldata.csv"),
+  path_raw("census_population_estimates", "co-est2009-alldata.csv"),
   stringsAsFactors = F
 )
 census_pop_2010 <- read.csv(
-  paste0(folder_data, "co-est2019-alldata.csv"),
+  path_raw("census_population_estimates", "co-est2019-alldata.csv"),
   stringsAsFactors = F
 )
 census_pop_2020 <- read.csv(
-  paste0(folder_data, "co-est2022-alldata.csv"),
+  path_raw("census_population_estimates", "co-est2022-alldata.csv"),
   stringsAsFactors = F
 )
 
 ct_xwalk <- read.csv(
-  paste0(paste0(folder_data, "ct_region_xwalk.csv")),
+  path_raw("geographic_crosswalks", "phil", "ct_region_xwalk.csv"),
   stringsAsFactors = F
 )
 ct_popgrth <- read.csv(
-  paste0(paste0(folder_data, "ct_pop_grth.csv")),
+  path_raw("geographic_crosswalks", "phil", "ct_pop_grth.csv"),
   stringsAsFactors = F
 )
 
@@ -1410,9 +1364,15 @@ census_pop_ests %>% filter(countyfips == 46111) %>% tally() # fixed
 
 write_parquet(
   census_pop_ests,
-  paste0(folder_data, "census_pop_ests_year.parquet")
+  path_processed("census_pop_ests_year.parquet")
 )
-cat("census_pop_ests_year:", nrow(census_pop_ests), "rows,", ncol(census_pop_ests), "cols\n")
+cat(
+  "census_pop_ests_year:",
+  nrow(census_pop_ests),
+  "rows,",
+  ncol(census_pop_ests),
+  "cols\n"
+)
 
 ## all county sample ----------------------------------------------------------
 
@@ -1438,7 +1398,7 @@ county_df %>%
   group_by(year) %>%
   tally()
 
-write_parquet(county_df, paste0(folder_data, "county_df_year.parquet"))
+write_parquet(county_df, path_processed("county_df_year.parquet"))
 cat("county_df_year:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 
 # remove files -------------------

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -10,11 +10,10 @@ def _():
     from pathlib import Path
     from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import dotenv, os
-    import io
     import polars as pl
-    import py7zr
+    import zipfile
 
-    return INTERMEDIATE, RAW, io, mo, pl, py7zr
+    return INTERMEDIATE, RAW, mo, pl, zipfile
 
 
 @app.cell
@@ -52,79 +51,21 @@ def _(pl):
 
 
 @app.cell
-def _(io):
-    # Define a custom buffer that prevents py7zr from closing it prematurely
-    class MemoryBufferIO(io.BytesIO):
-        def size(self):
-            """
-            py7zr expects a .size() method on the IO object.
-            """
-            return self.getbuffer().nbytes
-
-        def close(self):
-            """
-            Block py7zr from closing the buffer so Polars can still read it.
-            """
-            pass
-
-        def force_close(self):
-            """
-            A method to actually clear the memory when we are done.
-            """
-            super().close()
-
-    return (MemoryBufferIO,)
-
-
-@app.cell
-def _(MemoryBufferIO, py7zr):
-    # Define the Factory class that py7zr will call to create the buffers
-    class PolarsMemoryFactory(py7zr.io.WriterFactory):
-        def __init__(self):
-            self.buffers = {}
-
-        def create(self, filename: str):
-            bio = MemoryBufferIO()
-            self.buffers[filename] = bio
-            return bio
-
-    return (PolarsMemoryFactory,)
-
-
-@app.cell
-def _(
-    PolarsMemoryFactory,
-    binary_path,
-    pl,
-    py7zr,
-    qcew_cols_list,
-    qcew_dtype_dict,
-    qcew_path,
-):
+def _(binary_path, pl, qcew_cols_list, qcew_dtype_dict, qcew_path, zipfile):
     qcew_df = pl.DataFrame()
     for t in range(2005, 2018):
         print(t)
-        sevenz_path = qcew_path / f"{t}_annual_singlefile.7z"
+        zip_path = qcew_path / f"{t}_annual_singlefile.zip"
         target_csv = f"{t}.annual.singlefile.csv"
-        mem_factory = PolarsMemoryFactory()
 
-        # Extract straight into memory
-        with py7zr.SevenZipFile(sevenz_path, mode="r") as zf:
-            zf.extract(targets=[target_csv], factory=mem_factory)
-
-        extracted_buffer = mem_factory.buffers[target_csv]
-
-        # Rewind the buffer to the beginning
-        extracted_buffer.seek(0)
-
-        # Read straight from the RAM buffer using Polars
-        _df = pl.read_csv(
-            extracted_buffer, columns=qcew_cols_list, schema_overrides=qcew_dtype_dict
-        )
+        with zipfile.ZipFile(zip_path, mode="r") as zf:
+            with zf.open(target_csv) as extracted_file:
+                _df = pl.read_csv(
+                    extracted_file,
+                    columns=qcew_cols_list,
+                    schema_overrides=qcew_dtype_dict,
+                )
         qcew_df = pl.concat([qcew_df, _df])
-
-        # Flush the memory buffer before the next iteration
-        extracted_buffer.force_close()
 
     qcew_df.write_parquet(binary_path / "qcew.parquet")
     return

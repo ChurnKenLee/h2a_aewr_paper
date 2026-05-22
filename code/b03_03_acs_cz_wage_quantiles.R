@@ -13,7 +13,8 @@ library(collapse)
 
 # PUMA 2010 and PUMA 2020 xwalk from IPUMS
 puma_xwalk <- read_excel(path_raw(
-  "acs",
+  "geographic_crosswalks",
+  "ipums",
   "PUMA2010_PUMA2020_crosswalk.xls"
 )) %>%
   mutate(
@@ -24,20 +25,22 @@ puma_xwalk <- read_excel(path_raw(
   select(puma2010, puma2020, pPUMA20_Pop20)
 
 # PUMA to CZ xwalk from David Autor
-puma_2000_czone_xwalk <- read_dta(path_raw(
-  "acs",
-  "cw_puma2000_czone.dta"
-)) %>%
+zip_path <- path_raw("geographic_crosswalks", "dorn", "cw_puma2000_czone.zip")
+puma_2000_czone_xwalk <- read_dta(
+  unz(zip_path, "cw_puma2000_czone.dta")
+) %>%
   rename(czone2000 = czone, afactor2000 = afactor)
 
-puma_2010_czone_xwalk <- read_dta(path_raw(
-  "acs",
-  "cw_puma2010_czone.dta"
-)) %>%
+zip_path <- path_raw("geographic_crosswalks", "dorn", "cw_puma2010_czone.zip")
+puma_2010_czone_xwalk <- read_dta(unz(zip_path, "cw_puma2010_czone.dta")) %>%
   rename(czone2010 = czone, afactor2010 = afactor)
 
 # CZ to county crosswalk from Fabian Eckert
-czone_1990_county_xwalk <- read_csv(path_raw("acs", "cz_crosswalk.csv"))
+czone_1990_county_xwalk <- read_csv(path_raw(
+  "geographic_crosswalks",
+  "eckert",
+  "eglp_cz_crosswalk_endyr_1990.csv"
+))
 
 #### Assign CZ to each county
 # Add county ANSI to xwalk

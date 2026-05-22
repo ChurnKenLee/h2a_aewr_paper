@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -12,22 +12,41 @@ def _():
     import polars as pl
     import geopandas as gpd
     import numpy as np
+    import py7zr
     import rasterio
     from rasterio.windows import from_bounds
+    from rasterio.shutil import copy as rio_copy
     import exactextract
     import sqlite3
 
-    return INTERMEDIATE, RAW, exactextract, gpd, mo, np, pl, rasterio, sqlite3
+    return (
+        CACHE,
+        INTERMEDIATE,
+        RAW,
+        exactextract,
+        gpd,
+        mo,
+        np,
+        pl,
+        py7zr,
+        rasterio,
+        sqlite3,
+    )
 
 
 @app.cell
-def _(INTERMEDIATE, RAW):
+def _(CACHE, INTERMEDIATE, RAW):
     binary_path = INTERMEDIATE
-    gnatsgo_path = RAW / "gnatsgo" / "gNATSGO_gpkg_01_30_2026"
+
+    gnatsgo_archive = RAW / "gnatsgo" / "gNATSGO_gpkg_02_13_2026.7z"
+    gnatsgo_cache_path = CACHE / "gnatsgo"
+    gnatsgo_cache_path.mkdir(parents=True, exist_ok=True)
+
     census_shp_path = (
-        RAW / "county_shapefile" / "tl_2010_us_county10" / "tl_2010_us_county10.shp"
+        f"/vsizip/{RAW / 'county_shapefile' / 'tl_2010_us_county10.zip'}"
+        "/tl_2010_us_county10.shp"
     )
-    return binary_path, census_shp_path, gnatsgo_path
+    return binary_path, census_shp_path, gnatsgo_archive, gnatsgo_cache_path
 
 
 @app.cell(hide_code=True)
@@ -39,38 +58,54 @@ def _(mo):
 
 
 @app.cell
-def _(gnatsgo_path, np, rasterio):
-    input_raster = gnatsgo_path / "MURASTER_30m_CONUS_2026.tif"
-    converted_raster = gnatsgo_path / "MURASTER_30m_CONUS_2026_int32.tif"
+def _(gnatsgo_archive, gnatsgo_cache_path, np, py7zr, rasterio):
+    raster_member = "gNATSGO_gpkg_01_30_2026/MURASTER_30m_CONUS_2026.tif"
+    extracted_raster = gnatsgo_cache_path / raster_member
+    converted_raster = gnatsgo_cache_path / "MURASTER_30m_CONUS_2026_int32_zstd.tif"
 
-    # We only want to run this conversion once. Check if the converted file exists.
     if not converted_raster.exists():
-        print(
-            f"Converting {input_raster} from uint32 to int32. This may take a few minutes..."
-        )
+        if not extracted_raster.exists():
+            print("Extracting only MURASTER_30m_CONUS_2026.tif from gNATSGO archive...")
+            with py7zr.SevenZipFile(gnatsgo_archive, mode="r") as _archive:
+                _archive.extract(
+                    path=gnatsgo_cache_path,
+                    targets=[raster_member],
+                )
 
-        with rasterio.open(input_raster) as _src:
+        print("Converting gNATSGO raster from uint32 to compressed int32...")
+
+        with rasterio.open(extracted_raster) as _src:
             _profile = _src.profile
 
-            # Safely convert NoData value to integer if it exists
             _nodata_val = int(_src.nodata) if _src.nodata is not None else None
-
-            # If the original nodata overflows int32, change it to -1 to match NumPy's cast
             if _nodata_val is not None and _nodata_val > 2147483647:
                 _nodata_val = -1
 
-            # Update the raster _profile to int32
-            _profile.update(dtype=rasterio.int32, nodata=_nodata_val)
+            _profile.update(
+                dtype=rasterio.int32,
+                nodata=_nodata_val,
+                compress="ZSTD",
+                zstd_level=9,
+                tiled=True,
+                blockxsize=512,
+                blockysize=512,
+                bigtiff="IF_SAFER",
+                num_threads="ALL_CPUS",
+            )
 
-            # Read and write block-by-block to avoid loading a ~24GB CONUS raster into RAM
-            with rasterio.open(converted_raster, "w", **_profile) as _dst:
-                for _ji, _window in _src.block_windows(1):
-                    # Read chunk
+            tmp_raster = converted_raster.with_suffix(".tmp.tif")
+            if tmp_raster.exists():
+                tmp_raster.unlink()
+
+            with rasterio.open(tmp_raster, "w", **_profile) as _dst:
+                for _, _window in _src.block_windows(1):
                     _data = _src.read(1, window=_window)
-                    # Cast to int32 and write chunk
                     _dst.write(_data.astype(np.int32), 1, window=_window)
 
-        print(f"Raster successfully converted and saved to {converted_raster}")
+            tmp_raster.replace(converted_raster)
+
+        extracted_raster.unlink()
+        print(f"Raster saved to {converted_raster}")
     else:
         print(f"Found existing converted raster: {converted_raster}")
     return (converted_raster,)
@@ -194,8 +229,15 @@ def _(mo):
 
 
 @app.cell
-def _(gnatsgo_path, pl, sqlite3):
-    gpkg_path = gnatsgo_path / "gNATSGO_02_13_2026.gpkg"
+def _(gnatsgo_archive, gnatsgo_cache_path, pl, py7zr, sqlite3):
+    gpkg_member = "gNATSGO_gpkg_01_30_2026/gNATSGO_02_13_2026.gpkg"
+    gpkg_path = gnatsgo_cache_path / gpkg_member
+
+    if not gpkg_path.exists():
+        print("Extracting only gNATSGO_02_13_2026.gpkg from gNATSGO archive...")
+        with py7zr.SevenZipFile(gnatsgo_archive, mode="r") as _archive:
+            _archive.extract(path=gnatsgo_cache_path, targets=[gpkg_member])
+
     conn = sqlite3.connect(f"file:{gpkg_path.resolve()}?mode=ro", uri=True)
     tables_query = (
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"

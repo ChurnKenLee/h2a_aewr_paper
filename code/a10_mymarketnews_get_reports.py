@@ -15,8 +15,9 @@ def _():
     import polars as pl
     import requests
     from requests.auth import HTTPBasicAuth
+    import json
 
-    return CACHE, HTTPBasicAuth, RAW, os, pl, requests, time
+    return CACHE, HTTPBasicAuth, RAW, json, os, pl, requests, time
 
 
 @app.cell
@@ -27,9 +28,10 @@ def _(CACHE, HTTPBasicAuth, RAW, os):
 
     reports_path = RAW / "mymarketnews_reports"
     work_path = CACHE / "mymarketnews_downloads"
+    no_reports_file = CACHE / "mymarketnews_no_reports.json"
     start_year = 2004
     end_year = 2025
-    return api_auth, base_url, reports_path
+    return api_auth, base_url, no_reports_file, reports_path
 
 
 @app.cell
@@ -134,14 +136,40 @@ def _(
 
 
 @app.cell
+def _(json, no_reports_file):
+    # Keep a log of which year-slugs have no reports, so I do not re-query for reports that do not exist
+    if no_reports_file.exists():
+        no_reports = {
+            (item["report_type"], int(item["year"]), str(item["slug"]))
+            for item in json.loads(no_reports_file.read_text())
+        }
+    else:
+        no_reports = set()
+
+
+    def write_no_reports_cache():
+        payload = [
+            {"report_type": report_type, "year": year, "slug": slug}
+            for report_type, year, slug in sorted(no_reports)
+        ]
+        tmp_file = no_reports_file.with_suffix(".tmp")
+        tmp_file.write_text(json.dumps(payload, indent=2))
+        tmp_file.replace(no_reports_file)
+
+    return no_reports, write_no_reports_cache
+
+
+@app.cell
 def _(
     api_auth,
     base_url,
     get_json,
+    no_reports,
     pl,
     reports_path,
     shipping_point_slugs,
     terminal_market_slugs,
+    write_no_reports_cache,
 ):
     # Grab reports
     try:
@@ -155,7 +183,7 @@ def _(
     }
 
     for report_type, slug_list in slug_dict.items():
-        for year in range(2004, 2024):
+        for year in range(2004, 2026):
             year_path = reports_path / str(year)
             try:
                 year_path.mkdir()
@@ -165,7 +193,14 @@ def _(
             for slug in slug_list:
                 year_slug_path = year_path / f"{report_type}_{year}_{slug}.parquet"
                 if year_slug_path.exists():
-                    print(f"Slug {slug} for {year} already exists")
+                    print(f"Slug {slug} for {year} already exists; skipping")
+                    continue
+
+                cache_key = (report_type, year, str(slug))
+                if cache_key in no_reports:
+                    print(
+                        f"No reports available for {report_type} slug {slug} in {year}; skipping"
+                    )
                     continue
 
                 slug_request_url = (
@@ -178,7 +213,10 @@ def _(
                 slug_json = get_json(slug_request_url, api_auth)
 
                 if slug_json[1]["stats"]["totalRows"] == 0:
-                    print(f"No results available for slug {slug}")
+                    print(f"No results available for {report_type} slug {slug} in {year}")
+                    no_reports.add(cache_key)
+                    write_no_reports_cache()
+                    continue
 
                 elif slug_json[1]["stats"]["totalRows"] > 100000:
                     print("Too many rows, have to split request")
@@ -228,11 +266,6 @@ def _(
                         f"Year {year} slug {slug} report has {slug_report_details.height} rows"
                     )
                     slug_report_details.write_parquet(year_slug_path)
-    return
-
-
-@app.cell
-def _():
     return
 
 

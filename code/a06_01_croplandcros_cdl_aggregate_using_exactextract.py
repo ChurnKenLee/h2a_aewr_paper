@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -9,40 +9,118 @@ def _():
     import marimo as mo
     from pathlib import Path
     from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
+    from zipfile import ZipFile
     import dotenv, os
     import polars as pl
     import polars.selectors as cs
     import pandas as pd
     import geopandas as gpd
     import rasterio as rio
+    from rasterio.shutil import copy as rio_copy
     import exactextract
     from exactextract import exact_extract, operation
     import time
 
-    return INTERMEDIATE, RAW, cs, exact_extract, gpd, pd, pl, rio
-
-
-@app.cell
-def _(RAW):
-    cdl_path = RAW / "croplandcros_cdl"
-    county_shapefile_path = (
-        RAW / "county_shapefile" / "tl_2010_us_county10" / "tl_2010_us_county10.shp"
+    return (
+        CACHE,
+        INTERMEDIATE,
+        RAW,
+        ZipFile,
+        cs,
+        exact_extract,
+        gpd,
+        pd,
+        pl,
+        rio,
+        rio_copy,
     )
-    return cdl_path, county_shapefile_path
 
 
 @app.cell
-def _(cdl_path, rio):
+def _(CACHE, RAW):
+    cdl_path = RAW / "croplandcros_cdl"
+    cdl_cache_path = CACHE / "croplandcros_cdl_tif"
+
+    # vsizip is a GDAL virtual path for reading files without extracting from archive
+    county_shapefile_path = (
+        f"/vsizip/{RAW / 'county_shapefile' / 'tl_2010_us_county10.zip'}"
+        "/tl_2010_us_county10.shp"
+    )
+    return cdl_cache_path, cdl_path, county_shapefile_path
+
+
+@app.cell
+def _(ZipFile, cdl_cache_path, cdl_path):
+    def materialize_cdl_metadata(year):
+        zip_path = cdl_path / f"{year}_30m_cdls.zip"
+        zip_htm_path = f"/vsizip/{zip_path}/Metadata_Cropland-Data-Layer.htm"
+        out_htm_path = cdl_cache_path / f"{year}_metadata"
+
+        if (
+            out_htm_path.exists()
+            and out_htm_path.stat().st_mtime >= zip_path.stat().st_mtime
+        ):
+            return out_htm_path
+
+        cdl_cache_path.mkdir(parents=True, exist_ok=True)
+
+        with ZipFile(zip_path, "r") as zip_ref:
+            htm_file = [f for f in zip_ref.namelist() if f.endswith(".htm")][0]
+            zip_ref.extract(htm_file, out_htm_path)
+
+        return out_htm_path
+
+    return (materialize_cdl_metadata,)
+
+
+@app.cell
+def _(cdl_cache_path, cdl_path, rio_copy):
+    def materialize_cdl_tif(year):
+        zip_path = cdl_path / f"{year}_30m_cdls.zip"
+        zip_tif_path = f"/vsizip/{zip_path}/{year}_30m_cdls.tif"
+        out_tif_path = cdl_cache_path / f"{year}_30m_cdls.tif"
+
+        if (
+            out_tif_path.exists()
+            and out_tif_path.stat().st_mtime >= zip_path.stat().st_mtime
+        ):
+            return out_tif_path
+
+        cdl_cache_path.mkdir(parents=True, exist_ok=True)
+        tmp_tif_path = out_tif_path.with_suffix(".tmp.tif")
+        if tmp_tif_path.exists():
+            tmp_tif_path.unlink()
+
+        rio_copy(
+            zip_tif_path,
+            tmp_tif_path,
+            driver="GTiff",
+            compress="ZSTD",
+            zstd_level=9,
+            tiled=True,
+            blockxsize=512,
+            blockysize=512,
+            bigtiff="IF_SAFER",
+            num_threads="ALL_CPUS",
+        )
+
+        tmp_tif_path.replace(out_tif_path)
+        return out_tif_path
+
+    return (materialize_cdl_tif,)
+
+
+@app.cell
+def _(materialize_cdl_metadata, materialize_cdl_tif, rio):
     cdl_files = {}
     for _year in range(2008, 2025):
-        _cropland_data_layer_path = (
-            cdl_path / f"{_year}_30m_cdls/{_year}_30m_cdls.tif"
-        )  # CDL path
+        _cropland_data_layer_path = materialize_cdl_tif(_year)
+        _metadata_path = materialize_cdl_metadata(_year)
+
         cdl_files[_year] = _cropland_data_layer_path
-        _cropland_data_layer = rio.open(_cropland_data_layer_path)
-        _cdl_crs_epsg = _cropland_data_layer.crs.to_epsg()
-        print(f"{_year} has EPSG {_cdl_crs_epsg}")  # Open connection to raster file
-        _cropland_data_layer.close()  # CRS for crop data  # Close connection
+        with rio.open(_cropland_data_layer_path) as _cropland_data_layer:
+            _cdl_crs_epsg = _cropland_data_layer.crs.to_epsg()
+            print(f"{_year} has EPSG {_cdl_crs_epsg}")
     return (cdl_files,)
 
 

@@ -66,7 +66,7 @@ ensure_project_dirs()
 
 folder_dir <- as_dir(path_root())
 folder_do <- as_dir(path_do())
-folder_data <- as_dir(path_int())
+folder_data <- as_dir(path_processed())
 folder_raw <- as_dir(path_raw())
 folder_output <- as_dir(path_outputs())
 

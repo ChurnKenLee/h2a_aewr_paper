@@ -628,14 +628,11 @@ sanity_check_total_3 <- h2a_combined %>%
   )
 # Sanity check numbers mostly match (we dropped entries with date errors)
 
-h2a_combined %>% write_parquet(path_int("h2a_cleaned.parquet"))
-
 #### Aggregate to county-year level ####
 # Calculate man-hours employed
 # We impute the number of hours worked per week for those missing it with the mean, which is 40.1
-h2a_cleaned_df <- read_parquet(path_int("h2a_cleaned.parquet"))
 
-h2a_cleaned_df <- h2a_cleaned_df %>%
+h2a_cleaned_df <- h2a_combined %>%
   mutate(number_of_hours = as.numeric(number_of_hours)) %>%
   mutate(mean_number_of_hours = mean(number_of_hours, na.rm = TRUE)) %>%
   mutate(

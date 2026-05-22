@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.6"
 app = marimo.App(width="full")
 
 
@@ -8,14 +8,14 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     from pathlib import Path
-    from h2a.paths import CODE, RAW, INTERMEDIATE
+    from h2a.paths import CODE, RAW, INTERMEDIATE, CACHE
     import dotenv, os
     import polars as pl
     import numpy as np
     from bs4 import BeautifulSoup
     import re
 
-    return BeautifulSoup, INTERMEDIATE, RAW, mo, pl, re
+    return BeautifulSoup, CACHE, INTERMEDIATE, mo, pl, re
 
 
 @app.cell(hide_code=True)
@@ -27,8 +27,8 @@ def _(mo):
 
 
 @app.cell
-def _(RAW):
-    cdl_path = RAW / "croplandcros_cdl"
+def _(CACHE):
+    cdl_path = CACHE / "croplandcros_cdl_tif"
     return (cdl_path,)
 
 
@@ -38,7 +38,8 @@ def _(BeautifulSoup, cdl_path, re):
     rows_list = []
     for _year in range(2008, 2025):
         year_cdl_path = cdl_path / f"{_year}_30m_cdls"
-        metadata_path = list(year_cdl_path.glob("*.htm"))
+        metadata_folder = cdl_path / f"{_year}_metadata"
+        metadata_path = list(metadata_folder.glob("*.htm"))
 
         with open(metadata_path[0]) as fp:
             soup = BeautifulSoup(fp, features="html.parser")  # Extract table

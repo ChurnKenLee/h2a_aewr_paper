@@ -1,18 +1,18 @@
-﻿## H2A Build Dataset
+## H2A Build Dataset
 ## Phil Hoxie
 ## 1/31/24
-
-## Run Master File First (or set paths/packages here if running standalone) ##
-
-if (!exists("folder_data")) {
-  folder_dir    <- paste0("C:/Users/", Sys.info()["user"], "/Dropbox/H-2A Paper/")
-  folder_do     <- paste0(folder_dir, "Do/")
-  folder_data   <- paste0(folder_dir, "Data Int/")
-  folder_output <- paste0(folder_dir, "Output/")
-  library(tidyverse)
-  library(arrow)
-  library(tidylog, warn.conflicts = FALSE)
+rm(list = ls())
+if (!exists("path_int")) {
+  if (file.exists("paths.R")) {
+    source("paths.R")
+  } else {
+    source(file.path("code", "paths.R"))
+  }
 }
+ensure_project_dirs()
+library(tidyverse)
+library(arrow)
+library(tidylog, warn.conflicts = FALSE)
 
 ## Yearly Full County Dataset ------------------------------------------------
 
@@ -23,58 +23,52 @@ if (!exists("folder_data")) {
 ## Load Data -------------------------------------------------------------------
 
 # yearly versions #
-aewr_data <- read_parquet(paste0(folder_data, "aewr_data_year.parquet"))
+aewr_data <- read_parquet(path_processed("aewr_data_year.parquet"))
 aewr_regions <- read.csv(
-  file = paste0(folder_data, "aewr_regions.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
   stringsAsFactors = F
 )
-bea_caemp25n_data <- read_parquet(paste0(
-  folder_data,
+bea_caemp25n_data <- read_parquet(path_processed(
   "bea_caemp25n_data_year.parquet"
 ))
-bea_cainc45_data <- read_parquet(paste0(
-  folder_data,
+bea_cainc45_data <- read_parquet(path_processed(
   "bea_cainc45_data_year.parquet"
 ))
 fips_codes <- read.csv(
-  file = paste0(folder_data, "fips_codes.csv"),
+  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
   stringsAsFactors = F
 )
-h2a_data <- read_parquet(paste0(folder_data, "h2a_data_year.parquet"))
-h2a_predict <- read_parquet(paste0(folder_data, "h2a_predict.parquet"))
-census_of_agriculture_cropland <- read_parquet(paste0(
-  folder_data,
+h2a_data <- read_parquet(path_processed("h2a_data_year.parquet"))
+h2a_predict <- read_parquet(path_processed("h2a_predict.parquet"))
+census_of_agriculture_cropland <- read_parquet(path_processed(
   "census_ag_cropland_year.parquet"
 ))
 
-census_pop_ests <- read_parquet(paste0(
-  folder_data,
-  "census_pop_ests_year.parquet"
-))
+census_pop_ests <- read_parquet(path_processed("census_pop_ests_year.parquet"))
 
-census_of_agriculture_cropland_base <- read_parquet(paste0(
-  folder_data,
+census_of_agriculture_cropland_base <- read_parquet(path_processed(
   "census_ag_cropland_2007_year.parquet"
 ))
 
-state_min <- read_parquet(paste0(folder_data, "state_real_minwages.parquet"))
+state_min <- read_parquet(path_processed("state_real_minwages.parquet"))
 
-cz_wage_quantiles <- read_parquet(paste0(
-  folder_data,
+cz_wage_quantiles <- read_parquet(path_int(
   "acs_czone_wage_quantiles.parquet"
 ))
 
-ppi_annual <- read_parquet(paste0(folder_data, "ppi_2012.parquet"))
+ppi_annual <- read_parquet(path_processed("ppi_2012.parquet"))
 
-nass_price_index <- read_parquet(paste0(folder_data, "nass_fisher_price_index.parquet"))
+nass_price_index <- read_parquet(path_processed(
+  "nass_fisher_price_index.parquet"
+))
 
 # base for full county dataset
 
-county_df <- read_parquet(paste0(folder_data, "county_df_year.parquet"))
+county_df <- read_parquet(path_processed("county_df_year.parquet"))
 
 # CZ
 
-cz_file_small <- read_parquet(paste0(folder_data, "cz_file_2010_small.parquet"))
+cz_file_small <- read_parquet(path_processed("cz_file_2010_small.parquet"))
 
 head(county_df)
 
@@ -107,6 +101,7 @@ class(county_df$fipscounty)
 # make state fips
 
 county_df <- county_df %>%
+  mutate(fipscounty = as.numeric(fipscounty)) %>%
   mutate(statefips = floor(fipscounty / 1000))
 
 hist(county_df$statefips) # it worked!
@@ -246,8 +241,10 @@ cz_wage_quantiles <- cz_wage_quantiles %>%
 # aewr_ppi is real; wage_p* must also be real before computing bite variables
 cz_wage_quantiles <- cz_wage_quantiles %>%
   left_join(ppi_annual, by = "year") %>%
-  mutate(across(c(wage_p10, wage_p25, wage_p50, wage_p75, wage_p90),
-                ~ . / ppi_2012)) %>%
+  mutate(across(
+    c(wage_p10, wage_p25, wage_p50, wage_p75, wage_p90),
+    ~ . / ppi_2012
+  )) %>%
   select(-ppi_2012)
 
 # Add lags as in state minimum wages
@@ -763,11 +760,17 @@ county_type_classification <- county_df %>%
           true_share_cutoff) ~ "never takers",
     ),
     county_simple_treatment_groups = case_when(
-      (county_treatment_group_classification == "always takers") ~ "always takers",
-      (county_treatment_group_classification != "always takers") ~ "exposed adoptors"
+      (county_treatment_group_classification ==
+        "always takers") ~ "always takers",
+      (county_treatment_group_classification !=
+        "always takers") ~ "exposed adoptors"
     )
   ) %>%
-  select(countyfips, county_treatment_group_classification, county_simple_treatment_groups)
+  select(
+    countyfips,
+    county_treatment_group_classification,
+    county_simple_treatment_groups
+  )
 
 
 # cuts by 2008 h2a usage
@@ -861,8 +864,8 @@ county_df <- merge(
   all.y = F
 )
 
-county_type_classification <- county_type_classification %>% 
-  ungroup() %>% 
+county_type_classification <- county_type_classification %>%
+  ungroup() %>%
   select(-county_fe)
 
 county_df <- county_df %>%
@@ -936,19 +939,25 @@ county_df <- county_df %>%
   )
 
 county_df %>%
-  write_parquet(paste0(folder_data, "county_df_analysis_year.parquet"))
+  write_parquet(path_processed("county_df_analysis_year.parquet"))
 
 # --- Diagnostic: county_df_analysis_year ---
 cat("county_df rows:", nrow(county_df), " | cols:", ncol(county_df), "\n")
 stopifnot(nrow(county_df) > 10000)
-stopifnot(all(c(
-  "aewr_state_ag_ppi_l1",
-  "high_h2a_share_75",
-  "high_h2a_share_75_inverse",
-  "h2a_cert_share_farm_workers_2011_start_year",
-  "county_fe", "year_fe", "statefips",
-  "ln_pop_census", "emp_pop_ratio"
-) %in% names(county_df)))
+stopifnot(all(
+  c(
+    "aewr_state_ag_ppi_l1",
+    "high_h2a_share_75",
+    "high_h2a_share_75_inverse",
+    "h2a_cert_share_farm_workers_2011_start_year",
+    "county_fe",
+    "year_fe",
+    "statefips",
+    "ln_pop_census",
+    "emp_pop_ratio"
+  ) %in%
+    names(county_df)
+))
 cat("Diagnostic passed: county_df_analysis_year\n")
 
 ## Remove files ## -------------------------------------------------------------

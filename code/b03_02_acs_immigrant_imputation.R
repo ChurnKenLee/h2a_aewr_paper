@@ -228,7 +228,11 @@ acs_df <- acs_df %>%
 
 # Load GEOCORR crosswalk
 # Have to skip the 2nd row
-geocorr_2000_path <- path_raw("geocorr", "geocorr2014_puma2000_county2010.csv")
+geocorr_2000_path <- path_raw(
+  "geographic_crosswalks",
+  "geocorr",
+  "geocorr2014_puma2000_county2010.csv"
+)
 
 geocorr_2000_names <- names(read_csv(
   geocorr_2000_path,
@@ -246,7 +250,11 @@ geocorr_2000_df <- read_csv(
   mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
   select(-c(state, puma2k))
 
-geocorr_2012_path <- path_raw("geocorr", "geocorr2018_puma2010_county2010.csv")
+geocorr_2012_path <- path_raw(
+  "geographic_crosswalks",
+  "geocorr",
+  "geocorr2018_puma2010_county2010.csv"
+)
 
 geocorr_2012_names <- names(read_csv(
   geocorr_2012_path,

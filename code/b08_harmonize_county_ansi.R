@@ -49,10 +49,10 @@ bea_farm_nonfarm <- read_parquet(path_int(
 # Construct FIPS crosswalk following Phil
 # This is just adjusting for BEA's Virginia coding
 bea_fips_xwalk <- read_csv(
-    path_raw("census_geographic_definitions", "bea_fips_xwalk.csv")
+    path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv")
 )
-full_county_set <- read_csv(
-    path_raw("census_geographic_definitions", "county_adjacency2010.csv")
+full_county_set <- read_parquet(
+    path_int("county_adjacency2010.parquet")
 )
 county_list <- unique(select(full_county_set, fipscounty, countyname)) %>% # all county fips and names
     mutate(indata = 1)
