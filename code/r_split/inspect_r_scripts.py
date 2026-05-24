@@ -8,22 +8,23 @@ app = marimo.App(width="full")
 def _():
     import difflib
     import json
+    from pathlib import Path
 
     import marimo as mo
     import polars as pl
 
-    from h2a.paths import CODE
+    from h2a.paths import ROOT
     import split_do_r_scripts as rsplit
 
-    return CODE, difflib, mo, pl, rsplit
+    return Path, ROOT, difflib, mo, pl, rsplit
 
 
 @app.cell
-def _(CODE):
-    project_root = CODE.parent
-    split_dir = CODE / "r_split"
+def _(Path, ROOT):
+    project_root = ROOT
+    split_dir = Path(__file__).resolve().parent
     metadata = split_dir / "_metadata"
-    patch_path = CODE / "r_split_patches.jsonl"
+    patch_path = split_dir / "r_split_patches.jsonl"
     return metadata, patch_path, project_root, split_dir
 
 
@@ -56,18 +57,6 @@ def _(metadata, pl):
     artifacts = pl.read_parquet(metadata / "artifacts.parquet")
     tokens = pl.read_parquet(metadata / "tokens.parquet")
     return (modules,)
-
-
-@app.cell
-def _(mo, modules):
-    module_picker = mo.ui.dropdown(
-        options=modules["path"].to_list(),
-        value=modules["path"].to_list()[0],
-        searchable=True,
-        label="Module",
-    )
-    module_picker
-    return (module_picker,)
 
 
 @app.cell
@@ -112,14 +101,16 @@ def _(mo):
         label="Allow missing selector",
     )
 
-    mo.vstack([
-        op_picker,
-        selector_input,
-        payload_input,
-        reason_input,
-        enabled_input,
-        allow_missing_input,
-    ])
+    mo.vstack(
+        [
+            op_picker,
+            selector_input,
+            payload_input,
+            reason_input,
+            enabled_input,
+            allow_missing_input,
+        ]
+    )
     return (
         allow_missing_input,
         enabled_input,
@@ -131,9 +122,22 @@ def _(mo):
 
 
 @app.cell
+def _(mo, modules):
+    module_picker = mo.ui.dropdown(
+        options=modules["path"].to_list(),
+        value=modules["path"].to_list()[0],
+        searchable=True,
+        label="Module",
+    )
+    module_picker
+    return (module_picker,)
+
+
+@app.cell
 def _(
     allow_missing_input,
     enabled_input,
+    mo,
     module_picker,
     op_picker,
     payload_input,
@@ -149,11 +153,7 @@ def _(
         "enabled": enabled_input.value,
         "allow_missing": allow_missing_input.value,
     }
-    return (proposed_patch,)
 
-
-@app.cell
-def _(mo):
     preview_patch_button = mo.ui.run_button(
         label="Preview patch against current module",
         tooltip="Show a diff only; do not write the patch table or regenerate.",
@@ -161,14 +161,24 @@ def _(mo):
     apply_patch_button = mo.ui.run_button(
         label="Append patch and regenerate",
         kind="warn",
-        tooltip="Append this patch to code/r_split_patches.jsonl and regenerate code/r_split.",
+        tooltip="Append this patch to the local r_split_patches.jsonl and regenerate split modules.",
     )
     mo.hstack([preview_patch_button, apply_patch_button])
-    return apply_patch_button, preview_patch_button
+    return apply_patch_button, preview_patch_button, proposed_patch
 
 
 @app.cell
-def _(difflib, preview_patch_button, proposed_patch, rsplit, split_dir):
+def _(
+    apply_patch_button,
+    difflib,
+    mo,
+    patch_path,
+    preview_patch_button,
+    project_root,
+    proposed_patch,
+    rsplit,
+    split_dir,
+):
     patch_preview_diff = ""
     if preview_patch_button.value:
         module_file = split_dir / proposed_patch["module"]
@@ -183,11 +193,7 @@ def _(difflib, preview_patch_button, proposed_patch, rsplit, split_dir):
                 lineterm="",
             )
         )
-    return (patch_preview_diff,)
 
-
-@app.cell
-def _(apply_patch_button, patch_path, project_root, proposed_patch, rsplit):
     apply_summary = None
     if apply_patch_button.value:
         rsplit.append_patch(patch_path, proposed_patch)
@@ -195,11 +201,7 @@ def _(apply_patch_button, patch_path, project_root, proposed_patch, rsplit):
             project_root=project_root,
             patch_path=patch_path,
         )
-    return (apply_summary,)
 
-
-@app.cell
-def _(apply_summary, mo, patch_preview_diff):
     if patch_preview_diff:
         patch_output = mo.ui.code_editor(
             value=patch_preview_diff,
@@ -254,6 +256,11 @@ def _(mo, module_picker, rsplit, split_dir):
         min_height=500,
         show_copy_button=True,
     )
+    return
+
+
+@app.cell
+def _():
     return
 
 

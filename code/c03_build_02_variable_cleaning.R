@@ -3,7 +3,33 @@
 # Source: Do/H2A Build Dataset.R lines 273-577
 # Source SHA256: 525d95d7d64dabbf8958d2ade7b701019b85612a382d0b07ad39f14e43326578
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## Variable cleaning ## -----------------
+
+county_df <- read_parquet(path_processed("county_df_build_merge.parquet"))
+cz_file_small <- read_parquet(path_processed("cz_file_2010_small.parquet"))
 
 # AEWR vs ag min diff #
 
@@ -40,62 +66,33 @@ test <- county_df %>%
 
 # AEWR vs state min diff #
 
-# H2A NAs to zero
+# H2A and cropland NAs to zero
 
-county_df$nbr_workers_requested_all_years[is.na(
-  county_df$nbr_workers_requested_all_years
-)] <- 0
-county_df$nbr_workers_certified_all_years[is.na(
-  county_df$nbr_workers_certified_all_years
-)] <- 0
-county_df$man_hours_requested_all_years[is.na(
-  county_df$man_hours_requested_all_years
-)] <- 0
-county_df$man_hours_certified_all_years[is.na(
-  county_df$man_hours_certified_all_years
-)] <- 0
-county_df$nbr_applications_all_years[is.na(
-  county_df$nbr_applications_all_years
-)] <- 0
+h2a_zero_vars <- c(
+  "nbr_workers_requested_all_years",
+  "nbr_workers_certified_all_years",
+  "man_hours_requested_all_years",
+  "man_hours_certified_all_years",
+  "nbr_applications_all_years",
+  "nbr_workers_requested_start_year",
+  "nbr_workers_certified_start_year",
+  "man_hours_requested_start_year",
+  "man_hours_certified_start_year",
+  "nbr_applications_start_year",
+  "nbr_workers_requested_fiscal_year",
+  "nbr_workers_certified_fiscal_year",
+  "man_hours_requested_fiscal_year",
+  "man_hours_certified_fiscal_year",
+  "nbr_applications_fiscal_year"
+)
 
-county_df$nbr_workers_requested_start_year[is.na(
-  county_df$nbr_workers_requested_start_year
-)] <- 0
-county_df$nbr_workers_certified_start_year[is.na(
-  county_df$nbr_workers_certified_start_year
-)] <- 0
-county_df$man_hours_requested_start_year[is.na(
-  county_df$man_hours_requested_start_year
-)] <- 0
-county_df$man_hours_certified_start_year[is.na(
-  county_df$man_hours_certified_start_year
-)] <- 0
-county_df$nbr_applications_start_year[is.na(
-  county_df$nbr_applications_start_year
-)] <- 0
-
-county_df$nbr_workers_requested_fiscal_year[is.na(
-  county_df$nbr_workers_requested_fiscal_year
-)] <- 0
-county_df$nbr_workers_certified_fiscal_year[is.na(
-  county_df$nbr_workers_certified_fiscal_year
-)] <- 0
-county_df$man_hours_requested_fiscal_year[is.na(
-  county_df$man_hours_requested_fiscal_year
-)] <- 0
-county_df$man_hours_certified_fiscal_year[is.na(
-  county_df$man_hours_certified_fiscal_year
-)] <- 0
-county_df$nbr_applications_fiscal_year[is.na(
-  county_df$nbr_applications_fiscal_year
-)] <- 0
+county_df <- county_df %>%
+  mutate(
+    across(all_of(h2a_zero_vars), ~ replace_na(.x, 0)),
+    across(c(cropland_acr, cropland_acr_2007), ~ replace_na(.x, 0))
+  )
 
 head(county_df)
-
-# cropland zeros
-
-county_df$cropland_acr[is.na(county_df$cropland_acr)] <- 0
-county_df$cropland_acr_2007[is.na(county_df$cropland_acr_2007)] <- 0
 
 # emp pop ratio
 
@@ -307,4 +304,7 @@ fixcounty <- county_df %>%
 fixcounty %>%
   group_by(state_abbrev) %>%
   tally() # BEA issue for VA counties. We need to drop bristol city. It will be ok.
+
+write_parquet(county_df, path_processed("county_df_variable_cleaned_year.parquet"))
+cat("county_df_variable_cleaned_year:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 

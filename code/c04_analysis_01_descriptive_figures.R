@@ -3,7 +3,39 @@
 # Source: Do/H2A Analysis Figs and Tables.R lines 49-1300
 # Source SHA256: 7e2fbfdeb6a04b01ab535ed7eaa0f3dd8f64dc94ad1b719f680856e1829c0dc8
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 #### Exhibit 0: Distribution of AEWR Bite Variables (real, non-lagged) ---------
+
+split_load_analysis_inputs(
+  include_date = TRUE,
+  include_county_map = TRUE,
+  include_h2a_data_ts = TRUE,
+  include_h2a_data = TRUE,
+  include_aewr_data_full = TRUE,
+  include_county_df = TRUE
+)
 
 bite_long <- county_df %>%
   filter(any_cropland_2007 == 1) %>%
@@ -39,27 +71,7 @@ ggsave(
   height = 8
 )
 
-# map
-
-county_map <- cnt_shp %>%
-  mutate(statefip = as.numeric(STATEFP))
-
-county_map <- county_map %>%
-  filter(statefip <= 56 & statefip != 2 & statefip != 15)
-
-# simplify the map
-county_map <- st_simplify(
-  county_map,
-  preserveTopology = FALSE,
-  dTolerance = 1000
-)
-
-ggplot(county_map) +
-  geom_sf()
-county_map$countyfips <- as.numeric(str_c(
-  county_map$STATEFP,
-  county_map$COUNTYFP
-))
+# county_map loaded by split_load_analysis_inputs()
 
 
 #### Exhibit 1: AEWR TS Real ---------------------------------------------------

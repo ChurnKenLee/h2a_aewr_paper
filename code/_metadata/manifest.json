@@ -1,6 +1,6 @@
 {
   "generated_by": "code/split_do_r_scripts.py",
-  "out_dir": "/mnt/storage/Dropbox/projects/H-2A Paper/code/r_split",
+  "out_dir": "/mnt/storage/Dropbox/projects/H-2A Paper/code",
   "patch_path": "/mnt/storage/Dropbox/projects/H-2A Paper/code/r_split/r_split_patches.jsonl",
   "libraries": [
     "tidyverse",
@@ -29,8 +29,8 @@
       "source_sha256": "f4c92992548cf065a9f77d8affb76de93db23f502fa3043dd3f14cb66f71ffeb",
       "generated_sha256": "e2b4c328a9aeb598d77727affe10fc39d01d083a53622a9540b65e1d899902c0",
       "baseline_sha256": "f4c92992548cf065a9f77d8affb76de93db23f502fa3043dd3f14cb66f71ffeb",
-      "patch_count": 7,
-      "patch_match_count": 4,
+      "patch_count": 6,
+      "patch_match_count": 3,
       "patch_change_count": 3
     },
     {

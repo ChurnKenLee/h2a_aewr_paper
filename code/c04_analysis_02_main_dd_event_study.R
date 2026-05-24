@@ -3,18 +3,38 @@
 # Source: Do/H2A Analysis Figs and Tables.R lines 1301-1667
 # Source SHA256: e5c7c7d0f8bcd1a11bd8a9d0d23e4c9808ed8b2e17a030a342160d74a4779471
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## Exhibit 13: DD Main Results -------------------------------------------------
 
-samp_base <- county_df %>%
-  filter(
-    any_cropland_2007 == 1,
-    county_simple_treatment_groups != "always takers"
-  )
+split_load_analysis_inputs(
+  include_county_df = TRUE,
+  include_samples = TRUE
+)
 
 cat("samp_base rows:", nrow(samp_base), "\n")
 stopifnot(nrow(samp_base) > 1000)
-
-samp_no_border <- samp_base %>% filter(border_cz == 0)
 
 # DD model 1: no controls, all CZs
 dd_1 <- feols(

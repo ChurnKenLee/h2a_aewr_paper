@@ -3,6 +3,29 @@
 # Source: Do/H2A Clean and Load.R lines 1-199
 # Source SHA256: a32c63f5bd5343db2ca703ce8024bce608dd126cd2d3f7ba2baacfa3149da191
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ensure_project_dirs()
 library(tidyverse)
 library(arrow)
@@ -48,29 +71,47 @@ state_min_alt <- read_parquet(path_int("state_year_min_wage.parquet"))
 
 ## Fips Codes ------------------------------------------
 
-fips_codes <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
-  stringsAsFactors = F
+fips_codes <- read_csv(
+  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
 
 ## AEWR Regions ----------------------------------------
 
-aewr_regions <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
-  stringsAsFactors = F
+aewr_regions <- read_csv(
+  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv")
 )
 
 ## Commuting Zones --------------------------------------
 
 # source: https://sites.psu.edu/psucz/data/
 
-cz_file <- read.csv(
-  file = path_raw("geographic_crosswalks", "penn", "counties10-zqvz0r.csv"),
-  stringsAsFactors = F
+cz_file <- read_csv(
+  file = path_raw("geographic_crosswalks", "penn", "counties10-zqvz0r.csv")
 )
 
 cz_file <- cz_file %>%
   rename(countyfips = FIPS, cz_out10 = OUT10)
+
+cz_integer_vars <- c(
+  "countyfips",
+  "cz_out10",
+  "REP10",
+  "Pop10",
+  "Wage2010",
+  "Wage2011",
+  "Wage2012",
+  "Wage2013",
+  "Wage2014",
+  "Wage2015",
+  "CBSA10",
+  "PEA10",
+  "BEA2004",
+  "TPMetro",
+  "TPMicro",
+  "TPcombined"
+)
+cz_file <- cz_file %>%
+  mutate(across(all_of(cz_integer_vars), as.integer))
 
 write_parquet(cz_file, path_processed("cz_file_2010.parquet"))
 
@@ -84,9 +125,8 @@ write_parquet(cz_file_small, path_processed("cz_file_2010_small.parquet"))
 ## PPI --------------------------------------------------
 # Source: https://fred.stlouisfed.org/series/WPU01
 
-ppi_data <- read.csv(
-  file = path_raw("fred", "WPU01.csv"),
-  stringsAsFactors = F
+ppi_data <- read_csv(
+  file = path_raw("fred", "WPU01.csv")
 )
 
 # average by year
@@ -116,13 +156,11 @@ write_parquet(ppi_data, path_processed("ppi_2012.parquet"))
 ## County Boundary ------------------------------------
 
 # cleaned in the original stata file
-state_border_pairs <- read.csv(
-  file = path_raw("geographic_crosswalks", "state_border_pairs.csv"),
-  stringsAsFactors = F
+state_border_pairs <- read_csv(
+  file = path_raw("geographic_crosswalks", "state_border_pairs.csv")
 )
-border_counties_allmatches <- read.csv(
-  file = path_raw("geographic_crosswalks", "border_counties_allmatches.csv"),
-  stringsAsFactors = F
+border_counties_allmatches <- read_csv(
+  file = path_raw("geographic_crosswalks", "border_counties_allmatches.csv")
 )
 
 full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))

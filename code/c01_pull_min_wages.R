@@ -3,6 +3,29 @@
 # Source: Do/H2A Pull Min Wages.R lines 1-123
 # Source SHA256: f4c92992548cf065a9f77d8affb76de93db23f502fa3043dd3f14cb66f71ffeb
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## Run standalone or via H2A Master.R
 ensure_project_dirs()
 library(tidyverse)
@@ -11,9 +34,9 @@ library(fredr)
 library(arrow)
 
 # You need your FRED API key
-fred_api_key <- Sys.getenv("FRED_API_KEY")
+fred_api_key <- Sys.getenv("FRED_API_KEY_PHIL")
 if (!nzchar(fred_api_key)) {
-  stop("FRED_API_KEY must be set in .env or the environment.")
+  stop("FRED_API_KEY_PHIL must be set in .env or the environment.")
 }
 fredr_set_key(fred_api_key)
 # The FRED series ID for federal minimum wage (annual)

@@ -3,7 +3,33 @@
 # Source: Do/H2A Clean and Load.R lines 956-1412
 # Source SHA256: c44740d380f6ca753b3075096a420fe966d482a96291d6929be13a233e50227f
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## BEA Data ---------------------------------------------
+
+full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
+ppi_data <- read_parquet(path_processed("ppi_2012.parquet"))
 
 # job count data
 bea_caemp25n_data <- read_parquet(path_int("bea_CAEMP25N_trim.parquet"))
@@ -71,46 +97,9 @@ bea_caemp25n_data <- bea_caemp25n_data %>%
 # fix fips
 # from: https://www.economy.com/support/blog/getfile.asp?did=869A03D1-5D74-4376-A606-00A8C64DDB0B&fid=a18d6d4873834f749d42ded633850a5e.xlsx
 
-bea_fips_xwalk <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
-  stringsAsFactors = F
-)
+bea_fips_xwalk <- split_prepare_bea_fips_xwalk(full_county_set)
 
-county_list <- unique(select(full_county_set, fipscounty, countyname)) %>% # all county fips and names
-  mutate(indata = 1)
-
-bea_fips_xwalk <- merge(
-  x = bea_fips_xwalk,
-  y = county_list,
-  by.x = "realfips",
-  by.y = "fipscounty",
-  all.x = T,
-  all.y = F
-)
-
-# keep counties when conflict
-
-bea_fips_xwalk <- bea_fips_xwalk %>%
-  filter(county == 1) %>%
-  select(realfips, beafips)
-
-bea_caemp25n_data <- merge(
-  x = bea_caemp25n_data,
-  y = bea_fips_xwalk,
-  by.x = "countyfips",
-  by.y = "beafips",
-  all.x = T,
-  all.y = F
-)
-
-# fix fips
-
-bea_caemp25n_data <- bea_caemp25n_data %>%
-  rename(oldfips = countyfips) %>%
-  mutate(countyfips = ifelse(!is.na(realfips), realfips, oldfips))
-
-bea_caemp25n_data <- bea_caemp25n_data %>%
-  select(-oldfips, -realfips)
+bea_caemp25n_data <- split_apply_bea_fips_xwalk(bea_caemp25n_data, bea_fips_xwalk)
 
 # SD Oglala Lakota to Shannon
 bea_caemp25n_data <- bea_caemp25n_data %>%
@@ -233,23 +222,7 @@ names(bea_cainc45_data)
 bea_cainc45_data <- bea_cainc45_data %>%
   filter(year > 2007 & year <= 2022)
 
-bea_cainc45_data <- merge(
-  x = bea_cainc45_data,
-  y = bea_fips_xwalk,
-  by.x = "countyfips",
-  by.y = "beafips",
-  all.x = T,
-  all.y = F
-)
-
-# fix fips
-
-bea_cainc45_data <- bea_cainc45_data %>%
-  rename(oldfips = countyfips) %>%
-  mutate(countyfips = ifelse(!is.na(realfips), realfips, oldfips))
-
-bea_cainc45_data <- bea_cainc45_data %>%
-  select(-oldfips, -realfips)
+bea_cainc45_data <- split_apply_bea_fips_xwalk(bea_cainc45_data, bea_fips_xwalk)
 
 write_parquet(
   bea_cainc45_data,
@@ -267,36 +240,31 @@ cat(
 ## County Pop estimates ---------------------------------
 # documentation: https://www2.census.gov/programs-surveys/popest/technical-documentation/file-layouts/2000-2009/co-est2009-alldata.pdf
 
-census_pop_2000 <- read.csv(
-  path_raw("census_population_estimates", "co-est2009-alldata.csv"),
-  stringsAsFactors = F
+census_pop_2000 <- read_csv(
+  path_raw("census_population_estimates", "co-est2009-alldata.csv")
 )
-census_pop_2010 <- read.csv(
-  path_raw("census_population_estimates", "co-est2019-alldata.csv"),
-  stringsAsFactors = F
+census_pop_2010 <- read_csv(
+  path_raw("census_population_estimates", "co-est2019-alldata.csv")
 )
-census_pop_2020 <- read.csv(
-  path_raw("census_population_estimates", "co-est2022-alldata.csv"),
-  stringsAsFactors = F
+census_pop_2020 <- read_csv(
+  path_raw("census_population_estimates", "co-est2022-alldata.csv")
 )
 
-ct_xwalk <- read.csv(
-  path_raw("geographic_crosswalks", "phil", "ct_region_xwalk.csv"),
-  stringsAsFactors = F
+ct_xwalk <- read_csv(
+  path_raw("geographic_crosswalks", "phil", "ct_region_xwalk.csv")
 )
-ct_popgrth <- read.csv(
-  path_raw("geographic_crosswalks", "phil", "ct_pop_grth.csv"),
-  stringsAsFactors = F
+ct_popgrth <- read_csv(
+  path_raw("geographic_crosswalks", "phil", "ct_pop_grth.csv")
 )
 
 census_pop_2000 <- census_pop_2000 %>%
-  filter(SUMLEV == 50) %>%
+  filter(as.integer(SUMLEV) == 50) %>%
   select(STATE, COUNTY, 10:19)
 census_pop_2010 <- census_pop_2010 %>%
-  filter(SUMLEV == 50) %>%
+  filter(as.integer(SUMLEV) == 50) %>%
   select(STATE, COUNTY, 10:19)
 census_pop_2020 <- census_pop_2020 %>%
-  filter(SUMLEV == 50) %>%
+  filter(as.integer(SUMLEV) == 50) %>%
   select(STATE, COUNTY, 9:11)
 
 head(census_pop_2000)
@@ -376,9 +344,9 @@ ct_base <- ct_base %>%
   filter(countyfips < 9100) %>%
   select(countyfips, pop_census) %>%
   mutate(
-    pop_census2020 = pop_census * ct_popgrth[2, 3],
-    pop_census2021 = pop_census2020 * ct_popgrth[3, 3],
-    pop_census2022 = pop_census2021 * ct_popgrth[4, 3]
+    pop_census2020 = pop_census * ct_popgrth$grt[ct_popgrth$year == 2020],
+    pop_census2021 = pop_census2020 * ct_popgrth$grt[ct_popgrth$year == 2021],
+    pop_census2022 = pop_census2021 * ct_popgrth$grt[ct_popgrth$year == 2022]
   )
 
 ct_base <- ct_base %>%

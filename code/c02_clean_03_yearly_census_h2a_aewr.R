@@ -3,22 +3,43 @@
 # Source: Do/H2A Clean and Load.R lines 420-754
 # Source SHA256: 07cc96d911887417cee0e9ec6a6a2f99263553a32a69f57ea57f687287ad3824
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## _____________________________________________________________________________
 ## Year by Year version --------------------------------------------------------
 ## _____________________________________________________________________________
 
 ## Fips Codes ------------------------------------------
 
-fips_codes <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
-  stringsAsFactors = F
+fips_codes <- read_csv(
+  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
 
 ## AEWR Regions ----------------------------------------
 
-aewr_regions <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
-  stringsAsFactors = F
+aewr_regions <- read_csv(
+  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv")
 )
 
 ## PPI --------------------------------------------------
@@ -29,13 +50,11 @@ ppi_data <- read_parquet(path_processed("ppi_2012.parquet"))
 ## County Boundary ------------------------------------
 
 # cleaned in the original stata file
-state_border_pairs <- read.csv(
-  file = path_raw("geographic_crosswalks", "state_border_pairs.csv"),
-  stringsAsFactors = F
+state_border_pairs <- read_csv(
+  file = path_raw("geographic_crosswalks", "state_border_pairs.csv")
 )
-border_counties_allmatches <- read.csv(
-  file = path_raw("geographic_crosswalks", "border_counties_allmatches.csv"),
-  stringsAsFactors = F
+border_counties_allmatches <- read_csv(
+  file = path_raw("geographic_crosswalks", "border_counties_allmatches.csv")
 )
 
 full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
@@ -300,9 +319,6 @@ head(aewr_data)
 aewr_data <- aewr_data %>%
   filter(!is.na(aewr_region_num))
 
-write_parquet(aewr_data, path_processed("aewr_data_full.parquet"))
-cat("aewr_data_full:", nrow(aewr_data), "rows,", ncol(aewr_data), "cols\n")
-
 # leav one out averages
 
 loo_averages <- NULL
@@ -337,4 +353,7 @@ aewr_data <- aewr_data %>%
   )
 
 head(aewr_data)
+
+write_parquet(aewr_data, path_processed("aewr_data_full.parquet"))
+cat("aewr_data_full:", nrow(aewr_data), "rows,", ncol(aewr_data), "cols\n")
 

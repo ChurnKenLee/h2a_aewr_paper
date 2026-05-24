@@ -3,6 +3,29 @@
 # Source: Do/H2A Build Dataset.R lines 1-272
 # Source SHA256: f6618f3dc3db60bebde02ba3da2fcee94ecad4f724e9505944b132b623f90ff8
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## H2A Build Dataset
 ## Phil Hoxie
 ## 1/31/24
@@ -21,9 +44,8 @@ library(tidylog, warn.conflicts = FALSE)
 
 # yearly versions #
 aewr_data <- read_parquet(path_processed("aewr_data_year.parquet"))
-aewr_regions <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
-  stringsAsFactors = F
+aewr_regions <- read_csv(
+  file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv")
 )
 bea_caemp25n_data <- read_parquet(path_processed(
   "bea_caemp25n_data_year.parquet"
@@ -31,9 +53,8 @@ bea_caemp25n_data <- read_parquet(path_processed(
 bea_cainc45_data <- read_parquet(path_processed(
   "bea_cainc45_data_year.parquet"
 ))
-fips_codes <- read.csv(
-  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
-  stringsAsFactors = F
+fips_codes <- read_csv(
+  file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
 h2a_data <- read_parquet(path_processed("h2a_data_year.parquet"))
 h2a_predict <- read_parquet(path_processed("h2a_predict.parquet"))
@@ -266,4 +287,7 @@ county_df <- merge(
 # ppi_2012 is already present in county_df via bea_cainc45_data_year merge
 county_df <- county_df %>%
   mutate(fisher_index_ppi = fisher_index / ppi_2012)
+
+write_parquet(county_df, path_processed("county_df_build_merge.parquet"))
+cat("county_df_build_merge:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 

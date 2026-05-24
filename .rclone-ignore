@@ -15,6 +15,7 @@
 # uv and marimo cache
 - .venv/**
 - __marimo__/**
+- __pycache__/**
 
 # Big raw data files
 - data/raw/acs/**

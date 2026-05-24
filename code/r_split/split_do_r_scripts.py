@@ -26,8 +26,13 @@ from typing import Iterable
 
 import polars as pl
 
+from h2a.paths import ROOT
+
 
 GENERATOR_ID = "code/split_do_r_scripts.py"
+GENERATED_PREFIX = "c"
+SETUP_FILE = "c00_setup.R"
+RUNNER_FILE = "c99_run_all.R"
 SOURCE_ORDER = (
     "H2A Pull Min Wages.R",
     "H2A Clean and Load.R",
@@ -65,7 +70,14 @@ def read_patches(path: Path) -> pl.DataFrame:
     ).select([pl.col(name).cast(dtype, strict=False) for name, dtype in PATCH_SCHEMA.items()])
 
 
-def apply_patch_text(text: str, patch: dict) -> str:
+@dataclass(frozen=True)
+class PatchApplyResult:
+    text: str
+    matched: int
+    changed: bool
+
+
+def apply_patch_text_result(text: str, patch: dict) -> PatchApplyResult:
     op = patch["op"]
     selector = patch["selector"]
     payload = patch.get("payload") or ""
@@ -74,46 +86,63 @@ def apply_patch_text(text: str, patch: dict) -> str:
         idx = text.find(selector)
         if idx < 0:
             if patch.get("allow_missing"):
-                return text
+                return PatchApplyResult(text=text, matched=0, changed=False)
             raise ValueError(f"Selector not found for insert_before: {selector}")
-        return text[:idx] + payload + text[idx:]
+        new_text = text[:idx] + payload + text[idx:]
+        return PatchApplyResult(text=new_text, matched=1, changed=new_text != text)
 
     if op == "insert_after":
         idx = text.find(selector)
         if idx < 0:
             if patch.get("allow_missing"):
-                return text
+                return PatchApplyResult(text=text, matched=0, changed=False)
             raise ValueError(f"Selector not found for insert_after: {selector}")
         idx += len(selector)
-        return text[:idx] + payload + text[idx:]
+        new_text = text[:idx] + payload + text[idx:]
+        return PatchApplyResult(text=new_text, matched=1, changed=new_text != text)
 
     if op == "replace_regex":
         new_text, n = re.subn(selector, payload, text, flags=re.MULTILINE | re.DOTALL)
         if n == 0:
             if patch.get("allow_missing"):
-                return text
+                return PatchApplyResult(text=text, matched=0, changed=False)
             raise ValueError(f"Regex selector matched nothing: {selector}")
-        return new_text
+        return PatchApplyResult(text=new_text, matched=n, changed=new_text != text)
 
     if op == "replace_lines":
         start, end = [int(x) for x in selector.split(":")]
         lines = text.splitlines(keepends=True)
-        return "".join(lines[: start - 1] + [payload] + lines[end:])
+        new_text = "".join(lines[: start - 1] + [payload] + lines[end:])
+        return PatchApplyResult(text=new_text, matched=1, changed=new_text != text)
 
     raise ValueError(f"Unknown patch op: {op}")
 
 
-def apply_module_patches(module_path: str, text: str, patches: pl.DataFrame) -> str:
+def apply_patch_text(text: str, patch: dict) -> str:
+    return apply_patch_text_result(text, patch).text
+
+
+def apply_module_patches(
+    module_path: str,
+    text: str,
+    patches: pl.DataFrame,
+) -> tuple[str, int, int, int]:
+    patch_module_names = [module_path, unprefixed_module_path(module_path), "*"]
     module_patches = (
         patches
-        .filter((pl.col("module").is_in([module_path, "*"])) & pl.col("enabled"))
+        .filter((pl.col("module").is_in(patch_module_names)) & pl.col("enabled"))
         .to_dicts()
     )
 
+    matched_count = 0
+    changed_count = 0
     for patch in module_patches:
-        text = apply_patch_text(text, patch)
+        result = apply_patch_text_result(text, patch)
+        text = result.text
+        matched_count += result.matched
+        changed_count += int(result.changed)
 
-    return text
+    return text, len(module_patches), matched_count, changed_count
 
 
 def append_patch(path: Path, patch: dict[str, object]) -> None:
@@ -262,11 +291,30 @@ ARTIFACT_RE = re.compile(
     r"write_parquet|write_csv|write\.csv|write_xlsx|ggsave|etable|cat\("
     r")\b"
 )
+ARTIFACT_CALLS = {
+    "read_parquet",
+    "read_csv",
+    "read.csv",
+    "st_read",
+    "read_xlsx",
+    "read_dta",
+    "write_parquet",
+    "write_csv",
+    "write.csv",
+    "write_xlsx",
+    "ggsave",
+    "etable",
+    "cat",
+}
 LIBRARY_RE = re.compile(r"^\s*library\s*\(\s*([A-Za-z0-9_.]+)")
 
 
 def project_root_from_script() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return ROOT
+
+
+def default_patch_path(root: Path) -> Path:
+    return Path(__file__).resolve().parent / "r_split_patches.jsonl"
 
 
 def parse_args() -> argparse.Namespace:
@@ -274,17 +322,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=root)
     parser.add_argument("--do-dir", type=Path, default=root / "Do")
-    parser.add_argument("--out-dir", type=Path, default=root / "code" / "r_split")
+    parser.add_argument("--out-dir", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument(
         "--patches",
         type=Path,
-        default=root / "code" / "r_split_patches.jsonl",
-        help="JSONL patch table to apply after splitting. Defaults to code/r_split_patches.jsonl.",
+        default=default_patch_path(root),
+        help="JSONL patch table to apply after splitting. Defaults to r_split_patches.jsonl next to this script.",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Replace an existing output directory even if it does not have this generator's manifest.",
+        help="Accepted for compatibility; generated R files are replaced in place.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Build metadata but do not write files.")
     parser.add_argument(
@@ -339,6 +387,44 @@ write.csv(pd, stdout(), row.names = FALSE, na = "")
     )
 
 
+def r_parse_data_text(text: str) -> pl.DataFrame:
+    r_code = r'''
+txt <- readLines("stdin", warn = FALSE)
+pd <- getParseData(parse(text = txt, keep.source = TRUE))
+if (is.null(pd)) {
+  pd <- data.frame(
+    line1 = integer(), col1 = integer(), line2 = integer(), col2 = integer(),
+    id = integer(), parent = integer(), token = character(),
+    terminal = logical(), text = character()
+  )
+}
+write.csv(pd, stdout(), row.names = FALSE, na = "")
+'''
+    proc = subprocess.run(
+        ["Rscript", "-e", r_code],
+        input=text,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"R parse failed for generated module text:\n{proc.stderr}")
+    df = pl.read_csv(io.StringIO(proc.stdout), infer_schema_length=0)
+    expected = {"line1", "col1", "line2", "col2", "id", "parent", "token", "terminal", "text"}
+    missing = expected.difference(df.columns)
+    if missing:
+        raise RuntimeError(f"R parse output for generated module text is missing columns: {sorted(missing)}")
+    return df.with_columns(
+        pl.col("line1", "col1", "line2", "col2", "id", "parent").cast(pl.Int64, strict=False),
+        pl.col("terminal")
+        .str.to_lowercase()
+        .is_in(["true", "t", "1"])
+        .alias("terminal"),
+        pl.col("text").fill_null(""),
+    )
+
+
 def line_text(lines: list[str], line_no: int) -> str:
     return lines[line_no - 1].rstrip("\r\n")
 
@@ -383,8 +469,100 @@ def extract_sections(source_name: str, lines: list[str]) -> list[dict[str, objec
     return rows
 
 
-def extract_artifacts(source_name: str, lines: list[str]) -> list[dict[str, object]]:
+def text_slice(lines: list[str], line1: int, col1: int, line2: int, col2: int) -> str:
+    selected = lines[line1 - 1 : line2]
+    if not selected:
+        return ""
+    if line1 == line2:
+        return selected[0][col1 - 1 : col2].rstrip("\r\n")
+    selected[0] = selected[0][col1 - 1 :]
+    selected[-1] = selected[-1][:col2]
+    return "".join(selected).rstrip("\r\n")
+
+
+def enclosing_expr(parse_df: pl.DataFrame, token_row: dict[str, object]) -> dict[str, object] | None:
+    """Return the parse expression that contains a function call and its arguments."""
+    by_id = {int(row["id"]): row for row in parse_df.to_dicts()}
+    expr = by_id.get(int(token_row["parent"]))
+    if expr is None:
+        return None
+    parent = by_id.get(int(expr["parent"]))
+    if parent is not None and parent.get("token") == "expr":
+        return parent
+    return expr
+
+
+def extract_path_parts(call_text: str) -> tuple[str, str, bool]:
+    match = re.search(r"\b(path_[A-Za-z0-9_]+)\s*\((.*?)\)", call_text, flags=re.DOTALL)
+    if not match:
+        return "", "", False
+    helper = match.group(1)
+    args = match.group(2)
+    strings = [
+        part
+        for groups in re.findall(r'"([^"]*)"|\'([^\']*)\'', args)
+        for part in groups
+        if part
+    ]
+    return helper, "/".join(strings), bool(re.search(r"\b(paste0|paste|sprintf|glue)\s*\(", args))
+
+
+def assigned_object(call_text: str) -> str:
+    match = re.match(r"\s*([A-Za-z.][A-Za-z0-9._]*)\s*(?:<-|=)\s*", call_text)
+    return match.group(1) if match else ""
+
+
+def artifact_role(kind: str) -> str:
+    if kind.startswith("read") or kind == "st_read":
+        return "read"
+    if kind.startswith("write") or kind in {"ggsave", "etable", "cat("}:
+        return "write"
+    return ""
+
+
+def extract_artifacts(
+    source_name: str,
+    lines: list[str],
+    parse_df: pl.DataFrame,
+) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
+    calls = parse_df.filter(
+        (pl.col("terminal"))
+        & (pl.col("token") == "SYMBOL_FUNCTION_CALL")
+        & (pl.col("text").is_in(sorted(ARTIFACT_CALLS)))
+    )
+    for token_row in calls.to_dicts():
+        expr = enclosing_expr(parse_df, token_row)
+        if expr is None:
+            continue
+        call_text = text_slice(
+            lines,
+            int(expr["line1"]),
+            int(expr["col1"]),
+            int(expr["line2"]),
+            int(expr["col2"]),
+        ).strip()
+        helper, relative_path, path_is_dynamic = extract_path_parts(call_text)
+        kind = str(token_row["text"])
+        if kind == "cat":
+            kind = "cat("
+        rows.append(
+            {
+                "source": source_name,
+                "line": int(token_row["line1"]),
+                "kind": kind,
+                "role": artifact_role(kind),
+                "assigned_object": assigned_object(call_text),
+                "path_helper": helper,
+                "relative_path": relative_path,
+                "path_is_dynamic": path_is_dynamic,
+                "text": call_text,
+            }
+        )
+
+    if rows:
+        return rows
+
     for idx, raw in enumerate(lines, start=1):
         text = raw.rstrip("\r\n")
         for match in ARTIFACT_RE.finditer(text):
@@ -393,6 +571,11 @@ def extract_artifacts(source_name: str, lines: list[str]) -> list[dict[str, obje
                     "source": source_name,
                     "line": idx,
                     "kind": match.group(1),
+                    "role": artifact_role(match.group(1)),
+                    "assigned_object": assigned_object(text),
+                    "path_helper": "",
+                    "relative_path": "",
+                    "path_is_dynamic": False,
                     "text": text.strip(),
                 }
             )
@@ -413,12 +596,46 @@ def source_sha(lines: Iterable[str]) -> str:
     return hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
 
 
+def generated_module_path(path: str) -> str:
+    if path.startswith(GENERATED_PREFIX):
+        return path
+    return f"{GENERATED_PREFIX}{path}"
+
+
+def unprefixed_module_path(path: str) -> str:
+    if path.startswith(GENERATED_PREFIX) and len(path) > 1 and path[1].isdigit():
+        return path[1:]
+    return path
+
+
 def generated_header(module: dict[str, object]) -> str:
     return (
         "# Generated by code/split_do_r_scripts.py.\n"
         "# Edit the source Do script or split specification, then regenerate.\n"
         f"# Source: Do/{module['source']} lines {module['start_line']}-{module['end_line']}\n"
         f"# Source SHA256: {module['source_sha256']}\n\n"
+        "if (!exists(\"path_processed\", mode = \"function\")) {\n"
+        "  local({\n"
+        "    split_current_file <- function() {\n"
+        "      frames <- sys.frames()\n"
+        "      for (idx in rev(seq_along(frames))) {\n"
+        "        ofile <- frames[[idx]]$ofile\n"
+        "        if (!is.null(ofile)) {\n"
+        "          return(normalizePath(ofile, winslash = \"/\", mustWork = FALSE))\n"
+        "        }\n"
+        "      }\n"
+        "\n"
+        "      file_arg <- grep(\"^--file=\", commandArgs(FALSE), value = TRUE)\n"
+        "      if (length(file_arg) > 0) {\n"
+        "        return(normalizePath(sub(\"^--file=\", \"\", file_arg[[1]]), winslash = \"/\", mustWork = FALSE))\n"
+        "      }\n"
+        "\n"
+        "      normalizePath(getwd(), winslash = \"/\", mustWork = FALSE)\n"
+        "    }\n"
+        "\n"
+        f"    source(file.path(dirname(split_current_file()), \"{SETUP_FILE}\"))\n"
+        "  })\n"
+        "}\n\n"
     )
 
 
@@ -445,12 +662,158 @@ split_current_file <- function() {{
 }}
 
 split_dir <- dirname(split_current_file())
-code_dir <- normalizePath(file.path(split_dir, ".."), winslash = "/", mustWork = FALSE)
-source(file.path(code_dir, "paths.R"))
+source(file.path(split_dir, "paths.R"))
 ensure_project_dirs()
 options(stringsAsFactors = FALSE)
 
 {library_lines}
+
+split_analysis_sample <- function(county_df) {{
+  county_df %>%
+    filter(
+      any_cropland_2007 == 1,
+      county_simple_treatment_groups != "always takers"
+    )
+}}
+
+split_county_map <- function(cnt_shp = NULL) {{
+  if (is.null(cnt_shp)) {{
+    zip_path <- path_raw("county_shapefile", "tl_2020_us_county.zip")
+    unzip(zip_path, exdir = tempdir())
+    cnt_shp <- st_read(file.path(tempdir(), "tl_2020_us_county.shp"))
+  }}
+
+  county_map <- cnt_shp %>%
+    mutate(statefip = as.numeric(STATEFP)) %>%
+    filter(statefip <= 56 & statefip != 2 & statefip != 15)
+
+  county_map <- st_simplify(
+    county_map,
+    preserveTopology = FALSE,
+    dTolerance = 1000
+  )
+  county_map$countyfips <- as.numeric(str_c(
+    county_map$STATEFP,
+    county_map$COUNTYFP
+  ))
+  county_map
+}}
+
+split_load_analysis_inputs <- function(
+  env = parent.frame(),
+  include_date = FALSE,
+  include_shape = FALSE,
+  include_county_map = FALSE,
+  include_h2a_data_ts = FALSE,
+  include_h2a_data = FALSE,
+  include_aewr_data_full = FALSE,
+  include_county_df = FALSE,
+  include_samples = FALSE
+) {{
+  if (include_date) {{
+    assign(
+      "date",
+      paste0(
+        substr(Sys.Date(), 1, 4),
+        substr(Sys.Date(), 6, 7),
+        substr(Sys.Date(), 9, 10)
+      ),
+      envir = env
+    )
+  }}
+
+  if (include_shape || include_county_map) {{
+    zip_path <- path_raw("county_shapefile", "tl_2020_us_county.zip")
+    unzip(zip_path, exdir = tempdir())
+    cnt_shp <- st_read(file.path(tempdir(), "tl_2020_us_county.shp"))
+    assign("zip_path", zip_path, envir = env)
+    assign("cnt_shp", cnt_shp, envir = env)
+    if (include_county_map) {{
+      assign("county_map", split_county_map(cnt_shp), envir = env)
+    }}
+  }}
+
+  if (include_h2a_data_ts) {{
+    assign("h2a_data_ts", read_parquet(path_processed("h2a_data_ts.parquet")), envir = env)
+  }}
+  if (include_h2a_data) {{
+    assign("h2a_data", read_parquet(path_processed("h2a_data.parquet")), envir = env)
+  }}
+  if (include_aewr_data_full) {{
+    assign("aewr_data_full", read_parquet(path_processed("aewr_data_full.parquet")), envir = env)
+  }}
+  if (include_county_df || include_samples) {{
+    county_df <- read_parquet(path_processed("county_df_analysis_year.parquet"))
+    assign("county_df", county_df, envir = env)
+  }} else if (exists("county_df", envir = env, inherits = FALSE)) {{
+    county_df <- get("county_df", envir = env)
+  }}
+
+  if (include_samples) {{
+    samp_base <- split_analysis_sample(county_df)
+    assign("samp_base", samp_base, envir = env)
+    assign("samp_no_border", samp_base %>% filter(border_cz == 0), envir = env)
+  }}
+
+  invisible(env)
+}}
+
+split_prepare_bea_fips_xwalk <- function(full_county_set) {{
+  bea_fips_xwalk <- read_csv(
+    file = path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv")
+  )
+
+  county_list <- unique(select(full_county_set, fipscounty, countyname)) %>%
+    mutate(indata = 1)
+
+  bea_fips_xwalk <- merge(
+    x = bea_fips_xwalk,
+    y = county_list,
+    by.x = "realfips",
+    by.y = "fipscounty",
+    all.x = TRUE,
+    all.y = FALSE
+  )
+
+  bea_fips_xwalk %>%
+    filter(county == 1) %>%
+    select(realfips, beafips)
+}}
+
+split_apply_bea_fips_xwalk <- function(data, bea_fips_xwalk) {{
+  data <- merge(
+    x = data,
+    y = bea_fips_xwalk,
+    by.x = "countyfips",
+    by.y = "beafips",
+    all.x = TRUE,
+    all.y = FALSE
+  )
+
+  data %>%
+    rename(oldfips = countyfips) %>%
+    mutate(countyfips = ifelse(!is.na(realfips), realfips, oldfips)) %>%
+    select(-oldfips, -realfips)
+}}
+
+split_save_aewr_region_ts <- function(aewr_data, y_var, y_label, filename_prefix) {{
+  for (i in sort(unique(aewr_data$aewr_region_num))) {{
+    plot <- ggplot(
+      data = subset(aewr_data, aewr_region_num == i),
+      aes(x = year, y = .data[[y_var]])
+    ) +
+      geom_line() +
+      labs(title = paste0("AEWR Region Number: ", i)) +
+      xlab(y_label)
+
+    ggsave(
+      filename = path_figures("aewr_ts", paste0(filename_prefix, i, ".png")),
+      plot,
+      device = "png"
+    )
+  }}
+  invisible(NULL)
+}}
 '''
 
 
@@ -485,7 +848,7 @@ split_current_file <- function() {{
 }}
 
 split_dir <- dirname(split_current_file())
-source(file.path(split_dir, "00_setup.R"))
+source(file.path(split_dir, "{SETUP_FILE}"))
 
 source_in_group <- function(files, group_name) {{
   message("Running split group: ", group_name)
@@ -523,7 +886,7 @@ def build_modules(lines_by_source: dict[str, list[str]]) -> list[dict[str, objec
         content = "".join(original)
         modules.append(
             {
-                "path": spec.path,
+                "path": generated_module_path(spec.path),
                 "source": spec.source,
                 "group": spec.group,
                 "start_line": start,
@@ -540,15 +903,16 @@ def build_modules(lines_by_source: dict[str, list[str]]) -> list[dict[str, objec
 def apply_patches_to_modules(modules: list[dict[str, object]], patches: pl.DataFrame) -> list[dict[str, object]]:
     patched_modules: list[dict[str, object]] = []
     for module in modules:
-        patch_count = 0
-        if patches.width > 0 and patches.height > 0:
-            patch_count = patches.filter(
-                (pl.col("module").is_in([module["path"], "*"])) & pl.col("enabled")
-            ).height
-        content = apply_module_patches(str(module["path"]), str(module["content"]), patches)
+        content, patch_count, patch_match_count, patch_change_count = apply_module_patches(
+            str(module["path"]),
+            str(module["content"]),
+            patches,
+        )
         patched = dict(module)
         patched["baseline_sha256"] = module["generated_sha256"]
         patched["patch_count"] = patch_count
+        patched["patch_match_count"] = patch_match_count
+        patched["patch_change_count"] = patch_change_count
         patched["generated_sha256"] = hashlib.sha256(content.encode("utf-8")).hexdigest()
         patched["content"] = content
         patched_modules.append(patched)
@@ -579,11 +943,21 @@ def is_generated_out_dir(out_dir: Path) -> bool:
     return manifest.get("generated_by") == GENERATOR_ID
 
 
+def generated_output_names(modules: list[dict[str, object]]) -> set[str]:
+    names = {SETUP_FILE, RUNNER_FILE, "00_setup.R", "99_run_all.R"}
+    for module in modules:
+        path = str(module["path"])
+        names.add(path)
+        names.add(unprefixed_module_path(path))
+    return names
+
+
 def write_outputs(
     out_dir: Path,
     modules: list[dict[str, object]],
     sections_df: pl.DataFrame,
     artifacts_df: pl.DataFrame,
+    module_artifacts_df: pl.DataFrame,
     tokens_df: pl.DataFrame,
     libraries: list[str],
     patches_df: pl.DataFrame,
@@ -599,20 +973,20 @@ def write_outputs(
         return
 
     if out_dir.exists():
-        if not force and not is_generated_out_dir(out_dir):
-            raise FileExistsError(
-                f"{out_dir} already exists and does not appear to be generated by "
-                f"{GENERATOR_ID}. Use --force to replace it."
-            )
-        shutil.rmtree(out_dir)
+        for name in generated_output_names(modules):
+            target = out_dir / name
+            if target.exists():
+                target.unlink()
+        if metadata_dir.exists():
+            shutil.rmtree(metadata_dir)
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
-    (out_dir / "00_setup.R").write_text(setup_r(libraries), encoding="utf-8")
+    (out_dir / SETUP_FILE).write_text(setup_r(libraries), encoding="utf-8")
     for module in modules:
         path = out_dir / str(module["path"])
         body = generated_header(module) + str(module["content"])
         path.write_text(body, encoding="utf-8")
-    (out_dir / "99_run_all.R").write_text(runner_r(modules), encoding="utf-8")
+    (out_dir / RUNNER_FILE).write_text(runner_r(modules), encoding="utf-8")
 
     module_df = pl.DataFrame(
         [
@@ -623,6 +997,7 @@ def write_outputs(
     module_df.write_parquet(metadata_dir / "modules.parquet")
     sections_df.write_parquet(metadata_dir / "sections.parquet")
     artifacts_df.write_parquet(metadata_dir / "artifacts.parquet")
+    module_artifacts_df.write_parquet(metadata_dir / "module_artifacts.parquet")
     tokens_df.write_parquet(metadata_dir / "tokens.parquet")
     patches_df.write_parquet(metadata_dir / "patches.parquet")
 
@@ -636,7 +1011,7 @@ def write_outputs(
     (metadata_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     if not skip_parse_check:
-        parse_check([out_dir / "00_setup.R", *(out_dir / str(m["path"]) for m in modules), out_dir / "99_run_all.R"])
+        parse_check([out_dir / SETUP_FILE, *(out_dir / str(m["path"]) for m in modules), out_dir / RUNNER_FILE])
 
 
 def strip_generated_header(text: str) -> str:
@@ -661,15 +1036,16 @@ def module_diff(
     include_generated_header: bool = False,
 ) -> str:
     root = (project_root or project_root_from_script()).resolve()
-    split_dir = (out_dir or root / "code" / "r_split").resolve()
+    split_dir = (out_dir or Path(__file__).resolve().parent).resolve()
     do_dir = root / "Do"
     modules = pl.read_parquet(split_dir / "_metadata" / "modules.parquet")
-    rows = modules.filter(pl.col("path") == module_path).to_dicts()
+    rows = modules.filter(pl.col("path").is_in([module_path, generated_module_path(module_path)])).to_dicts()
     if not rows:
         raise ValueError(f"Unknown module: {module_path}")
     row = rows[0]
     original = source_slice_text(do_dir, row)
-    final = (split_dir / module_path).read_text(encoding="utf-8")
+    final_module_path = str(row["path"])
+    final = (split_dir / final_module_path).read_text(encoding="utf-8")
     if not include_generated_header:
         final = strip_generated_header(final)
     return "\n".join(
@@ -677,7 +1053,7 @@ def module_diff(
             original.splitlines(),
             final.splitlines(),
             fromfile=f"Do/{row['source']}:{row['start_line']}-{row['end_line']}",
-            tofile=f"code/r_split/{module_path}",
+            tofile=final_module_path,
             lineterm="",
         )
     )
@@ -694,8 +1070,8 @@ def generate_split(
 ) -> dict[str, object]:
     root = (project_root or project_root_from_script()).resolve()
     do_dir = (do_dir or root / "Do").resolve()
-    out_dir = (out_dir or root / "code" / "r_split").resolve()
-    patch_path = (patch_path or root / "code" / "r_split_patches.jsonl").resolve()
+    out_dir = (out_dir or Path(__file__).resolve().parent).resolve()
+    patch_path = (patch_path or default_patch_path(root)).resolve()
 
     lines_by_source = {source: read_source(do_dir / source) for source in SOURCE_ORDER}
 
@@ -707,7 +1083,7 @@ def generate_split(
         parsed = r_parse_data(source_path).with_columns(pl.lit(source).alias("source"))
         token_frames.append(parsed)
         section_rows.extend(extract_sections(source, lines_by_source[source]))
-        artifact_rows.extend(extract_artifacts(source, lines_by_source[source]))
+        artifact_rows.extend(extract_artifacts(source, lines_by_source[source], parsed))
 
     tokens_df = pl.concat(token_frames, how="diagonal_relaxed")
     sections_df = pl.DataFrame(section_rows) if section_rows else pl.DataFrame()
@@ -718,6 +1094,20 @@ def generate_split(
     modules = apply_patches_to_modules(modules, patches_df)
     libraries = collect_libraries(lines_by_source)
 
+    module_artifact_rows: list[dict[str, object]] = []
+    for module in modules:
+        module_lines = str(module["content"]).splitlines(keepends=True)
+        parsed_module = r_parse_data_text(str(module["content"]))
+        for row in extract_artifacts(str(module["path"]), module_lines, parsed_module):
+            row["module"] = str(module["path"])
+            row["legacy_source"] = str(module["source"])
+            module_artifact_rows.append(row)
+    module_artifacts_df = (
+        pl.DataFrame(module_artifact_rows)
+        if module_artifact_rows
+        else pl.DataFrame(schema=artifacts_df.schema)
+    )
+
     summary = {
         "project_root": str(root),
         "do_dir": str(do_dir),
@@ -726,6 +1116,7 @@ def generate_split(
         "parsed_tokens": tokens_df.height,
         "detected_sections": sections_df.height if sections_df.width else 0,
         "detected_artifacts": artifacts_df.height if artifacts_df.width else 0,
+        "detected_module_artifacts": module_artifacts_df.height if module_artifacts_df.width else 0,
         "patches": patches_df.height if patches_df.width else 0,
         "enabled_patches": patches_df.filter(pl.col("enabled")).height if patches_df.width else 0,
         "generated_modules": len(modules),
@@ -739,6 +1130,7 @@ def generate_split(
     print(f"Parsed tokens: {tokens_df.height:,}")
     print(f"Detected sections: {sections_df.height if sections_df.width else 0:,}")
     print(f"Detected artifacts: {artifacts_df.height if artifacts_df.width else 0:,}")
+    print(f"Detected module artifacts: {module_artifacts_df.height if module_artifacts_df.width else 0:,}")
     print(f"Enabled patches: {summary['enabled_patches']:,}")
     print(f"Generated modules: {len(modules):,}")
     for module in modules:
@@ -752,6 +1144,7 @@ def generate_split(
         modules=modules,
         sections_df=sections_df,
         artifacts_df=artifacts_df,
+        module_artifacts_df=module_artifacts_df,
         tokens_df=tokens_df,
         libraries=libraries,
         patches_df=patches_df,

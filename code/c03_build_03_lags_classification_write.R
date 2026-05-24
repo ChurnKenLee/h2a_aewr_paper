@@ -3,163 +3,62 @@
 # Source: Do/H2A Build Dataset.R lines 578-943
 # Source SHA256: 72ebdaa6507ced6f1468f318d2c632e89013671ea7df1c5357ae14594c01ab00
 
+if (!exists("path_processed", mode = "function")) {
+  local({
+    split_current_file <- function() {
+      frames <- sys.frames()
+      for (idx in rev(seq_along(frames))) {
+        ofile <- frames[[idx]]$ofile
+        if (!is.null(ofile)) {
+          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
+        }
+      }
+
+      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+      if (length(file_arg) > 0) {
+        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
+      }
+
+      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+    }
+
+    source(file.path(dirname(split_current_file()), "c00_setup.R"))
+  })
+}
+
 ## lags of h2a variables
 
+county_df <- read_parquet(path_processed("county_df_variable_cleaned_year.parquet"))
+
+h2a_lag_vars <- c(
+  "nbr_workers_requested_all_years",
+  "nbr_workers_certified_all_years",
+  "man_hours_requested_all_years",
+  "man_hours_certified_all_years",
+  "nbr_applications_all_years",
+  "nbr_workers_requested_start_year",
+  "nbr_workers_certified_start_year",
+  "man_hours_requested_start_year",
+  "man_hours_certified_start_year",
+  "nbr_applications_start_year",
+  "nbr_workers_requested_fiscal_year",
+  "nbr_workers_certified_fiscal_year",
+  "man_hours_requested_fiscal_year",
+  "man_hours_certified_fiscal_year",
+  "nbr_applications_fiscal_year"
+)
+
 county_df <- county_df %>%
-  arrange(county_fe, year) %>%
   group_by(county_fe) %>%
+  arrange(year, .by_group = TRUE) %>%
   mutate(
-    nbr_workers_requested_all_years_l1 = lag(
-      nbr_workers_requested_all_years,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_workers_requested_all_years_l2 = lag(
-      nbr_workers_requested_all_years,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_workers_certified_all_years_l1 = lag(
-      nbr_workers_certified_all_years,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_workers_certified_all_years_l2 = lag(
-      nbr_workers_certified_all_years,
-      n = 2,
-      order_by = county_fe
-    ),
-    man_hours_requested_all_years_l1 = lag(
-      man_hours_requested_all_years,
-      n = 1,
-      order_by = county_fe
-    ),
-    man_hours_requested_all_years_l2 = lag(
-      man_hours_requested_all_years,
-      n = 2,
-      order_by = county_fe
-    ),
-    man_hours_certified_all_years_l1 = lag(
-      man_hours_certified_all_years,
-      n = 1,
-      order_by = county_fe
-    ),
-    man_hours_certified_all_years_l2 = lag(
-      man_hours_certified_all_years,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_applications_all_years_l1 = lag(
-      nbr_applications_all_years,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_applications_all_years_l2 = lag(
-      nbr_applications_all_years,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_workers_requested_start_year_l1 = lag(
-      nbr_workers_requested_start_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_workers_requested_start_year_l2 = lag(
-      nbr_workers_requested_start_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_workers_certified_start_year_l1 = lag(
-      nbr_workers_certified_start_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_workers_certified_start_year_l2 = lag(
-      nbr_workers_certified_start_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    man_hours_requested_start_year_l1 = lag(
-      man_hours_requested_start_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    man_hours_requested_start_year_l2 = lag(
-      man_hours_requested_start_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    man_hours_certified_start_year_l1 = lag(
-      man_hours_certified_start_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    man_hours_certified_start_year_l2 = lag(
-      man_hours_certified_start_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_applications_start_year_l1 = lag(
-      nbr_applications_start_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_applications_start_year_l2 = lag(
-      nbr_applications_start_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_workers_requested_fiscal_year_l1 = lag(
-      nbr_workers_requested_fiscal_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_workers_requested_fiscal_year_l2 = lag(
-      nbr_workers_requested_fiscal_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_workers_certified_fiscal_year_l1 = lag(
-      nbr_workers_certified_fiscal_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_workers_certified_fiscal_year_l2 = lag(
-      nbr_workers_certified_fiscal_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    man_hours_requested_fiscal_year_l1 = lag(
-      man_hours_requested_fiscal_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    man_hours_requested_fiscal_year_l2 = lag(
-      man_hours_requested_fiscal_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    man_hours_certified_fiscal_year_l1 = lag(
-      man_hours_certified_fiscal_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    man_hours_certified_fiscal_year_l2 = lag(
-      man_hours_certified_fiscal_year,
-      n = 2,
-      order_by = county_fe
-    ),
-    nbr_applications_fiscal_year_l1 = lag(
-      nbr_applications_fiscal_year,
-      n = 1,
-      order_by = county_fe
-    ),
-    nbr_applications_fiscal_year_l2 = lag(
-      nbr_applications_fiscal_year,
-      n = 2,
-      order_by = county_fe
+    across(
+      all_of(h2a_lag_vars),
+      list(l1 = ~ lag(.x, n = 1), l2 = ~ lag(.x, n = 2)),
+      .names = "{.col}_{.fn}"
     )
-  )
+  ) %>%
+  ungroup()
 
 # new variables
 
@@ -294,7 +193,7 @@ county_df <- merge(
 
 county_type_classification <- county_type_classification %>%
   ungroup() %>%
-  select(-county_fe)
+  select(-any_of("county_fe"))
 
 county_df <- county_df %>%
   left_join(county_type_classification, by = "countyfips")
