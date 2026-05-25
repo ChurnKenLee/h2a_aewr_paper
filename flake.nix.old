@@ -50,6 +50,7 @@
         # Data download
         fredr
         ipumsr
+        tidycensus
       ];
 
       nativeLibraries = with pkgs; [

@@ -265,6 +265,11 @@ county_df <- county_df %>%
     high_h2a_count_50_inverse = ifelse(high_h2a_count_50 == 0, 1, 0)
   )
 
+stopifnot(is.character(county_df$countyfips))
+stopifnot(all(is.na(county_df$countyfips) | str_detect(county_df$countyfips, "^\\d{5}$")))
+stopifnot(is.character(county_df$statefips))
+stopifnot(all(is.na(county_df$statefips) | str_detect(county_df$statefips, "^\\d{2}$")))
+
 county_df %>%
   write_parquet(path_processed("county_df_analysis_year.parquet"))
 

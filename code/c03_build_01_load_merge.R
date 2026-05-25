@@ -56,6 +56,8 @@ bea_cainc45_data <- read_parquet(path_processed(
 fips_codes <- read_csv(
   file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
+fips_codes <- fips_codes %>%
+  mutate(fips = split_fips2(fips))
 h2a_data <- read_parquet(path_processed("h2a_data_year.parquet"))
 h2a_predict <- read_parquet(path_processed("h2a_predict.parquet"))
 census_of_agriculture_cropland <- read_parquet(path_processed(
@@ -119,10 +121,12 @@ class(county_df$fipscounty)
 # make state fips
 
 county_df <- county_df %>%
-  mutate(fipscounty = as.numeric(fipscounty)) %>%
-  mutate(statefips = floor(fipscounty / 1000))
+  mutate(
+    fipscounty = split_fips5(fipscounty),
+    statefips = split_state_from_countyfips(fipscounty)
+  )
 
-hist(county_df$statefips) # it worked!
+hist(as.integer(county_df$statefips)) # it worked!
 
 ## both sides merge ----------------------------------------------------------
 
@@ -138,7 +142,7 @@ county_df <- merge(
 )
 
 county_df <- county_df %>%
-  filter(statefips <= 56) # only states
+  filter(as.integer(statefips) <= 56) # only states
 
 # first side
 
@@ -251,7 +255,7 @@ county_df <- merge(
 # annual data starts 2005
 cz_wage_quantiles <- cz_wage_quantiles %>%
   rename(year = YEAR, cz_1990 = czone) %>%
-  mutate(countyfips = as.numeric(county_ansi)) %>%
+  mutate(countyfips = split_fips5(county_ansi)) %>%
   filter(year >= 2005) %>%
   select(-county_ansi)
 

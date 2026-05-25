@@ -27,11 +27,11 @@
       "end_line": 123,
       "line_count": 123,
       "source_sha256": "f4c92992548cf065a9f77d8affb76de93db23f502fa3043dd3f14cb66f71ffeb",
-      "generated_sha256": "e2b4c328a9aeb598d77727affe10fc39d01d083a53622a9540b65e1d899902c0",
+      "generated_sha256": "2c3a84ba3c63fe15b026f55aadee3149ec1cbd9bbfe940b35ba7be3647bbec8f",
       "baseline_sha256": "f4c92992548cf065a9f77d8affb76de93db23f502fa3043dd3f14cb66f71ffeb",
-      "patch_count": 6,
-      "patch_match_count": 3,
-      "patch_change_count": 3
+      "patch_count": 10,
+      "patch_match_count": 4,
+      "patch_change_count": 4
     },
     {
       "path": "c02_clean_01_price_cz_ppi_minwage.R",
@@ -41,11 +41,11 @@
       "end_line": 199,
       "line_count": 199,
       "source_sha256": "a32c63f5bd5343db2ca703ce8024bce608dd126cd2d3f7ba2baacfa3149da191",
-      "generated_sha256": "95cd398b60b058b0b61f57374a5f8e4682b8061672c5412bd266f5ba705bb92b",
+      "generated_sha256": "a0f884a4dc3cb9d301d933a2217dfa0c3d6becee7aed59e4f5ce0e1b5d913061",
       "baseline_sha256": "a32c63f5bd5343db2ca703ce8024bce608dd126cd2d3f7ba2baacfa3149da191",
-      "patch_count": 6,
-      "patch_match_count": 15,
-      "patch_change_count": 5
+      "patch_count": 12,
+      "patch_match_count": 19,
+      "patch_change_count": 9
     },
     {
       "path": "c02_clean_02_h2a_cdl_aux.R",
@@ -55,11 +55,11 @@
       "end_line": 419,
       "line_count": 220,
       "source_sha256": "6f06da41f3d01c670a28623219b5ca27b525147e08d8891e4e841ff4d66f4f49",
-      "generated_sha256": "6f06da41f3d01c670a28623219b5ca27b525147e08d8891e4e841ff4d66f4f49",
+      "generated_sha256": "85063f2b48f7e56da2773e327cb427040aae293fd519a910b84eaaaaaf51bcad",
       "baseline_sha256": "6f06da41f3d01c670a28623219b5ca27b525147e08d8891e4e841ff4d66f4f49",
-      "patch_count": 5,
-      "patch_match_count": 0,
-      "patch_change_count": 0
+      "patch_count": 9,
+      "patch_match_count": 3,
+      "patch_change_count": 3
     },
     {
       "path": "c02_clean_03_yearly_census_h2a_aewr.R",
@@ -69,11 +69,11 @@
       "end_line": 754,
       "line_count": 335,
       "source_sha256": "07cc96d911887417cee0e9ec6a6a2f99263553a32a69f57ea57f687287ad3824",
-      "generated_sha256": "3d3984c8afd978e42e22b1ee0f70f6a4ad36b3009527c93aff251a4f27fb0b84",
+      "generated_sha256": "09fbc7f3616903cb87dc55d29316d60e5b222bd5680a473ccdb3a0e8b17031a9",
       "baseline_sha256": "07cc96d911887417cee0e9ec6a6a2f99263553a32a69f57ea57f687287ad3824",
-      "patch_count": 7,
-      "patch_match_count": 10,
-      "patch_change_count": 4
+      "patch_count": 12,
+      "patch_match_count": 15,
+      "patch_change_count": 8
     },
     {
       "path": "c02_clean_04_aewr_region_ts_diagnostics.R",
@@ -85,7 +85,7 @@
       "source_sha256": "357bbeaef9d9eb6e731cd6af89253339e71ec57415a2d03f87af45a50652c6fb",
       "generated_sha256": "0fb171b8baf9fac02d0aa36491074f0c3602202b86606815b2e532b5847c632d",
       "baseline_sha256": "357bbeaef9d9eb6e731cd6af89253339e71ec57415a2d03f87af45a50652c6fb",
-      "patch_count": 7,
+      "patch_count": 10,
       "patch_match_count": 2,
       "patch_change_count": 2
     },
@@ -97,11 +97,11 @@
       "end_line": 1412,
       "line_count": 457,
       "source_sha256": "c44740d380f6ca753b3075096a420fe966d482a96291d6929be13a233e50227f",
-      "generated_sha256": "f063a3fbaf434f60836e1d357ba2c8874fbec0144aa548dcb8442a45ea5ed412",
+      "generated_sha256": "00ba462846e64974881a5c69619109ca026161dcbf23a828d480c4f46b1b45bd",
       "baseline_sha256": "c44740d380f6ca753b3075096a420fe966d482a96291d6929be13a233e50227f",
-      "patch_count": 11,
-      "patch_match_count": 18,
-      "patch_change_count": 8
+      "patch_count": 23,
+      "patch_match_count": 29,
+      "patch_change_count": 17
     },
     {
       "path": "c03_build_01_load_merge.R",
@@ -111,11 +111,11 @@
       "end_line": 272,
       "line_count": 272,
       "source_sha256": "f6618f3dc3db60bebde02ba3da2fcee94ecad4f724e9505944b132b623f90ff8",
-      "generated_sha256": "7975b74d943fc94d542fd9be278ba9e9031869d1697093b4ea76956dc0747123",
+      "generated_sha256": "d7d06a39a3c776a4cfa16386eac6a1915f4382e914cbaf2adc647c3734954160",
       "baseline_sha256": "f6618f3dc3db60bebde02ba3da2fcee94ecad4f724e9505944b132b623f90ff8",
-      "patch_count": 6,
-      "patch_match_count": 7,
-      "patch_change_count": 5
+      "patch_count": 13,
+      "patch_match_count": 12,
+      "patch_change_count": 10
     },
     {
       "path": "c03_build_02_variable_cleaning.R",
@@ -127,7 +127,7 @@
       "source_sha256": "525d95d7d64dabbf8958d2ade7b701019b85612a382d0b07ad39f14e43326578",
       "generated_sha256": "e643ee179fc5c26e3836ecbed553083abef030555e2af11aa1abfcbd0c93fc55",
       "baseline_sha256": "525d95d7d64dabbf8958d2ade7b701019b85612a382d0b07ad39f14e43326578",
-      "patch_count": 8,
+      "patch_count": 11,
       "patch_match_count": 3,
       "patch_change_count": 3
     },
@@ -139,11 +139,11 @@
       "end_line": 943,
       "line_count": 366,
       "source_sha256": "72ebdaa6507ced6f1468f318d2c632e89013671ea7df1c5357ae14594c01ab00",
-      "generated_sha256": "285e9232b34d562413b41416667f528e44e1f7770ec09194953ebf2962df2671",
+      "generated_sha256": "77bc07d38d95f06dcd87d757a8c7f4aae42d32b2732bf5c7e7df292258088845",
       "baseline_sha256": "72ebdaa6507ced6f1468f318d2c632e89013671ea7df1c5357ae14594c01ab00",
-      "patch_count": 8,
-      "patch_match_count": 3,
-      "patch_change_count": 3
+      "patch_count": 12,
+      "patch_match_count": 4,
+      "patch_change_count": 4
     },
     {
       "path": "c03_build_04_diagnostics_cleanup.R",
@@ -155,7 +155,7 @@
       "source_sha256": "29c4c238e6463b7d8b0dead1f2780b2a7f805557370931a54c1dc0067e5774a7",
       "generated_sha256": "2e83de7b67c5a481859c19b833bd03042f8c29df0f67d27ee97db52862262165",
       "baseline_sha256": "29c4c238e6463b7d8b0dead1f2780b2a7f805557370931a54c1dc0067e5774a7",
-      "patch_count": 6,
+      "patch_count": 9,
       "patch_match_count": 1,
       "patch_change_count": 1
     },
@@ -169,7 +169,7 @@
       "source_sha256": "f039e9b3eb25a0ed3f983e7704aa0473d863be9486c970bf8b0067a9e44222ce",
       "generated_sha256": "191a358df95b312a1675f7c497adcfeebd3e40fc046e160783713c54a60d9c04",
       "baseline_sha256": "f039e9b3eb25a0ed3f983e7704aa0473d863be9486c970bf8b0067a9e44222ce",
-      "patch_count": 6,
+      "patch_count": 9,
       "patch_match_count": 3,
       "patch_change_count": 3
     },
@@ -183,7 +183,7 @@
       "source_sha256": "7e2fbfdeb6a04b01ab535ed7eaa0f3dd8f64dc94ad1b719f680856e1829c0dc8",
       "generated_sha256": "025a53e7da37b6a4fd2cc375fae7a0a206c314f63f431c73cab0bc8810cab766",
       "baseline_sha256": "7e2fbfdeb6a04b01ab535ed7eaa0f3dd8f64dc94ad1b719f680856e1829c0dc8",
-      "patch_count": 8,
+      "patch_count": 11,
       "patch_match_count": 3,
       "patch_change_count": 3
     },
@@ -197,7 +197,7 @@
       "source_sha256": "e5c7c7d0f8bcd1a11bd8a9d0d23e4c9808ed8b2e17a030a342160d74a4779471",
       "generated_sha256": "6389130b7f838be50e8cf8fd5ba1f599d8a1386d8f6841b0c7728dff44611b3e",
       "baseline_sha256": "e5c7c7d0f8bcd1a11bd8a9d0d23e4c9808ed8b2e17a030a342160d74a4779471",
-      "patch_count": 7,
+      "patch_count": 10,
       "patch_match_count": 2,
       "patch_change_count": 2
     },
@@ -211,7 +211,7 @@
       "source_sha256": "337e790bd6e243d9463d6f4557b803f9a56cbaf8985ad5ca53083b1925b0987c",
       "generated_sha256": "13aa1df940ecf7db5849476a0b8a3d6963fc3b151f3dde7a202c6fe01624cd4d",
       "baseline_sha256": "337e790bd6e243d9463d6f4557b803f9a56cbaf8985ad5ca53083b1925b0987c",
-      "patch_count": 7,
+      "patch_count": 10,
       "patch_match_count": 2,
       "patch_change_count": 2
     },
@@ -225,7 +225,7 @@
       "source_sha256": "be3b3b11f809e62d7b3192f38a4b05aab1a0b0444d8d16ba7c5fa3f56e07e5a9",
       "generated_sha256": "8d522c8b92cebf482fc9b3367d3f5fc06ce1af5899e24818aca283fde163ae0c",
       "baseline_sha256": "be3b3b11f809e62d7b3192f38a4b05aab1a0b0444d8d16ba7c5fa3f56e07e5a9",
-      "patch_count": 7,
+      "patch_count": 10,
       "patch_match_count": 2,
       "patch_change_count": 2
     }

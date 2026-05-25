@@ -40,7 +40,7 @@ price_data <- read_parquet(path_int(
   "price_index_fisher_county_year.parquet"
 )) %>%
   mutate(
-    countyfips = as.numeric(fips),
+    countyfips = split_fips5(fips),
     year = as.integer(year)
   ) %>%
   select(countyfips, year, fisher_index) %>%
@@ -64,6 +64,8 @@ cz_wage_quantiles <- read_parquet(path_int("acs_czone_wage_quantiles.parquet"))
 ## state min wages ------------------------------------
 
 state_minwages <- read_parquet(path_processed("fred_state_minwages.parquet"))
+state_minwages <- state_minwages %>%
+  mutate(fips = split_fips2(fips))
 
 ## Alt Min Wage from Ken -------------------------------
 
@@ -74,6 +76,8 @@ state_min_alt <- read_parquet(path_int("state_year_min_wage.parquet"))
 fips_codes <- read_csv(
   file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
+fips_codes <- fips_codes %>%
+  mutate(fips = split_fips2(fips))
 
 ## AEWR Regions ----------------------------------------
 
@@ -92,26 +96,12 @@ cz_file <- read_csv(
 cz_file <- cz_file %>%
   rename(countyfips = FIPS, cz_out10 = OUT10)
 
-cz_integer_vars <- c(
-  "countyfips",
-  "cz_out10",
-  "REP10",
-  "Pop10",
-  "Wage2010",
-  "Wage2011",
-  "Wage2012",
-  "Wage2013",
-  "Wage2014",
-  "Wage2015",
-  "CBSA10",
-  "PEA10",
-  "BEA2004",
-  "TPMetro",
-  "TPMicro",
-  "TPcombined"
-)
 cz_file <- cz_file %>%
-  mutate(across(all_of(cz_integer_vars), as.integer))
+  mutate(
+    countyfips = split_fips5(countyfips),
+    cz_out10 = as.character(cz_out10),
+    CBSA10 = as.character(CBSA10)
+  )
 
 write_parquet(cz_file, path_processed("cz_file_2010.parquet"))
 
@@ -172,7 +162,7 @@ head(state_minwages)
 # deflate by ppi
 
 state_min_alt <- state_min_alt %>%
-  mutate(fips = as.numeric(state_fips_code)) %>%
+  mutate(fips = split_fips2(state_fips_code)) %>%
   filter(year == 2024) %>% # these are stable, so ignore them
   select(fips, agriculture_exemption)
 

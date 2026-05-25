@@ -34,7 +34,7 @@ h2a_predict <- read_parquet(
   file = path_int("h2a_prediction_using_elastic_net_continuous_basis.parquet")
 ) %>%
   mutate(
-    countyfips = as.numeric(county_ansi)
+    countyfips = split_fips5(county_ansi)
   ) %>%
   select(-county_ansi) %>%
   write_parquet(path_processed("h2a_predict.parquet"))
@@ -73,7 +73,7 @@ h2a_data <- h2a_data %>%
   )
 
 h2a_data <- h2a_data %>%
-  mutate(countyfips = as.numeric(paste0(st_fips_string, cnty_fips_string)))
+  mutate(countyfips = split_fips5(paste0(st_fips_string, cnty_fips_string)))
 
 
 # clean by dropping old codes #
@@ -223,7 +223,7 @@ cdl_data_collapse[is.na(cdl_data_collapse)] <- 0 # NAs are zeros
 
 cdl_data_collapse <- cdl_data_collapse %>%
   ungroup() %>%
-  mutate(countyfips = as.numeric(fips)) %>%
+  mutate(countyfips = split_fips5(fips)) %>%
   dplyr::select(-fips)
 
 write_parquet(cdl_data_collapse, path_processed("cdl_cropshares.parquet"))

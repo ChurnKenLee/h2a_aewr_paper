@@ -1,4 +1,4 @@
-# Harmonize county ANSI from disparate sources to 2010 standard
+# Harmonize county ANSI vintage from disparate sources to 2010 standard
 # List of sources we have as inputs:
 # H-2A usage aggregated and predicted usage
 # NASS quickstats

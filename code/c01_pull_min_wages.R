@@ -52,8 +52,11 @@ state_fips <- read_csv(path_raw(
 # You'll need to fill this out for all 50 states. As an example:
 
 state_fred <- state_fips %>%
-  mutate(series_id = str_trim(paste0("STTMINWG", state_abbrev))) %>%
-  filter(fips <= 56)
+  mutate(
+    fips = split_fips2(fips),
+    series_id = str_trim(paste0("STTMINWG", state_abbrev))
+  ) %>%
+  filter(as.integer(fips) <= 56)
 
 # state_fred <- tibble(
 #   state = c("California", "Texas", "New York"),  # add other states

@@ -38,6 +38,43 @@ suppressPackageStartupMessages(library(ggfixest))
 suppressPackageStartupMessages(library(MatchIt))
 suppressPackageStartupMessages(library(writexl))
 
+split_fips_clean <- function(x) {
+  x <- as.character(x)
+  x <- str_trim(x)
+  x <- str_replace_all(x, '"', "")
+  x <- str_replace(x, "\\.0$", "")
+  na_if(x, "")
+}
+
+split_fips_pad <- function(x, width) {
+  x <- split_fips_clean(x)
+  if_else(
+    is.na(x),
+    NA_character_,
+    str_pad(x, width = width, side = "left", pad = "0")
+  )
+}
+
+split_fips2 <- function(x) {
+  split_fips_pad(x, 2)
+}
+
+split_fips3 <- function(x) {
+  split_fips_pad(x, 3)
+}
+
+split_fips5 <- function(x) {
+  split_fips_pad(x, 5)
+}
+
+split_countyfips <- function(state, county) {
+  str_c(split_fips2(state), split_fips3(county))
+}
+
+split_state_from_countyfips <- function(countyfips) {
+  str_sub(split_fips5(countyfips), 1, 2)
+}
+
 split_analysis_sample <- function(county_df) {
   county_df %>%
     filter(
@@ -54,18 +91,20 @@ split_county_map <- function(cnt_shp = NULL) {
   }
 
   county_map <- cnt_shp %>%
-    mutate(statefip = as.numeric(STATEFP)) %>%
-    filter(statefip <= 56 & statefip != 2 & statefip != 15)
+    mutate(
+      statefip = split_fips2(STATEFP),
+      countyfips = split_countyfips(STATEFP, COUNTYFP)
+    ) %>%
+    filter(
+      as.integer(statefip) <= 56,
+      !statefip %in% c("02", "15")
+    )
 
   county_map <- st_simplify(
     county_map,
     preserveTopology = FALSE,
     dTolerance = 1000
   )
-  county_map$countyfips <- as.numeric(str_c(
-    county_map$STATEFP,
-    county_map$COUNTYFP
-  ))
   county_map
 }
 
@@ -131,9 +170,14 @@ split_load_analysis_inputs <- function(
 split_prepare_bea_fips_xwalk <- function(full_county_set) {
   bea_fips_xwalk <- read_csv(
     file = path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv")
+  ) %>%
+    mutate(
+      realfips = split_fips5(realfips),
+      beafips = split_fips5(beafips)
   )
 
   county_list <- unique(select(full_county_set, fipscounty, countyname)) %>%
+    mutate(fipscounty = split_fips5(fipscounty)) %>%
     mutate(indata = 1)
 
   bea_fips_xwalk <- merge(
@@ -151,6 +195,9 @@ split_prepare_bea_fips_xwalk <- function(full_county_set) {
 }
 
 split_apply_bea_fips_xwalk <- function(data, bea_fips_xwalk) {
+  data <- data %>%
+    mutate(countyfips = split_fips5(countyfips))
+
   data <- merge(
     x = data,
     y = bea_fips_xwalk,
@@ -162,7 +209,7 @@ split_apply_bea_fips_xwalk <- function(data, bea_fips_xwalk) {
 
   data %>%
     rename(oldfips = countyfips) %>%
-    mutate(countyfips = ifelse(!is.na(realfips), realfips, oldfips)) %>%
+    mutate(countyfips = coalesce(realfips, oldfips)) %>%
     select(-oldfips, -realfips)
 }
 

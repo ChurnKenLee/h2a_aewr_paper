@@ -35,6 +35,8 @@ if (!exists("path_processed", mode = "function")) {
 fips_codes <- read_csv(
   file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
+fips_codes <- fips_codes %>%
+  mutate(fips = split_fips2(fips))
 
 ## AEWR Regions ----------------------------------------
 
@@ -94,10 +96,7 @@ census_of_agriculture_trim <- census_of_agriculture_trim %>%
 
 census_of_agriculture_trim <- census_of_agriculture_trim %>%
   mutate(
-    countyfips = as.numeric(str_c(
-      as.character(state_fips_code),
-      str_pad(as.character(county_code), width = 3, side = "left", pad = "0")
-    ))
+    countyfips = split_countyfips(state_fips_code, county_code)
   )
 
 census_of_agriculture_trim <- census_of_agriculture_trim %>%
@@ -158,7 +157,7 @@ h2a_data <- h2a_data %>%
   )
 
 h2a_data <- h2a_data %>%
-  mutate(countyfips = as.numeric(paste0(st_fips_string, cnty_fips_string)))
+  mutate(countyfips = split_fips5(paste0(st_fips_string, cnty_fips_string)))
 
 
 # clean by dropping old codes #
@@ -199,7 +198,7 @@ aewr_data <- merge(
 aewr_data <- aewr_data %>%
   mutate(
     aewr = as.numeric(aewr),
-    state_fips_code = as.numeric(state_fips_code)
+    state_fips_code = split_fips2(state_fips_code)
   ) %>%
   mutate(aewr_ppi = aewr / ppi_2012)
 
@@ -250,7 +249,7 @@ aewr_data <- read_parquet(
 ) %>%
   mutate(aewr = as.numeric(aewr)) %>%
   mutate(year = as.numeric(year)) %>%
-  mutate(state_fips_code = as.numeric(state_fips_code))
+  mutate(state_fips_code = split_fips2(state_fips_code))
 
 aewr_data <- aewr_data %>%
   arrange(state_fips_code, year)

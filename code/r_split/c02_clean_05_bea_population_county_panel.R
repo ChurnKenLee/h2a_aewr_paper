@@ -46,7 +46,7 @@ bea_caemp25n_data <- bea_caemp25n_data %>%
 
 bea_caemp25n_data <- bea_caemp25n_data %>%
   mutate(
-    countyfips = as.numeric(str_trim(gsub("\"", "", GeoFIPS))), # remove qoutes
+    countyfips = split_fips5(GeoFIPS), # remove quotes
     category = ifelse(
       LineCode == 10,
       "emp_tot",
@@ -105,7 +105,7 @@ bea_caemp25n_data <- split_apply_bea_fips_xwalk(bea_caemp25n_data, bea_fips_xwal
 bea_caemp25n_data <- bea_caemp25n_data %>%
   mutate(
     countyfips = case_when(
-      countyfips == 46102 ~ 46113,
+      countyfips == "46102" ~ "46113",
       .default = countyfips
     )
   )
@@ -140,7 +140,7 @@ bea_cainc45_data <- bea_cainc45_data %>%
 
 bea_cainc45_data <- bea_cainc45_data %>%
   mutate(
-    countyfips = as.numeric(str_trim(gsub("\"", "", GeoFIPS))), # remove qoutes
+    countyfips = split_fips5(GeoFIPS), # remove quotes
     category = ifelse(
       LineCode == 60,
       "farm_cashcrops", # Cash receipts: Crops
@@ -292,10 +292,7 @@ rm(census_pop_2000, census_pop_2010, census_pop_2020)
 
 census_pop_ests <- census_pop_ests %>%
   mutate(
-    countyfips = as.numeric(str_c(
-      as.character(STATE),
-      str_pad(as.character(COUNTY), width = 3, side = "left", pad = "0")
-    ))
+    countyfips = split_countyfips(STATE, COUNTY)
   )
 
 census_pop_ests <- census_pop_ests %>%
@@ -324,24 +321,24 @@ head(census_pop_ests)
 census_pop_ests <- census_pop_ests %>%
   mutate(
     ct_region = ifelse(
-      countyfips >= 9000 & countyfips <= 9999 & year >= 2020,
+      as.integer(countyfips) >= 9000 & as.integer(countyfips) <= 9999 & year >= 2020,
       1,
       0
     )
   ) # remove CT in 2020 on
 
 ct_base <- census_pop_ests %>%
-  filter(countyfips >= 9000 & countyfips <= 9999 & year == 2019)
+  filter(as.integer(countyfips) >= 9000 & as.integer(countyfips) <= 9999 & year == 2019)
 
 census_pop_ests <- census_pop_ests %>%
   filter(ct_region == 0) %>%
   select(-ct_region)
 
 census_pop_ests <- census_pop_ests %>%
-  filter(countyfips < 9100 | countyfips > 9199) # get rid of the regions
+  filter(as.integer(countyfips) < 9100 | as.integer(countyfips) > 9199) # get rid of the regions
 
 ct_base <- ct_base %>%
-  filter(countyfips < 9100) %>%
+  filter(as.integer(countyfips) < 9100) %>%
   select(countyfips, pop_census) %>%
   mutate(
     pop_census2020 = pop_census * ct_popgrth$grt[ct_popgrth$year == 2020],
@@ -368,16 +365,16 @@ census_pop_ests <- rbind(census_pop_ests, ct_fill)
 
 census_pop_ests$countyfips <- replace(
   census_pop_ests$countyfips,
-  census_pop_ests$countyfips == 46102,
-  46113
+  census_pop_ests$countyfips == "46102",
+  "46113"
 )
 
-census_pop_ests %>% filter(countyfips == 46111) %>% tally() # double
+census_pop_ests %>% filter(countyfips == "46111") %>% tally() # double
 
 census_pop_ests <- census_pop_ests %>%
   filter(!is.na(pop_census))
 
-census_pop_ests %>% filter(countyfips == 46111) %>% tally() # fixed
+census_pop_ests %>% filter(countyfips == "46111") %>% tally() # fixed
 
 
 write_parquet(
