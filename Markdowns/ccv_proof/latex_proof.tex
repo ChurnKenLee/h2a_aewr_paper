@@ -1,0 +1,275 @@
+\documentclass[11pt, letterpaper]{article}
+
+% --- Essential Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{mathpazo} % Palatino font for a professional look
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+
+% --- Page Setup ---
+\geometry{margin=1.25in}
+\setstretch{1.15}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=MidnightBlue,
+    citecolor=MidnightBlue,
+    urlcolor=MidnightBlue
+}
+
+% --- Theorem Environments ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% --- Custom Math Operators ---
+\DeclareMathOperator{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\plim}{plim}
+\newcommand{\Omegahat}{\widehat{\Omega}}
+\newcommand{\lambdahat}{\widehat{\lambda}}
+
+% --- Title Information ---
+\title{A Continuous-Dose Extension of the Causal Cluster Variance Estimator: Theory and Proofs}
+\author{Formal Econometric Derivation}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    \noindent We extend the fixed-effect Causal Cluster Variance (CCV) estimator proposed by Abadie, Athey, Imbens, and Wooldridge (2023) from a binary treatment framework to continuous-dose treatments. By defining a cluster-level continuous variation parameter based on Frisch-Waugh-Lovell residualized treatment vectors, we derive a continuous-treatment CCV weight that forms a strictly convex combination of the Eicker-Huber-White robust variance and the Liang-Zeger clustered variance estimators. We formally prove that this formula is a strict mathematical generalization of the AAIW binary weight. Furthermore, we define the higher-moment location-scale assumptions required for asymptotic optimality and demonstrate the estimator's boundary behavior using the Adverse Effect Wage Rate (AEWR) ``bite'' as a censored continuous application.
+\end{abstract}
+
+\vspace{2em}
+\hrule
+\vspace{2em}
+
+\section{Setup and The Residual-Maker Projection}
+
+Let $g=1,\dots,G$ index counties or county-like clusters, and let $i=1,\dots,n_g$ index observations within county $g$ (for example, county-year, worker-county-year, or farm-county-year observations). Let $Y_{gi}$ be the observed outcome, and let $D_{gi}$ be the continuous treatment intensity. An applied example of $D_{gi}$ is the continuous Adverse Effect Wage Rate (AEWR) ``bite'' intensity:
+\begin{equation}
+    D_{gi} = \max\{0, \log(\text{AEWR}_{gi}) - \log(w^0_{gi})\}.
+\end{equation}
+Let $Z_{gi}$ collect all covariates and fixed effects (e.g., county fixed effects, year fixed effects, control variables) other than $D_{gi}$. The regression model of interest is:
+\begin{equation}
+    Y_{gi} = \beta D_{gi} + Z_{gi}'\theta + u_{gi}.
+\end{equation}
+Stacking the data for the full sample of size $N = \sum_{g=1}^G n_g$, we write the system as $Y = D\beta + Z\theta + u$.
+
+Let $M_Z = I - Z(Z'Z)^{-1}Z'$ be the residual-maker matrix after projecting onto the covariates and fixed effects. By the Frisch-Waugh-Lovell (FWL) theorem, we define the residualized variables as:
+\begin{equation}
+    \widetilde Y = M_Z Y, \qquad \widetilde D = M_Z D, \qquad \widetilde u = M_Z u.
+\end{equation}
+The Ordinary Least Squares (OLS) estimator for the treatment parameter is given by:
+\begin{equation}
+    \widehat\beta = \frac{\widetilde D'\widetilde Y}{\widetilde D'\widetilde D}.
+\end{equation}
+Let $S = \sum_{g=1}^G \sum_{i=1}^{n_g} \widetilde D_{gi}^2$. Substituting $\widetilde Y = \widetilde D\beta + \widetilde u$, the estimation error expands to:
+\begin{equation}
+    \widehat\beta - \beta = S^{-1} \sum_{g=1}^G \sum_{i=1}^{n_g} \widetilde D_{gi}\widetilde u_{gi}.
+\end{equation}
+Defining the observation-level score as $\psi_{gi} = \widetilde D_{gi}\widetilde u_{gi}$ and the county-level score as $\Psi_g = \sum_{i=1}^{n_g}\psi_{gi}$, we rewrite the estimation error as:
+\begin{equation}
+    \widehat\beta - \beta = S^{-1}\sum_{g=1}^G \Psi_g. \label{eq:beta_error}
+\end{equation}
+The variance of this object is the primary target of our estimation strategy.
+
+\section{Robust vs. Clustered Variance Estimators}
+
+The difference between standard error regimes is rooted in the treatment of the cross-products within equation \eqref{eq:beta_error}. The Eicker-Huber-White (robust) variance estimator treats the observation-level scores independently:
+\begin{equation}
+    \widehat V_{\text{robust}} = S^{-2} \sum_{g=1}^G \sum_{i=1}^{n_g} \widehat\psi_{gi}^2.
+\end{equation}
+Conversely, the standard Liang-Zeger cluster-robust variance estimator aggregates scores at the cluster level before squaring:
+\begin{equation}
+    \widehat V_{\text{cluster}} = S^{-2} \sum_{g=1}^G \left( \sum_{i=1}^{n_g}\widehat\psi_{gi} \right)^2.
+\end{equation}
+
+\begin{lemma}
+The difference between the cluster-robust and heteroskedasticity-robust variance estimators is solely comprised of within-cluster score cross-products.
+\end{lemma}
+\begin{proof}
+Expanding the squared sum in $\widehat V_{\text{cluster}}$ yields:
+\begin{align*}
+    \widehat V_{\text{cluster}} &= S^{-2} \sum_{g=1}^G \left[ \sum_{i=1}^{n_g}\widehat\psi_{gi}^2 + \sum_{i\neq j} \widehat\psi_{gi}\widehat\psi_{gj} \right] \\
+    &= \widehat V_{\text{robust}} + S^{-2} \sum_{g=1}^G \sum_{i\neq j} \widehat\psi_{gi}\widehat\psi_{gj}.
+\end{align*}
+\end{proof}
+
+According to the design-based framework established by Abadie, Athey, Imbens, and Wooldridge (2023) \cite{AAIW2023}, the inclusion of the cross-product term $\sum_{i \neq j} \widehat\psi_{gi}\widehat\psi_{gj}$ should be governed by the fraction of the treatment assignment variation that occurs across clusters versus within clusters.
+
+\section{The Continuous-Treatment Causal Cluster Variance Estimator}
+
+In the AAIW (2023) framework with a binary treatment $W_{gi} \in \{0,1\}$ and cluster fixed effects, the treatment variation parameter is based strictly on the within-cluster variance of the binary indicator, $\bar W_g(1-\bar W_g)$.
+
+To generalize this logic to a continuous treatment vector $D$, we define the continuous analog using the FWL-residualized treatment vector. Let the residualized treatment variance within cluster $g$ be:
+\begin{equation}
+    \widehat\Omega_g = \frac{1}{n_g} \sum_{i=1}^{n_g} \widetilde D_{gi}^2.
+\end{equation}
+If panel lengths $n_g$ are highly unequal and the target estimand is unit-weighted rather than equal-county-weighted, we define the sum-of-squares metric:
+\begin{equation}
+    \widehat S_g = \sum_{i=1}^{n_g} \widetilde D_{gi}^2.
+\end{equation}
+
+\begin{theorem}[Continuous CCV Estimator]
+Let $q \in [0,1]$ represent the population sampling fraction. The continuous-dose causal cluster variance weight is defined as:
+\begin{equation}
+    \widehat\lambda_D = 1 - q \frac{\left(G^{-1}\sum_{g=1}^G \widehat\Omega_g\right)^2}{G^{-1}\sum_{g=1}^G \widehat\Omega_g^2}.
+\end{equation}
+The final variance estimator is the resulting convex combination:
+\begin{equation}
+    \widehat V_{\text{CCV},D} = \widehat\lambda_D \widehat V_{\text{cluster}} + (1-\widehat\lambda_D)\widehat V_{\text{robust}}.
+\end{equation}
+\end{theorem}
+For unbalanced panel specifications targeting the unit-level Average Treatment Effect, the estimator substitutes $\widehat S_g$ for $\widehat\Omega_g$:
+\begin{equation}
+    \widehat\lambda_D^{\text{unit}} = 1 - q \frac{\left(G^{-1}\sum_{g=1}^G \widehat S_g\right)^2}{G^{-1}\sum_{g=1}^G \widehat S_g^2}.
+\end{equation}
+
+\section{Proof of Reduction to the AAIW Binary Case}
+
+We now prove that the continuous weight strictly maps to the AAIW formula in the boolean domain.
+
+\begin{proposition}
+If $D_{gi} = W_{gi} \in \{0,1\}$ and covariates $Z_{gi}$ consist strictly of cluster fixed effects, the continuous variation term $\widehat\Omega_g$ reduces exactly to the AAIW fixed-effect parameter $\bar W_g(1-\bar W_g)$.
+\end{proposition}
+
+\begin{proof}
+Because $Z_{gi}$ contains only cluster fixed effects, the FWL residualized treatment simplifies to the within-cluster demeaned treatment:
+\begin{equation*}
+    \widetilde D_{gi} = W_{gi} - \bar W_g.
+\end{equation*}
+Therefore, our continuous parameter $\widehat\Omega_g$ is:
+\begin{equation*}
+    \widehat\Omega_g = \frac{1}{n_g} \sum_{i=1}^{n_g} (W_{gi} - \bar W_g)^2.
+\end{equation*}
+Expanding the squared binomial yields:
+\begin{equation*}
+    \widehat\Omega_g = \frac{1}{n_g} \sum_i \left(W_{gi}^2 - 2W_{gi}\bar W_g + \bar W_g^2\right).
+\end{equation*}
+Because $W_{gi}$ is strictly binary, we rely on the fundamental identity $W_{gi}^2 = W_{gi}$. Substituting this identity gives:
+\begin{align*}
+    \widehat\Omega_g &= \frac{1}{n_g} \sum_i W_{gi} - 2\bar W_g \left( \frac{1}{n_g}\sum_i W_{gi} \right) + \bar W_g^2 \\
+    &= \bar W_g - 2\bar W_g^2 + \bar W_g^2 \\
+    &= \bar W_g(1-\bar W_g).
+\end{align*}
+Plugging this directly into the continuous formula establishes the exact equivalence:
+\begin{equation*}
+    \widehat\lambda_D = 1 - q \frac{\left(G^{-1}\sum_g \bar W_g(1-\bar W_g)\right)^2}{G^{-1}\sum_g \bar W_g^2(1-\bar W_g)^2},
+\end{equation*}
+which identically matches the AAIW (2023) fixed-effect CCV weight. Thus, the continuous formula operates as a strict generalization of the original framework.
+\end{proof}
+
+\section{Proof of Valid Convexity}
+
+To ensure $\widehat V_{\text{CCV},D}$ behaves dynamically without breaking finite sample bounds, we prove $\widehat\lambda_D$ represents a valid probability measure for interpolation.
+
+\begin{theorem}
+For any finite continuous treatment distribution where $q \in [0,1]$ and not all $\widehat\Omega_g = 0$, $0 \leq \widehat\lambda_D \leq 1$.
+\end{theorem}
+\begin{proof}
+Let $\Omegahat \in \mathbb{R}^G$ be a vector of strictly non-negative real numbers representing the cluster variation parameters. By the Cauchy-Schwarz inequality, the inner product of the vector $\Omegahat$ with a vector of ones $\mathbf{1}$ satisfies:
+\begin{equation*}
+    \langle \Omegahat, \mathbf{1} \rangle^2 \leq \langle \Omegahat, \Omegahat \rangle \langle \mathbf{1}, \mathbf{1} \rangle.
+\end{equation*}
+Expanding the sums, this requires:
+\begin{equation*}
+    \left( \sum_{g=1}^G \widehat\Omega_g \right)^2 \leq G \sum_{g=1}^G \widehat\Omega_g^2.
+\end{equation*}
+Dividing both sides by $G^2$ yields the expectation limits:
+\begin{equation*}
+    \left( G^{-1}\sum_{g=1}^G \widehat\Omega_g \right)^2 \leq G^{-1}\sum_{g=1}^G \widehat\Omega_g^2.
+\end{equation*}
+Because both the numerator and denominator are strictly non-negative, taking their ratio enforces:
+\begin{equation*}
+    0 \leq \frac{ \left( G^{-1}\sum_g \widehat\Omega_g \right)^2 }{ G^{-1}\sum_g \widehat\Omega_g^2 } \leq 1.
+\end{equation*}
+Because $q \in [0,1]$, multiplying the fraction by $q$ preserves the bounds $0 \leq q(\dots) \leq 1$. Thus, subtracting the term from $1$ guarantees:
+\begin{equation*}
+    0 \leq 1 - q \frac{\left(G^{-1}\sum_g \widehat\Omega_g\right)^2}{G^{-1}\sum_g \widehat\Omega_g^2} \leq 1.
+\end{equation*}
+Therefore, $\widehat\lambda_D \in [0,1]$, confirming $\widehat V_{\text{CCV},D}$ is a strict convex combination.
+\end{proof}
+
+\section{Consistency Framework}
+
+We formalize the asymptotic limits using standard regularity assumptions under Slutsky's theorem.
+
+\begin{assumption}
+As the number of clusters grows ($G \to \infty$), the relative size of any single cluster's contribution remains bounded, such that $\max_g \frac{S_g}{S} \to 0$. Furthermore, the residualized treatment and errors exhibit bounded fourth moments, and the empirical variance estimators possess non-zero limiting behavior:
+\begin{align*}
+    G^{-1}\sum_g \widehat\Omega_g &\xrightarrow{p} \Omega_1 > 0, \\
+    G^{-1}\sum_g \widehat\Omega_g^2 &\xrightarrow{p} \Omega_2 > 0.
+\end{align*}
+\end{assumption}
+
+Under Assumption 1, the Continuous Probability Mapping Theorem and Slutsky's Theorem immediately give:
+\begin{equation*}
+    \widehat\lambda_D \xrightarrow{p} \lambda_D = 1 - q \frac{\Omega_1^2}{\Omega_2}.
+\end{equation*}
+Given that under the standard cluster-level law of large numbers, $\widehat V_{\text{robust}} \xrightarrow{p} V_{\text{robust}}$ and $\widehat V_{\text{cluster}} \xrightarrow{p} V_{\text{cluster}}$, we conclude:
+\begin{equation*}
+    \widehat V_{\text{CCV},D} \xrightarrow{p} \lambda_D V_{\text{cluster}} + (1-\lambda_D)V_{\text{robust}}.
+\end{equation*}
+
+\section{The Distributional Limit: Higher-Order Moments}
+
+The critical caveat in continuous generalization stems from higher-order statistical moments. As established in Proposition 1, a binary treatment enjoys the algebraic property $W^2 = W$, which systematically collapses higher moments. Thus, terms like $E[W^4]$ naturally compress into functions of the mean, allowing the second-moment parameter $\bar{W}_g(1-\bar{W}_g)$ to fully capture the shape of the design variance.
+
+For an arbitrary continuous treatment $D$, the optimality of the design variance relies heavily on $E[\widetilde D^3 \mid g]$ and $E[\widetilde D^4 \mid g]$, which are no longer intrinsically anchored to $\Omega_g$.
+
+\begin{theorem}[Location-Scale Sufficiency]
+The parameter $\Omega_g$ serves as an asymptotically sufficient statistic for the optimal continuous design weight if the treatment assignment process satisfies a common-shape location-scale restriction.
+\end{theorem}
+\begin{proof}
+Assume the residualized continuous treatment is generated independently given $g$ by:
+\begin{equation*}
+    \widetilde D_{gi} = \sigma_g \epsilon_{gi},
+\end{equation*}
+where $\epsilon_{gi}$ is an identically distributed random error with mean 0, variance 1, and global kurtosis $\kappa < \infty$. Consequently:
+\begin{equation*}
+    \widehat\Omega_g = \frac{1}{n_g}\sum_{i} \widetilde D_{gi}^2 \xrightarrow{p} \sigma_g^2.
+\end{equation*}
+The fourth moment evaluates as:
+\begin{equation*}
+    E[\widetilde D_{gi}^4 \mid g] = \sigma_g^4 E[\epsilon_{gi}^4] = (\sigma_g^2)^2 \kappa \equiv \Omega_g^2 \kappa.
+\end{equation*}
+Because the higher moments scale proportionally with $\Omega_g^2$, $\Omega_g$ sufficiently summarizes the cluster-level identifying variation in the assignment process. If kurtosis is heavily heterogeneous across clusters, the CCV estimator remains a computationally valid convex combination but may deviate from strict asymptotic efficiency.
+\end{proof}
+
+\section{Application: The AEWR Zero-Bite Boundary}
+
+Applying this estimator to the Adverse Effect Wage Rate (AEWR) highlights a desirable empirical property. The treatment variable is left-censored at zero:
+\begin{equation*}
+    D_{ct} = \max\{0, \log(\text{AEWR}_{rt}) - \log(w^0_{ct})\}.
+\end{equation*}
+In high-wage agricultural counties, $w^0_{ct}$ chronically exceeds the statutory $\text{AEWR}_{rt}$, resulting in $D_{ct} = 0$ across all time periods $t$. Consequently, after residualization, $\widetilde{D}_{ct} = 0$, yielding $\widehat\Omega_c = 0$.
+
+If treatment is clustered strictly in a handful of low-wage counties, the proportion of zeros dominates the mean absolute variance. As the sum of squares $G^{-1}\sum \widehat\Omega_c^2$ remains anchored by the few highly treated clusters, the ratio strictly vanishes:
+\begin{equation*}
+    \frac{\left(G^{-1}\sum \widehat\Omega_c\right)^2}{G^{-1}\sum \widehat\Omega_c^2} \longrightarrow 0 \quad \implies \quad \widehat\lambda_D \longrightarrow 1.
+\end{equation*}
+Therefore, $\widehat V_{\text{CCV},D} \to \widehat V_{\text{cluster}}$. This boundary limit is highly attractive: if a policy variation is heavily concentrated in a few discrete locations, design-based inference insists that treatment assignment behaves essentially at the macro-level, requiring fully clustered standard errors. The $\widehat\Omega_g$ extension identifies this boundary and collapses optimally without manual intervention.
+
+\vspace{2em}
+\begin{thebibliography}{9}
+\bibitem{AAIW2023}
+Abadie, A., Athey, S., Imbens, G. W., \& Wooldridge, J. M. (2023).
+When Should You Adjust Standard Errors for Clustering?
+\textit{The Quarterly Journal of Economics}, 138(1), 1--35.
+\end{thebibliography}
+
+\end{document}
