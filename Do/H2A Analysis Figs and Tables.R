@@ -1314,110 +1314,6 @@ samp_base <- samp_base %>%
 
 samp_no_border <- samp_base %>% filter(border_cz == 0)
 
-get_fixest_estimation_data <- function(data, model) {
-  model_data <- data
-
-  if (!is.null(model$obs_selection)) {
-    for (selection in model$obs_selection) {
-      if (length(selection) > 0) {
-        model_data <- model_data[selection, , drop = FALSE]
-      }
-    }
-  }
-
-  model_data
-}
-
-make_rhs <- function(vars) {
-  if (length(vars) == 0 || all(is.na(vars))) {
-    "1"
-  } else {
-    paste(vars, collapse = " + ")
-  }
-}
-
-make_fe <- function(fixed_effects) {
-  if (length(fixed_effects) == 0 || all(is.na(fixed_effects))) {
-    "0"
-  } else {
-    paste(fixed_effects, collapse = " + ")
-  }
-}
-
-make_ccv_vcov_fe <- function(
-  model,
-  data,
-  treatment,
-  cluster,
-  covariates = character(),
-  fixed_effects = character(),
-  q_cluster = 1
-) {
-  stopifnot(q_cluster >= 0, q_cluster <= 1)
-
-  model_data <- get_fixest_estimation_data(data, model)
-  vars_required <- unique(c(treatment, covariates, fixed_effects, cluster))
-  model_data <- model_data %>%
-    select(all_of(vars_required))
-  model_data <- model_data[complete.cases(model_data), , drop = FALSE]
-
-  if (nrow(model_data) == 0) {
-    stop("No complete cases found for CCV inputs.")
-  }
-
-  resid_fml <- as.formula(paste0(
-    treatment,
-    " ~ ",
-    make_rhs(covariates),
-    " | ",
-    make_fe(fixed_effects)
-  ))
-
-  d_resid_fit <- feols(resid_fml, data = model_data, notes = FALSE)
-  model_data <- model_data %>%
-    mutate(
-      .d_tilde = resid(d_resid_fit),
-      .cluster = .data[[cluster]]
-    )
-
-  if (sum(model_data$.d_tilde^2) <= 0) {
-    stop("Residualized treatment has no variation.")
-  }
-
-  omega_by_cluster <- model_data %>%
-    group_by(.cluster) %>%
-    summarise(omega_c = mean(.d_tilde^2), .groups = "drop")
-
-  mean_omega <- mean(omega_by_cluster$omega_c)
-  mean_omega_sq <- mean(omega_by_cluster$omega_c^2)
-
-  if (mean_omega_sq <= 0) {
-    stop("No within-cluster residualized treatment variation.")
-  }
-
-  lambda <- 1 - q_cluster * (mean_omega^2 / mean_omega_sq)
-  lambda <- min(max(lambda, 0), 1)
-
-  no_small_sample_adj <- ssc(
-    adj = FALSE,
-    fixef.K = "none",
-    cluster.adj = FALSE
-  )
-  robust_vcov <- vcov(model, vcov = "hetero", ssc = no_small_sample_adj)
-  cluster_vcov <- vcov(
-    model,
-    vcov = as.formula(paste0("~", cluster)),
-    ssc = no_small_sample_adj
-  )
-
-  ccv_vcov <- lambda * cluster_vcov + (1 - lambda) * robust_vcov
-  attr(ccv_vcov, "type") <- paste0("CCV (", cluster, ")")
-  attr(ccv_vcov, "ccv_lambda") <- lambda
-  attr(ccv_vcov, "ccv_n_clusters") <- nrow(omega_by_cluster)
-
-  ccv_vcov
-}
-
 # DD model 1: no controls, all CZs
 dd_1 <- feols(
   h2a_cert_share_farm_workers_2011_start_year ~
@@ -1498,29 +1394,6 @@ dd_4 <- feols(
   vcov = ~cz_aewr_region_fe
 )
 
-# DD model 1b: same specification as model 1, but using CCV inference at
-# the AEWR policy-assignment level following Abadie et al.
-dd_1_assignment_cluster <- feols(
-  h2a_cert_share_farm_workers_2011_start_year ~
-    aewr_cz_p25_l1 * postdummy | county_fe + year_fe,
-  data = samp_base
-)
-
-dd_1_assignment_cluster_ccv_vcov <- make_ccv_vcov_fe(
-  model = dd_1_assignment_cluster,
-  data = samp_base,
-  treatment = "aewr_cz_p25_l1_post",
-  cluster = "aewr_region_num",
-  covariates = "aewr_cz_p25_l1",
-  fixed_effects = c("county_fe", "year_fe"),
-  q_cluster = 1
-)
-
-dd_1_assignment_cluster_ccv <- summary(
-  dd_1_assignment_cluster,
-  vcov = dd_1_assignment_cluster_ccv_vcov
-)
-
 # DD model 5: robustness check by excluding potentially influential CZs within each AEWR region
 # How many total ag workers are there within each AEWR region?
 samp_no_large_cz <- samp_base %>%
@@ -1592,7 +1465,6 @@ dd_6 <- feols(
 # Tables
 table_1 <- etable(
   dd_1,
-  dd_1_assignment_cluster_ccv,
   dd_2,
   dd_3,
   dd_4,
@@ -1600,7 +1472,6 @@ table_1 <- etable(
   title = "The Effect of the AEWR Wage Premium on H-2A Utilization",
   headers = c(
     "No Controls, CZ x AEWR Cluster",
-    "No Controls, AEWR Region CCV",
     "Controls",
     "No Border, No Controls",
     "No Border, Controls"
@@ -1618,7 +1489,6 @@ table_1 <- etable(
 )
 
 summary(dd_1)
-summary(dd_1_assignment_cluster_ccv)
 summary(dd_2)
 summary(dd_3)
 summary(dd_4)
