@@ -109,7 +109,6 @@ in
           uv
           coreutils
           gnugrep
-          python3
           gcc
           gnumake
           cmake
@@ -122,6 +121,7 @@ in
         ++ extraPackages;
 
       UV_PROJECT_ENVIRONMENT = ".venv";
+      UV_MANAGED_PYTHON = "true";
       CUDA_HOME = "${cudaRoot}";
       CUDA_PATH = "${cudaRoot}";
       CUDA_ROOT = "${cudaRoot}";

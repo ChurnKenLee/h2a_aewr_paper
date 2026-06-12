@@ -1,0 +1,39 @@
+
+\begingroup
+\centering
+\begin{tabular}{lcccc}
+   \tabularnewline \midrule \midrule
+   Dependent Variable: & \multicolumn{4}{c}{h2a\_cert\_share\_farm\_workers\_2011\_start\_year}\\
+                                                     & Level Bite     & Level Bite + Controls & Positive Log Bite & Level Bite + AEWR Region-Year FE \\   
+   Model:                                            & (1)            & (2)                   & (3)               & (4)\\  
+   \midrule
+   \emph{Variables}\\
+   Lagged AEWR - CZ p25 wage                         & 0.0036         & 0.0030                &                   & -0.0016\\   
+                                                     & (0.0036)       & (0.0035)              &                   & (0.0049)\\   
+   Lagged AEWR - CZ p25 wage $\times$ Post-2011      & -0.0082$^{**}$ & -0.0061$^{*}$         &                   & 0.0131\\   
+                                                     & (0.0037)       & (0.0035)              &                   & (0.0080)\\   
+   Log population                                    &                & 0.1187                &                   &   \\   
+                                                     &                & (0.1135)              &                   &   \\   
+   Employment-to-pop ratio                           &                & 0.2406$^{***}$        &                   &   \\   
+                                                     &                & (0.0920)              &                   &   \\   
+   Positive log AEWR/CZ p25 wage                     &                &                       & 0.1175            &   \\   
+                                                     &                &                       & (0.0714)          &   \\   
+   Positive log AEWR/CZ p25 wage $\times$ Post-2011  &                &                       & -0.1250$^{***}$   &   \\   
+                                                     &                &                       & (0.0442)          &   \\   
+   \midrule
+   \emph{Fixed-effects}\\
+   county\_fe                                        & Yes            & Yes                   & Yes               & Yes\\  
+   year\_fe                                          & Yes            & Yes                   & Yes               & \\  
+   aewrregtime\_fe                                   &                &                       &                   & Yes\\  
+   \midrule
+   \emph{Fit statistics}\\
+   Observations                                      & 145,000        & 145,000               & 145,000           & 145,000\\  
+   R$^2$                                             & 0.43468        & 0.43526               & 0.43468           & 0.45379\\  
+   Within R$^2$                                      & 0.00047        & 0.00149               & 0.00047           & 0.00077\\  
+   \midrule \midrule
+   \multicolumn{5}{l}{\emph{Clustered (cz\_aewr\_region\_fe) standard-errors in parentheses}}\\
+   \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+\par\endgroup
+
+

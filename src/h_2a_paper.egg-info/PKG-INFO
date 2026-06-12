@@ -69,3 +69,4 @@ Requires-Dist: scikit-learn>=1.8.0
 Requires-Dist: jax[cuda13]>=0.9.2; sys_platform == "linux"
 Requires-Dist: jax>=0.9.2; sys_platform != "linux"
 Requires-Dist: py7zr>=1.1.0
+Requires-Dist: liteparse>=2.0.8
