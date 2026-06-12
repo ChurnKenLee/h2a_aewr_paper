@@ -2501,6 +2501,31 @@ structure ExactDCCVFeasible
     ∀ᵐ ω ∂P, ∀ n : ℕ, ∀ i j : α, SigmaHat n ω i j = Sigma i j
 
 /--
+Top-level empirical-design regularity for an administrative policy design with
+a continuous treatment.  This is the intended assumption bundle for applying the
+formal asymptotic CCV result to an empirical design without formalizing every
+assignment-rule primitive.
+-/
+structure AdministrativePolicyDesign
+    {Ω Ωlim α : Type _} [MeasurableSpace Ω] [MeasurableSpace Ωlim] [Fintype α]
+    (P : Measure Ω) (Plim : Measure Ωlim)
+    [IsProbabilityMeasure P] [IsProbabilityMeasure Plim]
+    (S : ℝ)
+    (betaHat : ℕ → Ω → ℝ) (beta : ℝ)
+    (linearized remainder : ℕ → Ω → ℝ)
+    (uhat : ℕ → Ω → α → ℝ) (u : α → ℝ)
+    (SigmaHat : ℕ → Ω → α → α → ℝ) (Sigma : α → α → ℝ)
+    (Z : Ωlim → ℝ) : Prop where
+  score_clt : ScoreCLT P Plim linearized Z
+  linearization :
+    AsymptoticLinearization P
+      (fun n ω => (betaHat n ω - beta) / DesignCovariance.designSE S u Sigma)
+      linearized remainder
+  residual_consistency : ResidualConsistency P uhat u
+  kernel_consistency : KernelConsistency P SigmaHat Sigma
+  dccv_regularity : DCCVRegularity P S uhat u SigmaHat Sigma
+
+/--
 A score CLT plus an asymptotic linearization gives the distributional limit of
 the original statistic.
 -/
@@ -2650,6 +2675,103 @@ theorem dcCCVRegularity_of_ae_exact
     rw [DesignCovariance.dcSE_eq_designSE_of_exact
       S u (uhat n ω) Sigma (SigmaHat n ω) hu hSigma]
     exact hDesignSE_ne
+
+/-- Assemble the top-level administrative-design structure from its components. -/
+theorem administrativePolicyDesign_of_components
+    {Ω Ωlim α : Type _} [MeasurableSpace Ω] [MeasurableSpace Ωlim] [Fintype α]
+    {P : Measure Ω} {Plim : Measure Ωlim}
+    [IsProbabilityMeasure P] [IsProbabilityMeasure Plim]
+    (S : ℝ)
+    (betaHat : ℕ → Ω → ℝ) (beta : ℝ)
+    (linearized remainder : ℕ → Ω → ℝ)
+    (uhat : ℕ → Ω → α → ℝ) (u : α → ℝ)
+    (SigmaHat : ℕ → Ω → α → α → ℝ) (Sigma : α → α → ℝ)
+    (Z : Ωlim → ℝ)
+    (hScore : ScoreCLT P Plim linearized Z)
+    (hLin :
+      AsymptoticLinearization P
+        (fun n ω =>
+          (betaHat n ω - beta) / DesignCovariance.designSE S u Sigma)
+        linearized remainder)
+    (hRes : ResidualConsistency P uhat u)
+    (hKer : KernelConsistency P SigmaHat Sigma)
+    (hReg : DCCVRegularity P S uhat u SigmaHat Sigma) :
+    AdministrativePolicyDesign P Plim S betaHat beta linearized remainder
+      uhat u SigmaHat Sigma Z :=
+  ⟨hScore, hLin, hRes, hKer, hReg⟩
+
+/--
+Administrative-design regularity from a sample-kernel covariance estimator.
+This is the standard feasible route when the assignment covariance must be
+estimated rather than known exactly.
+-/
+theorem administrativePolicyDesign_of_sampleKernelMean
+    {Ω Ωlim α : Type _} [MeasurableSpace Ω] [MeasurableSpace Ωlim] [Fintype α]
+    {P : Measure Ω} {Plim : Measure Ωlim}
+    [IsProbabilityMeasure P] [IsProbabilityMeasure Plim]
+    (S : ℝ)
+    (betaHat : ℕ → Ω → ℝ) (beta : ℝ)
+    (linearized remainder : ℕ → Ω → ℝ)
+    (uhat : ℕ → Ω → α → ℝ) (u : α → ℝ)
+    (Zsample : ℕ → Ω → α → α → ℝ) (Sigma : α → α → ℝ)
+    (Z : Ωlim → ℝ)
+    (hScore : ScoreCLT P Plim linearized Z)
+    (hLin :
+      AsymptoticLinearization P
+        (fun n ω =>
+          (betaHat n ω - beta) / DesignCovariance.designSE S u Sigma)
+        linearized remainder)
+    (hRes : ResidualConsistency P uhat u)
+    (hKernelInt : ∀ i j : α, Integrable (fun ω : Ω => Zsample 0 ω i j) P)
+    (hKernelIndep :
+      ∀ i j : α, Pairwise fun k l => IndepFun (fun ω : Ω => Zsample k ω i j)
+        (fun ω : Ω => Zsample l ω i j) P)
+    (hKernelIdent :
+      ∀ i j : α, ∀ k : ℕ,
+        IdentDistrib (fun ω : Ω => Zsample k ω i j)
+          (fun ω : Ω => Zsample 0 ω i j) P P)
+    (hKernelMean : ∀ i j : α, (∫ ω, Zsample 0 ω i j ∂P) = Sigma i j)
+    (hReg : DCCVRegularity P S uhat u (sampleKernelMean Zsample) Sigma) :
+    AdministrativePolicyDesign P Plim S betaHat beta linearized remainder
+      uhat u (sampleKernelMean Zsample) Sigma Z := by
+  exact administrativePolicyDesign_of_components
+    S betaHat beta linearized remainder uhat u (sampleKernelMean Zsample) Sigma Z
+    hScore hLin hRes
+    (kernelConsistency_of_sampleKernelMean
+      Zsample Sigma hKernelInt hKernelIndep hKernelIdent hKernelMean)
+    hReg
+
+/--
+Administrative-design regularity from exact feasible residuals and an exact
+covariance kernel.  This strict route is useful as a benchmark or for designs
+where the assignment covariance is known.
+-/
+theorem administrativePolicyDesign_of_ae_exact
+    {Ω Ωlim α : Type _} [MeasurableSpace Ω] [MeasurableSpace Ωlim] [Fintype α]
+    {P : Measure Ω} {Plim : Measure Ωlim}
+    [IsProbabilityMeasure P] [IsProbabilityMeasure Plim]
+    (S : ℝ)
+    (betaHat : ℕ → Ω → ℝ) (beta : ℝ)
+    (linearized remainder : ℕ → Ω → ℝ)
+    (uhat : ℕ → Ω → α → ℝ) (u : α → ℝ)
+    (SigmaHat : ℕ → Ω → α → α → ℝ) (Sigma : α → α → ℝ)
+    (Z : Ωlim → ℝ)
+    (hScore : ScoreCLT P Plim linearized Z)
+    (hLin :
+      AsymptoticLinearization P
+        (fun n ω =>
+          (betaHat n ω - beta) / DesignCovariance.designSE S u Sigma)
+        linearized remainder)
+    (hExact : ExactDCCVFeasible P uhat u SigmaHat Sigma)
+    (hVpos : 0 < DesignCovariance.designVariance S u Sigma) :
+    AdministrativePolicyDesign P Plim S betaHat beta linearized remainder
+      uhat u SigmaHat Sigma Z := by
+  exact administrativePolicyDesign_of_components
+    S betaHat beta linearized remainder uhat u SigmaHat Sigma Z
+    hScore hLin
+    (residualConsistency_of_ae_exact uhat u hExact.residual_exact)
+    (kernelConsistency_of_ae_exact SigmaHat Sigma hExact.kernel_exact)
+    (dcCCVRegularity_of_ae_exact S uhat u SigmaHat Sigma hExact hVpos)
 
 /--
 Concrete `dcCCV` feasible asymptotic normality from the modular assumptions.
@@ -2816,6 +2938,70 @@ theorem continuous_did_fe_dcCCV_interval_coverage_tendsto_to_nominal_of_structur
     (fun n ω =>
       (betaHat n ω - beta) / DesignCovariance.dcSE S (uhat n ω) (SigmaHat n ω))
     Z z target hT hfrontier hlimit
+
+/--
+Main administrative-policy-design endpoint: the design regularity bundle implies
+feasible `dcCCV` studentized asymptotic normality.
+-/
+theorem continuous_did_fe_dcCCV_studentized_tendstoInDistribution_of_adminDesign
+    {Ω Ωlim α : Type _} [MeasurableSpace Ω] [MeasurableSpace Ωlim] [Fintype α]
+    {P : Measure Ω} {Plim : Measure Ωlim}
+    [IsProbabilityMeasure P] [IsProbabilityMeasure Plim]
+    (betaHat : ℕ → Ω → ℝ) (beta : ℝ) (S : ℝ)
+    (linearized remainder : ℕ → Ω → ℝ)
+    (uhat : ℕ → Ω → α → ℝ) (u : α → ℝ)
+    (SigmaHat : ℕ → Ω → α → α → ℝ) (Sigma : α → α → ℝ)
+    (Z : Ωlim → ℝ)
+    (hDesign :
+      AdministrativePolicyDesign P Plim S betaHat beta linearized remainder
+        uhat u SigmaHat Sigma Z) :
+    TendstoInDistribution
+      (fun n ω =>
+        (betaHat n ω - beta) / DesignCovariance.dcSE S (uhat n ω) (SigmaHat n ω))
+      Filter.atTop Z (fun _ : ℕ => P) Plim := by
+  exact continuous_did_fe_dcCCV_studentized_tendstoInDistribution_of_structures
+    betaHat beta S linearized remainder uhat u SigmaHat Sigma Z
+    hDesign.score_clt
+    hDesign.linearization
+    hDesign.residual_consistency
+    hDesign.kernel_consistency
+    hDesign.dccv_regularity
+
+/--
+Coverage endpoint from the administrative-policy-design regularity bundle.
+-/
+theorem continuous_did_fe_dcCCV_interval_coverage_tendsto_to_nominal_of_adminDesign
+    {Ω Ωlim α : Type _} [MeasurableSpace Ω] [MeasurableSpace Ωlim] [Fintype α]
+    {P : Measure Ω} {Plim : Measure Ωlim}
+    [IsProbabilityMeasure P] [IsProbabilityMeasure Plim]
+    (betaHat : ℕ → Ω → ℝ) (beta : ℝ) (S : ℝ)
+    (linearized remainder : ℕ → Ω → ℝ)
+    (uhat : ℕ → Ω → α → ℝ) (u : α → ℝ)
+    (SigmaHat : ℕ → Ω → α → α → ℝ) (Sigma : α → α → ℝ)
+    (Z : Ωlim → ℝ) (z : ℝ) (target : NNReal)
+    (hDesign :
+      AdministrativePolicyDesign P Plim S betaHat beta linearized remainder
+        uhat u SigmaHat Sigma Z)
+    (hfrontier :
+      (Plim.map Z) (frontier (Set.Icc (-z) z)) = 0)
+    (hlimit :
+      ((Plim.map Z) (Set.Icc (-z) z)).toNNReal = target) :
+    Filter.Tendsto
+      (fun n =>
+        ((P.map
+          (fun ω : Ω =>
+            (betaHat n ω - beta) / DesignCovariance.dcSE S (uhat n ω) (SigmaHat n ω)))
+          (Set.Icc (-z) z)).toNNReal)
+      Filter.atTop
+      (nhds target) := by
+  exact continuous_did_fe_dcCCV_interval_coverage_tendsto_to_nominal_of_structures
+    betaHat beta S linearized remainder uhat u SigmaHat Sigma Z z target
+    hDesign.score_clt
+    hDesign.linearization
+    hDesign.residual_consistency
+    hDesign.kernel_consistency
+    hDesign.dccv_regularity
+    hfrontier hlimit
 
 /--
 Concrete fixed-effect/DiD asymptotic normality for the design-covariance CCV
