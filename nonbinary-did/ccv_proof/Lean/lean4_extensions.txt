@@ -1,0 +1,98 @@
+### Multi-Way Clustered Standard Errors (Cross-Clustering)
+*   **Econometric Application**: Panels or networks where errors are simultaneously correlated along intersecting, non-nested dimensions—such as firm and year, or zip code and demographic cohort (Cameron, Gelbach, & Miller, 2011).
+*   **Mathematical Formulation**: For clustering dimensions $G$ and $T$, the multi-way clustered variance estimator is defined as:
+    $$V_{\text{multi}} = V_{G} + V_{T} - V_{G \cap T}$$
+    where $V_{G \cap T}$ is the variance clustered at the intersection of the two dimensions, correcting for double-counting.
+*   **Lean 4 Implementation Strategy**: Define two separate types `G` and `T` acting as partitions over `α`. Modify `ClusterLevel.clusterVar` to accept a product type partition `G × T` and prove the subtraction-identity theorem using finite-set inclusion-exclusion algebra (`Finset.sum_add_distrib`).
+
+### Multi-Dimensional Treatments (Vector FWL Algebra)
+*   **Econometric Application**: Multi-dose continuous treatment designs where the causal variable of interest is a vector of exposures (e.g., simultaneous doses of multiple public policies or policy intensities), requiring joint estimation of $\vec{\beta} \in \mathbb{R}^K$.
+*   **Mathematical Formulation**: The OLS error expands to the vector system $\hat{\vec{\beta}} - \vec{\beta} = (\tilde{D}^T \tilde{D})^{-1} \tilde{D}^T u$, and the sandwich variance matrix becomes:
+    $$V_{\text{vector}} = (\tilde{D}^T \tilde{D})^{-1} \left( \tilde{D}^T \Sigma \tilde{D} \right) (\tilde{D}^T \tilde{D})^{-1}$$
+*   **Lean 4 Implementation Strategy**: Replace the scalar real division in `betaHat_error` with matrix multiplication. Import the `Matrix` namespace from Mathlib, model the denominator as an invertible matrix $S \in \text{GL}_K(\mathbb{R})$, and verify the matrix inversion steps.
+
+### Spatial HAC / Network Weak Dependence (Conley Standard Errors)
+*   **Econometric Application**: Georeferenced continuous treatments (e.g., distance to a toxic waste site, regional air pollution indices) where spatial or network correlation decays smoothly with distance rather than stopping at administrative boundaries (Conley, 1999).
+*   **Mathematical Formulation**: The spatial covariance kernel is weighted by a distance-decay function $K(\cdot)$:
+    $$\Sigma_{ij} = K\left( \frac{d(i, j)}{d_0} \right) \tilde{D}_i \tilde{D}_j u_i u_j$$
+    where $d(i,j)$ is the distance metric and $d_0$ is the bandwidth.
+*   **Lean 4 Implementation Strategy**: Equip the coordinate type `α` with a metric space typeclass (`MetricSpace α` from Mathlib) and define a continuous kernel function `K : ℝ → ℝ` with compact support inside `DesignCovariance.quad`.
+
+### Small-Sample Cluster Degrees-of-Freedom Corrections ($CR_2$ / $CR_3$)
+*   **Econometric Application**: Policy evaluations where the number of treated administrative units (e.g., states) is very small ($|G| < 30$), causing the standard cluster-robust variance estimator to bias downward severely (Bell & McCaffrey, 2002).
+*   **Mathematical Formulation**: The individual scores are scaled by the inverse square root of the diagonal blocks of the OLS annihilator (hat) matrix $M = I - H$:
+    $$\tilde{\psi}_g = M_{gg}^{-1/2} \psi_g$$
+*   **Lean 4 Implementation Strategy**: Formalize the projection operator $H = D(D^T D)^{-1} D^T$ as a self-adjoint linear map, define the blocked submatrices $M_{gg}$, and prove that the scaled estimator remains positive semidefinite and strictly dominates the uncorrected CRVE in expectation.
+
+### Dyadic Network Clustering (Aronow-Samii & Fafchamps-Gubert)
+*   **Econometric Application**: Social network and trade flow models where the observational units are pairs (dyads) $(i, j)$ and error terms are correlated whenever the pairs share at least one common node (e.g., bilateral trade flows sharing a common country).
+*   **Mathematical Formulation**: The covariance kernel allows non-zero relationships under vertex intersection:
+    $$\Sigma_{(i,j), (k,l)} \neq 0 \quad \text{if} \quad |\{i, j\} \cap \{k, l\}| \geq 1$$
+*   **Lean 4 Implementation Strategy**: Model the coordinate type `α` as a product type `V × V` for some vertex type `V` with `DecidableEq V`. Implement a custom index restriction in `DesignCovariance.quad` using set membership checks.
+
+### Instrumental Variables / Two-Stage Least Squares (2SLS) Sandwich
+*   **Econometric Application**: Continuous treatments that are endogenous (e.g., individual education levels in an earnings equation) instrumented by a cluster-varying policy shock $Z$ (e.g., school building programs).
+*   **Mathematical Formulation**: Under first-stage projection $P_Z = Z(Z^T Z)^{-1} Z^T$, the causal coefficient variance sandwich is:
+    $$V_{\text{2SLS}} = (D^T P_Z D)^{-1} D^T Z (Z^T Z)^{-1} \left[ Z^T \Sigma Z \right] (Z^T Z)^{-1} Z^T D (D^T P_Z D)^{-1}$$
+*   **Lean 4 Implementation Strategy**: Add an instrument vector $Z$, formulate the 2SLS orthogonality condition, and verify the structural correctness of the 2SLS estimation error in `ObservationLevel.betaHat_error`.
+
+### Growing Covariance Dimensions (Triangular-Array Asymptotics)
+*   **Econometric Application**: High-frequency or highly disaggregated panel data where the number of units $N$ grows concurrently with the time dimension $T$, requiring consistency proofs under $N, T \to \infty$.
+*   **Mathematical Formulation**: The sequence of estimators $\widehat{V}_n$ converges in probability to a sequence of targets $V_n$ over a sequence of finite coordinate types $\alpha_n$:
+    $$\lim_{n \to \infty} \mathbb{P}\left( \left| \widehat{V}_n - V_n \right| > \epsilon \right) = 0$$
+*   **Lean 4 Implementation Strategy**: Replace the fixed `Fintype α` with a dependent sequence of types `α : ℕ → Type _` equipped with `[∀ n, Fintype (α n)]`, and prove convergence in measure using uniform eigenvalue bounds on the sequence of covariance kernels.
+
+### Serially Correlated Errors in Continuous Panels (Panel HAC)
+*   **Econometric Application**: Longitudinal panel designs where administrative units are observed over many periods $T$, and errors exhibit arbitrary serial correlation (e.g., auto-regressive AR(1) processes) within units.
+*   **Mathematical Formulation**: The covariance kernel $\Sigma_{g, tt'}$ is parameterized by temporal distance:
+    $$\Sigma_{g, tt'} = \gamma(|t - t'|)$$
+    where $\gamma(\cdot)$ is an autocovariance function that decays as temporal distance increases.
+*   **Lean 4 Implementation Strategy**: Model the internal cluster index as a product type `I g × T` where `T` is an ordered finite type representing time, and formalize the autocovariance decay in the triple product sums.
+
+### Two-Way Fixed Effects (TWFE) Demeaned Reduction
+*   **Econometric Application**: Time-varying continuous treatment designs where the econometrician controls for both unit fixed effects ($\alpha_i$) and time fixed effects ($\delta_t$), necessitating a double-demeaned treatment.
+*   **Mathematical Formulation**: The residualized treatment is $\tilde{D}_{it} = D_{it} - \bar{D}_{i\cdot} - \bar{D}_{\cdot t} + \bar{D}_{\cdot\cdot}$. The second moment of this double-demeaned treatment decomposes as:
+    $$\Omega_{\text{TWFE}} = \text{Var}(D_{it}) - \text{Var}(\bar{D}_{i\cdot}) - \text{Var}(\bar{D}_{\cdot t})$$
+*   **Lean 4 Implementation Strategy**: Generalize the `BinaryReduction` namespace to a product domain `I × T`. Prove that the double-demeaned sum of squares decomposes orthogonally using the Pythagorean theorem for inner product spaces.
+
+### Stratified and Block-Randomized Designs
+*   **Econometric Application**: Randomized controlled trials (RCTs) where the continuous dosage is randomly assigned within geographic or demographic strata, which mathematically restricts the cross-unit covariance of treatment assignment.
+*   **Mathematical Formulation**: The treatment covariance kernel satisfies stratum-level zero-sum constraints:
+    $$\sum_{j \in \text{stratum}_s} \Sigma_{ij} = 0 \quad \forall i$$
+*   **Lean 4 Implementation Strategy**: Represent strata as a partition on `α` and prove that incorporating these linear sum constraints into the covariance kernel $\Sigma$ mathematically reduces the upper bound of the CCV estimator compared to unstratified designs.
+
+### Infinite State Space Design-Based Inference (Continuous $\Omega$)
+*   **Econometric Application**: Transitioning the design probability model from a finite state space to continuous distributions (e.g., where continuous treatment doses are drawn from normal, log-normal, or beta distributions).
+*   **Mathematical Formulation**: Expectations and variances are defined via Lebesgue integration over a general probability space $(\Omega, \mathcal{F}, \mathbb{P})$:
+    $$\mathbb{E}[X] = \int_{\Omega} X(\omega) d\mathbb{P}(\omega)$$
+*   **Lean 4 Implementation Strategy**: Replace the discrete sums in `FiniteDesign.expectation` with Mathlib's measure-theoretic integral `∫ ω, X ω ∂P` and prove the exact variance formula using $L^2$ Hilbert space inner products.
+
+### Non-Linear Link Functions (Generalized Method of Moments / GLM)
+*   **Econometric Application**: Estimating continuous dose-response curves using non-linear models (e.g., Logit, Probit, or Poisson) under clustering.
+*   **Mathematical Formulation**: The score is defined as the gradient of a non-linear objective function $\psi_i(\theta) = \nabla_\theta \ell_i(\theta)$. The sandwich estimator is:
+    $$V_{\text{GLM}} = H^{-1} \left( \sum_{g \in G} \psi_g \psi_g^T \right) H^{-1}$$
+    where $H$ is the expected Hessian matrix.
+*   **Lean 4 Implementation Strategy**: Define a generic differentiable loss function, formalize its multivariate Taylor expansion, and prove the consistency of the GMM sandwich estimator for the variance of the M-estimator.
+
+### Heterogeneous Treatment Effects (HTE) / Random Coefficients
+*   **Econometric Application**: Settings where the continuous treatment effect $\beta_i$ varies across individuals (e.g., heterogeneous returns to education), meaning the OLS coefficient estimates a variance-weighted average treatment effect.
+*   **Mathematical Formulation**: The data generating process is $Y_i = D_i \beta_i + u_i$. The OLS error satisfies:
+    $$\hat{\beta} - \bar{\beta} = \frac{\sum_i \tilde{D}_i u_i}{\sum_i \tilde{D}_i^2} + \frac{\sum_i \tilde{D}_i^2 (\beta_i - \bar{\beta})}{\sum_i \tilde{D}_i^2}$$
+*   **Lean 4 Implementation Strategy**: Modify the hypothesis `hY` in `betaHat_error` to allow index-dependent $\beta(a)$ and prove that the score expansion holds with an adjusted residual term that absorbs the treatment heterogeneity.
+
+### Staggered Treatment Adoption (Continuous Event Studies)
+*   **Econometric Application**: Continuous difference-in-differences designs where different cohorts receive varying treatment intensities at different calendar times.
+*   **Mathematical Formulation**: The continuous dose is time-varying: $D_{it} = \text{Dosage}_i \cdot \mathbb{I}(t \geq T_i)$, where $T_i$ is the unit's entry cohort.
+*   **Lean 4 Implementation Strategy**: Formalize the staggered event-time index, and prove that the OLS error variance decomposes into cohort-specific design-covariance terms.
+
+### Group-Level Continuous Treatment (Moulton Correction Factor)
+*   **Econometric Application**: Designs where the continuous treatment $D_g$ is uniform within clusters (e.g., regional tax rates), but outcomes vary individually, making standard errors highly susceptible to downward bias if clustering is ignored.
+*   **Mathematical Formulation**: The clustered variance scales the robust variance by the Moulton inflation factor:
+    $$V_{\text{cluster}} = V_{\text{robust}} \left[ 1 + (\bar{n} - 1) \rho_D \rho_u \right]$$
+    where $\bar{n}$ is the average cluster size, $\rho_D$ is the intraclass correlation of treatment, and $\rho_u$ is the intraclass correlation of errors.
+*   **Lean 4 Implementation Strategy**: Add a structural hypothesis that $D(g, i) = D(g, j)$ for all $i, j \in I_g$, and prove that the ratio of clustered to robust variance matches the Moulton formula under constant cluster sizes and homoskedastic intraclass correlations.
+
+### Endogenous Cluster Selection
+*   **Econometric Application**: Designs where individuals selectively sort into administrative clusters (e.g., families sorting into school districts) based on unobserved preferences, causing the cluster boundaries themselves to be endogenous.
+*   **Mathematical Formulation**: The cluster membership indicator $G_{ig} = \mathbb{I}(i \in I_g)$ is a random variable correlated with the latent outcome error $u_i$.
+*   **Lean 4 Implementation Strategy**: Model cluster membership as a random variable on $\Omega$, and prove that conditioning on cluster-fixed effects under a conditional-independence assignment mechanism restores the validity of the design covariance kernel.
