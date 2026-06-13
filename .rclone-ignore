@@ -17,6 +17,9 @@
 - __marimo__/**
 - __pycache__/**
 
+# lake lean4 cache
+- .lake/**
+
 # Big raw data files
 - data/raw/acs/**
 - data/raw/county_shapefile/**
