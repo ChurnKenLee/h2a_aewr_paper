@@ -69,6 +69,16 @@ oews_df <- oews_df %>%
     year
   )
 
+# OEWS area definition source has leading whitespace for OEWS area codes
+oews_area_definitions_df = oews_area_definitions_df %>%
+  mutate(oews_area_code = str_trim(oews_area_code))
+
+no_oews <- oews_area_definitions_df %>%
+  anti_join(oews_df, by = c("oews_area_code", "year"))
+
+no_area <- oews_df %>%
+  anti_join(oews_area_definitions_df, by = c("oews_area_code", "year"))
+
 oews_area_year_df <- oews_area_definitions_df %>%
   left_join(oews_df, by = c("oews_area_code", "year"))
 

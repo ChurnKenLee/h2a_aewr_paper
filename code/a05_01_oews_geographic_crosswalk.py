@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.10"
 app = marimo.App(width="full")
 
 
@@ -76,7 +76,7 @@ def _(oews_path, pl):
         ~pl.col("oews_state_name").is_in(["Guam", "Puerto Rico", "Virgin Islands"])
     )
     oews_df
-    return area_cols, oews_df
+    return (oews_df,)
 
 
 @app.cell(hide_code=True)
@@ -88,7 +88,7 @@ def _(mo):
 
 
 @app.cell
-def _(area_cols, oews_df, oews_path, pl):
+def _(oews_df, oews_path, pl):
     # Update area_cols to include the newly mapped years
     new_area_cols = [c for c in oews_df.columns if c.startswith("Area code")]
 
@@ -101,7 +101,7 @@ def _(area_cols, oews_df, oews_path, pl):
             "oews_state_name",
             "oews_county_name",
         ],
-        on=area_cols,
+        on=new_area_cols,
         variable_name="year",
         value_name="oews_area_code",
     ).with_columns(pl.col("year").str.replace("Area code ", "").cast(pl.Int32))
@@ -125,7 +125,7 @@ def _(mo):
 @app.cell
 def _(oews_path, pl):
     oews_df_list = []
-    for y in range(2019, 2023):
+    for y in range(2019, 2025):
         # Read excel and cast to string to maintain consistency
         oews_df_1 = pl.read_excel(
             oews_path / "oews_area_definitions" / f"area_definitions_m{y}.xlsx"
