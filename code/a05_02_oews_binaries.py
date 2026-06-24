@@ -6,6 +6,7 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
+    import marimo as mo
     import io
     import zipfile
     from h2a.paths import RAW, INTERMEDIATE
@@ -52,12 +53,6 @@ def _(oews_path, re, zipfile):
             (_archive_path, _member_name) for _member_name in _member_list
         ]
     return (oews_path_dict,)
-
-
-@app.cell
-def _(oews_path_dict):
-    oews_path_dict
-    return
 
 
 @app.cell
@@ -202,9 +197,14 @@ def _(
 
 
 @app.cell
-def _(binary_path, oews_df):
+def _(binary_path, oews_df, pl):
+    # Drop Guam, Virgin Islands, Puerto Rico
+    conus_oews_df = oews_df.filter(
+        ~pl.col("area_name").str.contains(", PR|Puerto Rico|Guam|Virgin Islands")
+    )
+
     # Save combined df as parquet
-    oews_df.write_parquet(binary_path / "oews.parquet")
+    conus_oews_df.write_parquet(binary_path / "oews.parquet")
     return
 
 

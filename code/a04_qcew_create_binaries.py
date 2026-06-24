@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.10"
 app = marimo.App(width="full")
 
 
@@ -53,7 +53,7 @@ def _(pl):
 @app.cell
 def _(binary_path, pl, qcew_cols_list, qcew_dtype_dict, qcew_path, zipfile):
     qcew_df = pl.DataFrame()
-    for t in range(2005, 2018):
+    for t in range(2005, 2025):
         print(t)
         zip_path = qcew_path / f"{t}_annual_singlefile.zip"
         target_csv = f"{t}.annual.singlefile.csv"

@@ -8,11 +8,11 @@ The Adverse Effect Wage Rate (AEWR) is the federally mandated minimum wage for H
 
 Our outcome of interest is the **AEWR bite** in commuting zone *i*, defined as:
 
-$$\text{Bite}_{it} = \text{AEWR}_{r(i),t} - w^{10}_{it}$$
+$$\text{Bite}_{it} = \text{AEWR}_{r(i),t} - w^{25}_{it}$$
 
-where $r(i)$ denotes the FLS region containing CZ *i*, $\text{AEWR}_{r,t}$ is the AEWR for region *r* in year *t*, and $w^{10}_{it}$ is the 10th percentile hourly wage of agricultural workers in CZ *i* in year *t*, estimated from the American Community Survey (ACS). The bite measures how far the regional wage floor exceeds the local low-wage agricultural labor market. It is higher in CZs where local agricultural wages are low relative to the regional AEWR — precisely the CZs where the floor is most likely to bind.
+where $r(i)$ denotes the FLS region containing CZ *i*, $\text{AEWR}_{r,t}$ is the AEWR for region *r* in year *t*, and $w^{25}_{it}$ is the 25th percentile hourly wage in CZ *i* in year *t*, estimated from the American Community Survey (ACS). The bite measures how far the regional wage floor exceeds the local low-wage labor market. It is higher in CZs where local wages are low relative to the regional AEWR -- precisely the CZs where the floor is most likely to bind.
 
-The bite is endogenous. Local labor market conditions — unobserved demand shocks, industry restructuring, enforcement intensity — affect both the local agricultural wage $w^{10}_{it}$ and, through the FLS aggregation mechanism, the AEWR itself, since local wages contribute to the regional average. A credible instrument must generate variation in the AEWR bite in CZ *i* that originates outside CZ *i*'s own labor market, while remaining relevant — that is, strongly predictive of the actual bite CZ *i* faces.
+The bite is endogenous. Local labor market conditions — unobserved demand shocks, industry restructuring, enforcement intensity — affect both the local 25th-percentile wage $w^{25}_{it}$ and, through the FLS aggregation mechanism, the AEWR itself, since local wages contribute to the regional average. A credible instrument must generate variation in the AEWR bite in CZ *i* that originates outside CZ *i*'s own labor market, while remaining relevant — that is, strongly predictive of the actual bite CZ *i* faces.
 
 ---
 
@@ -22,26 +22,29 @@ The bite is endogenous. Local labor market conditions — unobserved demand shoc
 
 Within each FLS region *r*, we partition the constituent CZs into agro-ecological subregions using a pre-determined dissimilarity measure constructed from two sets of primitives, both fixed prior to the study period:
 
-1. **Soil and climate characteristics** — [to be specified by author]
-2. **Baseline crop composition** — the share of cropland devoted to each major crop type in each CZ, taken from the USDA Cropland Data Layer (CDL) for 2008, the first year of the study period and prior to any AEWR treatment variation of interest.
+1. **Soil characteristics** -- gNATSGO continuous soil measures and categorical soil shares, aggregated from counties to CZ-by-AEWR-region units.
+2. **Baseline climate characteristics** -- county-level NOAA climate primitives averaged over 2008-2011 and aggregated to CZ-by-AEWR-region units.
+3. **Baseline crop composition** -- the share of cropland devoted to each major crop type, taken from the USDA Cropland Data Layer and averaged over 2008-2011.
 
-Using these primitives, we apply a clustering algorithm within each FLS region, requiring that every region contains at least two distinct agro-ecological subregions, denoted $a \in \{1, \ldots, A_r\}$ with $A_r \geq 2$ for all *r*. Cluster assignment is fixed for the entire study period. The use of predetermined physical and agronomic characteristics ensures that cluster membership is exogenous to subsequent labor market developments.
+Using these primitives, we apply hierarchical clustering within each FLS region, requiring that every region contains at least two distinct agro-ecological subregions, denoted $a \in \{1, \ldots, A_r\}$ with $A_r \geq 2$ for all *r*. Cluster assignment is fixed for the entire study period. Before clustering, all features are median-imputed and standardized. Feature blocks are scaled so that crop, climate, continuous-soil, and categorical-soil groups enter with explicit block weights rather than receiving influence mechanically from the number of variables in each block.
 
 The intuition for the dissimilarity requirement is substantive: CZs assigned to different agro-ecological subregions within the same FLS region grow different crops in different climates. Their agricultural wages are therefore driven by different commodity price cycles, different weather realizations, and different seasonal labor demand patterns. Despite this, they share the same regulatory wage floor — because the AEWR is set at the FLS region level, aggregating across all subregions. Wage shocks originating in agro-dissimilar subregions thus transmit to CZ *i*'s AEWR without sharing CZ *i*'s local agricultural labor market conditions.
 
 ### 2.2 Instrument Construction
 
-Let $a(i)$ denote the agro-ecological subregion containing CZ *i*, within FLS region $r(i)$. The instrument for CZ *i* in year *t* is the employment-weighted average ACS agricultural wage in year $t-1$ across all CZs *j* that satisfy two conditions: (1) *j* is in the same FLS region as *i*, and (2) *j* is in a different agro-ecological subregion from *i*:
+Let $a(i)$ denote the agro-ecological subregion containing CZ *i*, within FLS region $r(i)$. The baseline instrument for CZ *i* in year *t* is the equal-weighted average agricultural wage in year $t-1$ across all CZs *j* that satisfy two conditions: (1) *j* is in the same FLS region as *i*, and (2) *j* is in a different agro-ecological subregion from *i*:
 
-$$Z_{it} = \frac{1}{\sum_{j \in \mathcal{J}_{-a(i),r(i)}} n_{jt-1}} \sum_{j \in \mathcal{J}_{-a(i),r(i)}} n_{jt-1} \cdot \bar{w}^{\text{ag}}_{jt-1}$$
+$$Z_{it} = \frac{1}{|\mathcal{J}_{-a(i),r(i)}|} \sum_{j \in \mathcal{J}_{-a(i),r(i)}} \bar{w}^{\text{ag}}_{jt-1}$$
 
 where:
 
 - $\mathcal{J}_{-a(i),r(i)}$ is the set of all CZs in FLS region $r(i)$ that are **not** in subregion $a(i)$
-- $\bar{w}^{\text{ag}}_{jt-1}$ is the ACS-estimated mean agricultural wage in CZ *j* in year $t-1$
-- $n_{jt-1}$ is the ACS-estimated count of agricultural workers in CZ *j* in year $t-1$, used as employment weights
+- $\bar{w}^{\text{ag}}_{jt-1}$ is the donor CZ agricultural wage proxy in year $t-1$
+- donor weights are static and equal among selected donors; alternative donor-share variants add increasingly similar donors by feature-space distance
 
 The one-year lag reflects the AEWR-setting mechanism: the FLS annual average from year $t-1$ (published in the November FLS report) becomes the AEWR effective in year *t*. The instrument therefore captures, for each CZ *i*, the wage signal from agro-dissimilar parts of the same FLS region that fed into the determination of the AEWR CZ *i* faces in year *t*, while excluding the wage signal from CZ *i*'s own agro-ecological neighborhood.
+
+Geographic distance is computed from county shapefiles by dissolving counties to CZ-by-AEWR-region polygons, projecting to EPSG:5070, taking representative points, and computing centroid-to-centroid distances within AEWR region. It is currently diagnostic-only and is not included in the default clustering score.
 
 The first stage of the IV is:
 
@@ -99,15 +102,15 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 ### Step 2: Construct Agro-Ecological Primitives at the CZ Level
 
 **Data:**
-- Soil characteristics — [to be specified by author]
-- Climate characteristics — [to be specified by author]
-- USDA Cropland Data Layer (CDL), 2008 vintage: 30-meter resolution raster of crop types for the contiguous U.S., available from USDA NASS CropScape
+- gNATSGO soil characteristics
+- NOAA daily/monthly climate data
+- USDA Cropland Data Layer (CDL), 2008-2011 vintages: 30-meter resolution raster of crop types for the contiguous U.S., available from USDA NASS CropScape
 
 **Actions:**
-- Aggregate soil and climate variables to the CZ level (area-weighted or cropland-area-weighted means)
-- From the 2008 CDL, compute for each CZ the share of total cropland in each major crop category (e.g., corn, soybeans, wheat, cotton, vegetables, fruits and nuts, hay, pasture)
-- Combine soil, climate, and crop share variables into a single CZ-level primitives matrix, standardized to zero mean and unit variance
-- All primitives fixed at 2008 values for the entire study period
+- Aggregate soil and climate variables from counties to CZ-by-AEWR-region units using baseline cropland weights where available.
+- From the 2008-2011 CDL, compute each CZ-by-AEWR-region unit's share of total cropland in each major crop category.
+- Combine soil, climate, and crop share variables into a single primitives matrix, median-impute missing values, standardize to zero mean and unit variance, and apply block scaling by feature family.
+- All donor-selection primitives are fixed using the 2008-2011 baseline for the entire study period.
 
 ---
 
@@ -116,14 +119,14 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 **Data:** Primitives matrix from Step 2
 
 **Actions:**
-- Apply a clustering algorithm (e.g., k-medoids or hierarchical clustering with a chosen dissimilarity metric) separately within each of the 17 FLS regions
+- Apply Ward hierarchical clustering separately within each of the 17 FLS regions
 - Require a minimum of 2 clusters per region ($A_r \geq 2$ for all *r*); choose the number of clusters and dissimilarity threshold to maximize within-region agro-dissimilarity across clusters while maintaining adequate CZ counts in each cluster for first-stage power
 - Assign each CZ a subregion label $a(i)$, fixed for the study period
-- Document cluster composition and produce robustness checks showing results are stable across alternative clustering specifications (algorithm choice, number of clusters, dissimilarity metric)
+- Document cluster composition and produce robustness checks showing results are stable across alternative feature-block weights and donor-share rules.
 
 ---
 
-### Step 4: Construct CZ-Level Agricultural Wages and Employment from the ACS
+### Step 4: Construct CZ-Level Wage Quantiles from the ACS
 
 **Data:**
 - ACS 1-year PUMS microdata, 2008–2023 (person and household files), from IPUMS USA
@@ -131,14 +134,9 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 
 **Actions:**
 - Restrict sample to wage and salary workers with positive hours and earnings in the reference year
-- Define agricultural workers to mirror the FLS "field and livestock workers combined" category:
-  - Industry: NAICS 111 (crop production), 112 (animal production), 1151 (crop support activities), 1152 (animal support activities)
-  - Occupation: SOC 45-20xx field and livestock worker group, excluding 45-1011 (first-line supervisors) to match FLS exclusion of supervisory workers
 - Compute for each CZ *i* and year *t*:
-  - $\bar{w}^{\text{ag}}_{it}$: ACS survey-weighted mean hourly wage for agricultural workers (usual weekly earnings / usual weekly hours)
-  - $w^{10}_{it}$: ACS survey-weighted 10th percentile hourly wage for agricultural workers
-  - $n_{it}$: ACS survey-weighted count of agricultural workers
-- Flag CZ-year cells with fewer than 30 unweighted observations; report results with and without these thin-cell CZs, and consider using 5-year ACS pooled estimates as an alternative for robustness
+  - $w^{25}_{it}$: ACS survey-weighted 25th percentile hourly wage among wage and salary workers
+  - supporting CZ wage quantiles used for diagnostics and feature-balance checks
 
 ---
 
@@ -161,12 +159,13 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 
 **Actions:**
 - For each CZ *i* in FLS region $r(i)$ and agro-ecological subregion $a(i)$, identify the set $\mathcal{J}_{-a(i),r(i)}$: all CZs in the same FLS region that are **not** in subregion $a(i)$
-- Compute the employment-weighted mean agricultural wage across this set in year $t-1$:
+- Compute the equal-weighted mean donor agricultural wage proxy across this set in year $t-1$. The current implementation uses the county-aggregated OEWS AEWR-equivalent agricultural wage series, aggregated to CZ-by-AEWR-region units:
 
-$$Z_{it} = \frac{\sum_{j \in \mathcal{J}_{-a(i),r(i)}} n_{jt-1} \cdot \bar{w}^{\text{ag}}_{jt-1}}{\sum_{j \in \mathcal{J}_{-a(i),r(i)}} n_{jt-1}}$$
+$$Z_{it} = \frac{1}{|\mathcal{J}_{-a(i),r(i)}|} \sum_{j \in \mathcal{J}_{-a(i),r(i)}} \bar{w}^{\text{ag}}_{jt-1}$$
 
-- Construct the bite: $\text{Bite}_{it} = \text{AEWR}_{r(i),t} - w^{10}_{it}$
+- Construct the bite: $\text{Bite}_{it} = \text{AEWR}_{r(i),t} - w^{25}_{it}$
 - Document the first-stage relationship between $Z_{it}$ and $\text{Bite}_{it}$ by FLS region; flag regions where the instrument is weak
+- Construct donor-share variants using the top 10%, 20%, 30%, 50%, 75%, and 100% most dissimilar same-region donor CZs. Plot the first-stage F-statistic against realized donor share to evaluate the relevance/exclusion tradeoff.
 
 ---
 
@@ -190,7 +189,7 @@ $$Z_{it} = \frac{\sum_{j \in \mathcal{J}_{-a(i),r(i)}} n_{jt-1} \cdot \bar{w}^{\
 - ACS 1-year PUMS microdata, using migration variables (MIGPUMA, MIGSP: state and PUMA of residence one year ago)
 
 **Actions:**
-- Restrict to agricultural workers (as defined in Step 4) who report a different residence one year prior
+- Restrict to agricultural workers, using industry/occupation definitions that mirror the FLS field-and-livestock worker concept where feasible, who report a different residence one year prior
 - Construct bilateral flow counts between CZ pairs within each FLS region, using the PUMA-to-CZ crosswalk
 - Estimate a gravity-style regression of bilateral flows on: an indicator for whether the pair is within the same agro-ecological subregion, log geographic distance between CZ centroids, and FLS-region fixed effects
 - A significantly negative coefficient on the cross-subregion indicator (conditional on distance) supports the argument that agricultural workers move predominantly within agro-similar clusters
@@ -214,11 +213,12 @@ $$Z_{it} = \frac{\sum_{j \in \mathcal{J}_{-a(i),r(i)}} n_{jt-1} \cdot \bar{w}^{\
 |---|---|---|---|
 | CZ boundary shapefiles and county crosswalk | David Dorn (dorn.page) | Public | Step 1 |
 | FLS region state membership | USDA NASS | Public | Step 1 |
-| Soil characteristics | [TBD] | [TBD] | Step 2 |
-| Climate characteristics | [TBD] | [TBD] | Step 2 |
-| Cropland Data Layer 2008 | USDA NASS CropScape | Public | Step 2 |
+| Soil characteristics | USDA NRCS gNATSGO | Public | Step 2 |
+| Climate characteristics | NOAA nClimGrid / EpiNOAA extracts | Public | Step 2 |
+| Cropland Data Layer 2008-2011 | USDA NASS CropScape | Public | Step 2 |
 | ACS 1-year PUMS microdata 2008–2023 | IPUMS USA | Public | Steps 4, 8, 9 |
 | PUMA-to-CZ crosswalk | IPUMS / Census TIGER | Public | Steps 4, 8, 9 |
+| OEWS agricultural wage series | Bureau of Labor Statistics | Public | Step 6 |
 | NASS Quick Stats farm labor wage data | USDA NASS | Public | Step 5 |
 | Federal Register AEWR notices | federalregister.gov | Public | Step 5 |
 | H-2A OFLC Case Disclosure Data 2008–2023 | DOL OFLC | Public | Step 7 |

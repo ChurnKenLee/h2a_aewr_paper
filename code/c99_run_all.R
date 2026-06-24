@@ -35,8 +35,8 @@ source_in_group <- function(files, group_name) {
 pipeline_groups <- list(
   "pull_min_wages" = c("c01_pull_min_wages.R"),
   "clean_load" = c("c02_clean_01_price_cz_ppi_minwage.R", "c02_clean_02_h2a_cdl_aux.R", "c02_clean_03_yearly_census_h2a_aewr.R", "c02_clean_04_aewr_region_ts_diagnostics.R", "c02_clean_05_bea_population_county_panel.R"),
-  "build_dataset" = c("c03_build_01_load_merge.R", "c03_build_02_variable_cleaning.R", "c03_build_03_lags_classification_write.R", "c03_build_04_diagnostics_cleanup.R"),
-  "analysis" = c("c04_analysis_00_setup_data.R", "c04_analysis_01_descriptive_figures.R", "c04_analysis_02_main_dd_event_study.R", "c04_analysis_03_summary_price_labor.R", "c04_analysis_04_stacked_did_matching.R")
+  "build_dataset" = c("c03_build_01_load_merge.R", "c03_build_02_variable_cleaning.R", "c03_build_03_lags_classification_write.R", "c03_build_04_diagnostics_cleanup.R", "c03_build_05_cz_dissimilar.R"),
+  "analysis" = c("c04_analysis_00_setup_data.R", "c04_analysis_01_descriptive_figures.R", "c04_analysis_02_main_dd_event_study.R", "c04_analysis_03_summary_price_labor.R", "c04_analysis_04_stacked_did_matching.R", "c04_analysis_06_cz_dissimilar_iv_diagnostics.R")
 )
 
 for (group_name in names(pipeline_groups)) {

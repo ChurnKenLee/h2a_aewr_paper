@@ -45,8 +45,6 @@ def _(oews_path, pl):
             "state": "oews_state_name",
         }
     )
-    # Remove leading blank spaces in front of area codes
-    oews_df = oews_df.with_columns(pl.all().str.strip_chars_start(" "))
 
     # Keep only columns we need
     columns_to_keep = [
@@ -71,11 +69,29 @@ def _(oews_path, pl):
         ]
     )
 
+    # The source crosswalk leaves Clark County, NV blank before 2015, but the
+    # OEWS wage files publish Las Vegas-Paradise under area code 29820.
+    oews_df = oews_df.with_columns(
+        [
+            pl.when(
+                (pl.col("oews_state_fips") == "32")
+                & (pl.col("oews_county_fips") == "003")
+                & (
+                    pl.col(f"Area code {year}").is_null()
+                    | (pl.col(f"Area code {year}").str.strip_chars() == "")
+                )
+            )
+            .then(pl.lit("29820"))
+            .otherwise(pl.col(f"Area code {year}"))
+            .alias(f"Area code {year}")
+            for year in range(2005, 2015)
+        ]
+    )
+
     # Drop Guam, Puerto Rico, and Virgin Islands
     oews_df = oews_df.filter(
         ~pl.col("oews_state_name").is_in(["Guam", "Puerto Rico", "Virgin Islands"])
     )
-    oews_df
     return (oews_df,)
 
 
@@ -110,7 +126,6 @@ def _(oews_df, oews_path, pl):
         pl.col("oews_area_code").is_null()
         | (pl.col("oews_area_code").str.strip_chars() == "")
     ).write_csv(oews_path / "missing_area_codes.csv")
-    oews_long_df
     return (oews_long_df,)
 
 
@@ -180,7 +195,6 @@ def _(INTERMEDIATE, pl):
         .with_columns(pl.col("fipscounty").str.pad_start(5, "0").alias("fipscounty"))
         .sort("fipscounty")
     )
-    full_county_set
     return (full_county_set,)
 
 
@@ -195,7 +209,12 @@ def _(oews_df_post_2019, oews_long_df, pl):
     ).with_columns(
         (pl.col("oews_state_fips") + pl.col("oews_county_fips")).alias("fipscounty")
     )
-    oews_long_df_both_periods
+
+    # Remove whitespace around area codes and FIPS fields. Some source cells
+    # carry leading spaces; trimming both ends keeps joins stable after export.
+    oews_long_df_both_periods = oews_long_df_both_periods.with_columns(
+        pl.col("oews_area_code").str.strip_chars()
+    )
     return (oews_long_df_both_periods,)
 
 

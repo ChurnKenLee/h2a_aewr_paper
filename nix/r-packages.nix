@@ -23,10 +23,24 @@ with pkgs.rPackages;
 
   # Graphics
   ggplot2
+  cowplot
+  ggthemes
+  ggfixest
+  scales
 
   # Faster tools
   collapse
 
   # Inference
   fixest
+  MatchIt
+
+  # Geospatial tools
+  sf
+  ggspatial
+
+  # Data download
+  fredr
+  ipumsr
+  tidycensus
 ]

@@ -51,7 +51,7 @@ oews_df <- oews_df %>%
   mutate(tot_emp = as.numeric(tot_emp)) %>%
   mutate(mean_hourly_wage = as.numeric(h_mean)) %>%
   mutate(mean_annual_wage = as.numeric(a_mean)) %>%
-  mutate(oews_area_code = area)
+  mutate(oews_area_code = str_trim(as.character(area)))
 
 # Drop occ-area-year without average wage or total employment data
 # oews_df <- oews_df %>% filter(!is.na(h_mean) & !is.na(tot_emp))
@@ -68,16 +68,6 @@ oews_df <- oews_df %>%
     mean_annual_wage,
     year
   )
-
-# OEWS area definition source has leading whitespace for OEWS area codes
-oews_area_definitions_df = oews_area_definitions_df %>%
-  mutate(oews_area_code = str_trim(oews_area_code))
-
-no_oews <- oews_area_definitions_df %>%
-  anti_join(oews_df, by = c("oews_area_code", "year"))
-
-no_area <- oews_df %>%
-  anti_join(oews_area_definitions_df, by = c("oews_area_code", "year"))
 
 oews_area_year_df <- oews_area_definitions_df %>%
   left_join(oews_df, by = c("oews_area_code", "year"))
