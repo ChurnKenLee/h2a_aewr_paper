@@ -10,69 +10,62 @@ library(tidylog, warn.conflicts = FALSE)
 library(ipumsr)
 library(haven)
 
-# #### Submit extract request and download ####
-# acs1_samples <- c()
-# for (i in 2000:2024) {
-#   acs1_samples <- c(acs1_samples, paste0("us", i, "a"))
-# }
-# acs5_samples <- c(
-#   "us2007c",
-#   "us2012e",
-#   "us2017c",
-#   "us2020c"
-# )
+ipums_api_key <- Sys.getenv("IPUMS_API_KEY")
+if (!nzchar(ipums_api_key)) {
+  stop("IPUMS_API_KEY must be set in .env or the environment.")
+}
+set_ipums_api_key(ipums_api_key, save = FALSE)
 
-# # I stored the ACS data extract specificaiton in JSON files
-# # IPUMSR uses these to construct the data request
-# acs1_spec <- define_extract_from_json(
-#   path_json("acs_wage_quantile_extract_spec.json")
-# )
-# acs5_spec <- define_extract_from_json(
-#   path_json("acs_immigrant_status_imputation_extract_spec.json")
-# )
+dir.create(path_raw("acs"), recursive = TRUE, showWarnings = FALSE)
 
-# # IPUMSR then submits these requests to the IPUMS server
-# acs1_submitted_extract <- submit_extract(acs1_spec)
-# acs5_submitted_extract <- submit_extract(acs5_spec)
+build_acs_parquet <- function(extract_id, spec_file, parquet_file) {
+  ddi_path <- path_raw("acs", paste0(extract_id, ".xml"))
+  data_path <- path_raw("acs", paste0(extract_id, ".dat.gz"))
 
-# # I invoke IPUMSR's wait for extract function, which regularly probes extract completion status
-# # Once IPUMS tells IPUMSR the extract is ready, I download the extract
-# acs1_extract <- wait_for_extract(acs1_submitted_extract)
-# acs1_ddi_path <- download_extract(
-#   acs1_extract,
-#   download_dir = path_raw("acs")
-# )
-# acs5_extract <- wait_for_extract(acs5_submitted_extract)
-# acs5_ddi_path <- download_extract(
-#   acs5_extract,
-#   download_dir = path_raw("acs")
-# )
+  if (!file.exists(ddi_path) || !file.exists(data_path)) {
+    message("Submitting missing ACS extract: ", extract_id)
 
-#### Load extracts and save as parquets ####
-# usa_00035 is ACS 1-year for wage quantiles
-acs_data <- read_ipums_micro(
-  path_raw("acs", "usa_00035.xml")
-)
+    extract <- define_extract_from_json(path_json(spec_file)) %>%
+      submit_extract() %>%
+      wait_for_extract()
 
-acs_data <- acs_data %>%
-  zap_labels() %>%
-  zap_label()
+    temp_download_dir <- tempfile("ipums_acs_")
+    dir.create(temp_download_dir)
+    on.exit(unlink(temp_download_dir, recursive = TRUE), add = TRUE)
 
-acs_data %>%
-  write_parquet(
-    path_int("acs_1year_for_wage_quantiles.parquet")
+    downloaded_ddi <- download_extract(
+      extract,
+      download_dir = temp_download_dir
+    )
+    downloaded_data <- sub("\\.xml$", ".dat.gz", downloaded_ddi)
+
+    file.copy(downloaded_ddi, ddi_path, overwrite = TRUE)
+    file.copy(downloaded_data, data_path, overwrite = TRUE)
+  }
+
+  acs_data <- read_ipums_micro(
+    ddi_path,
+    data_file = data_path
   )
 
-# usa_00034 is ACS 5-year for immigrant status imputation
-acs_data <- read_ipums_micro(
-  path_raw("acs", "usa_00034.xml")
+  acs_data <- acs_data %>%
+    zap_labels() %>%
+    zap_label()
+
+  acs_data %>%
+    write_parquet(
+      path_int(parquet_file)
+    )
+}
+
+build_acs_parquet(
+  extract_id = "acs_1year_wage_quantiles",
+  spec_file = "acs_wage_quantile_extract_spec.json",
+  parquet_file = "acs_1year_for_wage_quantiles.parquet"
 )
 
-acs_data <- acs_data %>%
-  zap_labels() %>%
-  zap_label()
-
-acs_data %>%
-  write_parquet(path_int(
-    "acs_5year_for_immigrant_status_imputation.parquet"
-  ))
+build_acs_parquet(
+  extract_id = "acs_5year_immigrant_status_imputation",
+  spec_file = "acs_immigrant_status_imputation_extract_spec.json",
+  parquet_file = "acs_5year_for_immigrant_status_imputation.parquet"
+)

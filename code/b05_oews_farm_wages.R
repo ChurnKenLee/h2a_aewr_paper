@@ -67,51 +67,87 @@ oews_df <- oews_df %>%
     mean_hourly_wage,
     mean_annual_wage,
     year
+  ) %>%
+  mutate(
+    hourly_wage_bill = mean_hourly_wage * tot_emp,
+    annual_wage_bill = mean_annual_wage * tot_emp,
+    hourly_wage_emp = if_else(!is.na(mean_hourly_wage), tot_emp, NA_real_),
+    annual_wage_emp = if_else(!is.na(mean_annual_wage), tot_emp, NA_real_)
   )
 
 oews_area_year_df <- oews_area_definitions_df %>%
   left_join(oews_df, by = c("oews_area_code", "year"))
 
 # Collapse into county-years-occupations
-oews_county_year_df <- oews_area_year_df %>%
+oews_county_year_occ <- oews_area_year_df %>%
   group_by(oews_state_fips, oews_county_fips, year, occ_code, occ_title) %>%
   summarize(
     tot_emp = sum(tot_emp, na.rm = TRUE),
-    tot_hourly_wage = sum(mean_hourly_wage * tot_emp, na.rm = TRUE),
-    tot_annual_wage = sum(mean_annual_wage * tot_emp, na.rm = TRUE),
+    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
+    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
+    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
+    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
+    .groups = "drop"
   ) %>%
-  ungroup() %>%
   mutate(
-    mean_hourly_wage = tot_hourly_wage / tot_emp,
-    mean_annual_wage = tot_annual_wage / tot_emp
+    mean_hourly_wage = if_else(
+      hourly_wage_emp > 0,
+      tot_hourly_wage / hourly_wage_emp,
+      NA_real_
+    ),
+    mean_annual_wage = if_else(
+      annual_wage_emp > 0,
+      tot_annual_wage / annual_wage_emp,
+      NA_real_
+    )
   ) %>%
-  select(-tot_hourly_wage, -tot_annual_wage)
+  select(
+    -hourly_wage_emp,
+    -annual_wage_emp,
+    -tot_hourly_wage,
+    -tot_annual_wage
+  )
 
-# Collapse oocupations as well to get AEWR equivalent
-oews_aewr_df <- oews_area_year_df %>%
+# Collapse occupations as well to get AEWR equivalent
+oews_county_year_aewr <- oews_area_year_df %>%
   group_by(oews_state_fips, oews_county_fips, year) %>%
   summarize(
     tot_emp = sum(tot_emp, na.rm = TRUE),
-    tot_hourly_wage = sum(mean_hourly_wage * tot_emp, na.rm = TRUE),
-    tot_annual_wage = sum(mean_annual_wage * tot_emp, na.rm = TRUE),
+    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
+    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
+    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
+    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
+    .groups = "drop"
   ) %>%
-  ungroup() %>%
   mutate(
-    mean_hourly_wage = tot_hourly_wage / tot_emp,
-    mean_annual_wage = tot_annual_wage / tot_emp
+    mean_hourly_wage = if_else(
+      hourly_wage_emp > 0,
+      tot_hourly_wage / hourly_wage_emp,
+      NA_real_
+    ),
+    mean_annual_wage = if_else(
+      annual_wage_emp > 0,
+      tot_annual_wage / annual_wage_emp,
+      NA_real_
+    )
   ) %>%
-  select(-tot_hourly_wage, -tot_annual_wage) %>%
+  select(
+    -hourly_wage_emp,
+    -annual_wage_emp,
+    -tot_hourly_wage,
+    -tot_annual_wage
+  ) %>%
   mutate(
     occ_code = "AEWR",
     occ_title = "Aggregated occupation for AEWR equivalent"
   )
 
 # Combine
-oews_combined <- rbind(oews_county_year_df, oews_aewr_df) %>%
+oews_county_year <- rbind(oews_county_year_occ, oews_county_year_aewr) %>%
   arrange(oews_state_fips, oews_county_fips, year, occ_code)
 
 # Harmonize variable names
-oews_combined <- oews_combined %>%
+oews_county_year <- oews_county_year %>%
   rename(
     state_fips_code = oews_state_fips,
     county_fips_code = oews_county_fips,
@@ -121,5 +157,84 @@ oews_combined <- oews_combined %>%
   )
 
 # Export
-oews_combined %>%
+oews_county_year %>%
   write_parquet(path_int("oews_county_aggregated.parquet"))
+
+# Collapse into state-year as well for comparison with FLS
+oews_state_year_occ <- oews_area_year_df %>%
+  group_by(oews_state_fips, year, occ_code, occ_title) %>%
+  summarize(
+    tot_emp = sum(tot_emp, na.rm = TRUE),
+    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
+    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
+    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
+    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    mean_hourly_wage = if_else(
+      hourly_wage_emp > 0,
+      tot_hourly_wage / hourly_wage_emp,
+      NA_real_
+    ),
+    mean_annual_wage = if_else(
+      annual_wage_emp > 0,
+      tot_annual_wage / annual_wage_emp,
+      NA_real_
+    )
+  ) %>%
+  select(
+    -hourly_wage_emp,
+    -annual_wage_emp,
+    -tot_hourly_wage,
+    -tot_annual_wage
+  )
+
+oews_state_year_aewr <- oews_area_year_df %>%
+  group_by(oews_state_fips, year) %>%
+  summarize(
+    tot_emp = sum(tot_emp, na.rm = TRUE),
+    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
+    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
+    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
+    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    mean_hourly_wage = if_else(
+      hourly_wage_emp > 0,
+      tot_hourly_wage / hourly_wage_emp,
+      NA_real_
+    ),
+    mean_annual_wage = if_else(
+      annual_wage_emp > 0,
+      tot_annual_wage / annual_wage_emp,
+      NA_real_
+    )
+  ) %>%
+  select(
+    -hourly_wage_emp,
+    -annual_wage_emp,
+    -tot_hourly_wage,
+    -tot_annual_wage
+  ) %>%
+  mutate(
+    occ_code = "AEWR",
+    occ_title = "Aggregated occupation for AEWR equivalent"
+  )
+
+# Combine
+oews_state_year <- rbind(oews_state_year_occ, oews_state_year_aewr) %>%
+  arrange(oews_state_fips, year, occ_code)
+
+# Harmonize variable names
+oews_state_year <- oews_state_year %>%
+  rename(
+    state_fips_code = oews_state_fips,
+    oews_mean_hourly_wage = mean_hourly_wage,
+    oews_mean_annual_wage = mean_annual_wage,
+    oews_tot_emp = tot_emp
+  )
+
+oews_state_year %>%
+  write_parquet(path_int("oews_state_aggregated.parquet"))
