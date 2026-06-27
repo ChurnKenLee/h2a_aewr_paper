@@ -61,7 +61,7 @@ czone_1990_county_2010_xwalk <- czone_1990_county_xwalk %>%
 
 #### Calculate hourly wage quantiles ####
 acs_ds <- open_dataset(
-  path_int("acs_1year_for_wage_quantiles.parquet")
+  path_int("acs_1year_for_wages.parquet")
 )
 
 acs_ds <- acs_ds %>%
@@ -204,5 +204,3 @@ wage_quantiles_county <- wage_quantiles_czone %>%
 
 wage_quantiles_county %>%
   write_parquet(path_int("acs_czone_wage_quantiles.parquet"))
-
-#

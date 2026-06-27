@@ -59,13 +59,13 @@ build_acs_parquet <- function(extract_id, spec_file, parquet_file) {
 }
 
 build_acs_parquet(
-  extract_id = "acs_1year_wage_quantiles",
-  spec_file = "acs_wage_quantile_extract_spec.json",
-  parquet_file = "acs_1year_for_wage_quantiles.parquet"
+  extract_id = "acs_1year_wages",
+  spec_file = "acs_1year_wages_extract_spec.json",
+  parquet_file = "acs_1year_for_wages.parquet"
 )
 
 build_acs_parquet(
   extract_id = "acs_5year_immigrant_status_imputation",
-  spec_file = "acs_immigrant_status_imputation_extract_spec.json",
+  spec_file = "acs_5year_immigrant_status_imputation_extract_spec.json",
   parquet_file = "acs_5year_for_immigrant_status_imputation.parquet"
 )
