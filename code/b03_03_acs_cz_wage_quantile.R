@@ -68,8 +68,7 @@ acs_ds <- acs_ds %>%
   filter(
     CLASSWKR == 2,
     INCWAGE > 0 & INCWAGE < 999998,
-    UHRSWORK > 0,
-    YEAR == 2000 | YEAR >= 2005
+    UHRSWORK > 0
   )
 
 acs_ds <- acs_ds %>%

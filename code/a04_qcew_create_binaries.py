@@ -53,7 +53,7 @@ def _(pl):
 @app.cell
 def _(binary_path, pl, qcew_cols_list, qcew_dtype_dict, qcew_path, zipfile):
     qcew_df = pl.DataFrame()
-    for t in range(2005, 2025):
+    for t in range(2000, 2025):
         print(t)
         zip_path = qcew_path / f"{t}_annual_singlefile.zip"
         target_csv = f"{t}.annual.singlefile.csv"
