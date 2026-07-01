@@ -2,34 +2,18 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Clean and Load.R lines 956-1412
 # Source SHA256: c44740d380f6ca753b3075096a420fe966d482a96291d6929be13a233e50227f
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## BEA Data ---------------------------------------------
 
 full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
-ppi_data <- read_parquet(path_processed("ppi_2012.parquet"))
+ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 
 # job count data
 bea_caemp25n_data <- read_parquet(path_int("bea_CAEMP25N_trim.parquet"))
@@ -114,7 +98,7 @@ head(bea_caemp25n_data)
 
 write_parquet(
   bea_caemp25n_data,
-  path_processed("bea_caemp25n_data_year.parquet")
+  path_int("bea_caemp25n_data_year.parquet")
 )
 cat(
   "bea_caemp25n_data_year:",
@@ -226,7 +210,7 @@ bea_cainc45_data <- split_apply_bea_fips_xwalk(bea_cainc45_data, bea_fips_xwalk)
 
 write_parquet(
   bea_cainc45_data,
-  path_processed("bea_cainc45_data_year.parquet")
+  path_int("bea_cainc45_data_year.parquet")
 )
 cat(
   "bea_cainc45_data_year:",
@@ -379,7 +363,7 @@ census_pop_ests %>% filter(countyfips == "46111") %>% tally() # fixed
 
 write_parquet(
   census_pop_ests,
-  path_processed("census_pop_ests_year.parquet")
+  path_int("census_pop_ests_year.parquet")
 )
 cat(
   "census_pop_ests_year:",
@@ -413,7 +397,7 @@ county_df %>%
   group_by(year) %>%
   tally()
 
-write_parquet(county_df, path_processed("county_df_year.parquet"))
+write_parquet(county_df, path_int("county_df_year.parquet"))
 cat("county_df_year:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 
 # remove files -------------------

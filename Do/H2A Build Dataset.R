@@ -2,12 +2,8 @@
 ## Phil Hoxie
 ## 1/31/24
 rm(list = ls())
-if (!exists("path_int")) {
-  if (file.exists("paths.R")) {
-    source("paths.R")
-  } else {
-    source(file.path("code", "paths.R"))
-  }
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
 }
 ensure_project_dirs()
 library(tidyverse)
@@ -23,52 +19,42 @@ library(tidylog, warn.conflicts = FALSE)
 ## Load Data -------------------------------------------------------------------
 
 # yearly versions #
-aewr_data <- read_parquet(path_processed("aewr_data_year.parquet"))
+aewr_data <- read_parquet(path_int("aewr_data_year.parquet"))
 aewr_regions <- read.csv(
   file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
   stringsAsFactors = F
 )
-bea_caemp25n_data <- read_parquet(path_processed(
-  "bea_caemp25n_data_year.parquet"
-))
-bea_cainc45_data <- read_parquet(path_processed(
-  "bea_cainc45_data_year.parquet"
-))
+bea_caemp25n_data <- read_parquet(path_int("bea_caemp25n_data_year.parquet"))
+bea_cainc45_data <- read_parquet(path_int("bea_cainc45_data_year.parquet"))
 fips_codes <- read.csv(
   file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
   stringsAsFactors = F
 )
-h2a_data <- read_parquet(path_processed("h2a_data_year.parquet"))
-h2a_predict <- read_parquet(path_processed("h2a_predict.parquet"))
-census_of_agriculture_cropland <- read_parquet(path_processed(
-  "census_ag_cropland_year.parquet"
-))
+h2a_data <- read_parquet(path_int("h2a_data_year.parquet"))
+h2a_predict <- read_parquet(path_int("h2a_predict.parquet"))
+census_of_agriculture_cropland <- read_parquet(path_int("census_ag_cropland_year.parquet"))
 
-census_pop_ests <- read_parquet(path_processed("census_pop_ests_year.parquet"))
+census_pop_ests <- read_parquet(path_int("census_pop_ests_year.parquet"))
 
-census_of_agriculture_cropland_base <- read_parquet(path_processed(
-  "census_ag_cropland_2007_year.parquet"
-))
+census_of_agriculture_cropland_base <- read_parquet(path_int("census_ag_cropland_2007_year.parquet"))
 
-state_min <- read_parquet(path_processed("state_real_minwages.parquet"))
+state_min <- read_parquet(path_int("state_real_minwages.parquet"))
 
 cz_wage_quantiles <- read_parquet(path_int(
   "acs_czone_wage_quantiles.parquet"
 ))
 
-ppi_annual <- read_parquet(path_processed("ppi_2012.parquet"))
+ppi_annual <- read_parquet(path_int("ppi_2012.parquet"))
 
-nass_price_index <- read_parquet(path_processed(
-  "nass_fisher_price_index.parquet"
-))
+nass_price_index <- read_parquet(path_int("nass_fisher_price_index.parquet"))
 
 # base for full county dataset
 
-county_df <- read_parquet(path_processed("county_df_year.parquet"))
+county_df <- read_parquet(path_int("county_df_year.parquet"))
 
 # CZ
 
-cz_file_small <- read_parquet(path_processed("cz_file_2010_small.parquet"))
+cz_file_small <- read_parquet(path_int("cz_file_2010_small.parquet"))
 
 head(county_df)
 

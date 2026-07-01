@@ -2,33 +2,17 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Build Dataset.R lines 578-943
 # Source SHA256: 72ebdaa6507ced6f1468f318d2c632e89013671ea7df1c5357ae14594c01ab00
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## lags of h2a variables
 
-county_df <- read_parquet(path_processed("county_df_variable_cleaned_year.parquet"))
+county_df <- read_parquet(path_int("county_df_variable_cleaned_year.parquet"))
 
 h2a_lag_vars <- c(
   "nbr_workers_requested_all_years",

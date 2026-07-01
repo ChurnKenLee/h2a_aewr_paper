@@ -2,28 +2,12 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Clean and Load.R lines 755-955
 # Source SHA256: 357bbeaef9d9eb6e731cd6af89253339e71ec57415a2d03f87af45a50652c6fb
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## AEWR Region TS --------------------------------------------------------------

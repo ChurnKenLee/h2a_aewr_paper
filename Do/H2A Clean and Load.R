@@ -1,7 +1,5 @@
 rm(list = ls())
-if (file.exists("paths.R")) {
-  source("paths.R")
-} else {
+if (!exists("path_code", mode = "function")) {
   source(file.path("code", "paths.R"))
 }
 ensure_project_dirs()
@@ -26,7 +24,7 @@ price_data <- read_parquet(path_int(
 
 write_parquet(
   price_data,
-  path_processed("nass_fisher_price_index.parquet")
+  path_int("nass_fisher_price_index.parquet")
 )
 head(price_data)
 rm(price_data)
@@ -41,7 +39,7 @@ cz_wage_quantiles <- read_parquet(path_int("acs_czone_wage_quantiles.parquet"))
 
 ## state min wages ------------------------------------
 
-state_minwages <- read_parquet(path_processed("fred_state_minwages.parquet"))
+state_minwages <- read_parquet(path_int("fred_state_minwages.parquet"))
 
 ## Alt Min Wage from Ken -------------------------------
 
@@ -73,13 +71,13 @@ cz_file <- read.csv(
 cz_file <- cz_file %>%
   rename(countyfips = FIPS, cz_out10 = OUT10)
 
-write_parquet(cz_file, path_processed("cz_file_2010.parquet"))
+write_parquet(cz_file, path_int("cz_file_2010.parquet"))
 
 
 cz_file_small <- cz_file %>%
   select(countyfips, cz_out10)
 
-write_parquet(cz_file_small, path_processed("cz_file_2010_small.parquet"))
+write_parquet(cz_file_small, path_int("cz_file_2010_small.parquet"))
 
 
 ## PPI --------------------------------------------------
@@ -112,7 +110,7 @@ ggplot(data = ppi_data, aes(y = ppi_2012, x = year)) +
 ppi_data <- ppi_data %>%
   select(year, ppi_2012)
 
-write_parquet(ppi_data, path_processed("ppi_2012.parquet"))
+write_parquet(ppi_data, path_int("ppi_2012.parquet"))
 
 ## County Boundary ------------------------------------
 
@@ -194,7 +192,7 @@ gc()
 
 write_parquet(
   state_minwage_ppi,
-  path_processed("state_real_minwages.parquet")
+  path_int("state_real_minwages.parquet")
 )
 
 ## H2A Data -------------------------------------------
@@ -208,7 +206,7 @@ h2a_predict <- read_parquet(
     countyfips = as.numeric(county_ansi)
   ) %>%
   select(-county_ansi) %>%
-  write_parquet(path_processed("h2a_predict.parquet"))
+  write_parquet(path_int("h2a_predict.parquet"))
 
 # census period
 h2a_data <- h2a_data %>%
@@ -397,7 +395,7 @@ cdl_data_collapse <- cdl_data_collapse %>%
   mutate(countyfips = as.numeric(fips)) %>%
   dplyr::select(-fips)
 
-write_parquet(cdl_data_collapse, path_processed("cdl_cropshares.parquet"))
+write_parquet(cdl_data_collapse, path_int("cdl_cropshares.parquet"))
 
 ## NAWSPAD ---------------------------------------------
 # state level data
@@ -438,7 +436,7 @@ aewr_regions <- read.csv(
 ## PPI --------------------------------------------------
 # Source: https://fred.stlouisfed.org/series/WPU01
 
-ppi_data <- read_parquet(path_processed("ppi_2012.parquet"))
+ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 
 ## County Boundary ------------------------------------
 
@@ -511,7 +509,7 @@ census_of_agriculture_cropland <- census_of_agriculture_trim %>%
 head(census_of_agriculture_trim)
 
 census_of_agriculture_cropland %>%
-  write_parquet(path_processed("census_ag_cropland_year.parquet"))
+  write_parquet(path_int("census_ag_cropland_year.parquet"))
 
 rm(census_of_agriculture_trim)
 
@@ -521,7 +519,7 @@ census_of_agriculture_cropland_base <- census_of_agriculture_cropland %>%
   select(-year)
 
 census_of_agriculture_cropland_base %>%
-  write_parquet(path_processed("census_ag_cropland_2007_year.parquet"))
+  write_parquet(path_int("census_ag_cropland_2007_year.parquet"))
 
 rm(census_of_agriculture_cropland_base)
 
@@ -573,7 +571,7 @@ h2a_data <- h2a_data %>%
 
 head(h2a_data)
 
-write_parquet(h2a_data, path_processed("h2a_data_year.parquet"))
+write_parquet(h2a_data, path_int("h2a_data_year.parquet"))
 cat("h2a_data_year:", nrow(h2a_data), "rows,", ncol(h2a_data), "cols\n")
 
 ## AEWR -------------------------------------------------
@@ -634,7 +632,7 @@ aewr_data <- aewr_data %>%
 
 head(aewr_data)
 
-write_parquet(aewr_data, path_processed("aewr_data_year.parquet"))
+write_parquet(aewr_data, path_int("aewr_data_year.parquet"))
 cat("aewr_data_year:", nrow(aewr_data), "rows,", ncol(aewr_data), "cols\n")
 
 # full for TS
@@ -1075,7 +1073,7 @@ head(bea_caemp25n_data)
 
 write_parquet(
   bea_caemp25n_data,
-  path_processed("bea_caemp25n_data_year.parquet")
+  path_int("bea_caemp25n_data_year.parquet")
 )
 cat(
   "bea_caemp25n_data_year:",
@@ -1203,7 +1201,7 @@ bea_cainc45_data <- bea_cainc45_data %>%
 
 write_parquet(
   bea_cainc45_data,
-  path_processed("bea_cainc45_data_year.parquet")
+  path_int("bea_cainc45_data_year.parquet")
 )
 cat(
   "bea_cainc45_data_year:",
@@ -1364,7 +1362,7 @@ census_pop_ests %>% filter(countyfips == 46111) %>% tally() # fixed
 
 write_parquet(
   census_pop_ests,
-  path_processed("census_pop_ests_year.parquet")
+  path_int("census_pop_ests_year.parquet")
 )
 cat(
   "census_pop_ests_year:",
@@ -1398,7 +1396,7 @@ county_df %>%
   group_by(year) %>%
   tally()
 
-write_parquet(county_df, path_processed("county_df_year.parquet"))
+write_parquet(county_df, path_int("county_df_year.parquet"))
 cat("county_df_year:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 
 # remove files -------------------

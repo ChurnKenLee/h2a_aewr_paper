@@ -2,34 +2,18 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Build Dataset.R lines 273-577
 # Source SHA256: 525d95d7d64dabbf8958d2ade7b701019b85612a382d0b07ad39f14e43326578
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## Variable cleaning ## -----------------
 
-county_df <- read_parquet(path_processed("county_df_build_merge.parquet"))
-cz_file_small <- read_parquet(path_processed("cz_file_2010_small.parquet"))
+county_df <- read_parquet(path_int("county_df_build_merge.parquet"))
+cz_file_small <- read_parquet(path_int("cz_file_2010_small.parquet"))
 
 # AEWR vs ag min diff #
 
@@ -305,6 +289,6 @@ fixcounty %>%
   group_by(state_abbrev) %>%
   tally() # BEA issue for VA counties. We need to drop bristol city. It will be ok.
 
-write_parquet(county_df, path_processed("county_df_variable_cleaned_year.parquet"))
+write_parquet(county_df, path_int("county_df_variable_cleaned_year.parquet"))
 cat("county_df_variable_cleaned_year:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 

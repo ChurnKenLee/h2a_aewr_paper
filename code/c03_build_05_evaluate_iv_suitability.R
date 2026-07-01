@@ -1,8 +1,6 @@
 # Plot FLS and proxy wage changes
 rm(list = ls())
-if (file.exists("paths.R")) {
-  source("paths.R")
-} else {
+if (!exists("path_code", mode = "function")) {
   source(file.path("code", "paths.R"))
 }
 library(arrow)

@@ -1,8 +1,6 @@
 ## Run standalone or via H2A Master.R
 rm(list = ls())
-if (file.exists("paths.R")) {
-  source("paths.R")
-} else {
+if (!exists("path_code", mode = "function")) {
   source(file.path("code", "paths.R"))
 }
 ensure_project_dirs()
@@ -110,7 +108,7 @@ final_df <- results %>%
 # Inspect
 head(final_df)
 
-write_parquet(final_df, path_processed("fred_state_minwages.parquet"))
+write_parquet(final_df, path_int("fred_state_minwages.parquet"))
 
 # remove files -------------------
 

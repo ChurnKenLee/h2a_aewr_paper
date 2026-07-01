@@ -2,28 +2,12 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Analysis Figs and Tables.R lines 1668-1961
 # Source SHA256: 337e790bd6e243d9463d6f4557b803f9a56cbaf8985ad5ca53083b1925b0987c
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## Exhibit 16: Summary Statistics Table -----------------------------------------

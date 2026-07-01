@@ -2,28 +2,12 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Build Dataset.R lines 1-272
 # Source SHA256: f6618f3dc3db60bebde02ba3da2fcee94ecad4f724e9505944b132b623f90ff8
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## H2A Build Dataset
@@ -43,52 +27,42 @@ library(tidylog, warn.conflicts = FALSE)
 ## Load Data -------------------------------------------------------------------
 
 # yearly versions #
-aewr_data <- read_parquet(path_processed("aewr_data_year.parquet"))
+aewr_data <- read_parquet(path_int("aewr_data_year.parquet"))
 aewr_regions <- read_csv(
   file = path_raw("geographic_crosswalks", "phil", "aewr_regions.csv")
 )
-bea_caemp25n_data <- read_parquet(path_processed(
-  "bea_caemp25n_data_year.parquet"
-))
-bea_cainc45_data <- read_parquet(path_processed(
-  "bea_cainc45_data_year.parquet"
-))
+bea_caemp25n_data <- read_parquet(path_int("bea_caemp25n_data_year.parquet"))
+bea_cainc45_data <- read_parquet(path_int("bea_cainc45_data_year.parquet"))
 fips_codes <- read_csv(
   file = path_raw("geographic_crosswalks", "phil", "fips_codes.csv")
 )
 fips_codes <- fips_codes %>%
   mutate(fips = split_fips2(fips))
-h2a_data <- read_parquet(path_processed("h2a_data_year.parquet"))
-h2a_predict <- read_parquet(path_processed("h2a_predict.parquet"))
-census_of_agriculture_cropland <- read_parquet(path_processed(
-  "census_ag_cropland_year.parquet"
-))
+h2a_data <- read_parquet(path_int("h2a_data_year.parquet"))
+h2a_predict <- read_parquet(path_int("h2a_predict.parquet"))
+census_of_agriculture_cropland <- read_parquet(path_int("census_ag_cropland_year.parquet"))
 
-census_pop_ests <- read_parquet(path_processed("census_pop_ests_year.parquet"))
+census_pop_ests <- read_parquet(path_int("census_pop_ests_year.parquet"))
 
-census_of_agriculture_cropland_base <- read_parquet(path_processed(
-  "census_ag_cropland_2007_year.parquet"
-))
+census_of_agriculture_cropland_base <- read_parquet(path_int("census_ag_cropland_2007_year.parquet"))
 
-state_min <- read_parquet(path_processed("state_real_minwages.parquet"))
+state_min <- read_parquet(path_int("state_real_minwages.parquet"))
 
 cz_wage_quantiles <- read_parquet(path_int(
   "acs_czone_wage_quantiles.parquet"
 ))
 
-ppi_annual <- read_parquet(path_processed("ppi_2012.parquet"))
+ppi_annual <- read_parquet(path_int("ppi_2012.parquet"))
 
-nass_price_index <- read_parquet(path_processed(
-  "nass_fisher_price_index.parquet"
-))
+nass_price_index <- read_parquet(path_int("nass_fisher_price_index.parquet"))
 
 # base for full county dataset
 
-county_df <- read_parquet(path_processed("county_df_year.parquet"))
+county_df <- read_parquet(path_int("county_df_year.parquet"))
 
 # CZ
 
-cz_file_small <- read_parquet(path_processed("cz_file_2010_small.parquet"))
+cz_file_small <- read_parquet(path_int("cz_file_2010_small.parquet"))
 
 head(county_df)
 
@@ -292,6 +266,6 @@ county_df <- merge(
 county_df <- county_df %>%
   mutate(fisher_index_ppi = fisher_index / ppi_2012)
 
-write_parquet(county_df, path_processed("county_df_build_merge.parquet"))
+write_parquet(county_df, path_int("county_df_build_merge.parquet"))
 cat("county_df_build_merge:", nrow(county_df), "rows,", ncol(county_df), "cols\n")
 

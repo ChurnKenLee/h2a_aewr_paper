@@ -2,28 +2,12 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Clean and Load.R lines 1-199
 # Source SHA256: a32c63f5bd5343db2ca703ce8024bce608dd126cd2d3f7ba2baacfa3149da191
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ensure_project_dirs()
@@ -48,7 +32,7 @@ price_data <- read_parquet(path_int(
 
 write_parquet(
   price_data,
-  path_processed("nass_fisher_price_index.parquet")
+  path_int("nass_fisher_price_index.parquet")
 )
 head(price_data)
 rm(price_data)
@@ -63,7 +47,7 @@ cz_wage_quantiles <- read_parquet(path_int("acs_czone_wage_quantiles.parquet"))
 
 ## state min wages ------------------------------------
 
-state_minwages <- read_parquet(path_processed("fred_state_minwages.parquet"))
+state_minwages <- read_parquet(path_int("fred_state_minwages.parquet"))
 state_minwages <- state_minwages %>%
   mutate(fips = split_fips2(fips))
 
@@ -103,13 +87,13 @@ cz_file <- cz_file %>%
     CBSA10 = as.character(CBSA10)
   )
 
-write_parquet(cz_file, path_processed("cz_file_2010.parquet"))
+write_parquet(cz_file, path_int("cz_file_2010.parquet"))
 
 
 cz_file_small <- cz_file %>%
   select(countyfips, cz_out10)
 
-write_parquet(cz_file_small, path_processed("cz_file_2010_small.parquet"))
+write_parquet(cz_file_small, path_int("cz_file_2010_small.parquet"))
 
 
 ## PPI --------------------------------------------------
@@ -141,7 +125,7 @@ ggplot(data = ppi_data, aes(y = ppi_2012, x = year)) +
 ppi_data <- ppi_data %>%
   select(year, ppi_2012)
 
-write_parquet(ppi_data, path_processed("ppi_2012.parquet"))
+write_parquet(ppi_data, path_int("ppi_2012.parquet"))
 
 ## County Boundary ------------------------------------
 
@@ -221,6 +205,6 @@ gc()
 
 write_parquet(
   state_minwage_ppi,
-  path_processed("state_real_minwages.parquet")
+  path_int("state_real_minwages.parquet")
 )
 

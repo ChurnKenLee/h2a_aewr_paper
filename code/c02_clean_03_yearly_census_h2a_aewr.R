@@ -2,28 +2,12 @@
 # Edit the source Do script or split specification, then regenerate.
 # Source: Do/H2A Clean and Load.R lines 420-754
 # Source SHA256: 07cc96d911887417cee0e9ec6a6a2f99263553a32a69f57ea57f687287ad3824
-
-if (!exists("path_processed", mode = "function")) {
-  local({
-    split_current_file <- function() {
-      frames <- sys.frames()
-      for (idx in rev(seq_along(frames))) {
-        ofile <- frames[[idx]]$ofile
-        if (!is.null(ofile)) {
-          return(normalizePath(ofile, winslash = "/", mustWork = FALSE))
-        }
-      }
-
-      file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-      if (length(file_arg) > 0) {
-        return(normalizePath(sub("^--file=", "", file_arg[[1]]), winslash = "/", mustWork = FALSE))
-      }
-
-      normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-    }
-
-    source(file.path(dirname(split_current_file()), "c00_setup.R"))
-  })
+rm(list = ls())
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
+}
+if (!exists("split_fips5", mode = "function")) {
+  source(path_code("c00_setup.R"))
 }
 
 ## _____________________________________________________________________________
@@ -47,7 +31,7 @@ aewr_regions <- read_csv(
 ## PPI --------------------------------------------------
 # Source: https://fred.stlouisfed.org/series/WPU01
 
-ppi_data <- read_parquet(path_processed("ppi_2012.parquet"))
+ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 
 ## County Boundary ------------------------------------
 
@@ -115,7 +99,7 @@ census_of_agriculture_cropland <- census_of_agriculture_trim %>%
 head(census_of_agriculture_trim)
 
 census_of_agriculture_cropland %>%
-  write_parquet(path_processed("census_ag_cropland_year.parquet"))
+  write_parquet(path_int("census_ag_cropland_year.parquet"))
 
 rm(census_of_agriculture_trim)
 
@@ -125,7 +109,7 @@ census_of_agriculture_cropland_base <- census_of_agriculture_cropland %>%
   select(-year)
 
 census_of_agriculture_cropland_base %>%
-  write_parquet(path_processed("census_ag_cropland_2007_year.parquet"))
+  write_parquet(path_int("census_ag_cropland_2007_year.parquet"))
 
 rm(census_of_agriculture_cropland_base)
 
@@ -177,7 +161,7 @@ h2a_data <- h2a_data %>%
 
 head(h2a_data)
 
-write_parquet(h2a_data, path_processed("h2a_data_year.parquet"))
+write_parquet(h2a_data, path_int("h2a_data_year.parquet"))
 cat("h2a_data_year:", nrow(h2a_data), "rows,", ncol(h2a_data), "cols\n")
 
 ## AEWR -------------------------------------------------
@@ -238,7 +222,7 @@ aewr_data <- aewr_data %>%
 
 head(aewr_data)
 
-write_parquet(aewr_data, path_processed("aewr_data_year.parquet"))
+write_parquet(aewr_data, path_int("aewr_data_year.parquet"))
 cat("aewr_data_year:", nrow(aewr_data), "rows,", ncol(aewr_data), "cols\n")
 
 # full for TS

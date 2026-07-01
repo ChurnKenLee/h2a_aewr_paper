@@ -2,12 +2,8 @@
 ## Phil Hoxie
 ## 1/31/24
 rm(list = ls())
-if (!exists("path_int")) {
-  if (file.exists("paths.R")) {
-    source("paths.R")
-  } else {
-    source(file.path("code", "paths.R"))
-  }
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
 }
 ensure_project_dirs()
 

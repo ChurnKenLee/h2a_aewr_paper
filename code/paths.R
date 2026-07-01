@@ -7,6 +7,22 @@ is_project_root <- function(path) {
     file.exists(file.path(path, "code", "paths.R"))
 }
 
+ancestor_paths <- function(path) {
+  path <- normalizePath(path.expand(path), winslash = "/", mustWork = FALSE)
+  paths <- path
+
+  repeat {
+    parent <- dirname(path)
+    if (identical(parent, path)) {
+      break
+    }
+    paths <- c(paths, parent)
+    path <- parent
+  }
+
+  paths
+}
+
 candidate_roots <- unique(c(
   Sys.getenv("H2A_PROJECT_ROOT", unset = NA_character_),
   "/mnt/storage/Dropbox/projects/H-2A Paper", # Ken's root path
@@ -21,8 +37,7 @@ candidate_roots <- unique(c(
   ),
   file.path(Sys.getenv("OneDrive", unset = ""), "Dropbox/H-2A Paper"),
   file.path(Sys.getenv("OneDriveCommercial", unset = ""), "Dropbox/H-2A Paper"),
-  getwd(),
-  dirname(getwd())
+  ancestor_paths(getwd())
 ))
 
 candidate_roots <- candidate_roots[

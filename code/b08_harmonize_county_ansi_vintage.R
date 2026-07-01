@@ -11,10 +11,8 @@
 # BEA farm employment
 # NAWSPAD
 rm(list = ls())
-if (file.exists("paths.R")) {
-    source("paths.R")
-} else {
-    source(file.path("code", "paths.R"))
+if (!exists("path_code", mode = "function")) {
+  source(file.path("code", "paths.R"))
 }
 library(arrow)
 library(tidyverse)
