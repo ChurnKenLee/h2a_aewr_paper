@@ -488,7 +488,7 @@ croplandcros_cdl_table <- croplandcros_cdl_table %>%
     crop_type = case_when(
       crop_name == "Sod/Grass Seed" ~ "field crop",
       crop_name == "Other Small Grains" ~ "field_crop",
-      crop_name == "Gourds" ~ "vegetablesp",
+      crop_name == "Gourds" ~ "vegetables",
       crop_name == "Greens" ~ "vegetables",
       crop_name == "Misc Vegs & Fruits" ~ "vegetables",
       crop_name == "Vetch" ~ "field crop",

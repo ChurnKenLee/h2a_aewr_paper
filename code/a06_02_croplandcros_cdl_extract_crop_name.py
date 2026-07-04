@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.10"
 app = marimo.App(width="full")
 
 
@@ -80,7 +80,7 @@ def _(BeautifulSoup, cdl_path, re):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Add crop names to county crop aggregates, Calculate acreage, clean FIPS code, then export
+    Add crop names to county crop aggregates, calculate acreage, clean FIPS code, then export
     """)
     return
 
@@ -130,6 +130,12 @@ def _(cdl_pixel, crop_code_keys, pl):
 def _(INTERMEDIATE, county_crop):
     # Save binary
     county_crop.write_parquet(INTERMEDIATE / "croplandcros_county_crop_acres.parquet")
+    return
+
+
+@app.cell
+def _(crop_code_keys):
+    crop_code_keys
     return
 
 

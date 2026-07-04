@@ -61,9 +61,10 @@ def _(INTERMEDIATE, caemp_raw, cainc_raw, pl):
         # pl.col("GeoName") != "United States",
         pl.col("GeoName").is_not_null()
     )
-    caemp_trim = caemp.with_columns(pl.col(caemp_year_cols).name.prefix("y")).drop(
-        pl.col(caemp_year_cols)
-    )
+    caemp_trim = caemp.with_columns(
+        pl.col(caemp_year_cols).name.prefix("y"),
+        pl.col("GeoFIPS").str.strip_chars().str.strip_chars('"').str.zfill(5),
+    ).drop(pl.col(caemp_year_cols))
     caemp_trim.write_parquet(INTERMEDIATE / "bea_CAEMP25N_trim.parquet")
 
     cainc_year_cols = [_c for _c in cainc_raw.columns if _c.startswith("1")] + [
@@ -73,9 +74,10 @@ def _(INTERMEDIATE, caemp_raw, cainc_raw, pl):
         # pl.col("GeoName") != "United States",
         pl.col("GeoName").is_not_null()
     )
-    cainc_trim = cainc.with_columns(pl.col(cainc_year_cols).name.prefix("y")).drop(
-        pl.col(cainc_year_cols)
-    )
+    cainc_trim = cainc.with_columns(
+        pl.col(cainc_year_cols).name.prefix("y"),
+        pl.col("GeoFIPS").str.strip_chars().str.strip_chars('"').str.zfill(5),
+    ).drop(pl.col(cainc_year_cols))
     cainc_trim.write_parquet(INTERMEDIATE / "bea_CAINC45_trim.parquet")
     return caemp, caemp_year_cols
 
@@ -111,6 +113,12 @@ def _(INTERMEDIATE, caemp, caemp_year_cols, employment_long):
     ).rename({"GeoFIPS": "county_fips"})
 
     bea_farm_nonfarm.write_parquet(INTERMEDIATE / "bea_farm_nonfarm_emp.parquet")
+    return (bea_farm_nonfarm,)
+
+
+@app.cell
+def _(bea_farm_nonfarm):
+    bea_farm_nonfarm
     return
 
 

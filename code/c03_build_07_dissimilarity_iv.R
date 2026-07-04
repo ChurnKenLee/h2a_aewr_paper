@@ -8,6 +8,9 @@ library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 library(foreign)
+if (!exists("split_county_map", mode = "function")) {
+  source(path_code("c00_setup.R"))
+}
 
 cdl <- read_parquet(path_int(
   "croplandcros_county_crop_acres.parquet"
@@ -325,6 +328,244 @@ iv_cluster_diagnostics <- bind_rows(cluster_diagnostic_list) %>%
   ) %>%
   ungroup()
 iv_donor_clusters <- bind_rows(donor_cluster_list)
+
+# Map CZ x AEWR-region clusters ----------------------------------------------
+
+iv_cluster_figure_dir <- path_figures("iv_dissimilarity_clusters")
+dir.create(iv_cluster_figure_dir, recursive = TRUE, showWarnings = FALSE)
+
+aewr_region_labels <- county_df %>%
+  distinct(aewr_region_num, state_abbrev) %>%
+  filter(!is.na(aewr_region_num), !is.na(state_abbrev)) %>%
+  arrange(aewr_region_num, state_abbrev) %>%
+  group_by(aewr_region_num) %>%
+  summarise(
+    aewr_region_states = paste(state_abbrev, collapse = ", "),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    aewr_region_label = paste0(
+      "AEWR Region ",
+      aewr_region_num,
+      " (",
+      aewr_region_states,
+      ")"
+    )
+  )
+
+iv_cluster_levels <- paste0("Cluster ", seq_len(iv_k))
+iv_cluster_base_colors <- c(
+  "#1b9e77",
+  "#d95f02",
+  "#7570b3",
+  "#e7298a",
+  "#66a61e",
+  "#e6ab02"
+)
+if (iv_k > length(iv_cluster_base_colors)) {
+  iv_cluster_base_colors <- grDevices::colorRampPalette(
+    iv_cluster_base_colors
+  )(iv_k)
+}
+iv_cluster_colors <- setNames(
+  iv_cluster_base_colors[seq_len(iv_k)],
+  iv_cluster_levels
+)
+
+county_iv_clusters <- county_df %>%
+  distinct(countyfips, cz_out10, aewr_region_num, cz_aewr_region_fe) %>%
+  # Analysis data use the pre-2015 Shannon County code; the bundled 2020
+  # TIGER shapefile uses the newer Oglala Lakota County code.
+  mutate(countyfips = recode(countyfips, `46113` = "46102")) %>%
+  left_join(iv_clusters, by = c("cz_aewr_region_fe", "aewr_region_num")) %>%
+  left_join(aewr_region_labels, by = "aewr_region_num") %>%
+  mutate(
+    iv_cluster_id = iv_cluster,
+    iv_cluster = factor(
+      if_else(
+        is.na(iv_cluster_id),
+        NA_character_,
+        paste0("Cluster ", iv_cluster_id)
+      ),
+      levels = iv_cluster_levels
+    ),
+    aewr_region_label = factor(
+      aewr_region_label,
+      levels = aewr_region_labels$aewr_region_label
+    )
+  )
+
+stopifnot(all(!is.na(county_iv_clusters$iv_cluster_id)))
+
+county_shape_zip <- path_raw("county_shapefile", "tl_2020_us_county.zip")
+unzip(county_shape_zip, exdir = tempdir())
+county_map_iv_clusters <- sf::st_read(
+  file.path(tempdir(), "tl_2020_us_county.shp"),
+  quiet = TRUE
+) %>%
+  mutate(
+    statefip = split_fips2(STATEFP),
+    countyfips = split_countyfips(STATEFP, COUNTYFP)
+  ) %>%
+  filter(
+    as.integer(statefip) <= 56,
+    !statefip %in% c("02", "15")
+  ) %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(5070) %>%
+  left_join(county_iv_clusters, by = "countyfips") %>%
+  filter(!is.na(aewr_region_num))
+
+cz_aewr_cluster_boundaries <- county_map_iv_clusters %>%
+  group_by(cz_aewr_region_fe, aewr_region_num, aewr_region_label) %>%
+  summarise(geometry = sf::st_union(geometry), .groups = "drop")
+
+aewr_region_boundaries <- county_map_iv_clusters %>%
+  group_by(aewr_region_num, aewr_region_label) %>%
+  summarise(geometry = sf::st_union(geometry), .groups = "drop")
+
+iv_cluster_map_theme <- theme_void(base_size = 10) +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 9),
+    plot.title = element_text(face = "bold", hjust = 0),
+    plot.subtitle = element_text(hjust = 0),
+    plot.caption = element_text(size = 8, hjust = 0),
+    plot.margin = margin(8, 8, 8, 8),
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    legend.background = element_rect(fill = "white", color = NA)
+  )
+
+iv_cluster_map_all <- ggplot() +
+  geom_sf(
+    data = county_map_iv_clusters,
+    aes(fill = iv_cluster),
+    color = scales::alpha("white", 0.35),
+    linewidth = 0.03
+  ) +
+  geom_sf(
+    data = cz_aewr_cluster_boundaries,
+    fill = NA,
+    color = scales::alpha("grey20", 0.65),
+    linewidth = 0.12
+  ) +
+  geom_sf(
+    data = aewr_region_boundaries,
+    fill = NA,
+    color = "white",
+    linewidth = 1
+  ) +
+  geom_sf(
+    data = aewr_region_boundaries,
+    fill = NA,
+    color = "#5e3c99",
+    linewidth = 0.45
+  ) +
+  scale_fill_manual(
+    values = iv_cluster_colors,
+    drop = FALSE,
+    name = "IV cluster"
+  ) +
+  coord_sf(datum = NA) +
+  labs(
+    title = "Dissimilarity IV Clusters within AEWR Regions",
+    subtitle = paste0(
+      "County shading shows each CZ x AEWR-region unit's cluster, k = ",
+      iv_k,
+      "; purple outlines are AEWR regions and grey outlines are CZ-region units."
+    ),
+    x = NULL,
+    y = NULL
+  ) +
+  iv_cluster_map_theme
+
+ggsave(
+  filename = path_figures(
+    "iv_dissimilarity_clusters",
+    "iv_dissimilarity_clusters_all_aewr_regions.png"
+  ),
+  iv_cluster_map_all,
+  width = 12,
+  height = 8,
+  dpi = 150,
+  device = "png",
+  bg = "white"
+)
+
+for (r in sort(unique(county_map_iv_clusters$aewr_region_num))) {
+  region_map_data <- county_map_iv_clusters %>%
+    filter(aewr_region_num == r)
+  region_cz_boundaries <- cz_aewr_cluster_boundaries %>%
+    filter(aewr_region_num == r)
+  region_boundary <- aewr_region_boundaries %>%
+    filter(aewr_region_num == r)
+
+  region_label <- as.character(unique(region_map_data$aewr_region_label))
+  region_bbox <- sf::st_bbox(region_map_data)
+  region_aspect <- as.numeric(
+    (region_bbox$ymax - region_bbox$ymin) /
+      (region_bbox$xmax - region_bbox$xmin)
+  )
+  save_width <- if (region_aspect > 1.15) 6.5 else 8.5
+  save_height <- min(max(save_width * region_aspect + 1.2, 4.8), 9)
+
+  iv_cluster_map_region <- ggplot() +
+    geom_sf(
+      data = region_map_data,
+      aes(fill = iv_cluster),
+      color = scales::alpha("white", 0.45),
+      linewidth = 0.06
+    ) +
+    geom_sf(
+      data = region_cz_boundaries,
+      fill = NA,
+      color = scales::alpha("grey15", 0.75),
+      linewidth = 0.2
+    ) +
+    geom_sf(
+      data = region_boundary,
+      fill = NA,
+      color = "black",
+      linewidth = 0.5
+    ) +
+    scale_fill_manual(
+      values = iv_cluster_colors,
+      drop = FALSE,
+      name = "IV cluster"
+    ) +
+    coord_sf(datum = NA) +
+    labs(
+      title = region_label,
+      subtitle = paste0(
+        "CZ x AEWR-region dissimilarity clusters, k = ",
+        iv_k
+      ),
+      x = NULL,
+      y = NULL
+    ) +
+    iv_cluster_map_theme
+
+  ggsave(
+    filename = path_figures(
+      "iv_dissimilarity_clusters",
+      paste0(
+        "iv_dissimilarity_clusters_aewr_region_",
+        str_pad(r, width = 2, side = "left", pad = "0"),
+        ".png"
+      )
+    ),
+    iv_cluster_map_region,
+    width = save_width,
+    height = save_height,
+    dpi = 150,
+    device = "png",
+    bg = "white"
+  )
+}
+
+cat("Saved IV cluster maps to", iv_cluster_figure_dir, "\n")
 
 # Donor wage instrument --------------------------------------------------------
 

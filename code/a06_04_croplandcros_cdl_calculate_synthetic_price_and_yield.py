@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.10"
 app = marimo.App(width="full")
 
 
@@ -134,7 +134,7 @@ def _(binary_path, df_results, nass_obs_selection):
             "cdl_name",
         ]
     )
-    nass_cdl_xwalk.write_parquet(binary_path / "nass_cdl_crosswalk.parquet")
+    nass_cdl_xwalk.write_parquet(binary_path / "cdl_nass_xwalk.parquet")
     return (nass_cdl_xwalk,)
 
 

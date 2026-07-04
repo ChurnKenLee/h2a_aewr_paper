@@ -163,70 +163,27 @@ h2a_data_ts <- h2a_data_ts %>%
 
 write_parquet(h2a_data_ts, path_processed("h2a_data_ts.parquet"))
 
-## Cropland Crocs Data Layer (CDL) -------------------------------------------
+## CroplandCROS Data Layer (CDL) -------------------------------------------
 
-cdl_codes <- read_csv(
-  file = path_raw("croplandcros_cdl", "croplandcros_cdl_crop_category.csv")
-)
+cdl_codes <- read_parquet(path_int("cdl_crop_type.parquet")) %>% 
+  select(cdl_code, crop_type_label) %>% 
+  rename(crop_code = cdl_code)
 
 cdl_data <- read_parquet(path_int("croplandcros_county_crop_acres.parquet"))
-head(cdl_data)
-# need to put this in a wider format
-
-head(cdl_codes)
-
-cdl_data <- merge(
-  x = cdl_data,
-  y = cdl_codes,
-  by = "crop_name",
-  all.x = T,
-  all.y = F
-)
-
-head(cdl_data)
+cdl_data <- cdl_data %>% 
+  left_join(cdl_codes, by=c("crop_code"))
 
 cdl_data_collapse <- cdl_data %>%
-  group_by(crop_type, year, fips) %>%
+  group_by(crop_type_label, year, fips) %>%
   summarise(
     acres = sum(acres, na.rm = T),
     crop_count = n()
-  )
-
-head(cdl_data_collapse)
-
-cdl_data_collapse <- cdl_data_collapse %>%
-  pivot_wider(
-    id_cols = c("fips", "year"),
-    names_from = "crop_type",
-    values_from = c("acres", "crop_count")
-  )
-
-head(cdl_data_collapse)
-
-cdl_data_collapse[is.na(cdl_data_collapse)] <- 0 # NAs are zeros
+  ) %>% 
+  ungroup()
 
 cdl_data_collapse <- cdl_data_collapse %>%
   ungroup() %>%
   mutate(countyfips = split_fips5(fips)) %>%
   dplyr::select(-fips)
 
-write_parquet(cdl_data_collapse, path_int("cdl_cropshares.parquet"))
-
-## NAWSPAD ---------------------------------------------
-# state level data
-nawspad_data <- read_parquet(
-  path_int("nawspad.parquet"),
-  stringsAsFactors = F
-)
-
-nawspad_data %>%
-  group_by(crop_type) %>%
-  tally()
-
-## OEWS ------------------------------------------------
-# wages
-oews_agg_data <- read_parquet(
-  file = path_int("oews_county_aggregated.parquet"),
-  stringsAsFactors = F
-)
-
+write_parquet(cdl_data_collapse, path_int("croplandcros_county_crop_type_acres.parquet"))

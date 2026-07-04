@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.10"
 app = marimo.App(width="full", auto_download=["ipynb"])
 
 
@@ -414,6 +414,11 @@ def _(con_ro, tmp_dir_handle):
     con_ro.close()
     # This deletes the temporary file and the folder
     tmp_dir_handle.cleanup()
+    return
+
+
+@app.cell
+def _():
     return
 
 
