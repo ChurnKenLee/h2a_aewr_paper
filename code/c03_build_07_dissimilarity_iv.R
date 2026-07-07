@@ -13,17 +13,10 @@ if (!exists("split_county_map", mode = "function")) {
 }
 
 cdl <- read_parquet(path_int(
-  "croplandcros_county_crop_acres.parquet"
-)) %>%
-  clean_names()
-
-cdl_crop_names <- read_csv(path_raw(
-  "croplandcros_cdl",
-  "croplandcros_cdl_crop_category.csv"
+  "croplandcros_county_crop_type_acres.parquet"
 )) %>%
   clean_names() %>%
-  filter(!is.na(crop_type)) %>%
-  distinct(crop_name)
+  filter(!is.na(crop_type_label), crop_type_label != "non-crop")
 
 climate <- read_parquet(path_int(
   "county_h2a_prediction_climate_basis_annual.parquet"
@@ -50,20 +43,36 @@ qcew <- read_parquet(path_int(
 )) %>%
   clean_names()
 
-# Fixed 2008-2011 county primitives ------------------------------------------
+fls_county_weight <- read_parquet(path_int(
+  "fls_county_weight.parquet"
+)) %>%
+  clean_names() %>%
+  transmute(
+    county_ansi = countyfips,
+    year = as.integer(year),
+    fls_county_weight = as.numeric(fls_county_weight)
+  )
+
+weighted_mean_or_na <- function(x, w) {
+  keep <- !is.na(x) & !is.na(w) & w > 0
+  if (!any(keep)) {
+    return(NA_real_)
+  }
+  sum(x[keep] * w[keep]) / sum(w[keep])
+}
+
+# Fixed 2008-2011 county primitives
 
 crop_names <- cdl %>%
-  semi_join(cdl_crop_names, by = "crop_name") %>%
-  distinct(crop_name) %>%
-  mutate(crop_var = paste0("share_cdl_", make_clean_names(crop_name)))
+  distinct(crop_type_label) %>%
+  mutate(crop_var = paste0("share_cdl_", make_clean_names(crop_type_label)))
 
 crop_features <- cdl %>%
-  semi_join(cdl_crop_names, by = "crop_name") %>%
   filter(year >= 2008, year <= 2011) %>%
   mutate(
-    county_ansi = fips
+    county_ansi = countyfips
   ) %>%
-  left_join(crop_names, by = "crop_name") %>%
+  left_join(crop_names, by = "crop_type_label") %>%
   group_by(county_ansi, year, crop_var) %>%
   summarise(acres = sum(acres, na.rm = TRUE), .groups = "drop") %>%
   group_by(county_ansi, year) %>%
@@ -115,6 +124,10 @@ soil_cont_features <- soil %>%
     .groups = "drop"
   )
 
+# This constructs a set of dataframes inside the list soil_cat_vars
+# Each dataframe contains a categorical variable
+# This is needed because each categorical variable can take multiple values
+# Each column is the share of a particular value within the county
 soil_cat_list <- list()
 for (v in soil_cat_vars) {
   soil_value <- soil[[v]]
@@ -571,16 +584,17 @@ cat("Saved IV cluster maps to", iv_cluster_figure_dir, "\n")
 
 county_year_units <- county_df %>%
   mutate(county_ansi = countyfips) %>%
-  distinct(
+  select(
     county_ansi,
     state_fips_code = statefips,
     year,
     cz_aewr_region_fe,
     aewr_region_num,
     emp_farm
-  )
+  ) %>%
+  distinct(county_ansi, year, .keep_all = TRUE)
 
-unit_oews_wages <- oews %>%
+county_oews_wages <- oews %>%
   filter(
     occ_code == "AEWR",
     !is.na(oews_mean_hourly_wage),
@@ -593,9 +607,26 @@ unit_oews_wages <- oews %>%
     )
   ) %>%
   inner_join(county_year_units, by = c("county_ansi", "year")) %>%
+  left_join(fls_county_weight, by = c("county_ansi", "year"))
+
+unit_oews_wages <- county_oews_wages %>%
   group_by(cz_aewr_region_fe, aewr_region_num, year) %>%
   summarise(
     ag_wage = weighted.mean(oews_mean_hourly_wage, oews_tot_emp, na.rm = TRUE),
+    ag_wage_fls_weighted = weighted_mean_or_na(
+      oews_mean_hourly_wage,
+      fls_county_weight
+    ),
+    unit_fls_weight = sum(
+      if_else(
+        !is.na(oews_mean_hourly_wage) &
+          !is.na(fls_county_weight) &
+          fls_county_weight > 0,
+        fls_county_weight,
+        0
+      ),
+      na.rm = TRUE
+    ),
     .groups = "drop"
   ) %>%
   # In outcome year t, use the proxy change from t - 2 to t - 1.
@@ -604,23 +635,40 @@ unit_oews_wages <- oews %>%
   mutate(
     ag_wage_l1 = lag(ag_wage),
     ag_wage_l2 = lag(ag_wage, 2),
+    ag_wage_fls_weighted_l1 = lag(ag_wage_fls_weighted),
+    ag_wage_fls_weighted_l2 = lag(ag_wage_fls_weighted, 2),
+    unit_fls_weight_l1 = lag(unit_fls_weight),
     year_l1 = lag(year),
     year_l2 = lag(year, 2),
     dln_ag_wage_l1 = if_else(
       year_l1 == year - 1 & year_l2 == year - 2,
       log(ag_wage_l1) - log(ag_wage_l2),
       NA_real_
+    ),
+    dln_ag_wage_fls_weighted_l1 = if_else(
+      year_l1 == year - 1 & year_l2 == year - 2,
+      log(ag_wage_fls_weighted_l1) - log(ag_wage_fls_weighted_l2),
+      NA_real_
     )
   ) %>%
-  select(-ag_wage_l2, -year_l1, -year_l2) %>%
+  select(-ag_wage_l2, -ag_wage_fls_weighted_l2, -year_l1, -year_l2) %>%
   ungroup() %>%
   inner_join(iv_clusters, by = c("cz_aewr_region_fe", "aewr_region_num"))
 
 unit_qcew_wages <- county_year_units %>%
   filter(!is.na(emp_farm), emp_farm > 0) %>%
+  left_join(fls_county_weight, by = c("county_ansi", "year")) %>%
   group_by(cz_aewr_region_fe, aewr_region_num, state_fips_code, year) %>%
   summarise(
     unit_state_emp_farm = sum(emp_farm, na.rm = TRUE),
+    unit_state_fls_weight = sum(
+      if_else(
+        !is.na(fls_county_weight) & fls_county_weight > 0,
+        fls_county_weight,
+        0
+      ),
+      na.rm = TRUE
+    ),
     .groups = "drop"
   ) %>%
   inner_join(
@@ -643,6 +691,11 @@ unit_qcew_wages <- county_year_units %>%
       unit_state_emp_farm,
       na.rm = TRUE
     ),
+    ag_wage_fls_weighted = weighted_mean_or_na(
+      qcew_ag_mean_hourly_wage_40h,
+      unit_state_fls_weight
+    ),
+    unit_fls_weight = sum(unit_state_fls_weight, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   # In outcome year t, use the proxy change from t - 2 to t - 1.
@@ -651,15 +704,23 @@ unit_qcew_wages <- county_year_units %>%
   mutate(
     ag_wage_l1 = lag(ag_wage),
     ag_wage_l2 = lag(ag_wage, 2),
+    ag_wage_fls_weighted_l1 = lag(ag_wage_fls_weighted),
+    ag_wage_fls_weighted_l2 = lag(ag_wage_fls_weighted, 2),
+    unit_fls_weight_l1 = lag(unit_fls_weight),
     year_l1 = lag(year),
     year_l2 = lag(year, 2),
     dln_ag_wage_l1 = if_else(
       year_l1 == year - 1 & year_l2 == year - 2,
       log(ag_wage_l1) - log(ag_wage_l2),
       NA_real_
+    ),
+    dln_ag_wage_fls_weighted_l1 = if_else(
+      year_l1 == year - 1 & year_l2 == year - 2,
+      log(ag_wage_fls_weighted_l1) - log(ag_wage_fls_weighted_l2),
+      NA_real_
     )
   ) %>%
-  select(-ag_wage_l2, -year_l1, -year_l2) %>%
+  select(-ag_wage_l2, -ag_wage_fls_weighted_l2, -year_l1, -year_l2) %>%
   ungroup() %>%
   inner_join(iv_clusters, by = c("cz_aewr_region_fe", "aewr_region_num"))
 
@@ -678,7 +739,10 @@ iv_oews <- unit_oews_wages %>%
         year,
         donor_cluster = iv_cluster,
         donor_ag_wage_l1 = ag_wage_l1,
-        donor_dln_ag_wage_l1 = dln_ag_wage_l1
+        donor_dln_ag_wage_l1 = dln_ag_wage_l1,
+        donor_ag_wage_fls_weighted_l1 = ag_wage_fls_weighted_l1,
+        donor_dln_ag_wage_fls_weighted_l1 = dln_ag_wage_fls_weighted_l1,
+        donor_fls_weight_l1 = unit_fls_weight_l1
       ),
     by = c("aewr_region_num", "year")
   ) %>%
@@ -690,6 +754,18 @@ iv_oews <- unit_oews_wages %>%
   summarise(
     z_oews_agwage_l1 = mean(donor_ag_wage_l1, na.rm = TRUE),
     z_oews_dln_agwage_l1 = mean(donor_dln_ag_wage_l1, na.rm = TRUE),
+    z_oews_fls_agwage_l1 = weighted_mean_or_na(
+      donor_ag_wage_fls_weighted_l1,
+      donor_fls_weight_l1
+    ),
+    z_oews_fls_dln_agwage_l1 = weighted_mean_or_na(
+      donor_dln_ag_wage_fls_weighted_l1,
+      donor_fls_weight_l1
+    ),
+    oews_iv_donor_fls_weight = sum(
+      donor_fls_weight_l1,
+      na.rm = TRUE
+    ),
     oews_iv_donor_units = n_distinct(donor_unit),
     oews_iv_donor_clusters = n_distinct(donor_cluster),
     oews_iv_donor_cluster_distance = mean(donor_cluster_distance),
@@ -714,7 +790,10 @@ iv_qcew <- unit_qcew_wages %>%
         year,
         donor_cluster = iv_cluster,
         donor_ag_wage_l1 = ag_wage_l1,
-        donor_dln_ag_wage_l1 = dln_ag_wage_l1
+        donor_dln_ag_wage_l1 = dln_ag_wage_l1,
+        donor_ag_wage_fls_weighted_l1 = ag_wage_fls_weighted_l1,
+        donor_dln_ag_wage_fls_weighted_l1 = dln_ag_wage_fls_weighted_l1,
+        donor_fls_weight_l1 = unit_fls_weight_l1
       ),
     by = c("aewr_region_num", "year")
   ) %>%
@@ -726,6 +805,18 @@ iv_qcew <- unit_qcew_wages %>%
   summarise(
     z_qcew_agwage_l1 = mean(donor_ag_wage_l1, na.rm = TRUE),
     z_qcew_dln_agwage_l1 = mean(donor_dln_ag_wage_l1, na.rm = TRUE),
+    z_qcew_fls_agwage_l1 = weighted_mean_or_na(
+      donor_ag_wage_fls_weighted_l1,
+      donor_fls_weight_l1
+    ),
+    z_qcew_fls_dln_agwage_l1 = weighted_mean_or_na(
+      donor_dln_ag_wage_fls_weighted_l1,
+      donor_fls_weight_l1
+    ),
+    qcew_iv_donor_fls_weight = sum(
+      donor_fls_weight_l1,
+      na.rm = TRUE
+    ),
     qcew_iv_donor_units = n_distinct(donor_unit),
     qcew_iv_donor_clusters = n_distinct(donor_cluster),
     qcew_iv_donor_cluster_distance = mean(donor_cluster_distance),
@@ -749,6 +840,11 @@ write_parquet(
   path_int("county_df_analysis_year_iv.parquet")
 )
 
+write_parquet(
+  county_df_iv,
+  path_processed("county_df_analysis_year_iv.parquet")
+)
+
 cat(
   "county_df_analysis_year_iv:",
   nrow(county_df_iv),
@@ -767,6 +863,16 @@ cat(
   "\n"
 )
 cat(
+  "Nonmissing FLS-weighted OEWS level IV rows:",
+  sum(!is.na(county_df_iv$z_oews_fls_agwage_l1)),
+  "\n"
+)
+cat(
+  "Nonmissing FLS-weighted OEWS change IV rows:",
+  sum(!is.na(county_df_iv$z_oews_fls_dln_agwage_l1)),
+  "\n"
+)
+cat(
   "Nonmissing QCEW level IV rows:",
   sum(!is.na(county_df_iv$z_qcew_agwage_l1)),
   "\n"
@@ -774,5 +880,15 @@ cat(
 cat(
   "Nonmissing QCEW change IV rows:",
   sum(!is.na(county_df_iv$z_qcew_dln_agwage_l1)),
+  "\n"
+)
+cat(
+  "Nonmissing FLS-weighted QCEW level IV rows:",
+  sum(!is.na(county_df_iv$z_qcew_fls_agwage_l1)),
+  "\n"
+)
+cat(
+  "Nonmissing FLS-weighted QCEW change IV rows:",
+  sum(!is.na(county_df_iv$z_qcew_fls_dln_agwage_l1)),
   "\n"
 )

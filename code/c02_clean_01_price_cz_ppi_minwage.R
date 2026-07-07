@@ -9,8 +9,6 @@ if (!exists("path_code", mode = "function")) {
 if (!exists("split_fips5", mode = "function")) {
   source(path_code("c00_setup.R"))
 }
-
-ensure_project_dirs()
 library(tidyverse)
 library(arrow)
 library(tidylog, warn.conflicts = FALSE)

@@ -11,7 +11,6 @@ if (!exists("split_fips5", mode = "function")) {
 }
 
 ## Run standalone or via H2A Master.R
-ensure_project_dirs()
 library(tidyverse)
 library(purrr)
 library(fredr)

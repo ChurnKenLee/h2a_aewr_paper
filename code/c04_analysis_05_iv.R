@@ -8,19 +8,9 @@ library(tidyverse)
 library(janitor)
 library(fixest)
 
-county_iv_path <- path_processed("county_df_analysis_year_iv.parquet")
-if (!file.exists(county_iv_path)) {
-  county_iv_path <- path_processed("county_df_analysis_year_iv_me.parquet")
-}
-if (!file.exists(county_iv_path)) {
-  stop(
-    "Missing final IV analysis parquet: ",
-    county_iv_path,
-    ". Run code/c03_build_06_dissimilarity_iv.R first."
-  )
-}
-
-county_df_iv <- read_parquet(county_iv_path) %>%
+county_df_iv <- read_parquet(path_processed(
+  "county_df_analysis_year_iv.parquet"
+)) %>%
   clean_names() %>%
   mutate(
     d_aewr = aewr - aewr_l1,
@@ -28,12 +18,15 @@ county_df_iv <- read_parquet(county_iv_path) %>%
   )
 
 unit_iv_changes <- county_df_iv %>%
-  distinct(
+  select(
     cz_aewr_region_fe,
     year,
     z_oews_agwage_l1,
-    z_qcew_agwage_l1
+    z_oews_fls_agwage_l1,
+    z_qcew_agwage_l1,
+    z_qcew_fls_agwage_l1
   ) %>%
+  distinct(cz_aewr_region_fe, year, .keep_all = TRUE) %>%
   arrange(cz_aewr_region_fe, year) %>%
   group_by(cz_aewr_region_fe) %>%
   mutate(
@@ -43,9 +36,19 @@ unit_iv_changes <- county_df_iv %>%
       z_oews_agwage_l1 - lag(z_oews_agwage_l1),
       NA_real_
     ),
+    z_oews_fls_d_agwage_l1 = if_else(
+      year_l1 == year - 1,
+      z_oews_fls_agwage_l1 - lag(z_oews_fls_agwage_l1),
+      NA_real_
+    ),
     z_qcew_d_agwage_l1 = if_else(
       year_l1 == year - 1,
       z_qcew_agwage_l1 - lag(z_qcew_agwage_l1),
+      NA_real_
+    ),
+    z_qcew_fls_d_agwage_l1 = if_else(
+      year_l1 == year - 1,
+      z_qcew_fls_agwage_l1 - lag(z_qcew_fls_agwage_l1),
       NA_real_
     )
   ) %>%
@@ -54,25 +57,41 @@ unit_iv_changes <- county_df_iv %>%
     cz_aewr_region_fe,
     year,
     z_oews_d_agwage_l1,
-    z_qcew_d_agwage_l1
+    z_oews_fls_d_agwage_l1,
+    z_qcew_d_agwage_l1,
+    z_qcew_fls_d_agwage_l1
   )
 
 county_df_iv <- county_df_iv %>%
   left_join(unit_iv_changes, by = c("cz_aewr_region_fe", "year"))
 
 fs_specs <- tribble(
-  ~model_name                     , ~source , ~outcome_type    , ~outcome     , ~instrument          , ~fe_spec                , ~fe_terms                     ,
-  "oews_change_region_year"       , "OEWS"  , "nominal change" , "d_aewr"     , "z_oews_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "qcew_change_region_year"       , "QCEW"  , "nominal change" , "d_aewr"     , "z_qcew_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "oews_change_czregion_year"     , "OEWS"  , "nominal change" , "d_aewr"     , "z_oews_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "qcew_change_czregion_year"     , "QCEW"  , "nominal change" , "d_aewr"     , "z_qcew_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "oews_change_ppi_region_year"   , "OEWS"  , "real change"    , "d_aewr_ppi" , "z_oews_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "qcew_change_ppi_region_year"   , "QCEW"  , "real change"    , "d_aewr_ppi" , "z_qcew_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "oews_change_ppi_czregion_year" , "OEWS"  , "real change"    , "d_aewr_ppi" , "z_oews_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "qcew_change_ppi_czregion_year" , "QCEW"  , "real change"    , "d_aewr_ppi" , "z_qcew_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe"
+  ~model_name                         , ~source           , ~outcome_type    , ~outcome     , ~instrument              , ~fe_spec                , ~fe_terms                     ,
+  "oews_change_region_year"           , "OEWS"            , "nominal change" , "d_aewr"     , "z_oews_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "oews_fls_change_region_year"       , "OEWS FLS weight" , "nominal change" , "d_aewr"     , "z_oews_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "qcew_change_region_year"           , "QCEW"            , "nominal change" , "d_aewr"     , "z_qcew_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "qcew_fls_change_region_year"       , "QCEW FLS weight" , "nominal change" , "d_aewr"     , "z_qcew_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "oews_change_czregion_year"         , "OEWS"            , "nominal change" , "d_aewr"     , "z_oews_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "oews_fls_change_czregion_year"     , "OEWS FLS weight" , "nominal change" , "d_aewr"     , "z_oews_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "qcew_change_czregion_year"         , "QCEW"            , "nominal change" , "d_aewr"     , "z_qcew_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "qcew_fls_change_czregion_year"     , "QCEW FLS weight" , "nominal change" , "d_aewr"     , "z_qcew_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "oews_change_ppi_region_year"       , "OEWS"            , "real change"    , "d_aewr_ppi" , "z_oews_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "oews_fls_change_ppi_region_year"   , "OEWS FLS weight" , "real change"    , "d_aewr_ppi" , "z_oews_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "qcew_change_ppi_region_year"       , "QCEW"            , "real change"    , "d_aewr_ppi" , "z_qcew_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "qcew_fls_change_ppi_region_year"   , "QCEW FLS weight" , "real change"    , "d_aewr_ppi" , "z_qcew_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
+  "oews_change_ppi_czregion_year"     , "OEWS"            , "real change"    , "d_aewr_ppi" , "z_oews_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "oews_fls_change_ppi_czregion_year" , "OEWS FLS weight" , "real change"    , "d_aewr_ppi" , "z_oews_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "qcew_change_ppi_czregion_year"     , "QCEW"            , "real change"    , "d_aewr_ppi" , "z_qcew_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
+  "qcew_fls_change_ppi_czregion_year" , "QCEW FLS weight" , "real change"    , "d_aewr_ppi" , "z_qcew_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe"
 )
 
-cat("First-stage input:", county_iv_path, "\n\n")
+cat(
+  "First-stage input:",
+  path_processed(
+    "county_df_analysis_year_iv.parquet"
+  ),
+  "\n\n"
+)
 cat("Instrument timing:\n")
 cat("Outcome d_aewr in year t: AEWR_t - AEWR_{t-1}\n")
 cat("Outcome d_aewr_ppi in year t: AEWR_PPI_t - AEWR_PPI_{t-1}\n")
@@ -179,5 +198,3 @@ print(
     fitstat = ~ n + r2 + wr2
   )
 )
-
-cat("\nWrote:", path_tables("iv_first_stage_strength.csv"), "\n")

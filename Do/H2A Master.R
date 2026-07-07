@@ -9,7 +9,6 @@ rm(list = ls())
 if (!exists("path_code", mode = "function")) {
   source(file.path("code", "paths.R"))
 }
-ensure_project_dirs()
 
 folder_dir <- as_dir(path_root())
 folder_do <- as_dir(path_do())

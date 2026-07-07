@@ -13,7 +13,6 @@ if (!exists("split_fips5", mode = "function")) {
 ## H2A Build Dataset
 ## Phil Hoxie
 ## 1/31/24
-ensure_project_dirs()
 library(tidyverse)
 library(arrow)
 library(tidylog, warn.conflicts = FALSE)

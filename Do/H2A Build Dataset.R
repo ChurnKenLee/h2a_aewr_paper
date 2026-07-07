@@ -5,7 +5,6 @@ rm(list = ls())
 if (!exists("path_code", mode = "function")) {
   source(file.path("code", "paths.R"))
 }
-ensure_project_dirs()
 library(tidyverse)
 library(arrow)
 library(tidylog, warn.conflicts = FALSE)
@@ -32,11 +31,15 @@ fips_codes <- read.csv(
 )
 h2a_data <- read_parquet(path_int("h2a_data_year.parquet"))
 h2a_predict <- read_parquet(path_int("h2a_predict.parquet"))
-census_of_agriculture_cropland <- read_parquet(path_int("census_ag_cropland_year.parquet"))
+census_of_agriculture_cropland <- read_parquet(path_int(
+  "census_ag_cropland_year.parquet"
+))
 
 census_pop_ests <- read_parquet(path_int("census_pop_ests_year.parquet"))
 
-census_of_agriculture_cropland_base <- read_parquet(path_int("census_ag_cropland_2007_year.parquet"))
+census_of_agriculture_cropland_base <- read_parquet(path_int(
+  "census_ag_cropland_2007_year.parquet"
+))
 
 state_min <- read_parquet(path_int("state_real_minwages.parquet"))
 

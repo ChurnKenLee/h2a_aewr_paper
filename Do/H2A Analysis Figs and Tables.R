@@ -5,7 +5,6 @@ rm(list = ls())
 if (!exists("path_code", mode = "function")) {
   source(file.path("code", "paths.R"))
 }
-ensure_project_dirs()
 
 library(arrow)
 library(sf)
@@ -1320,8 +1319,8 @@ dd_1 <- feols(
 )
 
 dd_1$X_demeaned
-xbar = dd_1$X_demeaned
-ybar = dd_1$y_demeaned
+xbar <- dd_1$X_demeaned
+ybar <- dd_1$y_demeaned
 ybar
 
 samp_base_dd1 <- samp_base %>%

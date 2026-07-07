@@ -85,21 +85,6 @@ path_logs <- function(...) file.path(ROOT, "outputs", "logs", ...)
 library(dotenv)
 dotenv::load_dot_env(file = path_root(".env"))
 
-ensure_project_dirs <- function() {
-  dirs <- c(
-    path_raw(),
-    path_int(),
-    path_processed(),
-    path_cache(),
-    path_outputs(),
-    path_figures(),
-    path_tables(),
-    path_logs()
-  )
-
-  invisible(lapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE))
-}
-
 as_dir <- function(path) {
   paste0(normalizePath(path, winslash = "/", mustWork = FALSE), "/")
 }
