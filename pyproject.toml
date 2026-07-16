@@ -73,6 +73,13 @@ dependencies = [
     "liteparse>=2.0.8",
 ]
 
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.4",
+    "debugpy>=1.8.20",
+    "ruff>=0.15.12",
+]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
@@ -82,7 +89,7 @@ where = ["src"]
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
+url = "https://download.pytorch.org/whl/cu132"
 explicit = true
 
 [tool.uv.sources]
@@ -91,16 +98,4 @@ torch = [
 ]
 torchvision = [
   { index = "pytorch-cu130", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-
-[tool.uv.workspace]
-members = [
-    "outputs",
-]
-
-[dependency-groups]
-dev = [
-    "basedpyright>=1.39.4",
-    "debugpy>=1.8.20",
-    "ruff>=0.15.12",
 ]

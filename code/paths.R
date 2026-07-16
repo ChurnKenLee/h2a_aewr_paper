@@ -1,6 +1,8 @@
 # code/paths.R
 
-PROJECT_MARKERS <- c(".env", ".here", "pyproject.toml")
+# `.here` and this file identify the project independently of optional tooling
+# configuration (for example, `pyproject.toml`).
+PROJECT_MARKERS <- c(".here")
 
 is_project_root <- function(path) {
   all(file.exists(file.path(path, PROJECT_MARKERS))) &&

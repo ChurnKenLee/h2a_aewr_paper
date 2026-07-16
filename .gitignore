@@ -1,55 +1,4 @@
-# ==========================================================================
-# SYSTEM FILES
-# ==========================================================================
-.DS_Store
-desktop.ini
-
-# DO NOT ignore flakes
-!flake.nix
-!nix/
-
-# ==========================================================================
-# PYTHON (uv venv)
-# ==========================================================================
-.venv
-**/__pycache__/
-*.py[cod]
-*$py.class
-
-# API keys (IMPORTANT!)
-.env
-
-# DO NOT ignore uv.lock or pyproject.toml
-!uv.lock
-!pyproject.toml
-
-# ==========================================================================
-# MARIMO
-# ==========================================================================
-**/__marimo__/
-
-# ==========================================================================
-# Lake for lean4
-# ==========================================================================
-**/.lake/
-
-# ==========================================================================
-# R (RStudio)
-# ==========================================================================
-.Rproj.user/
-.Rhistory
-.RData
-.Ruserdata
-
-# ==========================================================================
-# POSITRON / VS CODE
-# ==========================================================================
-.positron/
-
-# ==========================================================================
-# PROJECT SPECIFIC
-# ==========================================================================
-
+# Local folders
 # Data
 data/
 *.dta
@@ -78,10 +27,44 @@ draft/*
 !draft/*.pdf
 !draft/*.bib
 
-# Local environment state
-.devenv/
+# Rebuildable local environments
 .direnv/
+.devenv/
 .venv/
+
+# Secrets (commit a sanitized .env.example when useful)
+.env
+.env.*
+!.env.example
+
+# Python build and editor artifacts
 __pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Marimo execution state
+**/__marimo__/
+
+# R session state
 .Rhistory
 .RData
+.Ruserdata
+.Rproj.user/
+
+# renv keeps its project metadata and lockfile under version control. Its
+# libraries and staging directories are generated locally.
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/sandbox/
+renv/staging/
+
+# Positron state
+.positron/
+
+# Lean build output
+.lake/
