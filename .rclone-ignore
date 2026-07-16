@@ -1,11 +1,11 @@
 # Never sync Git or local machine state
 - /.git/
+- /.devenv/
 - /.direnv/
 - /.Rproj.user/
 - /.venv/
-- /.venv-nixos/
-- /.venv-wsl/
-- /.venv-windows/
+- /renv/library/
+- /renv/staging/
 
 # OS system files
 - desktop.ini

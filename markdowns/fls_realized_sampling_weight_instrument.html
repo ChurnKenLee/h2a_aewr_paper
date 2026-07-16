@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>fls_realized_sampling_weight_instrument</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <script
+  src="/nix/store/q0sid9yh8fsychdiqkisjkgd10sn70i6-mathjax-4.1.3/lib/node_modules/mathjax/tex-chtml.js"
+  type="text/javascript"></script>
+</head>
+<body>
+<h1
+id="recovering-aewr-sampling-composition-shocks-from-the-farm-labor-survey">Recovering
+AEWR Sampling-Composition Shocks from the Farm Labor Survey</h1>
+<h2 id="motivation">1. Motivation</h2>
+<p>The Adverse Effect Wage Rate (AEWR) is based on the USDA National
+Agricultural Statistics Service (NASS) Farm Labor Survey (FLS). The FLS
+is a probability survey rather than a census. Consequently, the wage
+estimate used to set the AEWR depends partly on which farms are
+selected, which farms respond, and the survey weights assigned to the
+usable responses in a given year.</p>
+<p>This creates a potential source of quasi-random variation in the
+AEWR. Even holding fixed the underlying distribution of agricultural
+wages, different realizations of the FLS sample can place different
+effective weight on high- and low-wage portions of an AEWR region. The
+resulting sampling-composition error changes the regional FLS wage and
+therefore the subsequent AEWR.</p>
+<p>The objective is to recover, or approximate, the component of the
+AEWR generated by idiosyncratic year-to-year variation in the realized
+geographic composition of the FLS sample. This is distinct from simply
+constructing weights that predict the AEWR well. The intended estimand
+is the random deviation of realized FLS representation from its expected
+allocation across the constituent parts of an AEWR region.</p>
+<h2 id="fls-sampling-and-estimation">2. FLS Sampling and Estimation</h2>
+<p>The FLS uses a dual-frame design consisting of a list-frame sample
+and an area-frame nonoverlap sample. The list-frame sample is selected
+using a hierarchical stratified design. Strata are defined primarily by
+farms’ peak number of hired workers or calculated value of sales, with
+larger operations selected at higher rates. The area-frame component
+represents farms missing from the list frame.</p>
+<p>Each sampled operation initially receives a weight related to the
+inverse of its probability of selection. Following data collection,
+weights are adjusted for unit and item nonresponse within state-level
+sampling strata. Published wage rates are ratio estimates constructed
+from expanded wage and labor-hour totals. Thus, a farm’s effective
+contribution to the regional wage depends on its selection probability,
+response status, final survey weight, reported employment and hours, and
+wage.</p>
+<p>Counties are not themselves the primary FLS sampling strata.
+Nevertheless, random geographic representation arises because the farms
+selected from each state-size stratum are located in particular
+counties, and because response patterns can differ across the selected
+farms. The realized effective weight placed on a county is therefore an
+aggregation of farm-level sampling and response outcomes.</p>
+<p>Let the effective contribution of county <span
+class="math inline">\(i\)</span> to the FLS wage in AEWR region <span
+class="math inline">\(r\)</span> and year <span
+class="math inline">\(t\)</span> be approximately</p>
+<p><span class="math display">\[
+\omega_{irt}
+\propto
+\sum_{f \in i}
+I_{ft}R_{ft}d_{s(f)t}H_{ft},
+\]</span></p>
+<p>where <span class="math inline">\(I_{ft}\)</span> indicates that farm
+<span class="math inline">\(f\)</span> was selected, <span
+class="math inline">\(R_{ft}\)</span> indicates that it supplied a
+usable response, <span class="math inline">\(d_{s(f)t}\)</span> is its
+final expansion and nonresponse weight within sampling stratum <span
+class="math inline">\(s(f)\)</span>, and <span
+class="math inline">\(H_{ft}\)</span> is its reported worker hours.
+After normalization, the county contributions sum to one within an AEWR
+region-year.</p>
+<h2 id="the-sampling-composition-shock">3. The Sampling-Composition
+Shock</h2>
+<p>Let <span class="math inline">\(w_{irt}\)</span> denote the
+population agricultural wage associated with county <span
+class="math inline">\(i\)</span>. A simplified representation of the
+published FLS regional wage is</p>
+<p><span class="math display">\[
+\widehat W^{FLS}_{rt}
+=
+\sum_{i \in r}\omega_{irt}w_{irt}.
+\]</span></p>
+<p>Decompose the realized effective county weight into its expected
+component and a sampling deviation:</p>
+<p><span class="math display">\[
+\omega_{irt}=q_{irt}+u_{irt},
+\]</span></p>
+<p>where <span class="math inline">\(q_{irt}\)</span> is the county’s
+expected contribution to the regional wage estimator and <span
+class="math inline">\(u_{irt}\)</span> is the deviation caused by the
+realized sample and response pattern. Because both sets of weights sum
+to one,</p>
+<p><span class="math display">\[
+\sum_{i \in r}u_{irt}=0.
+\]</span></p>
+<p>The FLS wage can then be written as</p>
+<p><span class="math display">\[
+\widehat W^{FLS}_{rt}
+=
+\sum_{i \in r}q_{irt}w_{irt}
++
+\underbrace{\sum_{i \in r}u_{irt}w_{irt}}_{\eta_{rt}},
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\eta_{rt}
+=
+\sum_{i \in r}u_{irt}w_{irt}
+\]</span></p>
+<p>is the regional sampling-composition shock. A positive value means
+that the realized sample placed unusually high effective weight on
+higher-wage portions of the region; a negative value means that it
+placed unusually high effective weight on lower-wage portions.</p>
+<p>This scalar shock, rather than the complete vector of county weights,
+is the ultimate object of interest for the AEWR design.</p>
+<h2 id="expected-county-contributions">4. Expected County
+Contributions</h2>
+<p>The starting weights are constructed using BEA farm employment. For
+county <span class="math inline">\(i\)</span> in region <span
+class="math inline">\(r\)</span> and year <span
+class="math inline">\(t\)</span>, define</p>
+<p><span class="math display">\[
+q_{irt}
+=
+\frac{E_{it}}{\sum_{j \in r}E_{jt}},
+\]</span></p>
+<p>where <span class="math inline">\(E_{it}\)</span> is BEA farm
+employment.</p>
+<p>These weights should be interpreted as a proxy for expected effective
+contribution to the regional wage estimator, not as the literal expected
+share of questionnaires mailed to the county. The FLS samples farms
+rather than workers and oversamples operations in large-worker or
+high-sales strata. Its wage estimator also weights observations through
+reported worker hours. BEA farm employment is nevertheless a useful
+starting approximation because counties with more farm employment should
+generally make larger contributions to a regional agricultural wage.</p>
+<p>Alternative starting weights can combine BEA employment with
+agricultural land from the Cropland Data Layer. This reflects the FLS’s
+use of both a list frame and an area-frame nonoverlap sample. Such a
+mixture should be treated as a sensitivity specification unless the
+list- and area-frame shares can be recovered directly for each survey
+year.</p>
+<h2 id="entropy-tilting-as-an-inverse-problem">5. Entropy Tilting as an
+Inverse Problem</h2>
+<p>County-level OEWS agricultural wages provide an external proxy for
+<span class="math inline">\(w_{irt}\)</span>. Let <span
+class="math inline">\(x_{it}\)</span> denote the OEWS wage measure
+constructed to resemble the FLS field-and-livestock wage. The proposed
+calibration finds realized county weights that reproduce the published
+FLS wage while departing as little as possible from the BEA prior.</p>
+<p>For each AEWR region-year, solve</p>
+<p><span class="math display">\[
+\min_{\{\omega_{irt}\}}
+\sum_{i \in r}
+\omega_{irt}\log\left(\frac{\omega_{irt}}{q_{irt}}\right)
+\]</span></p>
+<p>subject to</p>
+<p><span class="math display">\[
+\sum_{i \in r}\omega_{irt}=1
+\]</span></p>
+<p>and</p>
+<p><span class="math display">\[
+\sum_{i \in r}\omega_{irt}x_{it}
+=
+\widehat W^{FLS}_{rt}.
+\]</span></p>
+<p>With one wage constraint, the solution is an exponential tilt of the
+prior:</p>
+<p><span class="math display">\[
+\omega_{irt}(\lambda_{rt})
+=
+\frac{
+q_{irt}\exp(\lambda_{rt}x_{it})
+}{
+\sum_{j \in r}q_{jrt}\exp(\lambda_{rt}x_{jt})
+},
+\]</span></p>
+<p>where <span class="math inline">\(\lambda_{rt}\)</span> is chosen so
+that the calibrated OEWS wage equals the FLS target.</p>
+<p>The tilting parameter has a useful interpretation:</p>
+<ul>
+<li><span class="math inline">\(\lambda_{rt}=0\)</span> means that the
+BEA allocation already reproduces the FLS wage.</li>
+<li><span class="math inline">\(\lambda_{rt}&gt;0\)</span> means that
+the FLS estimate behaves as if higher-wage counties received greater
+effective representation than implied by the BEA prior.</li>
+<li><span class="math inline">\(\lambda_{rt}&lt;0\)</span> means that
+the FLS estimate behaves as if lower-wage counties received greater
+effective representation.</li>
+</ul>
+<p>The implied county deviations are</p>
+<p><span class="math display">\[
+\widehat u_{irt}
+=
+\widehat\omega_{irt}-q_{irt}.
+\]</span></p>
+<h2 id="what-entropy-tilting-does-and-does-not-recover">6. What Entropy
+Tilting Does and Does Not Recover</h2>
+<p>One published regional wage supplies only one scalar restriction on a
+vector containing many county weights. The realized county weights are
+therefore not nonparametrically identified. Infinitely many weight
+vectors can reproduce the same FLS wage.</p>
+<p>Entropy tilting selects one of these vectors: the vector closest to
+the BEA prior under a Kullback-Leibler divergence criterion. The
+resulting weights should therefore be described as <strong>AEWR-implied
+geographic calibration weights</strong> or <strong>minimum-divergence
+implied weights</strong>, rather than the actual realized FLS sampling
+weights.</p>
+<p>With exact calibration, the estimated aggregate shock is
+mechanically</p>
+<p><span class="math display">\[
+\widehat\eta_{rt}
+=
+\sum_{i \in r}
+(\widehat\omega_{irt}-q_{irt})x_{it}
+=
+\widehat W^{FLS}_{rt}
+-
+\sum_{i \in r}q_{irt}x_{it}.
+\]</span></p>
+<p>Thus, entropy tilting does not create independent information about
+the aggregate shock. It provides a disciplined method for allocating the
+observed FLS-OEWS discrepancy across counties.</p>
+<p>Exact calibration is feasible only when the FLS target lies within
+the convex hull of the observed county OEWS wages. With a single wage
+constraint, this requires</p>
+<p><span class="math display">\[
+\min_{i \in r}x_{it}
+\leq
+\widehat W^{FLS}_{rt}
+\leq
+\max_{i \in r}x_{it}.
+\]</span></p>
+<p>Cells with only one distinct OEWS wage cannot be tilted. This may
+occur because OEWS wages are observed for geographic reporting areas and
+then assigned to their constituent counties. The effective identifying
+variation may therefore occur across OEWS reporting areas rather than
+across individual counties.</p>
+<h2
+id="separating-sampling-composition-from-wage-concept-differences">7.
+Separating Sampling Composition from Wage-Concept Differences</h2>
+<p>The discrepancy</p>
+<p><span class="math display">\[
+\widehat W^{FLS}_{rt}
+-
+\sum_{i \in r}q_{irt}x_{it}
+\]</span></p>
+<p>need not consist entirely of random sampling composition. More
+generally, it contains</p>
+<p><span class="math display">\[
+\begin{aligned}
+\text{FLS-OEWS discrepancy}
+=\;&amp;
+\text{FLS sampling composition}
+\\
+&amp;+\text{FLS-OEWS population differences}
+\\
+&amp;+\text{occupation and hours differences}
+\\
+&amp;+\text{OEWS geographic measurement error}
+\\
+&amp;+\text{reporting, editing, and nonresponse error}.
+\end{aligned}
+\]</span></p>
+<p>OEWS and the FLS do not measure identical populations. OEWS is
+establishment based and reports wages for detailed occupations within
+OEWS geographic areas. The FLS covers workers directly hired by farms
+and constructs a field-and-livestock wage using its own worker
+categories, employment counts, hours, and expansion weights. Systematic
+differences between these concepts can be absorbed with region effects,
+year effects, and flexible controls, but idiosyncratic differences may
+remain.</p>
+<p>For that reason, the contemporaneous entropy-calibrated weights
+cannot automatically be interpreted as pure sampling shocks.</p>
+<h2 id="avoiding-mechanical-use-of-the-aewr-target">8. Avoiding
+Mechanical Use of the AEWR Target</h2>
+<p>If the field-and-livestock FLS wage used to set the AEWR is also used
+to choose <span class="math inline">\(\lambda_{rt}\)</span>, an
+instrument constructed from the resulting weights contains the
+endogenous AEWR-setting wage by construction. This mechanically
+strengthens the first stage but creates a circularity problem.</p>
+<p>The preferred approach is to infer realized geographic representation
+from auxiliary FLS moments that are generated by the same survey draw
+but do not include the field-and-livestock wage used to set the AEWR.
+Potential auxiliary moments include:</p>
+<ul>
+<li>FLS employment totals by state or region;</li>
+<li>employment by field, livestock, supervisory, and other-worker
+categories;</li>
+<li>quarterly employment patterns;</li>
+<li>wages for worker categories not used to set the AEWR;</li>
+<li>state-level FLS estimates where available;</li>
+<li>sample sizes, usable response counts, or response rates by state and
+sampling stratum.</li>
+</ul>
+<p>Let <span class="math inline">\(m=1,\ldots,M\)</span> index auxiliary
+variables, let <span class="math inline">\(z_{mit}\)</span> denote the
+county analogue of auxiliary variable <span
+class="math inline">\(m\)</span>, and let <span
+class="math inline">\(Z^{FLS}_{mrt}\)</span> denote its published FLS
+regional value. A generalized calibration would choose a low-dimensional
+vector <span class="math inline">\(\boldsymbol\lambda_{rt}\)</span>
+satisfying</p>
+<p><span class="math display">\[
+\sum_{i \in r}
+\omega_{irt}(\boldsymbol\lambda_{rt})z_{mit}
+=
+Z^{FLS}_{mrt},
+\qquad m=1,\ldots,M,
+\]</span></p>
+<p>with</p>
+<p><span class="math display">\[
+\omega_{irt}(\boldsymbol\lambda_{rt})
+=
+\frac{
+q_{irt}\exp(\boldsymbol\lambda_{rt}&#39;\mathbf z_{it})
+}{
+\sum_{j \in r}
+q_{jrt}\exp(\boldsymbol\lambda_{rt}&#39;\mathbf z_{jt})
+}.
+\]</span></p>
+<p>These auxiliary moments reveal which parts of the region received
+unusually high effective representation. The inferred weights can then
+be applied to OEWS field-and-livestock wages without using the
+AEWR-setting wage as a calibration target.</p>
+<h2 id="constructing-the-leave-subregion-out-instrument">9. Constructing
+the Leave-Subregion-Out Instrument</h2>
+<p>After estimating the implied realized weights, counties within each
+AEWR region are partitioned into dissimilarity subregions. Let <span
+class="math inline">\(d(i)\)</span> denote county <span
+class="math inline">\(i\)</span>’s subregion, and let target commuting
+zone <span class="math inline">\(k\)</span> belong to subregion <span
+class="math inline">\(d(k)\)</span>.</p>
+<p>The leave-subregion-out wage instrument is</p>
+<p><span class="math display">\[
+Z_{krt}
+=
+\frac{
+\sum_{i \in r:\,d(i)\neq d(k)}
+\widehat\omega_{irt}x_{it}
+}{
+\sum_{i \in r:\,d(i)\neq d(k)}
+\widehat\omega_{irt}
+}.
+\]</span></p>
+<p>The exclusion of the target subregion reduces the mechanical
+contribution of the target commuting zone and economically similar
+neighboring counties to the donor wage. Under the preferred
+construction, <span class="math inline">\(\widehat\omega_{irt}\)</span>
+is inferred from auxiliary FLS moments that exclude the AEWR-setting
+field-and-livestock wage.</p>
+<p>For an outcome measured in year <span
+class="math inline">\(t\)</span>, the instrument should follow the
+timing of the AEWR-setting process. If the AEWR in year <span
+class="math inline">\(t\)</span> is based on the FLS wage in year <span
+class="math inline">\(t-1\)</span>, the corresponding donor wage and
+inferred sampling weights should also refer to FLS wage year <span
+class="math inline">\(t-1\)</span>. Specifications using changes must
+preserve this lag structure explicitly.</p>
+<h2 id="empirical-specifications">10. Empirical Specifications</h2>
+<p>Several versions should be estimated and reported in increasing order
+of reliance on the inverse-weight model.</p>
+<h3 id="expected-weight-baseline">10.1 Expected-weight baseline</h3>
+<p>Use BEA farm-employment weights without calibration:</p>
+<p><span class="math display">\[
+Z^{BEA}_{krt}
+=
+\frac{
+\sum_{i \in r:\,d(i)\neq d(k)}q_{irt}x_{it}
+}{
+\sum_{i \in r:\,d(i)\neq d(k)}q_{irt}
+}.
+\]</span></p>
+<p>This measure is predetermined with respect to the FLS sampling
+realization.</p>
+<h3 id="design-based-prior">10.2 Design-based prior</h3>
+<p>Combine BEA employment and agricultural land weights to approximate
+the list- and area-frame structure. This specification remains
+independent of the realized FLS wage.</p>
+<h3 id="auxiliary-moment-calibration">10.3 Auxiliary-moment
+calibration</h3>
+<p>Infer the geographic tilt using FLS employment, non-AEWR occupation,
+response, or sampling moments and then apply the weights to OEWS
+field-and-livestock wages. This is the preferred approximation to the
+realized sampling-composition instrument.</p>
+<h3 id="contemporaneous-aewr-calibration">10.4 Contemporaneous AEWR
+calibration</h3>
+<p>Calibrate directly to the contemporaneous FLS field-and-livestock
+wage. This version should be treated as an AEWR-implied geographic tilt
+and as an upper bound on attainable first-stage fit, not as the
+preferred excluded instrument.</p>
+<h2 id="validation-and-diagnostics">11. Validation and Diagnostics</h2>
+<p>The construction should report the following diagnostics for every
+region-year:</p>
+<ol type="1">
+<li><p>The BEA-weighted OEWS wage and its difference from the FLS
+target.</p></li>
+<li><p>Whether the target lies within the support of observed OEWS
+wages.</p></li>
+<li><p>The estimated tilting parameter or parameters.</p></li>
+<li><p>The effective sample size of the calibrated weights,</p>
+<p><span class="math display">\[
+N^{eff}_{rt}
+=
+\frac{1}{\sum_i\widehat\omega_{irt}^2}.
+\]</span></p></li>
+<li><p>The maximum ratio <span
+class="math inline">\(\widehat\omega_{irt}/q_{irt}\)</span> and the
+distribution of weight changes.</p></li>
+<li><p>The number and prior mass of counties with missing OEWS
+wages.</p></li>
+<li><p>The number of distinct OEWS wage values within the calibration
+cell.</p></li>
+<li><p>The sensitivity of the weights to dropping individual counties or
+OEWS reporting areas.</p></li>
+<li><p>The correlation of the inferred tilt with observable agricultural
+shocks, including crop prices, weather, employment, and H-2A
+exposure.</p></li>
+<li><p>First-stage strength separately for the BEA baseline,
+auxiliary-moment calibration, and contemporaneous exact-fit
+benchmark.</p></li>
+</ol>
+<p>Counties with missing OEWS wages should not simply be discarded and
+the remaining counties renormalized. Their prior mass must either be
+retained using a documented imputation, assigned an appropriate OEWS
+area or state wage, or treated through an explicit partial-calibration
+procedure.</p>
+<h2 id="data-needed-for-stronger-identification">12. Data Needed for
+Stronger Identification</h2>
+<p>The most direct recovery of realized sampling contributions would
+require FLS microdata or administrative sample information containing
+farm location, sampling stratum, initial selection weight, response
+status, nonresponse adjustment, reported worker hours, and final
+expansion weight. These data are generally not present in published FLS
+tables.</p>
+<p>Short of microdata, useful aggregate information would include, by
+survey wave and year:</p>
+<ul>
+<li>the number of population farms, sampled farms, and usable responses
+by state and worker-size stratum;</li>
+<li>list-frame and area-frame sample counts;</li>
+<li>stratum-specific sampling fractions and response adjustments;</li>
+<li>state-by-category expanded employment or hours;</li>
+<li>replicate weights or stratum-level variance contributions.</li>
+</ul>
+<p>Such information would add independent restrictions on the realized
+weight vector and reduce reliance on the minimum-divergence assumption.
+If it is not publicly released, it may be obtainable through a request
+to NASS for nondisclosive state-by-stratum aggregates.</p>
+<h2 id="interpretation">13. Interpretation</h2>
+<p>The empirical design is best understood as an attempt to use
+independent county wage data to reconstruct how random FLS sampling and
+response patterns changed the geographic composition of the wage
+estimator. The BEA weights describe expected representation. Auxiliary
+FLS moments reveal deviations from that representation. OEWS wages
+translate the inferred deviations into a predicted AEWR sampling
+shock.</p>
+<p>The strongest claim supported by aggregate data is not that the
+actual county sampling weights have been observed. Rather, the method
+estimates a low-dimensional, minimum-divergence approximation to the
+realized geographic tilt. Its credibility depends on three
+conditions:</p>
+<ol type="1">
+<li>the BEA or design-based prior adequately describes expected
+geographic contribution;</li>
+<li>the auxiliary calibration moments respond to realized FLS
+representation in a way that can be matched to county data; and</li>
+<li>the calibration excludes the contemporaneous field-and-livestock
+wage used to set the AEWR.</li>
+</ol>
+<p>Under those conditions, the leave-subregion-out weighted OEWS wage
+provides a plausible proxy for the random component of the AEWR
+generated by the realized FLS sample. Direct calibration to the AEWR
+remains useful as a descriptive decomposition and first-stage benchmark,
+but it should not be the primary excluded instrument.</p>
+<h2 id="references-and-methodology-sources">References and Methodology
+Sources</h2>
+<ul>
+<li>USDA National Agricultural Statistics Service, <a
+href="https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_Labor/">Agricultural
+(Farm) Labor Survey</a>.</li>
+<li>USDA National Agricultural Statistics Service, <a
+href="https://www.nass.usda.gov/Publications/Methodology_and_Data_Quality/Farm_Labor/05_2020/farm_labor_qm.pdf">Farm
+Labor Methodology and Quality Measures</a>.</li>
+<li>USDA National Agricultural Statistics Service, <a
+href="https://www.nass.usda.gov/Publications/Methodology_and_Data_Quality/Farm_Labor/">Farm
+Labor Methodology and Quality Measures archive</a>.</li>
+</ul>
+</body>
+</html>
