@@ -22,7 +22,7 @@ sumstats_vars <- list(
   "H-2A share of 2011 farm employment" = "h2a_cert_share_farm_workers_2011_start_year",
   "H-2A certified workers (start year)" = "nbr_workers_certified_start_year",
   "Farm employment 2011 (baseline)" = "emp_farm_2011",
-  "AEWR p25 bite (2012 $)" = "aewr_cz_p25",
+  "AEWR p25 bite (2012 \\$)" = "aewr_cz_p25",
   "Log population" = "ln_pop_census",
   "Employment-to-population ratio" = "emp_pop_ratio"
 )
@@ -309,4 +309,3 @@ etable(
   file = path_tables("table_laborshare_dd.tex"),
   replace = TRUE
 )
-

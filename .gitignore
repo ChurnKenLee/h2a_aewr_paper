@@ -1,13 +1,8 @@
 # ==========================================================================
 # SYSTEM FILES
 # ==========================================================================
-.positron/
 .DS_Store
 desktop.ini
-
-# Nix / direnv
-.direnv/
-.envrc
 
 # DO NOT ignore flakes
 !flake.nix
@@ -20,7 +15,6 @@ desktop.ini
 **/__pycache__/
 *.py[cod]
 *$py.class
-.python-version
 
 # API keys (IMPORTANT!)
 .env
@@ -83,3 +77,11 @@ draft/*
 !draft/*.tex
 !draft/*.pdf
 !draft/*.bib
+
+# Local environment state
+.devenv/
+.direnv/
+.venv/
+__pycache__/
+.Rhistory
+.RData

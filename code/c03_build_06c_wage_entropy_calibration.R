@@ -298,6 +298,3 @@ write_parquet(
   fls_entropy_diagnostics,
   path_int("fls_wage_entropy_diagnostics.parquet")
 )
-6780
-Friars
-Rd

@@ -17,38 +17,35 @@ county_df_iv <- read_parquet(path_processed(
     d_aewr_ppi = aewr_ppi - aewr_ppi_l1
   )
 
+gap_closure_specs <- tribble(
+  ~gap_closure , ~gap_closure_label ,
+  0.00         , "g000"             ,
+  0.25         , "g025"             ,
+  0.50         , "g050"             ,
+  0.75         , "g075"             ,
+  1.00         , "g100"
+)
+
 unit_iv_changes <- county_df_iv %>%
   select(
     cz_aewr_region_fe,
     year,
-    z_oews_agwage_l1,
-    z_oews_fls_agwage_l1,
-    z_qcew_agwage_l1,
-    z_qcew_fls_agwage_l1
+    starts_with("z_oews_entropy_agwage_l1_g")
   ) %>%
   distinct(cz_aewr_region_fe, year, .keep_all = TRUE) %>%
-  arrange(cz_aewr_region_fe, year) %>%
-  group_by(cz_aewr_region_fe) %>%
+  pivot_longer(
+    cols = starts_with("z_oews_entropy_agwage_l1_g"),
+    names_to = "gap_closure_label",
+    names_pattern = "z_oews_entropy_agwage_l1_(g[0-9]+)",
+    values_to = "z_oews_entropy_agwage_l1"
+  ) %>%
+  arrange(cz_aewr_region_fe, gap_closure_label, year) %>%
+  group_by(cz_aewr_region_fe, gap_closure_label) %>%
   mutate(
     year_l1 = lag(year),
-    z_oews_d_agwage_l1 = if_else(
+    z_oews_entropy_d_agwage_l1 = if_else(
       year_l1 == year - 1,
-      z_oews_agwage_l1 - lag(z_oews_agwage_l1),
-      NA_real_
-    ),
-    z_oews_fls_d_agwage_l1 = if_else(
-      year_l1 == year - 1,
-      z_oews_fls_agwage_l1 - lag(z_oews_fls_agwage_l1),
-      NA_real_
-    ),
-    z_qcew_d_agwage_l1 = if_else(
-      year_l1 == year - 1,
-      z_qcew_agwage_l1 - lag(z_qcew_agwage_l1),
-      NA_real_
-    ),
-    z_qcew_fls_d_agwage_l1 = if_else(
-      year_l1 == year - 1,
-      z_qcew_fls_agwage_l1 - lag(z_qcew_fls_agwage_l1),
+      z_oews_entropy_agwage_l1 - lag(z_oews_entropy_agwage_l1),
       NA_real_
     )
   ) %>%
@@ -56,34 +53,49 @@ unit_iv_changes <- county_df_iv %>%
   select(
     cz_aewr_region_fe,
     year,
-    z_oews_d_agwage_l1,
-    z_oews_fls_d_agwage_l1,
-    z_qcew_d_agwage_l1,
-    z_qcew_fls_d_agwage_l1
+    gap_closure_label,
+    z_oews_entropy_d_agwage_l1
+  ) %>%
+  pivot_wider(
+    names_from = gap_closure_label,
+    values_from = z_oews_entropy_d_agwage_l1,
+    names_glue = "z_oews_entropy_d_agwage_l1_{gap_closure_label}"
   )
 
 county_df_iv <- county_df_iv %>%
   left_join(unit_iv_changes, by = c("cz_aewr_region_fe", "year"))
 
-fs_specs <- tribble(
-  ~model_name                         , ~source           , ~outcome_type    , ~outcome     , ~instrument              , ~fe_spec                , ~fe_terms                     ,
-  "oews_change_region_year"           , "OEWS"            , "nominal change" , "d_aewr"     , "z_oews_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "oews_fls_change_region_year"       , "OEWS FLS weight" , "nominal change" , "d_aewr"     , "z_oews_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "qcew_change_region_year"           , "QCEW"            , "nominal change" , "d_aewr"     , "z_qcew_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "qcew_fls_change_region_year"       , "QCEW FLS weight" , "nominal change" , "d_aewr"     , "z_qcew_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "oews_change_czregion_year"         , "OEWS"            , "nominal change" , "d_aewr"     , "z_oews_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "oews_fls_change_czregion_year"     , "OEWS FLS weight" , "nominal change" , "d_aewr"     , "z_oews_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "qcew_change_czregion_year"         , "QCEW"            , "nominal change" , "d_aewr"     , "z_qcew_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "qcew_fls_change_czregion_year"     , "QCEW FLS weight" , "nominal change" , "d_aewr"     , "z_qcew_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "oews_change_ppi_region_year"       , "OEWS"            , "real change"    , "d_aewr_ppi" , "z_oews_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "oews_fls_change_ppi_region_year"   , "OEWS FLS weight" , "real change"    , "d_aewr_ppi" , "z_oews_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "qcew_change_ppi_region_year"       , "QCEW"            , "real change"    , "d_aewr_ppi" , "z_qcew_d_agwage_l1"     , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "qcew_fls_change_ppi_region_year"   , "QCEW FLS weight" , "real change"    , "d_aewr_ppi" , "z_qcew_fls_d_agwage_l1" , "AEWR region + year"    , "aewr_region_fe + year_fe"    ,
-  "oews_change_ppi_czregion_year"     , "OEWS"            , "real change"    , "d_aewr_ppi" , "z_oews_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "oews_fls_change_ppi_czregion_year" , "OEWS FLS weight" , "real change"    , "d_aewr_ppi" , "z_oews_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "qcew_change_ppi_czregion_year"     , "QCEW"            , "real change"    , "d_aewr_ppi" , "z_qcew_d_agwage_l1"     , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" ,
-  "qcew_fls_change_ppi_czregion_year" , "QCEW FLS weight" , "real change"    , "d_aewr_ppi" , "z_qcew_fls_d_agwage_l1" , "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe"
-)
+fs_specs <- crossing(
+  gap_closure_specs,
+  tribble(
+    ~outcome_type    , ~outcome     ,
+    "nominal change" , "d_aewr"     ,
+    "real change"    , "d_aewr_ppi"
+  ),
+  tribble(
+    ~fe_spec                , ~fe_terms                     , ~fe_label       ,
+    "AEWR region + year"    , "aewr_region_fe + year_fe"    , "region_year"   ,
+    "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" , "czregion_year"
+  )
+) %>%
+  mutate(
+    source = paste0(
+      "OEWS entropy, ",
+      as.integer(100 * gap_closure),
+      "% gap closure"
+    ),
+    instrument = paste0(
+      "z_oews_entropy_d_agwage_l1_",
+      gap_closure_label
+    ),
+    model_name = paste(
+      "oews_entropy",
+      gap_closure_label,
+      outcome,
+      fe_label,
+      sep = "_"
+    )
+  )
 
 cat(
   "First-stage input:",
@@ -96,7 +108,7 @@ cat("Instrument timing:\n")
 cat("Outcome d_aewr in year t: AEWR_t - AEWR_{t-1}\n")
 cat("Outcome d_aewr_ppi in year t: AEWR_PPI_t - AEWR_PPI_{t-1}\n")
 cat(
-  "Instrument z_*_d_agwage_l1 in year t: donor mean proxy_{t-1} - donor mean proxy_{t-2}\n\n"
+  "Instrument z_oews_entropy_d_agwage_l1_* in year t: donor mean OEWS wage_{t-1} - donor mean OEWS wage_{t-2}\n\n"
 )
 cat("Clustered SE: cz_aewr_region_fe\n")
 cat(
@@ -154,6 +166,8 @@ for (i in seq_len(nrow(fs_specs))) {
       select(
         model_name,
         source,
+        gap_closure,
+        gap_closure_label,
         outcome_type,
         outcome,
         instrument,
@@ -180,7 +194,7 @@ fs_strength_print <- fs_strength %>%
       ~ round(.x, 4)
     )
   ) %>%
-  arrange(outcome_type, fe_spec, source)
+  arrange(outcome_type, fe_spec, gap_closure)
 
 cat("=== First-stage strength summary ===\n")
 print(fs_strength_print, n = Inf, width = Inf)
