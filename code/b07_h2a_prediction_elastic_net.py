@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.14"
 app = marimo.App(width="full")
 
 
@@ -80,7 +80,9 @@ def _(binary_path, pl):
     h2a = (
         pl.read_parquet(binary_path / "h2a_aggregated.parquet")
         .with_columns(
-            (pl.col("state_fips_code") + pl.col("county_fips_code")).alias("county_ansi"),
+            (pl.col("state_fips_code") + pl.col("county_fips_code")).alias(
+                "county_ansi"
+            ),
             pl.col("year").cast(pl.Int32).alias("year"),
         )
         .rename({"nbr_workers_certified_start_year": "h2a_certified"})
@@ -114,7 +116,9 @@ def _(binary_path, pl):
 
 @app.cell
 def _(binary_path, pl):
-    soil = pl.read_parquet(binary_path / "county_h2a_prediction_gnatsgo_soil_cells.parquet")
+    soil = pl.read_parquet(
+        binary_path / "county_h2a_prediction_gnatsgo_soil_cells.parquet"
+    )
     return (soil,)
 
 
@@ -182,7 +186,8 @@ def _(itertools, jnp, np, pl):
 
         # Drop missing or zero employment counties entirely)
         merged = merged.filter(
-            pl.col("bea_farm_emp_2011").is_not_null() & (pl.col("bea_farm_emp_2011") > 0)
+            pl.col("bea_farm_emp_2011").is_not_null()
+            & (pl.col("bea_farm_emp_2011") > 0)
         )
         if merged.height == 0:
             raise ValueError(
@@ -213,8 +218,12 @@ def _(itertools, jnp, np, pl):
                     for c in continuous_cols
                 ]
             )
-            .with_columns(pl.col(c).fill_null(pl.col(c).mean()) for c in county_cont_cols)
-            .with_columns(pl.col(c).fill_null(pl.col(c).mean()) for c in patch_cont_cols)
+            .with_columns(
+                pl.col(c).fill_null(pl.col(c).mean()) for c in county_cont_cols
+            )
+            .with_columns(
+                pl.col(c).fill_null(pl.col(c).mean()) for c in patch_cont_cols
+            )
             .with_columns(pl.col(c).fill_null("MISSING") for c in cat_cols)
         )
 
@@ -225,15 +234,19 @@ def _(itertools, jnp, np, pl):
 
         # Calculate acreage fraction AND Patch Exposure (frac of total BEA farm emp allocated that patch)
         merged = merged.with_columns(
-            (pl.col("total_acres") / pl.col("total_acres").sum().over("group_id")).alias(
-                "acreage_frac"
-            )
+            (
+                pl.col("total_acres") / pl.col("total_acres").sum().over("group_id")
+            ).alias("acreage_frac")
         ).with_columns(
-            (pl.col("acreage_frac") * pl.col("bea_farm_emp_2011")).alias("patch_exposure")
+            (pl.col("acreage_frac") * pl.col("bea_farm_emp_2011")).alias(
+                "patch_exposure"
+            )
         )
 
         # Extract arrays
-        patch_exposure = jnp.array(merged["patch_exposure"].to_numpy(), dtype=jnp.float32)
+        patch_exposure = jnp.array(
+            merged["patch_exposure"].to_numpy(), dtype=jnp.float32
+        )
         group_ids = jnp.array(merged["group_id"].to_numpy(), dtype=jnp.int32)
         num_groups = merged["group_id"].max() + 1
 
@@ -245,7 +258,9 @@ def _(itertools, jnp, np, pl):
 
         # Extract Unique target COUNTS per County-Year (Not Rates)
         unique_targets = (
-            merged.group_by("group_id").agg(pl.first("h2a_target_count")).sort("group_id")
+            merged.group_by("group_id")
+            .agg(pl.first("h2a_target_count"))
+            .sort("group_id")
         )
         y_count_county_year = jnp.array(
             unique_targets["h2a_target_count"].to_numpy(), dtype=jnp.float32
@@ -253,7 +268,9 @@ def _(itertools, jnp, np, pl):
 
         # Standardize continuous variables
         # County-specific continuous variables
-        X_county_cont = county_design.select(county_cont_cols).to_numpy().astype(np.float32)
+        X_county_cont = (
+            county_design.select(county_cont_cols).to_numpy().astype(np.float32)
+        )
         X_county_cont = (X_county_cont - X_county_cont.mean(axis=0)) / (
             X_county_cont.std(axis=0) + 1e-8
         )
@@ -327,7 +344,9 @@ def _(itertools, jnp, np, pl):
         for order in range(2, max_order + 1):
             parent_id_rows = []
 
-            for _, combo, value_tuple in sorted(feature_meta[order], key=lambda x: x[0]):
+            for _, combo, value_tuple in sorted(
+                feature_meta[order], key=lambda x: x[0]
+            ):
                 row_parent_ids = []
 
                 for parent_positions in itertools.combinations(range(order), order - 1):
@@ -729,7 +748,9 @@ def _(
                 grad_dot_diff = jnp.sum(jnp.array(grad_dot_diff_leaves))
 
                 lhs = loss_p_next_candidate_re_eval
-                rhs = loss_y_val + grad_dot_diff + (0.5 * L_bt_current * diff_p_y_norm_sq)
+                rhs = (
+                    loss_y_val + grad_dot_diff + (0.5 * L_bt_current * diff_p_y_norm_sq)
+                )
 
                 # Stop after 20 iterations to prevent infinite loop for ill-conditioned problems
                 return jnp.logical_and(lhs > rhs, k_bt < 20)
@@ -738,7 +759,12 @@ def _(
                 (k_bt, _, _, L_bt_current) = carry_bt
                 L_new_bt = L_bt_current * 1.5  # Grow L
                 # Recalculate p_next_candidate and its loss in the condition, no need here.
-                return k_bt + 1, None, None, L_new_bt  # Only L is updated inside the loop
+                return (
+                    k_bt + 1,
+                    None,
+                    None,
+                    L_new_bt,
+                )  # Only L is updated inside the loop
 
             # Initialize backtracking with current L
             bt_carry_init = (0, None, None, L)  # (k_bt, dummy_p, dummy_loss, L_init)
@@ -903,7 +929,6 @@ def _(
             inner_tol,
         )
 
-
     # Forwards pass is just solving the inner loop
     def train_fwd(
         init_params,
@@ -960,7 +985,6 @@ def _(
             inner_tol,
         )
         return opt_params, residuals
-
 
     # Backwards pass requires tracing out the chain of operations to obtain derivatives
     def train_bwd(residuals, cotangents):
@@ -1061,7 +1085,9 @@ def _(
         # 4. float32 precision often breaks strict matrix symmetry, which instantly crashes CG
         # GMRES is immune to this.
         solver = lx.CG(rtol=1e-2, atol=1e-2, max_steps=150)
-        solution = lx.linear_solve(hessian_op, -flat_v_masked, solver=solver, throw=False)
+        solution = lx.linear_solve(
+            hessian_op, -flat_v_masked, solver=solver, throw=False
+        )
 
         # 5. If the matrix is still too hostile and GMRES fails, replace NaNs with 0.0
         # This safely zeroes the meta-gradient for this step  rather than corrupting the hyper-parameters
@@ -1119,7 +1145,6 @@ def _(
             None,  # inner_tols
         )
 
-
     train_model_cpu.defvjp(train_fwd, train_bwd)
     return (train_model_cpu,)
 
@@ -1162,7 +1187,8 @@ def _(compute_patch_log_worker, jax, jnp, lx, np, ravel_pytree):
         exposure_pad = jnp.pad(patch_exposure, (0, pad_n))
         group_ids_pad = jnp.pad(group_ids, (0, pad_n))
         feature_ids_pad = {
-            order: jnp.pad(ids, ((0, pad_n), (0, 0))) for order, ids in feature_ids.items()
+            order: jnp.pad(ids, ((0, pad_n), (0, 0)))
+            for order, ids in feature_ids.items()
         }
         row_mask_pad = jnp.arange(padded_n) < n_obs
 
@@ -1417,7 +1443,9 @@ def _(
                 # Mask the RHS
                 v_masked = jnp.where(flat_active_mask, v, 0.0)
 
-                solution = lx.linear_solve(hessian_op, v_masked, solver=solver, throw=False)
+                solution = lx.linear_solve(
+                    hessian_op, v_masked, solver=solver, throw=False
+                )
 
                 # NaN Guard
                 w_safe = jnp.where(jnp.isnan(solution.value), 0.0, solution.value)
@@ -1540,7 +1568,6 @@ def _(compute_alo_compositional, jax, parent_ids, train_model_cpu):
 
         return alo, opt_params
 
-
     # JIT the meta-gradient calculator
     meta_val_and_grad = jax.jit(
         jax.value_and_grad(meta_loss_fn, argnums=(0, 1), has_aux=True),
@@ -1657,14 +1684,18 @@ def _(jax, jnp, meta_val_and_grad, optax, partial):
             # 4. Conditionally update PyTrees (Dictionaries)
             # We cannot use jnp.where directly on dicts. We map over the leaves.
             new_best_hparams = jax.tree_util.tree_map(
-                lambda current_val, best_val: jnp.where(improved, current_val, best_val),
+                lambda current_val, best_val: jnp.where(
+                    improved, current_val, best_val
+                ),
                 hparams,
                 best_hparams,
             )
 
             # 5. Apply Meta-Optimizer Updates
             # We always apply gradients to explore the space, even if we didn't improve.
-            updates, new_opt_state = meta_optimizer.update((gl1, gl2), opt_state, hparams)
+            updates, new_opt_state = meta_optimizer.update(
+                (gl1, gl2), opt_state, hparams
+            )
             new_hparams = optax.apply_updates(hparams, updates)
 
             # 6. Calculate and store telemetry in VRAM; telemetry extracted asynchronously
@@ -2003,7 +2034,9 @@ def _(jax, jnp, json, restore_leaves):
         hparams_template_leaves, hparams_treedef = jax.tree_util.tree_flatten(
             hparams_template
         )
-        state_template_leaves, state_treedef = jax.tree_util.tree_flatten(state_template)
+        state_template_leaves, state_treedef = jax.tree_util.tree_flatten(
+            state_template
+        )
         inner_template_leaves, inner_treedef = jax.tree_util.tree_flatten(
             inner_params_template
         )

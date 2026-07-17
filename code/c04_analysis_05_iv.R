@@ -65,20 +65,18 @@ unit_iv_changes <- county_df_iv %>%
 county_df_iv <- county_df_iv %>%
   left_join(unit_iv_changes, by = c("cz_aewr_region_fe", "year"))
 
-fs_specs <- crossing(
+first_difference_specs <- crossing(
   gap_closure_specs,
   tribble(
     ~outcome_type    , ~outcome     ,
     "nominal change" , "d_aewr"     ,
     "real change"    , "d_aewr_ppi"
-  ),
-  tribble(
-    ~fe_spec                , ~fe_terms                     , ~fe_label       ,
-    "AEWR region + year"    , "aewr_region_fe + year_fe"    , "region_year"   ,
-    "CZ-AEWR region + year" , "cz_aewr_region_fe + year_fe" , "czregion_year"
   )
 ) %>%
   mutate(
+    design = "first difference",
+    fe_spec = "Year",
+    fe_terms = "year_fe",
     source = paste0(
       "OEWS entropy, ",
       as.integer(100 * gap_closure),
@@ -92,10 +90,45 @@ fs_specs <- crossing(
       "oews_entropy",
       gap_closure_label,
       outcome,
-      fe_label,
+      "first_difference",
       sep = "_"
     )
   )
+
+levels_twfe_specs <- crossing(
+  gap_closure_specs,
+  tribble(
+    ~outcome_type   , ~outcome   ,
+    "nominal level" , "aewr"     ,
+    "real level"    , "aewr_ppi"
+  )
+) %>%
+  mutate(
+    design = "levels TWFE",
+    fe_spec = "CZ-AEWR region + year",
+    fe_terms = "cz_aewr_region_fe + year_fe",
+    source = paste0(
+      "OEWS entropy, ",
+      as.integer(100 * gap_closure),
+      "% gap closure"
+    ),
+    instrument = paste0(
+      "z_oews_entropy_agwage_l1_",
+      gap_closure_label
+    ),
+    model_name = paste(
+      "oews_entropy",
+      gap_closure_label,
+      outcome,
+      "levels_twfe",
+      sep = "_"
+    )
+  )
+
+fs_specs <- bind_rows(
+  first_difference_specs,
+  levels_twfe_specs
+)
 
 cat(
   "First-stage input:",
@@ -105,10 +138,17 @@ cat(
   "\n\n"
 )
 cat("Instrument timing:\n")
-cat("Outcome d_aewr in year t: AEWR_t - AEWR_{t-1}\n")
-cat("Outcome d_aewr_ppi in year t: AEWR_PPI_t - AEWR_PPI_{t-1}\n")
+cat("First-difference design:\n")
+cat("  Outcome: AEWR_t - AEWR_{t-1}\n")
 cat(
-  "Instrument z_oews_entropy_d_agwage_l1_* in year t: donor mean OEWS wage_{t-1} - donor mean OEWS wage_{t-2}\n\n"
+  "  Instrument: donor mean OEWS wage_{t-1} - donor mean OEWS wage_{t-2}\n"
+)
+cat("  Fixed effects: year\n\n")
+cat("Levels TWFE design:\n")
+cat("  Outcome: AEWR_t\n")
+cat("  Instrument: donor mean OEWS wage_{t-1}\n")
+cat(
+  "  Fixed effects: CZ-AEWR region and year\n\n"
 )
 cat("Clustered SE: cz_aewr_region_fe\n")
 cat(
@@ -165,6 +205,7 @@ for (i in seq_len(nrow(fs_specs))) {
     spec %>%
       select(
         model_name,
+        design,
         source,
         gap_closure,
         gap_closure_label,
@@ -194,7 +235,7 @@ fs_strength_print <- fs_strength %>%
       ~ round(.x, 4)
     )
   ) %>%
-  arrange(outcome_type, fe_spec, gap_closure)
+  arrange(design, outcome_type, gap_closure)
 
 cat("=== First-stage strength summary ===\n")
 print(fs_strength_print, n = Inf, width = Inf)
@@ -205,7 +246,7 @@ write_csv(
   path_tables("iv_first_stage_strength.csv")
 )
 
-cat("\n=== First-stage regressions: simple-change IVs ===\n")
+cat("\n=== First-stage regressions ===\n")
 print(
   etable(
     fs_models,
