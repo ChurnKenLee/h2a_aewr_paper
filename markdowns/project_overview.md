@@ -1,5 +1,10 @@
 # H-2A Paper: Project Overview and Script Documentation
 
+> Historical snapshot (2026-03-30). The supported workflow now lives in the
+> manually run `code/a01_sources`, `code/b01_derived`, and `code/c01_clean`
+> through `code/c04_analysis` stages. See the repository `README.md` and each
+> stage README for current paths, execution order, and artifact contracts.
+
 **Author:** Phil Hoxie (primary R/analysis), Ken (coauthor, Python data pipeline)
 **Last updated:** 2026-03-30
 **Working directory root:** `C:/Users/pghox/Dropbox/H-2A Paper/`

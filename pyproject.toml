@@ -20,7 +20,6 @@ dependencies = [
     "google-maps-places>=0.5.0",
     "googlemaps>=4.10.0",
     "great-tables>=0.20.0",
-    "ibis-framework[duckdb,polars]>=12.0.0",
     "ipykernel>=6.29.5",
     "joblib>=1.5.3",
     "jupyter>=1.1.1",
