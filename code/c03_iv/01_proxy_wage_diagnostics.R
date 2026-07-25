@@ -38,16 +38,13 @@ fips_codes <- read_csv(
   )
 
 aewr_region <- aewr_region %>%
-  inner_join(fips_codes, by = "state_abbrev") %>%
-  mutate(aewr_region_num = as.integer(aewr_region_num))
+  inner_join(fips_codes, by = "state_abbrev")
 
 fls_regions <- fls_region %>%
-  distinct(aewr_region_num, region_name) %>%
-  mutate(aewr_region_num = as.integer(aewr_region_num))
+  distinct(aewr_region_num, region_name)
 
 fls_states <- fls_state %>%
-  distinct(state_fips_code, state_name) %>%
-  mutate(state_fips_code = sprintf("%02d", as.integer(state_fips_code)))
+  distinct(state_fips_code, state_name)
 
 fls_region_ts <- bind_rows(
   fls_region %>%

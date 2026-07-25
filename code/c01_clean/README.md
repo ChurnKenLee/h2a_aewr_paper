@@ -5,7 +5,7 @@ order; independent source panels may be rebuilt separately.
 
 | Script | Primary output |
 | --- | --- |
-| `01_county_price_index.R` | `nass_fisher_price_index.parquet` |
+| `01_county_price_index.R` | County Fisher price and quantity indexes in `nass_fisher_price_index.parquet` |
 | `02_commuting_zone_crosswalk.R` | Full and compact 2010 CZ crosswalks |
 | `03_producer_price_index.R` | `ppi_2012.parquet` |
 | `04_state_minimum_wages.R` | `state_real_minwages.parquet` |

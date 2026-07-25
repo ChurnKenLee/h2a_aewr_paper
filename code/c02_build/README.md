@@ -12,7 +12,7 @@ Rscript code/c02_build/04_finalize_county_panel.R
 | Script | Responsibility | Output |
 | --- | --- | --- |
 | `01_merge_county_panel.R` | Merge cleaned panels onto the county-year backbone | `county_df_build_merge.parquet` |
-| `02_derive_analysis_variables.R` | Construct outcomes, real measures, fixed effects, and lags | `county_df_variable_cleaned_year.parquet` |
+| `02_derive_analysis_variables.R` | Construct outcomes, real measures, IV controls and consecutive-year lags, fixed effects, and shares | `county_df_variable_cleaned_year.parquet` |
 | `03_classify_treatment_exposure.R` | Create baseline exposure, treatment, border, and period classifications | `county_df_classified_year.parquet` |
 | `04_finalize_county_panel.R` | Report integrity diagnostics and publish the panel | `processed/county_df_analysis_year.parquet` |
 

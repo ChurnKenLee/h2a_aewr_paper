@@ -12,11 +12,12 @@ Most files are Marimo applications:
 uv run marimo edit code/a01_sources/01_aewr_extract_tables.py
 ```
 
-The two ordinary Python programs can be run directly:
+The ordinary Python source programs can be run directly:
 
 ```sh
-uv run python code/a01_sources/03_03_nass_census_hired_worker_duration.py
+uv run python code/a01_sources/03_03_nass_census_worker_duration.py
 uv run python code/a01_sources/04_02_qcew_quarterly_employment.py
+uv run python code/a01_sources/04_03_qwi_quarterly_employment.py
 ```
 
 Old root-level A paths map here by dropping the leading `a` from the filename.
@@ -34,9 +35,10 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `02_03_h2a_use_places_api_to_get_county.py` | Resolve suggested locations through Places | Place-ID and address-component caches |
 | `03_01_nass_extract_quickstats.py` | Partition raw QuickStats census and survey extracts | `qs_census_*.parquet`, `qs_survey_*.parquet` |
 | `03_02_nass_select_quickstats_obs.py` | Select and harmonize downstream NASS observations | Selected census and survey Parquet files |
-| `03_03_nass_census_hired_worker_duration.py` | Derive county hired-worker duration shares | `census_ag_hired_worker_duration_county.parquet` |
+| `03_03_nass_census_worker_duration.py` | Derive county hired-worker duration shares and hired-labor payroll | `census_ag_hired_worker_duration_county.parquet` |
 | `04_01_qcew_create_binaries.py` | Combine annual QCEW archives | `qcew.parquet` |
 | `04_02_qcew_quarterly_employment.py` | Extract quarterly calibration moments | `qcew_county_ag_quarterly_employment.parquet` |
+| `04_03_qwi_quarterly_employment.py` | Download private NAICS 111/112 beginning-quarter, stable, and any-quarter QWI employment | `qwi_county_ag_quarterly_employment.parquet` |
 | `05_01_oews_geographic_crosswalk.py` | Harmonize OEWS reporting areas to counties | `oews_area_definitions.parquet` |
 | `05_02_oews_binaries.py` | Combine historical OEWS releases | `oews.parquet` |
 | `06_01_croplandcros_cdl_aggregate_using_exactextract.py` | Aggregate CDL rasters to county crop counts | County crop-pixel counts |
@@ -63,4 +65,5 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 - Run `00` before the OEWS crosswalk and county-vintage harmonization steps.
 - `GOOGLE_GEMINI_API_KEY` is used by `02_02`, `03_02`, `06_03`, and `06_04`;
   `GOOGLE_PLACES_API_KEY` by `02_03`; `FRED_API_KEY` by `07`; and
-  `USDA_MYMARKETNEWS_API_KEY` by `10`.
+  `USDA_MYMARKETNEWS_API_KEY` by `10`. `04_03` uses `CENSUS_API_KEY` and
+  caches each state-industry API response for resumable downloads.

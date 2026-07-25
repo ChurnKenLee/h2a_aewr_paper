@@ -81,10 +81,21 @@ county_df <- county_df %>%
   )
 
 
-# emp pop ratio
+# Employment ratios
 
 county_df <- county_df %>%
-  mutate(emp_pop_ratio = emp_tot / pop_census)
+  mutate(
+    emp_pop_ratio = if_else(
+      !is.na(pop_census) & pop_census > 0,
+      emp_tot / pop_census,
+      NA_real_
+    ),
+    farm_emp_share = if_else(
+      !is.na(emp_tot) & emp_tot > 0,
+      emp_farm / emp_tot,
+      NA_real_
+    )
+  )
 
 # logs of some vars
 
@@ -127,11 +138,49 @@ county_df <- county_df %>%
 
 county_df <- county_df %>%
   mutate(
-    share_farm_laborexp_prodexp = farm_laborexpense / farm_prodexp,
+    share_farm_laborexp_prodexp = if_else(
+      !is.na(farm_prodexp) & farm_prodexp > 0,
+      farm_laborexpense / farm_prodexp,
+      NA_real_
+    ),
+    share_farm_prodexp_cashandinc = if_else(
+      !is.na(farm_cashandinc_ppi) & farm_cashandinc_ppi > 0,
+      farm_prodexp_ppi / farm_cashandinc_ppi,
+      NA_real_
+    ),
     share_farm_crop_cashandinc = farm_cashcrops / farm_cashandinc,
     share_farm_animal_cashandinc = farm_cashanimal / farm_cashandinc,
     share_farm_govt_cashandinc = farm_govpayments / farm_cashandinc
   )
+
+# Consecutive-year lags used by the preferred IV specifications. Recompute the
+# existing p10 lag here so all four controls follow the same gap-safe rule.
+county_df <- county_df %>%
+  arrange(countyfips, year) %>%
+  group_by(countyfips) %>%
+  mutate(
+    ln_pop_census_l1 = if_else(
+      lag(year) == year - 1L,
+      lag(ln_pop_census),
+      NA_real_
+    ),
+    farm_emp_share_l1 = if_else(
+      lag(year) == year - 1L,
+      lag(farm_emp_share),
+      NA_real_
+    ),
+    emp_pop_ratio_l1 = if_else(
+      lag(year) == year - 1L,
+      lag(emp_pop_ratio),
+      NA_real_
+    ),
+    wage_p10_l1 = if_else(
+      lag(year) == year - 1L,
+      lag(wage_p10),
+      NA_real_
+    )
+  ) %>%
+  ungroup()
 
 # H2A outcome variables
 

@@ -28,7 +28,12 @@ stopifnot(all(
     "year_fe",
     "statefips",
     "ln_pop_census",
-    "emp_pop_ratio"
+    "ln_pop_census_l1",
+    "farm_emp_share_l1",
+    "emp_pop_ratio_l1",
+    "wage_p10_l1",
+    "share_farm_prodexp_cashandinc",
+    "fisher_quantity_index"
   ) %in%
     names(county_df)
 ))

@@ -1,4 +1,4 @@
-# Purpose: Compare real-wage TWFE first stages across cluster and donor counts.
+# Purpose: Compare real AEWR and p10-bite TWFE first stages across IV designs.
 # Input: data/processed/county_df_analysis_year_iv.parquet.
 # Outputs: first-stage strength CSV/figure and printed strength summary.
 # Run after: code/c03_iv/10_attach_instruments_to_panel.R.
@@ -20,38 +20,110 @@ county_df_iv <- read_parquet(path_processed(
 )) %>%
   clean_names()
 
-iv_design_specs <- crossing(
-  iv_k = 2:5,
-  donor_cluster_count = 1:4
-) %>%
-  filter(donor_cluster_count < iv_k)
+iv_long_specs <- read_parquet(path_int(
+  "iv_oews_entropy_long.parquet"
+))
 
-fs_specs <- iv_design_specs %>%
+iv_weight_specs <- iv_long_specs %>%
+  distinct(
+    weight_spec_label,
+    prior_spec,
+    calibration_mode,
+    duration_analogue,
+    soft_penalty
+  ) %>%
   mutate(
-    outcome_type = "real wage level",
-    outcome = "aewr_ppi",
+    weight_spec_display = case_when(
+      weight_spec_label == "wage_only_exact" ~ "Wage only",
+      weight_spec_label == "wage_seasonal_exact" ~
+        "Wage + seasonal (exact)",
+      weight_spec_label == "wage_seasonal_qwi_duration_exact" ~
+        "Wage + seasonal + QWI duration (exact)",
+      weight_spec_label == "wage_seasonal_census_duration_exact" ~
+        "Wage + seasonal + bridged Census duration (exact)",
+      weight_spec_label == "wage_seasonal_interval" ~
+        "Wage + seasonal (interval)",
+      str_detect(weight_spec_label, "wage_seasonal_soft") ~
+        paste0("Wage + seasonal (rho = ", soft_penalty, ")"),
+      str_detect(weight_spec_label, "_prior_") ~ paste0(
+        "Wage + seasonal (exact; ",
+        str_replace(prior_spec, "_", " "),
+        " prior)"
+      ),
+      .default = weight_spec_label
+    ),
+    weight_spec_order = case_when(
+      weight_spec_label == "wage_only_exact" ~ 1,
+      weight_spec_label == "wage_seasonal_exact" ~ 2,
+      weight_spec_label ==
+        "wage_seasonal_qwi_duration_exact" ~ 3,
+      weight_spec_label ==
+        "wage_seasonal_census_duration_exact" ~ 4,
+      weight_spec_label == "wage_seasonal_interval" ~ 5,
+      str_detect(weight_spec_label, "wage_seasonal_soft") ~
+        6 + soft_penalty,
+      .default = 20
+    )
+  ) %>%
+  arrange(weight_spec_order, weight_spec_label)
+
+# aewr_cz_p10 is constructed upstream in real 2012 dollars as
+# aewr_ppi - wage_p10, where wage_p10 is the CZ prevailing-wage percentile.
+iv_outcome_specs <- tribble(
+  ~outcome_type,                ~outcome,
+  "Real AEWR level",            "aewr_ppi",
+  "Real AEWR bite (minus p10)", "aewr_cz_p10"
+)
+
+iv_design_specs <- iv_long_specs %>%
+  distinct(iv_k, donor_cluster_count, weight_spec_label) %>%
+  inner_join(
+    iv_weight_specs,
+    by = "weight_spec_label",
+    relationship = "many-to-one"
+  )
+
+fs_specs <- crossing(
+  iv_design_specs,
+  iv_outcome_specs
+) %>%
+  mutate(
     design = "levels TWFE",
     fe_spec = "CZ-AEWR region + year",
     fe_terms = "cz_aewr_region_fe + year_fe",
     source = paste0(
-      "OEWS wage-only, 100% gap closure, k = ",
+      "OEWS ",
+      weight_spec_display,
+      ", 100% gap closure, k = ",
       iv_k,
       ", furthest ",
       donor_cluster_count,
       " donor cluster",
       if_else(donor_cluster_count == 1, "", "s")
     ),
-    instrument = paste0(
-      "z_oews_entropy_agwage_l1_k",
-      iv_k,
-      "_d",
-      donor_cluster_count,
-      "_g100"
+    instrument = if_else(
+      weight_spec_label == "wage_only_exact",
+      paste0(
+        "z_oews_entropy_agwage_l1_k",
+        iv_k,
+        "_d",
+        donor_cluster_count,
+        "_g100"
+      ),
+      paste0(
+        "z_oews_entropy_agwage_l1_k",
+        iv_k,
+        "_d",
+        donor_cluster_count,
+        "_g100_",
+        weight_spec_label
+      )
     ),
     model_name = paste(
       "oews_entropy",
       paste0("k", iv_k),
       paste0("d", donor_cluster_count),
+      weight_spec_label,
       "g100",
       outcome,
       "levels_twfe",
@@ -67,7 +139,7 @@ cat(
   "\n\n"
 )
 cat("Instrument timing:\n")
-cat("  Outcome: real AEWR_t (AEWR deflated by the PPI)\n")
+cat("  Outcomes: real AEWR_t and real AEWR_t - CZ p10 wage_t\n")
 cat("  Instrument: donor mean OEWS wage_{t-1}\n")
 cat(
   "  Fixed effects: CZ-AEWR region and year\n\n"
@@ -129,6 +201,9 @@ for (i in seq_len(nrow(fs_specs))) {
         model_name,
         design,
         source,
+        weight_spec_label,
+        weight_spec_display,
+        soft_penalty,
         iv_k,
         donor_cluster_count,
         outcome_type,
@@ -170,7 +245,17 @@ write_csv(
 )
 
 fs_strength_figure <- ggplot(
-  fs_strength,
+  fs_strength %>%
+    mutate(
+      weight_spec_display = factor(
+        weight_spec_display,
+        levels = iv_weight_specs$weight_spec_display
+      ),
+      outcome_type = factor(
+        outcome_type,
+        levels = iv_outcome_specs$outcome_type
+      )
+    ),
   aes(
     x = donor_cluster_count,
     y = first_stage_f,
@@ -186,6 +271,11 @@ fs_strength_figure <- ggplot(
   ) +
   geom_line(linewidth = 0.8) +
   geom_point(size = 2.8) +
+  facet_grid(
+    rows = vars(outcome_type),
+    cols = vars(weight_spec_display),
+    scales = "free_y"
+  ) +
   scale_x_continuous(
     breaks = seq_len(max(iv_design_specs$donor_cluster_count))
   ) +
@@ -201,8 +291,11 @@ fs_strength_figure <- ggplot(
     x = "Number of furthest donor clusters used",
     y = "First-stage F statistic",
     color = "Clusters per AEWR\nregion (k)",
-    title = "Real-wage TWFE first stages by donor-set size",
-    subtitle = "CZ–AEWR-region and year fixed effects; dashed line marks F = 10"
+    title = "TWFE first stages for real AEWR and its p10 bite",
+    subtitle = paste0(
+      "CZ–AEWR-region and year fixed effects; all weights target 100% of ",
+      "the wage gap; dashed line marks F = 10"
+    )
   ) +
   theme_minimal(base_size = 11) +
   theme(
@@ -216,8 +309,8 @@ ggsave(
     "fig_iv_first_stage_strength_by_cluster_count.png"
   ),
   plot = fs_strength_figure,
-  width = 7.5,
-  height = 4.8,
+  width = 14,
+  height = 7.5,
   dpi = 300
 )
 

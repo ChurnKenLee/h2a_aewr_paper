@@ -1,4 +1,4 @@
-# Purpose: Construct the county-year chained Fisher crop price index.
+# Purpose: Construct county-year chained Fisher crop price and quantity indexes.
 # Inputs: county CDL acres and state/national synthetic price-yield tables.
 # Outputs: data/intermediate/price_index_fisher_county_year.parquet
 
@@ -162,21 +162,37 @@ def _(county_cdl_panel, pl):
             )
             .with_columns(
                 [
-                    # Laspeyres: (P1*Q0 / P0*Q0)
+                    # Price indexes hold quantities fixed.
                     (pl.col("sum_p1_q0") / pl.col("sum_p0_q0")).alias("laspeyres"),
-                    # Paasche: (P1*Q1 / P0*Q1)
                     (pl.col("sum_p1_q1") / pl.col("sum_p0_q1")).alias("paasche"),
+                    # Quantity indexes hold prices fixed.
+                    (pl.col("sum_p0_q1") / pl.col("sum_p0_q0")).alias(
+                        "quantity_laspeyres"
+                    ),
+                    (pl.col("sum_p1_q1") / pl.col("sum_p1_q0")).alias(
+                        "quantity_paasche"
+                    ),
                 ]
             )
             .with_columns(
-                # Fisher Link: Sqrt(L * P)
-                (pl.col("laspeyres") * pl.col("paasche")).sqrt().alias("fisher")
+                [
+                    # Fisher links are the geometric means of their
+                    # Laspeyres and Paasche counterparts.
+                    (pl.col("laspeyres") * pl.col("paasche")).sqrt().alias("fisher"),
+                    (
+                        pl.col("quantity_laspeyres")
+                        * pl.col("quantity_paasche")
+                    )
+                    .sqrt()
+                    .alias("quantity_fisher"),
+                ]
             )
             # Convert to log-space for additive chaining
             .with_columns(
                 pl.col("fisher").log().alias("log_fisher"),
                 pl.col("laspeyres").log().alias("log_laspeyres"),
                 pl.col("paasche").log().alias("log_paasche"),
+                pl.col("quantity_fisher").log().alias("log_quantity_fisher"),
             )
             .select(
                 [
@@ -188,6 +204,10 @@ def _(county_cdl_panel, pl):
                     "log_fisher",
                     "log_laspeyres",
                     "log_paasche",
+                    "quantity_fisher",
+                    "quantity_laspeyres",
+                    "quantity_paasche",
+                    "log_quantity_fisher",
                 ]
             )
         )
@@ -204,67 +224,73 @@ def _(bilateral_links, county_cdl_panel, math, pl):
     base_year = 2011
     log100 = math.log(100.0)
 
-    # Forward chain (2012 -> 2024)
-    forward_chain = (
-        bilateral_links.filter(pl.col("year") > base_year)
-        .sort(["fips", "year"])
-        .with_columns(
-            (pl.col("log_fisher").cum_sum().over("fips") + log100).alias("log_index"),
-            pl.col("year").cast(pl.Int32),
+    def chain_index(log_link_column: str, index_column: str) -> pl.DataFrame:
+        # Forward chain (2012 -> 2024)
+        forward_chain = (
+            bilateral_links.filter(pl.col("year") > base_year)
+            .sort(["fips", "year"])
+            .with_columns(
+                (
+                    pl.col(log_link_column).cum_sum().over("fips") + log100
+                ).alias("log_index"),
+                pl.col("year").cast(pl.Int32),
+            )
         )
-    )
 
-    # Backward chain (2010 -> 2008)
-    # Chaining backward means subtracting the log-link from the base
-    backward_chain = (
-        bilateral_links.filter(pl.col("year") <= base_year)
-        .sort(
-            ["fips", "year"], descending=[False, True]
-        )  # Sort years descending within FIPS
-        .with_columns(
-            (log100 - pl.col("log_fisher").cum_sum().over("fips")).alias("log_index"),
-            (pl.col("year") - 1).alias(
-                "target_year"
-            ),  # The link at 2011 defines the step from 2010 to 2011
+        # Backward chaining subtracts each link from the base-year anchor.
+        backward_chain = (
+            bilateral_links.filter(pl.col("year") <= base_year)
+            .sort(["fips", "year"], descending=[False, True])
+            .with_columns(
+                (
+                    log100
+                    - pl.col(log_link_column).cum_sum().over("fips")
+                ).alias("log_index"),
+                (pl.col("year") - 1).alias("target_year"),
+            )
+            .select(["fips", pl.col("target_year").alias("year"), "log_index"])
+            .with_columns(pl.col("year").cast(pl.Int32))
         )
-        .select(["fips", pl.col("target_year").alias("year"), "log_index"])
-        .with_columns(pl.col("year").cast(pl.Int32))
-    )
 
-    # Base year anchor
-    base_anchor = (
-        county_cdl_panel.select("fips")
-        .unique()
-        .with_columns(
-            [
-                pl.lit(base_year).alias("year").cast(pl.Int32),
-                pl.lit(log100).alias("log_index"),
-            ]
+        base_anchor = (
+            county_cdl_panel.select("fips")
+            .unique()
+            .with_columns(
+                [
+                    pl.lit(base_year).alias("year").cast(pl.Int32),
+                    pl.lit(log100).alias("log_index"),
+                ]
+            )
         )
+
+        return (
+            pl.concat(
+                [
+                    forward_chain.select(["fips", "year", "log_index"]),
+                    backward_chain,
+                    base_anchor,
+                ]
+            )
+            .with_columns(pl.col("log_index").exp().alias(index_column))
+            .select("fips", "year", index_column)
+            .sort(["fips", "year"])
+        )
+
+    chained_fisher = chain_index("log_fisher", "fisher_index").join(
+        chain_index("log_quantity_fisher", "fisher_quantity_index"),
+        on=["fips", "year"],
+        how="inner",
+        validate="1:1",
     )
-    # forward_chain = forward_chain.with_columns(pl.col("year").cast(pl.Int32))
-    # backward_chain = backward_chain.with_columns(pl.col("year").cast(pl.Int32))
-    # base_anchor = base_anchor.with_columns(pl.col("year").cast(pl.Int32))
-    return backward_chain, base_anchor, forward_chain
+    return (chained_fisher,)
 
 
 @app.cell
-def _(backward_chain, base_anchor, binary_path, forward_chain, pl):
-    # Combine and exponentiate
-    chained_fisher = (
-        pl.concat(
-            [
-                forward_chain.select(["fips", "year", "log_index"]),
-                backward_chain,
-                base_anchor,
-            ]
-        )
-        .with_columns(pl.col("log_index").exp().alias("fisher_index"))
-        .sort(["fips", "year"])
-        .drop("log_index")
+def _(binary_path, chained_fisher):
+    chained_fisher.write_parquet(
+        binary_path / "price_index_fisher_county_year.parquet"
     )
-    chained_fisher.write_parquet(binary_path / "price_index_fisher_county_year.parquet")
-    return (chained_fisher,)
+    return
 
 
 @app.cell

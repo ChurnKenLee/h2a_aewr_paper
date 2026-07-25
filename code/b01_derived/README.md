@@ -27,7 +27,7 @@ the remaining family and substep numbers are unchanged.
 | Script | Responsibility | Primary output |
 | --- | --- | --- |
 | `01_h2a_aggregation_nodupes.R` | Aggregate worksite records without duplicating case totals | `h2a_aggregated.parquet` |
-| `02_price_index_nass_synthetic_cdl.py` | Construct a county-year chained Fisher crop price index | `price_index_fisher_county_year.parquet` |
+| `02_price_index_nass_synthetic_cdl.py` | Construct county-year chained Fisher crop price and quantity indexes | `price_index_fisher_county_year.parquet` |
 | `03_01_acs_extract.R` | Request, cache, and convert ACS extracts | One-year wage and five-year imputation extracts |
 | `03_02_acs_immigrant_imputation.R` | Impute and aggregate immigrant agricultural labor | `acs_immigrant_imputed.parquet` |
 | `03_03_acs_cz_wage_quantile.R` | Estimate weighted commuting-zone wage quantiles | `acs_czone_wage_quantiles.parquet` |

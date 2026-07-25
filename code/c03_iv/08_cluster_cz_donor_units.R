@@ -1,6 +1,6 @@
 # Purpose: Cluster CZ-by-AEWR-region units and rank dissimilar donor clusters.
 # Inputs: iv_county_features.parquet and processed/county_df_analysis_year.parquet.
-# Outputs: cluster assignments, diagnostics, donor pairs, and cluster maps.
+# Outputs: CZ features, cluster assignments, diagnostics, donor pairs, and maps.
 # Run after: 07_build_cz_features.R and code/c02_build/04_finalize_county_panel.R.
 
 source(
@@ -90,6 +90,15 @@ unit_features <- unit_features %>%
       ~ sqrt(pmax(.x, 0))
     )
   )
+
+# Retain the exact feature representation supplied to the clustering routine:
+# compositional shares use their square-root transform, while continuous
+# climate and soil variables remain in levels. Standardization still occurs
+# separately within each AEWR region below.
+write_parquet(
+  unit_features,
+  path_int("iv_cz_aewr_features.parquet")
+)
 
 # Rescale each feature block to roughly equal weight
 feature_blocks <- list(

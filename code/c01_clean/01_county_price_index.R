@@ -1,4 +1,4 @@
-# Purpose: Normalize the county Fisher price index for the analysis window.
+# Purpose: Normalize county Fisher price and quantity indexes for analysis.
 # Input: data/intermediate/price_index_fisher_county_year.parquet.
 # Output: data/intermediate/nass_fisher_price_index.parquet.
 # Run after: code/b01_derived/02_price_index_nass_synthetic_cdl.py.
@@ -21,7 +21,12 @@ price_data <- read_parquet(path_int(
     countyfips = county_fips(fips),
     year = as.integer(year)
   ) %>%
-  select(countyfips, year, fisher_index) %>%
+  select(
+    countyfips,
+    year,
+    fisher_index,
+    fisher_quantity_index
+  ) %>%
   filter(year >= 2008 & year <= 2022)
 
 write_parquet(

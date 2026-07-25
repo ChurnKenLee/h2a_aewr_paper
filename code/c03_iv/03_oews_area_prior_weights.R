@@ -47,7 +47,14 @@ fls_county_prior <- read_parquet(path_int(
     aewr_region_num,
     cz_out10,
     cz_aewr_region_fe,
-    fls_county_weight_prior = fls_county_weight
+    fls_county_weight_prior = fls_county_weight,
+    fls_county_weight_bea = fls_county_weight_bea,
+    fls_county_weight_census_workers =
+      fls_county_weight_census_workers,
+    fls_county_weight_census_payroll =
+      fls_county_weight_census_payroll,
+    fls_county_weight_qwi_employment =
+      fls_county_weight_qwi_employment
   )
 
 oews_area_crosswalk <- read_parquet(path_int(
@@ -199,4 +206,130 @@ write_parquet(
 write_parquet(
   fls_oews_area_prior,
   path_int("fls_oews_area_prior_weight.parquet")
+)
+
+# Keep the existing BEA files above unchanged for the wage-only benchmark.
+# The long files below expose one distinct prior at a time for sensitivity
+# calibration and downstream instrument construction.
+fls_county_prior_long <- fls_county_prior %>%
+  select(
+    -fls_county_weight_prior
+  ) %>%
+  pivot_longer(
+    cols = starts_with("fls_county_weight_"),
+    names_to = "prior_spec",
+    values_to = "fls_county_weight_prior"
+  ) %>%
+  mutate(
+    prior_spec = recode(
+      prior_spec,
+      fls_county_weight_bea = "bea",
+      fls_county_weight_census_workers = "census_workers",
+      fls_county_weight_census_payroll = "census_payroll",
+      fls_county_weight_qwi_employment = "qwi_employment"
+    )
+  ) %>%
+  filter(
+    is.finite(fls_county_weight_prior),
+    fls_county_weight_prior > 0
+  )
+
+fls_county_area_prior_by_spec <- fls_county_prior_long %>%
+  inner_join(
+    oews_area_crosswalk,
+    by = c("countyfips", "year")
+  ) %>%
+  left_join(
+    oews_area_wage,
+    by = c("oews_area_code", "year")
+  ) %>%
+  mutate(
+    oews_area_name = coalesce(oews_area_name_data, oews_area_name),
+    county_area_allocation_base = if_else(
+      !is.na(oews_area_tot_emp) & oews_area_tot_emp > 0,
+      oews_area_tot_emp,
+      0
+    )
+  ) %>%
+  group_by(countyfips, year, prior_spec) %>%
+  mutate(
+    county_area_count = n(),
+    county_area_allocation_total = sum(
+      county_area_allocation_base,
+      na.rm = TRUE
+    ),
+    county_area_allocation = if_else(
+      county_area_allocation_total > 0,
+      county_area_allocation_base / county_area_allocation_total,
+      1 / county_area_count
+    )
+  ) %>%
+  ungroup() %>%
+  mutate(
+    county_area_prior_weight = fls_county_weight_prior *
+      county_area_allocation
+  ) %>%
+  select(
+    countyfips,
+    year,
+    statefips,
+    state_abbrev,
+    aewr_region_num,
+    cz_out10,
+    cz_aewr_region_fe,
+    prior_spec,
+    oews_area_code,
+    oews_area_name,
+    oews_area_mean_hourly_wage,
+    oews_area_tot_emp,
+    fls_county_weight_prior,
+    county_area_count,
+    county_area_allocation,
+    county_area_prior_weight
+  )
+
+fls_oews_area_prior_by_spec <- fls_county_area_prior_by_spec %>%
+  group_by(
+    aewr_region_num,
+    year,
+    prior_spec,
+    oews_area_code
+  ) %>%
+  summarise(
+    oews_area_name = first_nonmissing(oews_area_name),
+    oews_area_mean_hourly_wage = first(oews_area_mean_hourly_wage),
+    oews_area_tot_emp = first(oews_area_tot_emp),
+    oews_area_prior_weight_all = sum(
+      county_area_prior_weight,
+      na.rm = TRUE
+    ),
+    oews_area_county_count = n_distinct(countyfips),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    oews_wage_observed = !is.na(oews_area_mean_hourly_wage) &
+      oews_area_mean_hourly_wage > 0
+  ) %>%
+  group_by(aewr_region_num, year, prior_spec) %>%
+  mutate(
+    oews_observed_prior_mass = sum(
+      if_else(oews_wage_observed, oews_area_prior_weight_all, 0),
+      na.rm = TRUE
+    ),
+    oews_area_prior_weight = if_else(
+      oews_wage_observed & oews_observed_prior_mass > 0,
+      oews_area_prior_weight_all / oews_observed_prior_mass,
+      NA_real_
+    )
+  ) %>%
+  ungroup()
+
+write_parquet(
+  fls_county_area_prior_by_spec,
+  path_int("fls_county_oews_area_prior_weight_by_spec.parquet")
+)
+
+write_parquet(
+  fls_oews_area_prior_by_spec,
+  path_int("fls_oews_area_prior_weight_by_spec.parquet")
 )

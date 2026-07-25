@@ -6,7 +6,7 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    # Purpose: Derive county hired-worker duration shares from the Census of Agriculture.
+    # Purpose: Derive county hired-worker duration and payroll from the Census of Agriculture.
     # Inputs: data/intermediate/qs_census_economics.parquet
     # Outputs: data/intermediate/census_ag_hired_worker_duration_county.parquet
 
@@ -20,8 +20,11 @@ def _():
 
 @app.cell
 def _(input_path, pl):
-    worker_items = {
+    labor_items = {
         "LABOR, HIRED - NUMBER OF WORKERS": "census_hired_workers_total",
+        "LABOR, HIRED - EXPENSE, MEASURED IN $": (
+            "census_hired_labor_expense"
+        ),
         "LABOR, HIRED, GE 150 DAYS - NUMBER OF WORKERS": (
             "census_hired_workers_150_days_or_more"
         ),
@@ -38,11 +41,9 @@ def _(input_path, pl):
             & (pl.col("freq_desc") == "ANNUAL")
             & (pl.col("reference_period_desc") == "YEAR")
             & (pl.col("commodity_desc") == "LABOR")
-            & (pl.col("statisticcat_desc") == "WORKERS")
-            & (pl.col("unit_desc") == "NUMBER")
             & (pl.col("domain_desc") == "TOTAL")
             & (pl.col("prodn_practice_desc") == "ALL PRODUCTION PRACTICES")
-            & pl.col("short_desc").is_in(list(worker_items))
+            & pl.col("short_desc").is_in(list(labor_items))
         )
         .with_columns(
             pl.when(pl.col("value") == "(Z)")
@@ -93,7 +94,7 @@ def _(input_path, pl):
         values="numeric_value",
     )
 
-    census_labor = census_labor.rename(worker_items)
+    census_labor = census_labor.rename(labor_items)
 
     census_labor = (
         census_labor.with_columns(
@@ -133,6 +134,7 @@ def _(input_path, pl):
             "county_code",
             "county_name",
             "census_hired_workers_total",
+            "census_hired_labor_expense",
             "census_hired_workers_150_days_or_more",
             "census_hired_workers_less_than_150_days",
             "census_hired_workers_duration_total",

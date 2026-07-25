@@ -247,7 +247,8 @@ county_df <- merge(
   all.y = F
 )
 
-# deflate fisher price index to real 2012 terms
+# Deflate the Fisher price index to real 2012 terms. The companion Fisher
+# quantity index is unit-free and stays normalized to 2011 = 100.
 # ppi_2012 is already present in county_df via bea_cainc45_data_year merge
 county_df <- county_df %>%
   mutate(fisher_index_ppi = fisher_index / ppi_2012)
