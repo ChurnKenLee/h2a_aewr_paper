@@ -5,35 +5,35 @@
    \begin{tabular}{lcc}
       \tabularnewline \midrule \midrule
       Dependent Variable: & \multicolumn{2}{c}{share\_farm\_prodexp\_cashandinc}\\
-                                        & No controls    & Lagged controls \\   
-      Model:                            & (1)            & (2)\\  
+                                        & No controls & Lagged controls \\   
+      Model:                            & (1)         & (2)\\  
       \midrule
       \emph{Variables}\\
-      Real AEWR (2012 dollars)          & 0.0697$^{***}$ & 0.0897$^{***}$\\   
-                                        & (0.0247)       & (0.0307)\\   
+      Real AEWR (2012 dollars)          & 0.0214      & 0.0364$^{*}$\\   
+                                        & (0.0152)    & (0.0186)\\   
       \midrule
       \emph{Fixed-effects}\\
-      county\_fe                        & Yes            & Yes\\  
-      year\_fe                          & Yes            & Yes\\  
+      county\_fe                        & Yes         & Yes\\  
+      year\_fe                          & Yes         & Yes\\  
       \midrule
       \emph{Fit statistics}\\
-      First-stage excluded-instrument F & 78.86          & 59.18\\  
-      Observations                      & 32,619         & 32,619\\  
-      R$^2$                             & 0.72134        & 0.72292\\  
-      Within R$^2$                      & 0.00046        & 0.00613\\  
-      Controls                          & No             & Yes\\  
-      County fixed effects              & Yes            & Yes\\  
-      Year fixed effects                & Yes            & Yes\\  
-      CZ-clustered SEs                  & Yes            & Yes\\  
-      Number of SE clusters             & 600            & 600\\  
-      Common pair sample                & Yes            & Yes\\  
+      First-stage excluded-instrument F & 14.68       & 10.63\\  
+      Observations                      & 888         & 888\\  
+      R$^2$                             & 0.84332     & 0.84641\\  
+      Within R$^2$                      & 0.00551     & 0.02518\\  
+      Controls                          & No          & Yes\\  
+      County fixed effects              & Yes         & Yes\\  
+      Year fixed effects                & Yes         & Yes\\  
+      CZ-clustered SEs                  & Yes         & Yes\\  
+      Number of SE clusters             & 31          & 31\\  
+      Common pair sample                & Yes         & Yes\\  
       \midrule \midrule
-      \multicolumn{3}{l}{\emph{Clustered (cz\_out10) standard-errors in parentheses}}\\
+      \multicolumn{3}{l}{\emph{Clustered (cz\_id) standard-errors in parentheses}}\\
       \multicolumn{3}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
    \end{tabular}
    
    \par \raggedright 
-   Real AEWR is instrumented with the k = 5, d = 2, rho = 16 donor OEWS wage.\\
+   Real AEWR is instrumented with the k = 5, d = 2 donor OEWS wage using exact FLS wage and January/April/July moment constraints with the BEA prior.\\
    Both columns use the controlled specification's complete-case sample from 2011 onward.
 \end{table}
 

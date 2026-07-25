@@ -51,10 +51,8 @@ iv_weight_specs <- iv_long_specs %>%
     weight_spec_order = case_when(
       weight_spec_label == "wage_only_exact" ~ 1,
       weight_spec_label == "wage_seasonal_exact" ~ 2,
-      weight_spec_label ==
-        "wage_seasonal_qwi_duration_exact" ~ 3,
-      weight_spec_label ==
-        "wage_seasonal_census_duration_exact" ~ 4,
+      weight_spec_label == "wage_seasonal_qwi_duration_exact" ~ 3,
+      weight_spec_label == "wage_seasonal_census_duration_exact" ~ 4,
       weight_spec_label == "wage_seasonal_interval" ~ 5,
       str_detect(weight_spec_label, "wage_seasonal_soft") ~
         6 + soft_penalty,
@@ -66,9 +64,9 @@ iv_weight_specs <- iv_long_specs %>%
 # aewr_cz_p10 is constructed upstream in real 2012 dollars as
 # aewr_ppi - wage_p10, where wage_p10 is the CZ prevailing-wage percentile.
 iv_outcome_specs <- tribble(
-  ~outcome_type,                ~outcome,
-  "Real AEWR level",            "aewr_ppi",
-  "Real AEWR bite (minus p10)", "aewr_cz_p10"
+  ~outcome_type                , ~outcome      ,
+  "Real AEWR level"            , "aewr_ppi"    ,
+  "Real AEWR bite (minus p10)" , "aewr_cz_p10"
 )
 
 iv_design_specs <- iv_long_specs %>%

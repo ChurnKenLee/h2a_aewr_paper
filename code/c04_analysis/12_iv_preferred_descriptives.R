@@ -183,7 +183,7 @@ national_wage_region_cells <- oews_region_wages %>%
         policy_year,
         fls_wage_nominal,
         fls_worker_weight
-    ),
+      ),
     by = c("aewr_region_id", "source_year", "policy_year"),
     relationship = "many-to-one"
   ) %>%
@@ -497,10 +497,8 @@ cz_wage_scatter <- ggplot(
     nrow = 1,
     labeller = as_labeller(
       c(
-        "Unweighted donor OEWS" =
-          "Panel A: Unweighted donor OEWS",
-        "Entropy-weighted donor OEWS" =
-          "Panel B: Entropy-weighted donor OEWS"
+        "Unweighted donor OEWS" = "Panel A: Unweighted donor OEWS",
+        "Entropy-weighted donor OEWS" = "Panel B: Entropy-weighted donor OEWS"
       )
     )
   ) +
@@ -570,8 +568,7 @@ weight_sum_diagnostic <- cz_entropy_weights %>%
   )
 
 stopifnot(
-  max(abs(weight_sum_diagnostic$cz_weight_sum - 1), na.rm = TRUE) <
-    1e-8
+  max(abs(weight_sum_diagnostic$cz_weight_sum - 1), na.rm = TRUE) < 1e-8
 )
 
 weight_change_data <- cz_entropy_weights %>%
@@ -740,30 +737,32 @@ donor_mean_features <- target_donor_features %>%
 
 similarity_slopes <- donor_mean_features %>%
   group_by(aewr_region_id, feature, feature_label) %>%
-  group_modify(~ {
-    complete <- .x %>%
-      filter(is.finite(target_value), is.finite(donor_mean_value))
-    valid <- nrow(complete) >= 3 &&
-      sd(complete$target_value) > 0 &&
-      sd(complete$donor_mean_value) > 0
-    if (!valid) {
-      return(tibble(
+  group_modify(
+    ~ {
+      complete <- .x %>%
+        filter(is.finite(target_value), is.finite(donor_mean_value))
+      valid <- nrow(complete) >= 3 &&
+        sd(complete$target_value) > 0 &&
+        sd(complete$donor_mean_value) > 0
+      if (!valid) {
+        return(tibble(
+          observations = nrow(complete),
+          slope = NA_real_,
+          intercept = NA_real_,
+          r2 = NA_real_,
+          regression_status = "undefined_zero_variance_or_support"
+        ))
+      }
+      fit <- lm(target_value ~ donor_mean_value, data = complete)
+      tibble(
         observations = nrow(complete),
-        slope = NA_real_,
-        intercept = NA_real_,
-        r2 = NA_real_,
-        regression_status = "undefined_zero_variance_or_support"
-      ))
+        slope = unname(coef(fit)[["donor_mean_value"]]),
+        intercept = unname(coef(fit)[["(Intercept)"]]),
+        r2 = summary(fit)$r.squared,
+        regression_status = "estimated"
+      )
     }
-    fit <- lm(target_value ~ donor_mean_value, data = complete)
-    tibble(
-      observations = nrow(complete),
-      slope = unname(coef(fit)[["donor_mean_value"]]),
-      intercept = unname(coef(fit)[["(Intercept)"]]),
-      r2 = summary(fit)$r.squared,
-      regression_status = "estimated"
-    )
-  }) %>%
+  ) %>%
   ungroup()
 
 write_csv(

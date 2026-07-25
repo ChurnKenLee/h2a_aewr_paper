@@ -19,27 +19,27 @@ county_df_iv <- read_parquet(path_processed(
 ))
 
 iv_outcomes <- tribble(
-  ~outcome, ~outcome_label, ~table_stub,
-  "h2a_cert_share_farm_workers_2011_start_year",
-  "H-2A certified workers / 2011 farm employment",
-  "h2a_normalized",
-  "fisher_index_ppi",
-  "Real Fisher crop price index",
-  "prices",
-  "emp_farm",
-  "Farm employment",
-  "farm_employment",
-  "share_farm_prodexp_cashandinc",
-  "Farm production expenses / cash receipts and other income",
-  "production_expense_share",
-  "farm_cashandinc_ppi",
-  "Real farm cash receipts and other income",
-  "farm_income",
-  "share_farm_laborexp_prodexp",
-  "Hired-labor share of farm production expenses",
-  "farm_labor_share",
-  "fisher_quantity_index",
-  "Fisher crop output-quantity index (2011 = 100)",
+  ~outcome                                                    , ~outcome_label , ~table_stub ,
+  "h2a_cert_share_farm_workers_2011_start_year"               ,
+  "H-2A certified workers / 2011 farm employment"             ,
+  "h2a_normalized"                                            ,
+  "fisher_index_ppi"                                          ,
+  "Real Fisher crop price index"                              ,
+  "prices"                                                    ,
+  "emp_farm"                                                  ,
+  "Farm employment"                                           ,
+  "farm_employment"                                           ,
+  "share_farm_prodexp_cashandinc"                             ,
+  "Farm production expenses / cash receipts and other income" ,
+  "production_expense_share"                                  ,
+  "farm_cashandinc_ppi"                                       ,
+  "Real farm cash receipts and other income"                  ,
+  "farm_income"                                               ,
+  "share_farm_laborexp_prodexp"                               ,
+  "Hired-labor share of farm production expenses"             ,
+  "farm_labor_share"                                          ,
+  "fisher_quantity_index"                                     ,
+  "Fisher crop output-quantity index (2011 = 100)"            ,
   "output_quantities"
 )
 
@@ -139,11 +139,11 @@ first_stage_data <- finite_complete(
 )
 
 first_stage_specs <- tribble(
-  ~column, ~weight_spec, ~controls, ~header,
-  1L, "Wage-only entropy weights", FALSE, "Basic",
-  2L, "Exact seasonal FLS moments", FALSE, "Exact seasonal moments",
-  3L, "Wage-only entropy weights", TRUE, "Basic + controls",
-  4L, "Exact seasonal FLS moments", TRUE,
+  ~column                                         , ~weight_spec                 , ~controls , ~header                  ,
+  1L                                              , "Wage-only entropy weights"  , FALSE     , "Basic"                  ,
+  2L                                              , "Exact seasonal FLS moments" , FALSE     , "Exact seasonal moments" ,
+  3L                                              , "Wage-only entropy weights"  , TRUE      , "Basic + controls"       ,
+  4L                                              , "Exact seasonal FLS moments" , TRUE      ,
   "Exact seasonal moments + controls (preferred)"
 )
 
@@ -221,7 +221,7 @@ etable(
     "emp_pop_ratio_l1" = "Lagged employment/population",
     "wage_p10_l1" = "Lagged real p10 wage"
   ),
-  fitstat = ~n + r2 + wr2,
+  fitstat = ~ n + r2 + wr2,
   extralines = list(
     "_^Excluded-instrument F" = format_table_number(
       first_stage_stats$first_stage_f,
@@ -381,7 +381,7 @@ for (i in seq_len(nrow(iv_outcomes))) {
       "emp_pop_ratio_l1" = "Lagged employment/population",
       "wage_p10_l1" = "Lagged real p10 wage"
     ),
-    fitstat = ~n + r2 + wr2,
+    fitstat = ~ n + r2 + wr2,
     extralines = list(
       "_^First-stage excluded-instrument F" = format_table_number(
         pair_f,
@@ -426,7 +426,8 @@ stopifnot(
     iv_model_results %>%
       group_by(outcome) %>%
       summarise(n_values = n_distinct(n), .groups = "drop") %>%
-      pull(n_values) == 1
+      pull(n_values) ==
+      1
   )
 )
 

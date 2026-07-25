@@ -199,24 +199,24 @@ wage_only_seasonal_balance <- read_parquet(path_int(
   ) %>%
   group_by(aewr_region_id, year) %>%
   summarise(
-    seasonal_january_standardized_imbalance = (
-      sum(
-        oews_area_weight_wage_calibrated *
-          calibration_feature_seasonal_january
-      ) - first(fls_hired_worker_share_january)
-    ) / first(seasonal_january_feature_scale),
-    seasonal_april_standardized_imbalance = (
-      sum(
-        oews_area_weight_wage_calibrated *
-          calibration_feature_seasonal_april
-      ) - first(fls_hired_worker_share_april)
-    ) / first(seasonal_april_feature_scale),
-    seasonal_july_standardized_imbalance = (
-      sum(
-        oews_area_weight_wage_calibrated *
-          calibration_feature_seasonal_july
-      ) - first(fls_hired_worker_share_july)
-    ) / first(seasonal_july_feature_scale),
+    seasonal_january_standardized_imbalance = (sum(
+      oews_area_weight_wage_calibrated *
+        calibration_feature_seasonal_january
+    ) -
+      first(fls_hired_worker_share_january)) /
+      first(seasonal_january_feature_scale),
+    seasonal_april_standardized_imbalance = (sum(
+      oews_area_weight_wage_calibrated *
+        calibration_feature_seasonal_april
+    ) -
+      first(fls_hired_worker_share_april)) /
+      first(seasonal_april_feature_scale),
+    seasonal_july_standardized_imbalance = (sum(
+      oews_area_weight_wage_calibrated *
+        calibration_feature_seasonal_july
+    ) -
+      first(fls_hired_worker_share_july)) /
+      first(seasonal_july_feature_scale),
     .groups = "drop"
   )
 

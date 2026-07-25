@@ -27,7 +27,6 @@ aewr_reg_ts_data_color <- aewr_reg_ts_data %>%
 #### Exhibit 7: Exposure Map: Counties by Sample Classification ----------------
 ## DDD Sample Map
 
-
 ddd_map_data <- county_df %>%
   dplyr::select(
     county_fips,
@@ -85,7 +84,6 @@ ggsave(
 #### Exhibit 10: DDD by Graph with predicted usage -----------------------
 # need to make the ts graph using the trend growth as a dummy
 
-
 aewr_reg_ts_data <- aewr_reg_ts_data %>%
   mutate(
     aewr_high_growth_p50 = ifelse(
@@ -98,7 +96,6 @@ aewr_reg_ts_data <- aewr_reg_ts_data %>%
   )
 
 # need: nbr_workers_requested_start_year, high / low dummy, growth dummy, year
-
 
 aewr_reg_ts_h2a <- county_df %>%
   select(

@@ -5,28 +5,28 @@
    \begin{tabular}{lcccc}
       \tabularnewline \midrule \midrule
       Dependent Variable: & \multicolumn{4}{c}{aewr\_ppi}\\
-                            & Basic          & Alternative moments & Basic + controls & Alternative moments + controls (preferred) \\   
-      Model:                & (1)            & (2)                 & (3)              & (4)\\  
+                            & Basic    & Exact seasonal moments & Basic + controls & Exact seasonal moments + controls (preferred) \\   
+      Model:                & (1)      & (2)                    & (3)              & (4)\\  
       \midrule
       \emph{Variables}\\
-      Instrument $Z$        & 0.3856$^{***}$ & 0.0433$^{***}$      & 0.3714$^{***}$   & 0.0367$^{***}$\\   
-                            & (0.0113)       & (0.0048)            & (0.0108)         & (0.0047)\\   
+      Instrument $Z$        & 0.1930   & 0.5701$^{***}$         & 0.0862           & 0.4492$^{***}$\\   
+                            & (0.2067) & (0.1416)               & (0.1738)         & (0.1288)\\   
       \midrule
       \emph{Fixed-effects}\\
-      county\_fe            & Yes            & Yes                 & Yes              & Yes\\  
-      year\_fe              & Yes            & Yes                 & Yes              & Yes\\  
+      county\_fe            & Yes      & Yes                    & Yes              & Yes\\  
+      year\_fe              & Yes      & Yes                    & Yes              & Yes\\  
       \midrule
       \emph{Fit statistics}\\
-      Excluded-instrument F & 1,161.97       & 79.96               & 1,188.75         & 60.74\\  
-      Observations          & 33,001         & 33,001              & 33,001           & 33,001\\  
-      R$^2$                 & 0.98113        & 0.97453             & 0.98193          & 0.97579\\  
-      Within R$^2$          & 0.27368        & 0.01959             & 0.30421          & 0.06803\\  
-      Controls              & No             & No                  & Yes              & Yes\\  
-      CZ-clustered SEs      & Yes            & Yes                 & Yes              & Yes\\  
-      Number of SE clusters & 601            & 601                 & 601              & 601\\  
-      Common sample         & Yes            & Yes                 & Yes              & Yes\\  
+      Excluded-instrument F & 0.87     & 16.20                  & 0.25             & 12.16\\  
+      Observations          & 927      & 927                    & 927              & 927\\  
+      R$^2$                 & 0.95903  & 0.96903                & 0.96845          & 0.97432\\  
+      Within R$^2$          & 0.01247  & 0.25352                & 0.23947          & 0.38088\\  
+      Controls              & No       & No                     & Yes              & Yes\\  
+      CZ-clustered SEs      & Yes      & Yes                    & Yes              & Yes\\  
+      Number of SE clusters & 32       & 32                     & 32               & 32\\  
+      Common sample         & Yes      & Yes                    & Yes              & Yes\\  
       \midrule \midrule
-      \multicolumn{5}{l}{\emph{Clustered (cz\_out10) standard-errors in parentheses}}\\
+      \multicolumn{5}{l}{\emph{Clustered (cz\_id) standard-errors in parentheses}}\\
       \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
    \end{tabular}
    
