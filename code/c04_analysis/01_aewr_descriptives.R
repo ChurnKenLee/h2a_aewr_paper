@@ -3,12 +3,9 @@
 # Outputs: AEWR descriptive figures and analysis_aewr_region_trends.parquet.
 # Run after: code/c01_clean/08_aewr_panel.R and code/c02_build/04_finalize_county_panel.R.
 
-source(if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-  file.path("code", "bootstrap_paths.R")
-} else {
-  file.path("..", "bootstrap_paths.R")
-})
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "analysis_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -24,9 +21,9 @@ county_map <- read_county_map(
 )
 
 save_aewr_region_ts <- function(aewr_data, y_var, y_label, filename_prefix) {
-  for (region in sort(unique(aewr_data$aewr_region_num))) {
+  for (region in sort(unique(aewr_data$aewr_region_id))) {
     plot <- ggplot(
-      subset(aewr_data, aewr_region_num == region),
+      subset(aewr_data, aewr_region_id == region),
       aes(x = year, y = .data[[y_var]])
     ) +
       geom_line() +
@@ -42,7 +39,7 @@ save_aewr_region_ts <- function(aewr_data, y_var, y_label, filename_prefix) {
 
 bite_long <- county_df %>%
   filter(any_cropland_2007 == 1) %>%
-  select(countyfips, year, aewr_cz_p10, aewr_cz_p25, aewr_cz_p50) %>%
+  select(county_fips, year, aewr_cz_p10, aewr_cz_p25, aewr_cz_p50) %>%
   pivot_longer(
     cols = c(aewr_cz_p10, aewr_cz_p25, aewr_cz_p50),
     names_to = "percentile",
@@ -150,20 +147,20 @@ ggplot(ts_ddd, aes(x = pch_aewr_ppi)) +
 # need to make high growth and low growth regions
 
 aewr_reg_ts_data <- county_df %>%
-  select(aewr_region_num, aewr_state_ag_ppi, year) %>%
-  arrange(year, aewr_region_num) %>%
-  group_by(aewr_region_num, year) %>%
+  select(aewr_region_id, aewr_state_ag_ppi, year) %>%
+  arrange(year, aewr_region_id) %>%
+  group_by(aewr_region_id, year) %>%
   summarise(aewr_state_ag_ppi = mean(aewr_state_ag_ppi, na.rm = T))
 
 aewr_base <- aewr_reg_ts_data %>%
   filter(year < 2011) %>%
-  group_by(aewr_region_num) %>%
+  group_by(aewr_region_id) %>%
   summarise(aewr_ppi_base = mean(aewr_state_ag_ppi, na.rm = T))
 
 aewr_reg_ts_data <- merge(
   x = aewr_reg_ts_data,
   y = aewr_base,
-  by = "aewr_region_num",
+  by = "aewr_region_id",
   all = T
 )
 
@@ -186,35 +183,34 @@ aewr_reg_ts_data <- aewr_reg_ts_data %>%
 
 aewr_reg_ts_data_color <- aewr_reg_ts_data %>%
   filter(year == 2022 | year == 2008) %>%
-  select(aewr_region_num, aewr_ppi_chbase_detrend, year) %>%
+  select(aewr_region_id, aewr_ppi_chbase_detrend, year) %>%
   pivot_wider(
-    id_cols = aewr_region_num,
+    id_cols = aewr_region_id,
     names_from = "year",
     values_from = "aewr_ppi_chbase_detrend"
   )
 
 aewr_reg_ts_data_color <- aewr_reg_ts_data_color %>%
   mutate(aewr_high_growth = `2022` - `2008`) %>%
-  select(aewr_region_num, aewr_high_growth)
+  select(aewr_region_id, aewr_high_growth)
 
 aewr_reg_ts_data <- merge(
   x = aewr_reg_ts_data,
   y = aewr_reg_ts_data_color,
-  by = "aewr_region_num"
+  by = "aewr_region_id"
 )
 
 # need to make an AEWR region to stat xwalk
 
 aewr_state_xwalk <- unique(
   county_df %>%
-    select(aewr_region_num, statefips)
-) %>%
-  rename(statefip = statefips)
+    select(aewr_region_id, state_fips)
+)
 
 county_map_aewr <- merge(
   x = county_map,
   y = aewr_state_xwalk,
-  by = "statefip",
+  by = "state_fips",
   all.x = T,
   all.y = F
 )
@@ -222,7 +218,7 @@ county_map_aewr <- merge(
 county_map_aewr <- merge(
   x = county_map_aewr,
   y = aewr_reg_ts_data,
-  by = "aewr_region_num",
+  by = "aewr_region_id",
   all.x = T,
   all.y = F
 )
@@ -272,8 +268,8 @@ county_bite_change <- county_df %>%
     county_simple_treatment_groups != "always takers",
     year %in% c(2008, 2022)
   ) %>%
-  select(countyfips, year, aewr_cz_p25) %>%
-  distinct(countyfips, year, .keep_all = TRUE) %>%
+  select(county_fips, year, aewr_cz_p25) %>%
+  distinct(county_fips, year, .keep_all = TRUE) %>%
   pivot_wider(
     names_from = year,
     values_from = aewr_cz_p25,
@@ -287,7 +283,7 @@ bite_median <- median(county_bite_change$bite_change_2008_2022, na.rm = TRUE)
 county_map_bite <- merge(
   x = county_map,
   y = county_bite_change,
-  by = "countyfips",
+  by = "county_fips",
   all.x = TRUE,
   all.y = FALSE
 )
@@ -340,7 +336,7 @@ plot_aewr_reg_ts <- ggplot(
   aes(
     x = year,
     y = aewr_ppi_chbase_detrend,
-    group = as.factor(aewr_region_num),
+    group = as.factor(aewr_region_id),
     color = aewr_high_growth
   )
 ) +
@@ -375,7 +371,7 @@ ggsave(
 # Calculate diffs
 distribution_of_aewr_changes <- county_df %>%
   select(
-    countyfips,
+    county_fips,
     year,
     aewr_cz_p10,
     aewr_cz_p10_l1,
@@ -509,24 +505,64 @@ dir.create(path_figures("aewr_ts"), recursive = TRUE, showWarnings = FALSE)
 
 aewr_data <- read_parquet(path_processed("aewr_data_full.parquet"))
 
-save_aewr_region_ts(aewr_data, "ln_aewr", "Log AEWR (nominal)", "ts_ln_aewr_nominal_")
-save_aewr_region_ts(aewr_data, "ln_aewr_l1", "Log Change AEWR (nominal)", "ts_ln_aewr_l1_nominal_")
-save_aewr_region_ts(aewr_data, "aewr_diff", "AEWR (nominal) difference from LOO trend", "ts_aewr_diffloo_nominal_")
-save_aewr_region_ts(aewr_data, "aewr_ppi_diff", "AEWR (real) difference from LOO trend", "ts_aewr_diffloo_real_")
+save_aewr_region_ts(
+  aewr_data,
+  "ln_aewr",
+  "Log AEWR (nominal)",
+  "ts_ln_aewr_nominal_"
+)
+save_aewr_region_ts(
+  aewr_data,
+  "ln_aewr_l1",
+  "Log Change AEWR (nominal)",
+  "ts_ln_aewr_l1_nominal_"
+)
+save_aewr_region_ts(
+  aewr_data,
+  "aewr_diff",
+  "AEWR (nominal) difference from LOO trend",
+  "ts_aewr_diffloo_nominal_"
+)
+save_aewr_region_ts(
+  aewr_data,
+  "aewr_ppi_diff",
+  "AEWR (real) difference from LOO trend",
+  "ts_aewr_diffloo_real_"
+)
 save_aewr_region_ts(aewr_data, "aewr", "AEWR (nominal)", "ts_aewr_nominal_")
 save_aewr_region_ts(aewr_data, "aewr_ppi", "AEWR (real)", "ts_aewr_real_")
-save_aewr_region_ts(aewr_data, "ch_aewr", "Change AEWR (nominal)", "ts_change_aewr_nominal_")
-save_aewr_region_ts(aewr_data, "ch_aewr_ppi", "Change AEWR (real)", "ts_change_aewr_real_")
-save_aewr_region_ts(aewr_data, "pch_aewr", "Percent Change AEWR (nominal)", "ts_percentchange_aewr_nominal_")
-save_aewr_region_ts(aewr_data, "pch_aewr_ppi", "Percent Change AEWR (real)", "ts_percentchange_aewr_real_")
+save_aewr_region_ts(
+  aewr_data,
+  "ch_aewr",
+  "Change AEWR (nominal)",
+  "ts_change_aewr_nominal_"
+)
+save_aewr_region_ts(
+  aewr_data,
+  "ch_aewr_ppi",
+  "Change AEWR (real)",
+  "ts_change_aewr_real_"
+)
+save_aewr_region_ts(
+  aewr_data,
+  "pch_aewr",
+  "Percent Change AEWR (nominal)",
+  "ts_percentchange_aewr_nominal_"
+)
+save_aewr_region_ts(
+  aewr_data,
+  "pch_aewr_ppi",
+  "Percent Change AEWR (real)",
+  "ts_percentchange_aewr_real_"
+)
 
 combo_plot <- ggplot(
   data = aewr_data,
   aes(
     x = year,
     y = pch_aewr,
-    group = as.factor(aewr_region_num),
-    color = as.factor(aewr_region_num)
+    group = as.factor(aewr_region_id),
+    color = as.factor(aewr_region_id)
   )
 ) +
   geom_line() +

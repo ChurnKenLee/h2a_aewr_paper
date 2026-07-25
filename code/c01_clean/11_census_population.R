@@ -2,14 +2,9 @@
 # Inputs: three Census population vintages and the Connecticut growth crosswalk.
 # Output: data/intermediate/census_pop_ests_year.parquet.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 library(readr)
@@ -58,7 +53,7 @@ census_pop_ests <- merge(
 
 census_pop_ests <- census_pop_ests %>%
   mutate(
-    countyfips = combine_county_fips(STATE, COUNTY)
+    county_fips = combine_county_fips(STATE, COUNTY)
   )
 
 census_pop_ests <- census_pop_ests %>%
@@ -82,8 +77,8 @@ census_pop_ests <- census_pop_ests %>%
 census_pop_ests <- census_pop_ests %>%
   mutate(
     ct_region = ifelse(
-      as.integer(countyfips) >= 9000 &
-        as.integer(countyfips) <= 9999 &
+      as.integer(county_fips) >= 9000 &
+        as.integer(county_fips) <= 9999 &
         year >= 2020,
       1,
       0
@@ -92,8 +87,8 @@ census_pop_ests <- census_pop_ests %>%
 
 ct_base <- census_pop_ests %>%
   filter(
-    as.integer(countyfips) >= 9000 &
-      as.integer(countyfips) <= 9999 &
+    as.integer(county_fips) >= 9000 &
+      as.integer(county_fips) <= 9999 &
       year == 2019
   )
 
@@ -102,11 +97,11 @@ census_pop_ests <- census_pop_ests %>%
   select(-ct_region)
 
 census_pop_ests <- census_pop_ests %>%
-  filter(as.integer(countyfips) < 9100 | as.integer(countyfips) > 9199) # get rid of the regions
+  filter(as.integer(county_fips) < 9100 | as.integer(county_fips) > 9199) # get rid of the regions
 
 ct_base <- ct_base %>%
-  filter(as.integer(countyfips) < 9100) %>%
-  select(countyfips, pop_census) %>%
+  filter(as.integer(county_fips) < 9100) %>%
+  select(county_fips, pop_census) %>%
   mutate(
     pop_census2020 = pop_census * ct_popgrth$grt[ct_popgrth$year == 2020],
     pop_census2021 = pop_census2020 * ct_popgrth$grt[ct_popgrth$year == 2021],
@@ -130,18 +125,17 @@ census_pop_ests <- rbind(census_pop_ests, ct_fill)
 
 # fix SD county change
 
-census_pop_ests$countyfips <- replace(
-  census_pop_ests$countyfips,
-  census_pop_ests$countyfips == "46102",
-  "46113"
+census_pop_ests$county_fips <- harmonize_county_fips_2010(
+  census_pop_ests$county_fips
 )
 
 census_pop_ests <- census_pop_ests %>%
   filter(!is.na(pop_census))
 
-census_pop_ests %>% filter(countyfips == "46111") %>% tally() # fixed
+census_pop_ests %>% filter(county_fips == "46111") %>% tally() # fixed
 
 
+assert_geo_columns(census_pop_ests, "county_fips")
 write_parquet(
   census_pop_ests,
   path_int("census_pop_ests_year.parquet")

@@ -3,14 +3,9 @@
 # Output: intermediate/fred_state_minwages.parquet.
 # This utility is intentionally outside the manually ordered C workflow.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 
 library(tidyverse)
 library(purrr)
@@ -37,10 +32,10 @@ state_fips_lookup <- read_csv(path_raw(
 
 state_fred <- state_fips_lookup %>%
   mutate(
-    fips = state_fips(fips),
+    state_fips = state_fips(fips),
     series_id = str_trim(paste0("STTMINWG", state_abbrev))
   ) %>%
-  filter(as.integer(fips) <= 56)
+  filter(as.integer(state_fips) <= 56)
 
 # state_fred <- tibble(
 #   state = c("California", "Texas", "New York"),  # add other states
@@ -73,9 +68,9 @@ test <- get_min_wage(state_fred$series_id[11])
 #   select(state, fips, year, state_min_wage)
 
 results <- NULL
-for (i in 1:length(state_fred$fips)) {
+for (i in seq_along(state_fred$state_fips)) {
   series_id <- state_fred$series_id[i]
-  fips <- state_fred$fips[i]
+  current_state_fips <- state_fred$state_fips[i]
   state <- state_fred$state_abbrev[i]
 
   # Assign the result of tryCatch to temp
@@ -88,7 +83,7 @@ for (i in 1:length(state_fred$fips)) {
       return(tibble(
         year = 1968:2025,
         state_min_wage = NA,
-        fips = fips,
+        state_fips = current_state_fips,
         state = state
       ))
     }
@@ -99,13 +94,13 @@ for (i in 1:length(state_fred$fips)) {
     temp <- tibble(
       year = 1968:2025,
       state_min_wage = NA,
-      fips = fips,
+      state_fips = current_state_fips,
       state = state
     )
   }
 
   temp <- temp %>%
-    mutate(fips = fips, state = state)
+    mutate(state_fips = current_state_fips, state = state)
 
   results <- bind_rows(results, temp)
   print(i)
@@ -117,6 +112,13 @@ final_df <- results %>%
   mutate(
     prevailing_min_wage = pmax(state_min_wage, federal_min_wage, na.rm = TRUE)
   ) %>%
-  select(fips, year, state_min_wage, federal_min_wage, prevailing_min_wage)
+  select(
+    state_fips,
+    year,
+    state_min_wage,
+    federal_min_wage,
+    prevailing_min_wage
+  )
 
+assert_geo_columns(final_df, "state_fips")
 write_parquet(final_df, path_int("fred_state_minwages.parquet"))

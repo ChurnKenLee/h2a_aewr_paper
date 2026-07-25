@@ -63,4 +63,4 @@ series use identical donor clusters and OEWS-area overlap exclusions.
 The preferred publication design uses `k = 5`, the two furthest donor clusters,
 the BEA prior, and `wage_seasonal_exact`; its names are centralized in
 `code/c00_shared/iv_preferred_design.R`. Preferred tables cluster standard
-errors by commuting zone (`cz_out10`).
+errors by commuting zone (`cz_id`).

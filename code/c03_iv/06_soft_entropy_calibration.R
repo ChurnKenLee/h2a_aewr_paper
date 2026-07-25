@@ -3,13 +3,9 @@
 # Outputs: area/county calibrated weights and cell diagnostics.
 # Run after: 03_oews_area_prior_weights.R and 04_auxiliary_moments.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -28,18 +24,18 @@ soft_penalty_codes <- c("001", "003", "010", "030", "100")
 # priors are explicitly labeled sensitivities rather than silent fallbacks.
 primary_specs <- bind_rows(
   tribble(
-    ~moment_spec, ~weight_spec_label, ~calibration_mode,
-    ~duration_analogue, ~soft_penalty,
-    "wage_seasonal_exact", "wage_seasonal_exact", "exact",
-    NA_character_, NA_real_,
-    "wage_seasonal_qwi_duration_exact",
-    "wage_seasonal_qwi_duration_exact", "exact",
-    "qwi", NA_real_,
-    "wage_seasonal_census_duration_exact",
-    "wage_seasonal_census_duration_exact", "exact",
-    "census_bridge", NA_real_,
-    "wage_seasonal_interval", "wage_seasonal_interval", "interval",
-    NA_character_, NA_real_
+    ~moment_spec                          , ~weight_spec_label       , ~calibration_mode ,
+    ~duration_analogue                    , ~soft_penalty            ,
+    "wage_seasonal_exact"                 , "wage_seasonal_exact"    , "exact"           ,
+    NA_character_                         , NA_real_                 ,
+    "wage_seasonal_qwi_duration_exact"    ,
+    "wage_seasonal_qwi_duration_exact"    , "exact"                  ,
+    "qwi"                                 , NA_real_                 ,
+    "wage_seasonal_census_duration_exact" ,
+    "wage_seasonal_census_duration_exact" , "exact"                  ,
+    "census_bridge"                       , NA_real_                 ,
+    "wage_seasonal_interval"              , "wage_seasonal_interval" , "interval"        ,
+    NA_character_                         , NA_real_
   ),
   tibble(
     moment_spec = paste0(
@@ -146,10 +142,12 @@ seasonal_interval_half_widths <- setNames(
   interval_bands$moment_label
 )[seasonal_labels]
 
-fls_target <- read_parquet(path_int("fls_region.parquet")) %>%
+fls_target <- read_parquet(path_int("fls_region.parquet"))
+assert_geo_columns(fls_target, "aewr_region_id")
+fls_target <- fls_target %>%
   transmute(
-    aewr_region_num = as.integer(aewr_region_num),
-    year = as.integer(preliminary_year),
+    aewr_region_id,
+    year = preliminary_year,
     fls_target_wage = as.numeric(field_livestock_preliminary),
     fls_hired_worker_150_plus_share = as.numeric(
       fls_hired_worker_150_plus_share
@@ -164,30 +162,31 @@ fls_target <- read_parquet(path_int("fls_region.parquet")) %>%
       fls_hired_worker_share_july
     )
   ) %>%
-  filter(!is.na(aewr_region_num), !is.na(year)) %>%
-  distinct(aewr_region_num, year, .keep_all = TRUE)
+  filter(!is.na(aewr_region_id), !is.na(year)) %>%
+  distinct(aewr_region_id, year, .keep_all = TRUE)
 
 auxiliary_features <- read_parquet(path_int(
   "fls_oews_area_auxiliary_moments.parquet"
-)) %>%
-  mutate(
-    aewr_region_num = as.integer(aewr_region_num),
-    year = as.integer(year)
-  )
+))
+assert_geo_columns(
+  auxiliary_features,
+  c("aewr_region_id", "oews_area_code")
+)
 
 prior_by_spec_path <- path_int(
   "fls_oews_area_prior_weight_by_spec.parquet"
 )
 area_prior_by_spec <- if (file.exists(prior_by_spec_path)) {
-  read_parquet(prior_by_spec_path) %>%
-    mutate(
-      aewr_region_num = as.integer(aewr_region_num),
-      year = as.integer(year)
-    )
+  prior_source <- read_parquet(prior_by_spec_path)
+  assert_geo_columns(
+    prior_source,
+    c("aewr_region_id", "oews_area_code")
+  )
+  prior_source
 } else {
   auxiliary_features %>%
     transmute(
-      aewr_region_num,
+      aewr_region_id,
       year,
       prior_spec = "bea",
       oews_area_code,
@@ -219,15 +218,15 @@ fls_oews_area_prior <- area_prior_by_spec %>%
       select(
         -any_of(base_prior_columns)
       ),
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
   filter(
     oews_wage_observed,
     is.finite(oews_area_prior_weight),
     oews_area_prior_weight > 0
   ) %>%
-  inner_join(fls_target, by = c("aewr_region_num", "year")) %>%
-  group_by(aewr_region_num, year, prior_spec) %>%
+  inner_join(fls_target, by = c("aewr_region_id", "year")) %>%
+  group_by(aewr_region_id, year, prior_spec) %>%
   mutate(
     oews_prior_weighted_wage = sum(
       oews_area_prior_weight * oews_area_mean_hourly_wage
@@ -245,7 +244,7 @@ fls_oews_area_calibration_grid <- fls_oews_area_prior %>%
 
 fls_oews_area_entropy_calibrated <- fls_oews_area_calibration_grid %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     prior_spec,
     include_wage_target,
@@ -277,20 +276,17 @@ fls_oews_area_entropy_calibrated <- fls_oews_area_calibration_grid %>%
         feature_names = configuration$features,
         target_names = configuration$targets,
         feature_labels = configuration$labels,
-        feature_observed_share_names =
-          configuration$observed_share_names,
+        feature_observed_share_names = configuration$observed_share_names,
         soft_penalty = .y$soft_penalty[[1]],
         interval_half_widths = bands,
-        minimum_observed_prior_mass =
-          minimum_auxiliary_observed_prior_mass
+        minimum_observed_prior_mass = minimum_auxiliary_observed_prior_mass
       )
     }
   ) %>%
   ungroup() %>%
   mutate(
-    oews_area_weight_adjustment =
-      oews_area_weight_entropy_calibrated /
-        oews_area_prior_weight,
+    oews_area_weight_adjustment = oews_area_weight_entropy_calibrated /
+      oews_area_prior_weight,
     entropy_kl_divergence_component = if_else(
       !is.na(oews_area_weight_entropy_calibrated) &
         oews_area_weight_entropy_calibrated > 0,
@@ -306,7 +302,7 @@ fls_oews_area_entropy_calibrated <- fls_oews_area_calibration_grid %>%
 fls_entropy_calibration_diagnostics <-
   fls_oews_area_entropy_calibrated %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     prior_spec,
     include_wage_target,
@@ -398,16 +394,14 @@ fls_entropy_calibration_diagnostics <-
       NA_real_,
       sum(entropy_kl_divergence_component)
     ),
-    prior_effective_area_count =
-      1 / sum(oews_area_prior_weight^2),
+    prior_effective_area_count = 1 / sum(oews_area_prior_weight^2),
     calibrated_effective_area_count = if_else(
       all(is.na(oews_area_weight_entropy_calibrated)),
       NA_real_,
       1 / sum(oews_area_weight_entropy_calibrated^2)
     ),
-    effective_area_count_ratio =
-      calibrated_effective_area_count /
-        prior_effective_area_count,
+    effective_area_count_ratio = calibrated_effective_area_count /
+      prior_effective_area_count,
     maximum_weight_adjustment = max_if_observed(
       oews_area_weight_adjustment
     ),
@@ -428,17 +422,22 @@ fls_county_area_prior <- if (file.exists(county_prior_by_spec_path)) {
   )) %>%
     mutate(prior_spec = "bea")
 }
-fls_county_area_prior <- fls_county_area_prior %>%
-  mutate(
-    aewr_region_num = as.integer(aewr_region_num),
-    year = as.integer(year)
+assert_geo_columns(
+  fls_county_area_prior,
+  c(
+    "county_fips",
+    "state_fips",
+    "aewr_region_id",
+    "cz_id",
+    "oews_area_code"
   )
+)
 
 fls_county_weight_entropy_calibrated <- fls_county_area_prior %>%
   inner_join(
     fls_oews_area_entropy_calibrated %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         prior_spec,
         oews_area_code,
@@ -454,7 +453,7 @@ fls_county_weight_entropy_calibrated <- fls_county_area_prior %>%
         calibration_status
       ),
     by = c(
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "prior_spec",
       "oews_area_code"
@@ -467,17 +466,16 @@ fls_county_weight_entropy_calibrated <- fls_county_area_prior %>%
       county_area_prior_weight / oews_area_prior_weight_all,
       NA_real_
     ),
-    county_area_weight_entropy_calibrated =
-      oews_area_weight_entropy_calibrated *
-        county_share_within_oews_area
+    county_area_weight_entropy_calibrated = oews_area_weight_entropy_calibrated *
+      county_share_within_oews_area
   ) %>%
   group_by(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     fls_county_weight_prior,
     prior_spec,
@@ -499,22 +497,28 @@ fls_county_weight_entropy_calibrated <- fls_county_area_prior %>%
   ) %>%
   mutate(
     # Historical alias for consumers that have not yet switched names.
-    fls_county_weight_soft_calibrated =
-      fls_county_weight_entropy_calibrated
+    fls_county_weight_soft_calibrated = fls_county_weight_entropy_calibrated
   ) %>%
-  arrange(countyfips, year) %>%
-  group_by(countyfips, prior_spec, weight_spec_label, gap_closure) %>%
+  arrange(county_fips, year) %>%
+  group_by(county_fips, prior_spec, weight_spec_label, gap_closure) %>%
   mutate(
     fls_county_weight_entropy_calibrated_l1 = if_else(
       lag(year) == year - 1L,
       lag(fls_county_weight_entropy_calibrated),
       NA_real_
     ),
-    fls_county_weight_soft_calibrated_l1 =
-      fls_county_weight_entropy_calibrated_l1
+    fls_county_weight_soft_calibrated_l1 = fls_county_weight_entropy_calibrated_l1
   ) %>%
   ungroup()
 
+assert_geo_columns(
+  fls_oews_area_entropy_calibrated,
+  c("aewr_region_id", "oews_area_code")
+)
+assert_geo_columns(
+  fls_county_weight_entropy_calibrated,
+  c("county_fips", "state_fips", "cz_id", "aewr_region_id")
+)
 write_parquet(
   fls_oews_area_entropy_calibrated,
   path_int("fls_oews_area_weight_soft_calibrated.parquet")

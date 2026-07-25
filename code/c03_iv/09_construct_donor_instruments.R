@@ -3,24 +3,24 @@
 # Output: iv_oews_entropy_long.parquet.
 # Run after: 05, 06, and 08.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 
 iv_clusters <- read_parquet(path_int("iv_cz_aewr_clusters.parquet"))
 iv_donor_clusters <- read_parquet(path_int("iv_donor_clusters.parquet"))
+assert_geo_columns(iv_clusters, "aewr_region_id")
+assert_geo_columns(iv_donor_clusters, "aewr_region_id")
 county_prior_by_spec_path <- path_int(
   "fls_county_oews_area_prior_weight_by_spec.parquet"
 )
-fls_county_oews_area_prior <- if (file.exists(
-  county_prior_by_spec_path
-)) {
+fls_county_oews_area_prior <- if (
+  file.exists(
+    county_prior_by_spec_path
+  )
+) {
   read_parquet(county_prior_by_spec_path)
 } else {
   read_parquet(
@@ -28,15 +28,27 @@ fls_county_oews_area_prior <- if (file.exists(
   ) %>%
     mutate(prior_spec = "bea")
 }
-fls_county_oews_area_prior <- fls_county_oews_area_prior %>%
-  mutate(year = as.integer(year))
+assert_geo_columns(
+  fls_county_oews_area_prior,
+  c(
+    "county_fips",
+    "state_fips",
+    "aewr_region_id",
+    "cz_id",
+    "oews_area_code"
+  )
+)
 wage_only_weights <- read_parquet(
   path_int("fls_oews_area_weight_wage_calibrated.parquet")
-) %>%
-  mutate(year = as.integer(year)) %>%
+)
+assert_geo_columns(
+  wage_only_weights,
+  c("aewr_region_id", "oews_area_code")
+)
+wage_only_weights <- wage_only_weights %>%
   filter(near(gap_closure, 1)) %>%
   transmute(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     gap_closure,
@@ -54,14 +66,18 @@ wage_only_weights <- read_parquet(
 
 fls_auxiliary_weights <- read_parquet(
   path_int("fls_oews_area_weight_soft_calibrated.parquet")
-) %>%
-  mutate(year = as.integer(year)) %>%
+)
+assert_geo_columns(
+  fls_auxiliary_weights,
+  c("aewr_region_id", "oews_area_code")
+)
+fls_auxiliary_weights <- fls_auxiliary_weights %>%
   filter(
     include_wage_target,
     near(gap_closure, 1)
   ) %>%
   transmute(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     gap_closure,
@@ -92,9 +108,9 @@ weight_spec_metadata <- fls_oews_area_calibrated %>%
 
 county_oews_area_units <- fls_county_oews_area_prior %>%
   select(
-    county_ansi = countyfips,
+    county_fips,
     year,
-    aewr_region_num,
+    aewr_region_id,
     cz_aewr_region_fe,
     prior_spec,
     oews_area_code,
@@ -103,13 +119,13 @@ county_oews_area_units <- fls_county_oews_area_prior %>%
   ) %>%
   inner_join(
     iv_clusters,
-    by = c("cz_aewr_region_fe", "aewr_region_num"),
+    by = c("cz_aewr_region_fe", "aewr_region_id"),
     relationship = "many-to-many"
   )
 
 target_cluster_oews_areas <- county_oews_area_units %>%
   transmute(
-    aewr_region_num,
+    aewr_region_id,
     year,
     iv_k,
     target_cluster = iv_cluster,
@@ -122,7 +138,7 @@ oews_area_donor_candidates <- county_oews_area_units %>%
     fls_oews_area_calibrated %>%
       filter(str_detect(calibration_status, "^calibrated")) %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         prior_spec,
         oews_area_code,
@@ -135,7 +151,7 @@ oews_area_donor_candidates <- county_oews_area_units %>%
         entropy_weight
       ),
     by = c(
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "prior_spec",
       "oews_area_code"
@@ -153,13 +169,13 @@ oews_area_donor_candidates <- county_oews_area_units %>%
   # The donor map repeats ranks 1:d for each cumulative donor-set size d.
   inner_join(
     iv_donor_clusters,
-    by = c("aewr_region_num", "iv_k", "donor_cluster"),
+    by = c("aewr_region_id", "iv_k", "donor_cluster"),
     relationship = "many-to-many"
   )
 
 oews_donor_candidate_support <- oews_area_donor_candidates %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     gap_closure,
     moment_spec,
@@ -181,7 +197,7 @@ oews_area_donor_eligible <- oews_area_donor_candidates %>%
   anti_join(
     target_cluster_oews_areas,
     by = c(
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "iv_k",
       "target_cluster",
@@ -191,7 +207,7 @@ oews_area_donor_eligible <- oews_area_donor_candidates %>%
 
 oews_unweighted_donor_county_wages <- oews_area_donor_eligible %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     gap_closure,
     moment_spec,
@@ -201,7 +217,7 @@ oews_unweighted_donor_county_wages <- oews_area_donor_eligible %>%
     donor_cluster_count,
     target_cluster,
     cz_aewr_region_fe,
-    county_ansi
+    county_fips
   ) %>%
   summarise(
     donor_county_oews_wage = weighted.mean(
@@ -218,7 +234,7 @@ oews_unweighted_donor_county_wages <- oews_area_donor_eligible %>%
 # clusters and the same OEWS-area overlap exclusion.
 oews_unweighted_donor_wages <- oews_unweighted_donor_county_wages %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     gap_closure,
     moment_spec,
@@ -231,11 +247,11 @@ oews_unweighted_donor_wages <- oews_unweighted_donor_county_wages %>%
   ) %>%
   summarise(
     donor_cz_oews_wage = mean(donor_county_oews_wage, na.rm = TRUE),
-    oews_iv_unweighted_donor_counties = n_distinct(county_ansi),
+    oews_iv_unweighted_donor_counties = n_distinct(county_fips),
     .groups = "drop"
   ) %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     gap_closure,
     moment_spec,
@@ -261,7 +277,7 @@ oews_unweighted_donor_wages <- oews_unweighted_donor_county_wages %>%
 
 oews_donor_wages <- oews_area_donor_eligible %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     gap_closure,
     moment_spec,
@@ -289,7 +305,7 @@ oews_donor_wages <- oews_area_donor_eligible %>%
   left_join(
     oews_donor_candidate_support,
     by = c(
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "gap_closure",
       "moment_spec",
@@ -307,7 +323,7 @@ oews_donor_wages <- oews_area_donor_eligible %>%
   left_join(
     oews_unweighted_donor_wages,
     by = c(
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "gap_closure",
       "moment_spec",
@@ -336,13 +352,13 @@ stopifnot(
 iv_oews_long <- iv_clusters %>%
   transmute(
     cz_aewr_region_fe,
-    aewr_region_num,
+    aewr_region_id,
     iv_k,
     target_cluster = iv_cluster
   ) %>%
   inner_join(
     oews_donor_wages,
-    by = c("aewr_region_num", "iv_k", "target_cluster"),
+    by = c("aewr_region_id", "iv_k", "target_cluster"),
     relationship = "many-to-many"
   ) %>%
   # The outcome in year t uses the donor wage level from t - 1.
@@ -358,4 +374,5 @@ iv_oews_long <- iv_clusters %>%
     donor_cluster_count
   )
 
+assert_geo_columns(iv_oews_long, "aewr_region_id")
 write_parquet(iv_oews_long, path_int("iv_oews_entropy_long.parquet"))

@@ -2,15 +2,9 @@
 # Inputs: h2a_with_fips.parquet and h2a_addendum_b_with_fips.parquet.
 # Outputs: data/intermediate/h2a_aggregated.parquet.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -433,8 +427,8 @@ sanity_check_total_2 <- h2a_combined %>%
 # Sanity check numbers match, we are good
 # ---- Clean before aggregating into county years ----
 h2a_combined <- h2a_combined %>%
-  mutate(fips = if_else(is.na(fips), "00000", fips)) %>%
-  mutate(fips = if_else(fips == "", "00000", fips))
+  mutate(county_fips_list = if_else(is.na(county_fips_list), "00000", county_fips_list)) %>%
+  mutate(county_fips_list = if_else(county_fips_list == "", "00000", county_fips_list))
 
 # Add application status
 h2a_combined <- h2a_combined %>%
@@ -667,7 +661,7 @@ h2a_cleaned_df <- h2a_cleaned_df %>%
   select(
     case_number,
     fiscal_year,
-    fips,
+    county_fips_list,
     begin_date,
     end_date,
     nbr_workers_requested,
@@ -755,8 +749,8 @@ h2a_all_years_df <- h2a_all_years_df %>%
 
 # For multi-county entries, equally split across all counties equally
 h2a_all_years_df <- h2a_all_years_df %>%
-  mutate(n_counties = str_count(fips, ",") + 1) %>%
-  separate_rows(fips, sep = ",") %>%
+  mutate(n_counties = str_count(county_fips_list, ",") + 1) %>%
+  separate_rows(county_fips_list, sep = ",") %>%
   mutate(
     county_year_weighted_nbr_workers_requested = year_weighted_nbr_workers_requested /
       n_counties
@@ -787,7 +781,7 @@ h2a_all_years_df <- h2a_all_years_df %>%
 
 # Collapse by county-year
 h2a_all_years_aggregated_df <- h2a_all_years_df %>%
-  group_by(fips, year) %>%
+  group_by(county_fips_list, year) %>%
   summarise(
     nbr_workers_requested_all_years = sum(
       county_year_weighted_nbr_workers_requested,
@@ -830,8 +824,8 @@ h2a_start_year_df <- h2a_cleaned_df %>%
 
 # For multi-county entries, equally split workers and man-hours across all counties equally
 h2a_start_year_df <- h2a_start_year_df %>%
-  mutate(n_counties = str_count(fips, ",") + 1) %>%
-  separate_rows(fips, sep = ",") %>%
+  mutate(n_counties = str_count(county_fips_list, ",") + 1) %>%
+  separate_rows(county_fips_list, sep = ",") %>%
   mutate(county_nbr_workers_requested = nbr_workers_requested / n_counties) %>%
   mutate(county_nbr_workers_certified = nbr_workers_certified / n_counties) %>%
   mutate(county_man_hours_requested = man_hours_requested / n_counties) %>%
@@ -844,7 +838,7 @@ h2a_start_year_df <- h2a_start_year_df %>%
 
 # Collapse by county-year
 h2a_start_year_aggregated_df <- h2a_start_year_df %>%
-  group_by(fips, start_year) %>%
+  group_by(county_fips_list, start_year) %>%
   summarise(
     nbr_workers_requested_start_year = sum(
       county_nbr_workers_requested,
@@ -881,8 +875,8 @@ h2a_fiscal_year_df <- h2a_cleaned_df %>%
 
 # For multi-county entries, equally split workers and man-hours across all counties equally
 h2a_fiscal_year_df <- h2a_fiscal_year_df %>%
-  mutate(n_counties = str_count(fips, ",") + 1) %>%
-  separate_rows(fips, sep = ",") %>%
+  mutate(n_counties = str_count(county_fips_list, ",") + 1) %>%
+  separate_rows(county_fips_list, sep = ",") %>%
   mutate(county_nbr_workers_requested = nbr_workers_requested / n_counties) %>%
   mutate(county_nbr_workers_certified = nbr_workers_certified / n_counties) %>%
   mutate(county_man_hours_requested = man_hours_requested / n_counties) %>%
@@ -895,7 +889,7 @@ h2a_fiscal_year_df <- h2a_fiscal_year_df %>%
 
 # Collapse by county-fiscal-year
 h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_df %>%
-  group_by(fips, fiscal_year) %>%
+  group_by(county_fips_list, fiscal_year) %>%
   summarise(
     nbr_workers_requested_fiscal_year = sum(
       county_nbr_workers_requested,
@@ -937,28 +931,40 @@ h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_aggregated_df %>%
 # Harmonize missing FIPS
 h2a_all_years_aggregated_df <- h2a_all_years_aggregated_df %>%
   mutate(
-    fips_harmonized = if_else((fips == "" | fips == "00000"), "00000", fips)
+    county_fips = harmonize_county_fips_2010(if_else(
+      county_fips_list == "" | county_fips_list == "00000",
+      "00000",
+      county_fips_list
+    ))
   ) %>%
-  select(-fips) %>%
-  group_by(fips_harmonized, year) %>%
+  select(-county_fips_list) %>%
+  group_by(county_fips, year) %>%
   summarise_all(sum, na.rm = TRUE) %>%
   ungroup()
 
 h2a_start_year_aggregated_df <- h2a_start_year_aggregated_df %>%
   mutate(
-    fips_harmonized = if_else((fips == "" | fips == "00000"), "00000", fips)
+    county_fips = harmonize_county_fips_2010(if_else(
+      county_fips_list == "" | county_fips_list == "00000",
+      "00000",
+      county_fips_list
+    ))
   ) %>%
-  select(-fips) %>%
-  group_by(fips_harmonized, year) %>%
+  select(-county_fips_list) %>%
+  group_by(county_fips, year) %>%
   summarise_all(sum, na.rm = TRUE) %>%
   ungroup()
 
 h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_aggregated_df %>%
   mutate(
-    fips_harmonized = if_else((fips == "" | fips == "00000"), "00000", fips)
+    county_fips = harmonize_county_fips_2010(if_else(
+      county_fips_list == "" | county_fips_list == "00000",
+      "00000",
+      county_fips_list
+    ))
   ) %>%
-  select(-fips) %>%
-  group_by(fips_harmonized, year) %>%
+  select(-county_fips_list) %>%
+  group_by(county_fips, year) %>%
   summarise_all(sum, na.rm = TRUE) %>%
   ungroup()
 
@@ -969,9 +975,10 @@ h2a_aggregated_df <- h2a_all_years_aggregated_df %>%
 
 # Harmonize name of FIPS code variable
 h2a_aggregated_df <- h2a_aggregated_df %>%
-  mutate(state_fips_code = substr(fips_harmonized, 1, 2)) %>%
-  mutate(county_fips_code = substr(fips_harmonized, 3, 5)) %>%
-  select(-fips_harmonized)
+  mutate(
+    state_fips = state_from_county_fips(county_fips),
+    county_code = county_code_from_county_fips(county_fips)
+  )
 
 # Export
 sanity_check_total_4 <- h2a_aggregated_df %>%
@@ -985,11 +992,15 @@ sanity_check_total_4 <- h2a_aggregated_df %>%
   filter(nbr_workers_certified > 0)
 # Numbers match, we are good
 
+assert_geo_columns(
+  h2a_aggregated_df,
+  c("state_fips", "county_code", "county_fips")
+)
 h2a_aggregated_df %>%
   write_parquet(path_int("h2a_aggregated.parquet"))
 
 h2a_ts_df <- h2a_aggregated_df %>%
-  filter(state_fips_code != "00") %>%
+  filter(state_fips != "00") %>%
   group_by(year) %>%
   summarise_if(is.numeric, sum, na.rm = TRUE) %>%
   filter(year > 2007 & year < 2023)

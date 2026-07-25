@@ -58,7 +58,7 @@ def _(RAW, pl, re, us):
         )
         region_crosswalk = pl.DataFrame(
             {
-                "aewr_region_num": [row[0] for row in canonical_regions],
+                "aewr_region_id": [str(row[0]) for row in canonical_regions],
                 "fls_table_name": [row[1] for row in canonical_regions],
                 "fls_variant_long": [row[1] for row in canonical_regions],
                 "fls_variant_abbrev": [
@@ -86,7 +86,7 @@ def _(RAW, pl, re, us):
         for _name in names:
             if _name:
                 region_lookup[lookup_key(_name)] = (
-                    row["aewr_region_num"],
+                    row["aewr_region_id"],
                     row["fls_table_name"],
                 )
 
@@ -101,14 +101,14 @@ def _(RAW, pl, re, us):
         }
         for alias in aliases:
             region_lookup[lookup_key(alias)] = (
-                row["aewr_region_num"],
+                row["aewr_region_id"],
                 canonical_name,
             )
 
     # State tables use a mix of postal abbreviations and full state names.
     for state in us.STATES:
         state_record = {
-            "state_fips_code": state.fips,
+            "state_fips": state.fips,
             "state_abbreviation": state.abbr,
             "state_name": state.name,
         }
@@ -249,7 +249,7 @@ def _(csv, io, re, region_lookup, state_lookup):
             source_csv,
             is_annual_region_table,
             region_lookup,
-            lambda match: {"aewr_region_num": match[0], "region_name": match[1]},
+            lambda match: {"aewr_region_id": match[0], "region_name": match[1]},
         )
 
     def parse_annual_state_table(text, source_zip, source_csv):
@@ -367,7 +367,7 @@ def _(csv, io, re, region_lookup):
                 {
                     "year": year,
                     "quarter": quarter,
-                    "aewr_region_num": geography_match[0],
+                    "aewr_region_id": geography_match[0],
                     "region_name": geography_match[1],
                     "fls_hired_workers": parse_quarterly_number(row[3]),
                     "fls_hired_workers_150_days_or_more": (
@@ -487,10 +487,10 @@ def _(
 
     out = reshape_annual_wages(
         annual_wages_long,
-        ["aewr_region_num", "region_name"],
+        ["aewr_region_id", "region_name"],
         [
             "estimate_year",
-            "aewr_region_num",
+            "aewr_region_id",
             "region_name",
             "revised_year",
             "preliminary_year",
@@ -506,14 +506,14 @@ def _(
             "source_csv",
             "table_title",
         ],
-        ["estimate_year", "aewr_region_num"],
+        ["estimate_year", "aewr_region_id"],
     )
     state_out = reshape_annual_wages(
         state_wages_long,
-        ["state_fips_code", "state_abbreviation", "state_name"],
+        ["state_fips", "state_abbreviation", "state_name"],
         [
             "estimate_year",
-            "state_fips_code",
+            "state_fips",
             "state_abbreviation",
             "state_name",
             "revised_year",
@@ -528,7 +528,7 @@ def _(
             "source_csv",
             "table_title",
         ],
-        ["estimate_year", "state_fips_code"],
+        ["estimate_year", "state_fips"],
     )
     return out, quarterly_workers_long, state_out
 
@@ -557,19 +557,19 @@ def _(out, pl, quarterly_workers_long, reference_quarters):
         .sort(
             "year",
             "quarter",
-            "aewr_region_num",
+            "aewr_region_id",
             "source_priority",
             "release_year",
             "release_month",
             "release_day",
         )
         .unique(
-            subset=["year", "quarter", "aewr_region_num"],
+            subset=["year", "quarter", "aewr_region_id"],
             keep="last",
             maintain_order=True,
         )
         .drop("annual_source_zip", "source_priority")
-        .sort("year", "quarter", "aewr_region_num")
+        .sort("year", "quarter", "aewr_region_id")
     )
 
     quarter_columns = []
@@ -592,7 +592,7 @@ def _(out, pl, quarterly_workers_long, reference_quarters):
         )
 
     fls_region_auxiliary_moments = (
-        fls_region_quarterly_workers.group_by("year", "aewr_region_num", "region_name")
+        fls_region_quarterly_workers.group_by("year", "aewr_region_id", "region_name")
         .agg(quarter_columns)
         .with_columns(
             pl.sum_horizontal(
@@ -653,13 +653,13 @@ def _(out, pl, quarterly_workers_long, reference_quarters):
                 for quarter in reference_quarters
             ],
         )
-        .sort("year", "aewr_region_num")
+        .sort("year", "aewr_region_id")
     )
 
     out_with_auxiliary = out.join(
         fls_region_auxiliary_moments.drop("region_name"),
-        left_on=["estimate_year", "aewr_region_num"],
-        right_on=["year", "aewr_region_num"],
+        left_on=["estimate_year", "aewr_region_id"],
+        right_on=["year", "aewr_region_id"],
         how="left",
     )
     return (
@@ -677,8 +677,14 @@ def _(
     out_with_auxiliary,
     state_out,
 ):
+    from h2a.geography import assert_geo_columns
+
     # 17 regions * 24 year = 408 rows
     # 43 states * 9 years = 387 rows
+    assert_geo_columns(out_with_auxiliary, ["aewr_region_id"])
+    assert_geo_columns(state_out, ["state_fips"])
+    assert_geo_columns(fls_region_quarterly_workers, ["aewr_region_id"])
+    assert_geo_columns(fls_region_auxiliary_moments, ["aewr_region_id"])
     out_with_auxiliary.write_parquet(INTERMEDIATE / "fls_region.parquet")
     state_out.write_parquet(INTERMEDIATE / "fls_state.parquet")
     fls_region_quarterly_workers.write_parquet(

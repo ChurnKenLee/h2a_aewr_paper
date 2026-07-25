@@ -3,13 +3,9 @@
 # Output: data/processed/county_df_analysis_year_iv.parquet.
 # Run after: 09_construct_donor_instruments.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "iv_preferred_design.R"))
 library(arrow)
 library(tidyverse)
@@ -19,6 +15,12 @@ county_df <- read_parquet(
 )
 iv_clusters <- read_parquet(path_int("iv_cz_aewr_clusters.parquet"))
 iv_oews_long <- read_parquet(path_int("iv_oews_entropy_long.parquet"))
+assert_geo_columns(
+  county_df,
+  c("county_fips", "state_fips", "aewr_region_id", "cz_id")
+)
+assert_geo_columns(iv_clusters, "aewr_region_id")
+assert_geo_columns(iv_oews_long, "aewr_region_id")
 
 make_instrument_spec_label <- function(
   iv_k,
@@ -66,7 +68,7 @@ iv_design_specs <- iv_oews_long %>%
 iv_cluster_assignments <- iv_clusters %>%
   transmute(
     cz_aewr_region_fe,
-    aewr_region_num,
+    aewr_region_id,
     iv_k_label = paste0("k", iv_k),
     iv_cluster
   ) %>%
@@ -87,7 +89,7 @@ iv_oews_grid <- iv_oews_long %>%
   ) %>%
   select(
     cz_aewr_region_fe,
-    aewr_region_num,
+    aewr_region_id,
     year,
     instrument_spec_label,
     z_oews_entropy_agwage_l1,
@@ -129,7 +131,7 @@ iv_oews_benchmark <- iv_oews_long %>%
   ) %>%
   select(
     cz_aewr_region_fe,
-    aewr_region_num,
+    aewr_region_id,
     year,
     gap_closure_label,
     z_oews_entropy_agwage_l1,
@@ -169,23 +171,27 @@ county_df_iv <- county_df %>%
   ) %>%
   left_join(
     iv_cluster_assignments,
-    by = c("cz_aewr_region_fe", "aewr_region_num")
+    by = c("cz_aewr_region_fe", "aewr_region_id")
   ) %>%
   left_join(
     iv_oews_grid,
-    by = c("cz_aewr_region_fe", "aewr_region_num", "year")
+    by = c("cz_aewr_region_fe", "aewr_region_id", "year")
   ) %>%
   left_join(
     iv_oews_benchmark,
-    by = c("cz_aewr_region_fe", "aewr_region_num", "year")
+    by = c("cz_aewr_region_fe", "aewr_region_id", "year")
   ) %>%
   mutate(
     aewr_iv_cluster_k5 = make_aewr_iv_cluster_id(
-      aewr_region_num,
+      aewr_region_id,
       iv_cluster_k5
     )
   )
 
+assert_geo_columns(
+  county_df_iv,
+  c("state_fips", "county_fips", "cz_id", "aewr_region_id")
+)
 write_parquet(
   county_df_iv,
   path_processed("county_df_analysis_year_iv.parquet")

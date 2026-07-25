@@ -3,13 +3,9 @@
 # Outputs: area/county calibrated weights and wage-calibration diagnostics.
 # Run after: 03_oews_area_prior_weights.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -18,24 +14,31 @@ gap_closure_values <- 1
 
 source(path_code("c00_shared", "entropy_calibration.R"))
 
-fls_target <- read_parquet(path_int("fls_region.parquet")) %>%
+fls_target <- read_parquet(path_int("fls_region.parquet"))
+assert_geo_columns(fls_target, "aewr_region_id")
+fls_target <- fls_target %>%
   transmute(
-    aewr_region_num = as.integer(aewr_region_num),
-    year = as.integer(preliminary_year),
+    aewr_region_id,
+    year = preliminary_year,
     fls_target_wage = as.numeric(field_livestock_preliminary)
   ) %>%
   filter(
-    !is.na(aewr_region_num),
+    !is.na(aewr_region_id),
     !is.na(year),
     !is.na(fls_target_wage),
     fls_target_wage > 0
   ) %>%
-  distinct(aewr_region_num, year, .keep_all = TRUE)
+  distinct(aewr_region_id, year, .keep_all = TRUE)
 
 # Unjoined rows are just years outside of our target years
 fls_oews_area_prior <- read_parquet(path_int(
   "fls_oews_area_prior_weight.parquet"
-)) %>%
+))
+assert_geo_columns(
+  fls_oews_area_prior,
+  c("aewr_region_id", "oews_area_code")
+)
+fls_oews_area_prior <- fls_oews_area_prior %>%
   filter(
     oews_wage_observed,
     !is.na(oews_area_prior_weight),
@@ -43,9 +46,9 @@ fls_oews_area_prior <- read_parquet(path_int(
   ) %>%
   inner_join(
     fls_target,
-    by = c("aewr_region_num", "year")
+    by = c("aewr_region_id", "year")
   ) %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   mutate(
     oews_prior_weighted_wage = sum(
       oews_area_prior_weight * oews_area_mean_hourly_wage
@@ -63,7 +66,7 @@ fls_oews_area_regularization_path <- tidyr::crossing(
   )
 
 fls_oews_area_calibrated <- fls_oews_area_regularization_path %>%
-  group_by(aewr_region_num, year, gap_closure) %>%
+  group_by(aewr_region_id, year, gap_closure) %>%
   group_modify(
     ~ calibrate_wage_cell(
       .x,
@@ -86,7 +89,7 @@ fls_oews_area_calibrated <- fls_oews_area_regularization_path %>%
   )
 
 fls_entropy_diagnostics <- fls_oews_area_calibrated %>%
-  group_by(aewr_region_num, year, gap_closure) %>%
+  group_by(aewr_region_id, year, gap_closure) %>%
   summarise(
     calibration_status = first(calibration_status),
     fls_target_wage = first(fls_target_wage),
@@ -136,12 +139,22 @@ fls_entropy_diagnostics <- fls_oews_area_calibrated %>%
 fls_county_area_prior <- read_parquet(path_int(
   "fls_county_oews_area_prior_weight.parquet"
 ))
+assert_geo_columns(
+  fls_county_area_prior,
+  c(
+    "county_fips",
+    "state_fips",
+    "aewr_region_id",
+    "cz_id",
+    "oews_area_code"
+  )
+)
 
 fls_county_weight_wage_calibrated <- fls_county_area_prior %>%
   inner_join(
     fls_oews_area_calibrated %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         oews_area_code,
         gap_closure,
@@ -150,7 +163,7 @@ fls_county_weight_wage_calibrated <- fls_county_area_prior %>%
         calibration_status
       ),
     by = c(
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "oews_area_code"
     )
@@ -165,12 +178,12 @@ fls_county_weight_wage_calibrated <- fls_county_area_prior %>%
       county_share_within_oews_area
   ) %>%
   group_by(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     fls_county_weight_prior,
     gap_closure,
@@ -183,8 +196,8 @@ fls_county_weight_wage_calibrated <- fls_county_area_prior %>%
     ),
     .groups = "drop"
   ) %>%
-  arrange(countyfips, year) %>%
-  group_by(countyfips, gap_closure) %>%
+  arrange(county_fips, year) %>%
+  group_by(county_fips, gap_closure) %>%
   mutate(
     fls_county_weight_wage_calibrated_l1 = if_else(
       lag(year) == year - 1L,
@@ -194,6 +207,14 @@ fls_county_weight_wage_calibrated <- fls_county_area_prior %>%
   ) %>%
   ungroup()
 
+assert_geo_columns(
+  fls_oews_area_calibrated,
+  c("aewr_region_id", "oews_area_code")
+)
+assert_geo_columns(
+  fls_county_weight_wage_calibrated,
+  c("county_fips", "state_fips", "cz_id", "aewr_region_id")
+)
 write_parquet(
   fls_oews_area_calibrated,
   path_int("fls_oews_area_weight_wage_calibrated.parquet")

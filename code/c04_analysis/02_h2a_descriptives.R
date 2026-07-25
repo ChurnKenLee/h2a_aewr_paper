@@ -3,12 +3,9 @@
 # Outputs: H-2A descriptive figures.
 # Run after: code/c01_clean/05_h2a_county_panels.R and code/c02_build/04_finalize_county_panel.R.
 
-source(if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-  file.path("code", "bootstrap_paths.R")
-} else {
-  file.path("..", "bootstrap_paths.R")
-})
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "analysis_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -138,14 +135,13 @@ ggsave(
 
 #### Exhibit 4: H2A Map: 2012 use ----------------------------------------------
 
-
 h2a_map_data <- NULL
 
 h2a_map_data_2012 <- h2a_data %>%
   filter(census_period == 2012) %>%
   mutate(ln_h2a_workers_cert_2012 = log(nbr_workers_certified_start_year)) %>%
   select(
-    countyfips,
+    county_fips,
     ln_h2a_workers_cert_2012,
     nbr_workers_certified_start_year
   ) %>%
@@ -155,7 +151,7 @@ h2a_map_data_2017 <- h2a_data %>%
   filter(census_period == 2017) %>%
   mutate(ln_h2a_workers_cert_2017 = log(nbr_workers_certified_start_year)) %>%
   select(
-    countyfips,
+    county_fips,
     ln_h2a_workers_cert_2017,
     nbr_workers_certified_start_year
   ) %>%
@@ -165,7 +161,7 @@ h2a_map_data_2022 <- h2a_data %>%
   filter(census_period == 2022) %>%
   mutate(ln_h2a_workers_cert_2022 = log(nbr_workers_certified_start_year)) %>%
   select(
-    countyfips,
+    county_fips,
     ln_h2a_workers_cert_2022,
     nbr_workers_certified_start_year
   ) %>%
@@ -175,12 +171,12 @@ h2a_map_data_2022 <- h2a_data %>%
 h2a_map_data <- merge(
   x = h2a_map_data_2012,
   y = h2a_map_data_2017,
-  by = "countyfips"
+  by = "county_fips"
 )
 h2a_map_data <- merge(
   x = h2a_map_data,
   y = h2a_map_data_2022,
-  by = "countyfips"
+  by = "county_fips"
 )
 
 county_map_fips <- county_map
@@ -188,7 +184,7 @@ county_map_fips <- county_map
 h2a_map_data <- merge(
   x = county_map_fips,
   y = h2a_map_data,
-  by = "countyfips",
+  by = "county_fips",
   all.x = T,
   all.y = F
 )
@@ -275,7 +271,7 @@ predicted_hist_data <- county_df %>%
   select(
     h2a_predicted_share_2011,
     year,
-    countyfips,
+    county_fips,
     state_abbrev,
     county_simple_treatment_groups
   ) %>%
@@ -312,7 +308,7 @@ ggsave(
 pred_h2a_Map_data <- merge(
   x = county_map,
   y = predicted_hist_data,
-  by = "countyfips",
+  by = "county_fips",
   all.x = T,
   all.y = F
 )
@@ -354,9 +350,9 @@ ggsave(
 
 h2a_change_data <- h2a_data %>%
   filter(census_period == 2012 | census_period == 2022) %>%
-  select(countyfips, census_period, nbr_workers_certified_start_year) %>%
+  select(county_fips, census_period, nbr_workers_certified_start_year) %>%
   pivot_wider(
-    id_cols = countyfips,
+    id_cols = county_fips,
     names_from = census_period,
     values_from = nbr_workers_certified_start_year
   )
@@ -373,7 +369,7 @@ h2a_change_data <- h2a_change_data %>% # make change vars
 h2a_change_map_data <- merge(
   x = county_map,
   y = h2a_change_data,
-  by = "countyfips",
+  by = "county_fips",
   all.x = T,
   all.y = F
 )

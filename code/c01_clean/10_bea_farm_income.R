@@ -4,14 +4,9 @@
 # Run after: 03_producer_price_index.R and
 # code/a01_sources/08_bea_farm_nonfarm_emp.py.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "bea_county_crosswalk.R"))
 library(arrow)
 library(dplyr)
@@ -19,6 +14,7 @@ library(readr)
 library(tidyr)
 
 full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
+assert_geo_columns(full_county_set, "county_fips")
 ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 bea_fips_xwalk <- read_csv(
   path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
@@ -41,7 +37,7 @@ bea_cainc45_data <- bea_cainc45_data %>%
 
 bea_cainc45_data <- bea_cainc45_data %>%
   mutate(
-    countyfips = county_fips(GeoFIPS), # remove quotes
+    county_fips = county_fips(GeoFIPS), # remove quotes
     category = ifelse(
       LineCode == 60,
       "farm_cashcrops", # Cash receipts: Crops
@@ -111,6 +107,7 @@ bea_cainc45_data <- bea_cainc45_data %>%
 
 bea_cainc45_data <- apply_bea_county_crosswalk(bea_cainc45_data, bea_fips_xwalk)
 
+assert_geo_columns(bea_cainc45_data, "county_fips")
 write_parquet(
   bea_cainc45_data,
   path_int("bea_cainc45_data_year.parquet")

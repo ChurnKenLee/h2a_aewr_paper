@@ -3,14 +3,9 @@
 # Output: data/intermediate/bea_caemp25n_data_year.parquet.
 # Run after: code/a01_sources/08_bea_farm_nonfarm_emp.py.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "bea_county_crosswalk.R"))
 library(arrow)
 library(dplyr)
@@ -18,6 +13,7 @@ library(readr)
 library(tidyr)
 
 full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
+assert_geo_columns(full_county_set, "county_fips")
 bea_fips_xwalk <- read_csv(
   path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
   show_col_types = FALSE
@@ -38,7 +34,7 @@ bea_caemp25n_data <- bea_caemp25n_data %>%
 
 bea_caemp25n_data <- bea_caemp25n_data %>%
   mutate(
-    countyfips = county_fips(GeoFIPS), # remove quotes
+    county_fips = county_fips(GeoFIPS), # remove quotes
     category = ifelse(
       LineCode == 10,
       "emp_tot",
@@ -87,16 +83,7 @@ bea_caemp25n_data <- apply_bea_county_crosswalk(
   bea_fips_xwalk
 )
 
-# SD Oglala Lakota to Shannon
-bea_caemp25n_data <- bea_caemp25n_data %>%
-  mutate(
-    countyfips = case_when(
-      countyfips == "46102" ~ "46113",
-      .default = countyfips
-    )
-  )
-
-
+assert_geo_columns(bea_caemp25n_data, "county_fips")
 write_parquet(
   bea_caemp25n_data,
   path_int("bea_caemp25n_data_year.parquet")

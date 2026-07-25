@@ -3,13 +3,9 @@
 # Outputs: IV proxy-comparison figures in outputs/figures.
 # This diagnostic is informative but is not an input to instrument construction.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(janitor)
@@ -20,12 +16,19 @@ acs <- read_parquet(path_int("acs_state_ag_wage.parquet"))
 oews <- read_parquet(path_int("oews_state_aggregated.parquet")) %>%
   filter(occ_code == "AEWR")
 qcew <- read_parquet(path_int("qcew_state_ag_wage.parquet"))
+assert_geo_columns(fls_region, "aewr_region_id")
+assert_geo_columns(fls_state, "state_fips")
+assert_geo_columns(acs, "state_fips")
+assert_geo_columns(oews, "state_fips")
+assert_geo_columns(qcew, "state_fips")
 
 aewr_region <- read_csv(
   path_raw("geographic_crosswalks", "phil", "aewr_regions.csv"),
   show_col_types = FALSE
 ) %>%
-  clean_names()
+  clean_names() %>%
+  rename(aewr_region_id = aewr_region_num) %>%
+  mutate(aewr_region_id = aewr_region_id(aewr_region_id))
 
 fips_codes <- read_csv(
   path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
@@ -33,7 +36,7 @@ fips_codes <- read_csv(
 ) %>%
   clean_names() %>%
   transmute(
-    state_fips_code = sprintf("%02d", as.integer(fips)),
+    state_fips = state_fips(fips),
     state_abbrev
   )
 
@@ -41,16 +44,16 @@ aewr_region <- aewr_region %>%
   inner_join(fips_codes, by = "state_abbrev")
 
 fls_regions <- fls_region %>%
-  distinct(aewr_region_num, region_name)
+  distinct(aewr_region_id, region_name)
 
 fls_states <- fls_state %>%
-  distinct(state_fips_code, state_name)
+  distinct(state_fips, state_name)
 
 fls_region_ts <- bind_rows(
   fls_region %>%
     transmute(
       year = revised_year,
-      aewr_region_num = as.integer(aewr_region_num),
+      aewr_region_id,
       source = "FLS",
       wage = field_livestock_revised,
       fls_release = "revised"
@@ -58,7 +61,7 @@ fls_region_ts <- bind_rows(
   fls_region %>%
     transmute(
       year = preliminary_year,
-      aewr_region_num = as.integer(aewr_region_num),
+      aewr_region_id,
       source = "FLS",
       wage = field_livestock_preliminary,
       fls_release = "preliminary"
@@ -66,18 +69,17 @@ fls_region_ts <- bind_rows(
 ) %>%
   filter(!is.na(year), !is.na(wage), wage > 0) %>%
   mutate(
-    year = as.integer(year),
     fls_release_rank = if_else(fls_release == "revised", 1L, 2L)
   ) %>%
-  arrange(aewr_region_num, year, fls_release_rank) %>%
-  distinct(aewr_region_num, year, .keep_all = TRUE) %>%
-  select(year, aewr_region_num, source, wage)
+  arrange(aewr_region_id, year, fls_release_rank) %>%
+  distinct(aewr_region_id, year, .keep_all = TRUE) %>%
+  select(year, aewr_region_id, source, wage)
 
 fls_state_ts <- bind_rows(
   fls_state %>%
     transmute(
       year = revised_year,
-      state_fips_code = sprintf("%02d", as.integer(state_fips_code)),
+      state_fips,
       source = "FLS",
       wage = field_livestock_revised,
       fls_release = "revised"
@@ -85,7 +87,7 @@ fls_state_ts <- bind_rows(
   fls_state %>%
     transmute(
       year = preliminary_year,
-      state_fips_code = sprintf("%02d", as.integer(state_fips_code)),
+      state_fips,
       source = "FLS",
       wage = field_livestock_preliminary,
       fls_release = "preliminary"
@@ -93,35 +95,34 @@ fls_state_ts <- bind_rows(
 ) %>%
   filter(!is.na(year), !is.na(wage), wage > 0) %>%
   mutate(
-    year = as.integer(year),
     fls_release_rank = if_else(fls_release == "revised", 1L, 2L)
   ) %>%
-  arrange(state_fips_code, year, fls_release_rank) %>%
-  distinct(state_fips_code, year, .keep_all = TRUE) %>%
-  select(year, state_fips_code, source, wage)
+  arrange(state_fips, year, fls_release_rank) %>%
+  distinct(state_fips, year, .keep_all = TRUE) %>%
+  select(year, state_fips, source, wage)
 
 proxy_state <- bind_rows(
   acs %>%
     transmute(
       source = "ACS",
-      year = as.integer(year),
-      state_fips_code = sprintf("%02d", as.integer(state_fips_code)),
+      year,
+      state_fips,
       wage = acs_ag_mean_hourly_wage,
       weight = acs_ag_workers_perwt
     ),
   oews %>%
     transmute(
       source = "OEWS",
-      year = as.integer(year),
-      state_fips_code = sprintf("%02d", as.integer(state_fips_code)),
+      year,
+      state_fips,
       wage = oews_mean_hourly_wage,
       weight = oews_tot_emp
     ),
   qcew %>%
     transmute(
       source = "QCEW",
-      year = as.integer(year),
-      state_fips_code = sprintf("%02d", as.integer(state_fips_code)),
+      year,
+      state_fips,
       wage = qcew_ag_mean_hourly_wage_40h,
       weight = qcew_ag_workers
     )
@@ -129,14 +130,14 @@ proxy_state <- bind_rows(
   filter(!is.na(wage), wage > 0, !is.na(weight), weight > 0)
 
 proxy_region_ts <- proxy_state %>%
-  inner_join(aewr_region, by = "state_fips_code") %>%
-  group_by(source, year, aewr_region_num) %>%
+  inner_join(aewr_region, by = "state_fips") %>%
+  group_by(source, year, aewr_region_id) %>%
   summarise(wage = weighted.mean(wage, weight, na.rm = TRUE), .groups = "drop")
 
 region_ts <- bind_rows(fls_region_ts, proxy_region_ts) %>%
-  inner_join(fls_regions, by = "aewr_region_num") %>%
-  arrange(source, aewr_region_num, year) %>%
-  group_by(source, aewr_region_num) %>%
+  inner_join(fls_regions, by = "aewr_region_id") %>%
+  arrange(source, aewr_region_id, year) %>%
+  group_by(source, aewr_region_id) %>%
   mutate(log_change = log(wage) - lag(log(wage))) %>%
   ungroup() %>%
   filter(!is.na(log_change)) %>%
@@ -144,11 +145,11 @@ region_ts <- bind_rows(fls_region_ts, proxy_region_ts) %>%
 
 state_ts <- bind_rows(
   fls_state_ts,
-  proxy_state %>% select(year, state_fips_code, source, wage)
+  proxy_state %>% select(year, state_fips, source, wage)
 ) %>%
-  inner_join(fls_states, by = "state_fips_code") %>%
-  arrange(source, state_fips_code, year) %>%
-  group_by(source, state_fips_code) %>%
+  inner_join(fls_states, by = "state_fips") %>%
+  arrange(source, state_fips, year) %>%
+  group_by(source, state_fips) %>%
   mutate(log_change = log(wage) - lag(log(wage))) %>%
   ungroup() %>%
   filter(!is.na(log_change)) %>%

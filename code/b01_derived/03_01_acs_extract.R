@@ -2,15 +2,9 @@
 # Inputs: IPUMS extract specifications in code/json and IPUMS_API_KEY.
 # Outputs: ACS one-year wage and five-year imputation Parquet files.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -57,8 +51,16 @@ build_acs_parquet <- function(extract_id, spec_file, parquet_file) {
 
   acs_data <- acs_data %>%
     zap_labels() %>%
-    zap_label()
+    zap_label() %>%
+    mutate(
+      state_fips = state_fips(STATEFIP)
+    ) %>%
+    select(-STATEFIP)
 
+  assert_geo_columns(
+    distinct(acs_data, state_fips),
+    "state_fips"
+  )
   acs_data %>%
     write_parquet(
       path_int(parquet_file)

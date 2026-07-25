@@ -438,6 +438,8 @@ def _(cont_cols, joined_table, optional_cat_cols, pl, soil_cell_cols, table_a):
             .alias(f"dominant_{_col}")
         )
 
+    from h2a.geography import harmonize_county_fips_2010
+
     county_soil_cells = (
         component_panel.group_by(["county_id"] + soil_cell_cols)
         .agg(
@@ -449,10 +451,18 @@ def _(cont_cols, joined_table, optional_cat_cols, pl, soil_cell_cols, table_a):
             + weighted_exprs
             + optional_mode_exprs
         )
-        .rename({"county_id": "county_ansi"})
+        .with_columns(
+            pl.col("county_id")
+            .map_elements(
+                harmonize_county_fips_2010,
+                return_dtype=pl.String,
+            )
+            .alias("county_fips")
+        )
+        .drop("county_id")
         .with_columns(pl.concat_str(soil_cell_cols, separator="|").alias("soil_cell_id"))
         .with_columns(
-            pl.col("total_acres").sum().over("county_ansi").alias("county_soil_acres")
+            pl.col("total_acres").sum().over("county_fips").alias("county_soil_acres")
         )
         .with_columns(
             (pl.col("total_acres") / pl.col("county_soil_acres"))
@@ -461,7 +471,7 @@ def _(cont_cols, joined_table, optional_cat_cols, pl, soil_cell_cols, table_a):
         )
         .select(
             [
-                "county_ansi",
+                "county_fips",
                 "soil_cell_id",
                 *soil_cell_cols,
                 "total_acres",
@@ -474,18 +484,21 @@ def _(cont_cols, joined_table, optional_cat_cols, pl, soil_cell_cols, table_a):
                 *[f"dominant_{_col}" for _col in optional_cat_cols],
             ]
         )
-        .sort(["county_ansi", "total_acres"], descending=[False, True])
+        .sort(["county_fips", "total_acres"], descending=[False, True])
     )
     return (county_soil_cells,)
 
 
 @app.cell
 def _(binary_path, county_soil_cells):
+    from h2a.geography import assert_geo_columns
+
     output_file = binary_path / "county_h2a_prediction_gnatsgo_soil_cells.parquet"
+    assert_geo_columns(county_soil_cells, ["county_fips"])
     county_soil_cells.write_parquet(output_file)
     print(
         f"Saved {county_soil_cells.height} county-soil cells "
-        f"for {county_soil_cells.select('county_ansi').n_unique()} counties to {output_file}"
+        f"for {county_soil_cells.select('county_fips').n_unique()} counties to {output_file}"
     )
     return
 

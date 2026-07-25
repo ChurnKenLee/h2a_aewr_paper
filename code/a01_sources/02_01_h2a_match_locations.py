@@ -558,8 +558,8 @@ def _():
 
 @app.cell
 def _(mo, pl):
-    # Define a function that reads the Excel files using polars, with Marimo caching for speedy code iteration
-    @mo.persistent_cache
+    # Cache reads while editing the notebook. Flat scripts run without a
+    # Marimo runtime, so they use the same function without the decorator.
     def read_h2a_excel(path, cols, schema, rename_map):
         df = pl.read_excel(
             source=path, columns=cols, schema_overrides=schema, engine="calamine"
@@ -571,6 +571,9 @@ def _(mo, pl):
         ).rename(mapping=rename_map, strict=False)
 
         return df
+
+    if mo.running_in_notebook():
+        read_h2a_excel = mo.persistent_cache(read_h2a_excel)
 
     return (read_h2a_excel,)
 
@@ -825,12 +828,12 @@ def _(
             census_zip_df.select(
                 [
                     pl.col("zip").alias("xzip"),
-                    pl.col("fips").alias("fips_from_census_zip"),
+                    pl.col("fips").alias("county_fips_from_census_zip"),
                 ]
             ),
             on="xzip",
             how="left",
-        ).with_columns(pl.col("fips_from_census_zip").fill_null(""))
+        ).with_columns(pl.col("county_fips_from_census_zip").fill_null(""))
 
         # 3. Fuzzy Matching
         # Apply fuzzy logic
@@ -895,8 +898,8 @@ def _(pl):
         # 4. Define FIPS selection logic
 
         df = df.with_columns(
-            pl.when(pl.col("fips_from_census_zip") != "")
-            .then(pl.col("fips_from_census_zip"))
+            pl.when(pl.col("county_fips_from_census_zip") != "")
+            .then(pl.col("county_fips_from_census_zip"))
             .when(pl.col("fips_from_addfips") != "")
             .then(pl.col("fips_from_addfips"))
             # New England puts county name in city column so has extra match check
@@ -944,7 +947,7 @@ def _(pl):
             )
             .then(pl.col("fips_from_fuzzy_city"))
             .otherwise(pl.lit(""))
-            .alias("final_fips")
+            .alias("matched_county_fips_list")
         )
 
         return df
@@ -1007,7 +1010,7 @@ def _(
     # Export unmatched
     def export_unmatched_locations_pl(df, filename):
         (
-            df.filter(pl.col("final_fips") == "")
+            df.filter(pl.col("matched_county_fips_list") == "")
             .select(
                 [
                     pl.col("xcity").alias("city"),
@@ -1169,6 +1172,8 @@ def _(CACHE, addfips, pl, process_dataframe):
 
 @app.cell
 def _(pl):
+    from h2a.geography import normalize_county_fips_list
+
     def finalize_and_collapse(placeid_df, added_fips_df, original_df, group_keys):
         # Change col name of df with placeid back to original names
         placeid_df = placeid_df.select(
@@ -1177,7 +1182,7 @@ def _(pl):
                 pl.col("county").alias("county_list"),
                 pl.col("state").alias("xstate"),
                 pl.col("zip").alias("xzip"),
-                pl.col("common_county_fips").alias("places_api_fips"),
+                pl.col("common_county_fips").alias("places_county_fips_list"),
             ]
         )
 
@@ -1202,28 +1207,43 @@ def _(pl):
 
         # Select locally matched FIPS > Places API FIPS
         added_fips_and_placeid = added_fips_and_placeid.with_columns(
-            fips=pl.when(pl.col("final_fips") != "")
-            .then(pl.col("final_fips"))
-            .otherwise(pl.col("places_api_fips"))
+            county_fips_list=pl.when(pl.col("matched_county_fips_list") != "")
+            .then(pl.col("matched_county_fips_list"))
+            .otherwise(pl.col("places_county_fips_list"))
         )
 
-        # print(added_fips_and_placeid.select(['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip', 'final_fips', 'places_api_fips']).head())
+        # print(added_fips_and_placeid.select(['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip', 'matched_county_fips_list', 'places_county_fips_list']).head())
 
         # Collapse groups by joining strings with commas
         added_fips_and_placeid = (
             added_fips_and_placeid.group_by(group_keys)
             .agg(
-                pl.col("fips").filter(pl.col("fips") != ""),
-                pl.col("final_fips").filter(pl.col("final_fips") != ""),
-                pl.col("places_api_fips").filter(pl.col("places_api_fips") != ""),
+                pl.col("county_fips_list").filter(pl.col("county_fips_list") != ""),
+                pl.col("matched_county_fips_list").filter(pl.col("matched_county_fips_list") != ""),
+                pl.col("places_county_fips_list").filter(pl.col("places_county_fips_list") != ""),
             )
             .with_columns(
-                pl.col("fips").list.join(","),
-                pl.col("final_fips").list.join(","),
-                pl.col("places_api_fips").list.join(","),
+                pl.col("county_fips_list")
+                .list.join(",")
+                .map_elements(
+                    normalize_county_fips_list,
+                    return_dtype=pl.String,
+                ),
+                pl.col("matched_county_fips_list")
+                .list.join(",")
+                .map_elements(
+                    normalize_county_fips_list,
+                    return_dtype=pl.String,
+                ),
+                pl.col("places_county_fips_list")
+                .list.join(",")
+                .map_elements(
+                    normalize_county_fips_list,
+                    return_dtype=pl.String,
+                ),
             )
         )
-        # print(added_fips_and_placeid.select(['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip', 'fips', 'final_fips', 'places_api_fips']).head())
+        # print(added_fips_and_placeid.select(['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip', 'fips', 'matched_county_fips_list', 'places_county_fips_list']).head())
         # Join back to the original large dataset
         final_df = original_df.join(added_fips_and_placeid, on=group_keys, how="left")
 

@@ -3,11 +3,9 @@
 # Outputs: treatment-status and event-study figures plus the matching-control correlation workbook.
 # Run after: code/c02_build/04_finalize_county_panel.R.
 
-source(if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-  file.path("code", "bootstrap_paths.R")
-} else {
-  file.path("..", "bootstrap_paths.R")
-})
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "analysis_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -29,7 +27,7 @@ stacked_sample <- county_df %>%
     any_cropland_2007 == 1,
     county_simple_treatment_groups != "always takers"
   ) %>%
-  arrange(countyfips, year) %>%
+  arrange(county_fips, year) %>%
   mutate(
     aewr_cz_p25_pd1 = (aewr_cz_p25 - aewr_cz_p25_l1) / aewr_cz_p25_l1
     # Inf when aewr_cz_p25_l1 == 0; filtered below
@@ -62,7 +60,7 @@ events_df <- stacked_sample %>%
 ## Step 4: County-level event classification -----------------------------------
 
 county_events <- events_df %>%
-  group_by(countyfips) %>%
+  group_by(county_fips) %>%
   summarise(
     first_increase_year = if (any(large_increase, na.rm = TRUE)) {
       min(year[large_increase], na.rm = TRUE)
@@ -141,11 +139,11 @@ increase_subsequent <- events_df %>%
   inner_join(
     county_events %>%
       filter(t_increase == 1L) %>%
-      select(countyfips, y_increase),
-    by = "countyfips"
+      select(county_fips, y_increase),
+    by = "county_fips"
   ) %>%
   filter(year > y_increase) %>%
-  group_by(countyfips) %>%
+  group_by(county_fips) %>%
   summarise(
     subsequent_n_increases = sum(large_increase, na.rm = TRUE),
     y_next_increase = if (any(large_increase, na.rm = TRUE)) {
@@ -166,11 +164,11 @@ decrease_subsequent <- events_df %>%
   inner_join(
     county_events %>%
       filter(t_decrease == 1L) %>%
-      select(countyfips, y_decrease),
-    by = "countyfips"
+      select(county_fips, y_decrease),
+    by = "county_fips"
   ) %>%
   filter(year > y_decrease) %>%
-  group_by(countyfips) %>%
+  group_by(county_fips) %>%
   summarise(
     subsequent_n_decreases = sum(large_decrease, na.rm = TRUE),
     y_next_decrease = if (any(large_decrease, na.rm = TRUE)) {
@@ -188,8 +186,8 @@ decrease_subsequent <- events_df %>%
   )
 
 county_events <- county_events %>%
-  left_join(increase_subsequent, by = "countyfips") %>%
-  left_join(decrease_subsequent, by = "countyfips")
+  left_join(increase_subsequent, by = "county_fips") %>%
+  left_join(decrease_subsequent, by = "county_fips")
 
 cat("\n=== Subsequent changes (increase counties) ===\n")
 print(table(
@@ -207,11 +205,11 @@ print(table(
 # Blue = not-yet-treated counties in the same design (proposed control pool).
 
 status_data <- stacked_sample %>%
-  select(countyfips, year) %>%
+  select(county_fips, year) %>%
   inner_join(
     county_events %>%
       select(
-        countyfips,
+        county_fips,
         t_increase,
         t_decrease,
         tied,
@@ -219,7 +217,7 @@ status_data <- stacked_sample %>%
         first_increase_year,
         first_decrease_year
       ),
-    by = "countyfips"
+    by = "county_fips"
   ) %>%
   mutate(
     status_increase = case_when(
@@ -240,14 +238,14 @@ status_data <- stacked_sample %>%
 
 share_increase <- status_data %>%
   group_by(year, status = status_increase) %>%
-  summarise(n = n_distinct(countyfips), .groups = "drop") %>%
+  summarise(n = n_distinct(county_fips), .groups = "drop") %>%
   group_by(year) %>%
   mutate(share = n / sum(n), design = "Large increase design") %>%
   ungroup()
 
 share_decrease <- status_data %>%
   group_by(year, status = status_decrease) %>%
-  summarise(n = n_distinct(countyfips), .groups = "drop") %>%
+  summarise(n = n_distinct(county_fips), .groups = "drop") %>%
   group_by(year) %>%
   mutate(share = n / sum(n), design = "Large decrease design") %>%
   ungroup()
@@ -367,12 +365,12 @@ PSM_VARS <- c(
 
 psm_base_cs <- samp_base %>%
   filter(year == 2011) %>%
-  distinct(countyfips, .keep_all = TRUE) %>%
-  select(countyfips, all_of(PSM_VARS)) %>%
+  distinct(county_fips, .keep_all = TRUE) %>%
+  select(county_fips, all_of(PSM_VARS)) %>%
   inner_join(
     county_events %>%
       select(
-        countyfips,
+        county_fips,
         t_increase,
         t_decrease,
         eligible_increase,
@@ -380,7 +378,7 @@ psm_base_cs <- samp_base %>%
         never_treated,
         tied
       ),
-    by = "countyfips"
+    by = "county_fips"
   ) %>%
   filter(!tied) %>%
   mutate(across(all_of(PSM_VARS), ~ as.numeric(scale(.))))
@@ -437,7 +435,7 @@ matched_decrease <- psm_decrease$matched
 
 #### Exhibits 24-27: Stacked DiD Event Studies ---------------------------------
 # Specification: i(rel_year, treated, ref = -1) | unit_cohort_id + year^cohort_id
-# unit_cohort_id = countyfips × cohort, so control counties that appear in
+# unit_cohort_id = county_fips × cohort, so control counties that appear in
 # multiple cohort stacks get separate unit FEs per cohort (clean stacking).
 # Cluster: cz_aewr_region_fe (same as main DD).
 
@@ -462,13 +460,13 @@ make_stacked_df <- function(
     return(empty_stacked_df(full_panel))
   }
 
-  treated_fips <- matched_data$countyfips[matched_data[[treatment_col]] == 1L]
-  control_fips <- unique(matched_data$countyfips[
+  treated_fips <- matched_data$county_fips[matched_data[[treatment_col]] == 1L]
+  control_fips <- unique(matched_data$county_fips[
     matched_data[[treatment_col]] == 0L
   ])
 
   treated_events <- event_year_df %>%
-    filter(countyfips %in% treated_fips)
+    filter(county_fips %in% treated_fips)
 
   year_range <- range(full_panel$year)
 
@@ -484,11 +482,11 @@ make_stacked_df <- function(
   }
 
   stack_list <- lapply(unique(valid_cohorts$event_year), function(ey) {
-    cohort_fips <- valid_cohorts$countyfips[valid_cohorts$event_year == ey]
+    cohort_fips <- valid_cohorts$county_fips[valid_cohorts$event_year == ey]
 
     treat_rows <- full_panel %>%
       filter(
-        countyfips %in% cohort_fips,
+        county_fips %in% cohort_fips,
         year >= ey - window,
         year <= ey + window
       ) %>%
@@ -496,7 +494,7 @@ make_stacked_df <- function(
 
     ctrl_rows <- full_panel %>%
       filter(
-        countyfips %in% control_fips,
+        county_fips %in% control_fips,
         year >= ey - window,
         year <= ey + window
       ) %>%
@@ -506,7 +504,7 @@ make_stacked_df <- function(
   })
 
   bind_rows(stack_list) %>%
-    mutate(unit_cohort_id = paste0(countyfips, "_", cohort_id))
+    mutate(unit_cohort_id = paste0(county_fips, "_", cohort_id))
 }
 
 stacked_increase <- make_stacked_df(
@@ -514,7 +512,7 @@ stacked_increase <- make_stacked_df(
   treatment_col = "t_increase",
   event_year_df = county_events %>%
     filter(t_increase == 1L) %>%
-    select(countyfips, event_year = y_increase),
+    select(county_fips, event_year = y_increase),
   full_panel = stacked_sample
 )
 
@@ -523,7 +521,7 @@ stacked_decrease <- make_stacked_df(
   treatment_col = "t_decrease",
   event_year_df = county_events %>%
     filter(t_decrease == 1L) %>%
-    select(countyfips, event_year = y_decrease),
+    select(county_fips, event_year = y_decrease),
   full_panel = stacked_sample
 )
 

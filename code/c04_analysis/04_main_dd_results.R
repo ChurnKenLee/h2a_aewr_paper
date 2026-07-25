@@ -3,11 +3,9 @@
 # Output: outputs/tables/table_1_main_results.tex.
 # Run after: code/c02_build/04_finalize_county_panel.R.
 
-source(if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-  file.path("code", "bootstrap_paths.R")
-} else {
-  file.path("..", "bootstrap_paths.R")
-})
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "analysis_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -103,7 +101,7 @@ dd_4 <- feols(
 # DD model 5: robustness check by excluding potentially influential CZs within each AEWR region
 # How many total ag workers are there within each AEWR region?
 samp_no_large_cz <- samp_base %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   mutate(aewr_region_year_total_emp_farm = sum(emp_farm, na.rm = TRUE)) %>%
   ungroup() %>%
   group_by(cz_fe, year) %>%
@@ -111,9 +109,9 @@ samp_no_large_cz <- samp_base %>%
   ungroup()
 
 cz_share_of_aewr_region_farm_emp <- samp_no_large_cz %>%
-  distinct(aewr_region_num, cz_fe, year, .keep_all = TRUE) %>%
+  distinct(aewr_region_id, cz_fe, year, .keep_all = TRUE) %>%
   select(
-    aewr_region_num,
+    aewr_region_id,
     cz_fe,
     year,
     aewr_region_year_total_emp_farm,
@@ -139,7 +137,7 @@ plot_cz_share_of_aewr_region_farm_emp %>%
 # Pick arbitrary cutoff of 0.1
 cz_to_keep_share_below_10 <- cz_share_of_aewr_region_farm_emp %>%
   filter(cz_share_farm_emp < 0.1) %>%
-  select(aewr_region_num, cz_fe, year)
+  select(aewr_region_id, cz_fe, year)
 
 samp_cz_share_below_10 <- samp_no_large_cz %>%
   inner_join(cz_to_keep_share_below_10)
@@ -154,7 +152,7 @@ dd_5 <- feols(
 
 # What if we just dropped the largest CZ within each AEWR region?
 cz_to_keep_not_largest <- cz_share_of_aewr_region_farm_emp %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   filter(cz_share_farm_emp != max(cz_share_farm_emp, na.rm = TRUE))
 
 samp_cz_no_largest <- samp_no_large_cz %>%

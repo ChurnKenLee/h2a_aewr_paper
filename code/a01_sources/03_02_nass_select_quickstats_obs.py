@@ -513,35 +513,57 @@ def _(mo):
 
 @app.cell
 def _(census_selected_obs, pl, survey_selected_obs):
-    # Only code change was in South Dakota
-    census_2010_def = census_selected_obs.with_columns(
-        pl.when(
-            (pl.col("state_fips_code") == "46")
-            & (pl.col("county_code") == "102")  # Oglala Lakota County
-        )
-        .then(
-            pl.lit("113")  # Shannon County
-        )
-        .otherwise(pl.col("county_code"))
-        .alias("county_code")
+    from h2a.geography import (
+        county_code_from_county_fips,
+        harmonize_county_fips_2010,
     )
 
-    survey_2010_def = survey_selected_obs.with_columns(
-        pl.when(
-            (pl.col("state_fips_code") == "46")
-            & (pl.col("county_code") == "102")  # Oglala Lakota County
+    def harmonize_selected_counties(frame):
+        is_county = pl.col("agg_level_desc") == "COUNTY"
+        return (
+            frame.with_columns(
+                pl.when(is_county)
+                .then(
+                    pl.concat_str("state_fips", "county_code").map_elements(
+                        harmonize_county_fips_2010,
+                        return_dtype=pl.String,
+                    )
+                )
+                .otherwise(None)
+                .alias("county_fips")
+            )
+            .with_columns(
+                pl.when(is_county)
+                .then(
+                    pl.col("county_fips").map_elements(
+                        county_code_from_county_fips,
+                        return_dtype=pl.String,
+                    )
+                )
+                .otherwise(pl.col("county_code"))
+                .alias("county_code")
+            )
         )
-        .then(
-            pl.lit("113")  # Shannon County
-        )
-        .otherwise(pl.col("county_code"))
-        .alias("county_code")
-    )
+
+    census_2010_def = harmonize_selected_counties(census_selected_obs)
+    survey_2010_def = harmonize_selected_counties(survey_selected_obs)
     return census_2010_def, survey_2010_def
 
 
 @app.cell
 def _(binary_path, census_2010_def, survey_2010_def):
+    from h2a.geography import assert_geo_columns
+
+    assert_geo_columns(
+        census_2010_def,
+        ["county_fips"],
+        allow_null=["county_fips"],
+    )
+    assert_geo_columns(
+        survey_2010_def,
+        ["county_fips"],
+        allow_null=["county_fips"],
+    )
     # Note that polars' handling of categoricals/enums are non-standard and R cannot parse it
     # So we keep all categoricals as strings for exporting
     # Since the parquet file is massively reduced in size, should not blow up memory usage in R

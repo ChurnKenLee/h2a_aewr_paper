@@ -17,7 +17,6 @@ The ordinary Python source programs can be run directly:
 ```sh
 uv run python code/a01_sources/03_03_nass_census_worker_duration.py
 uv run python code/a01_sources/04_02_qcew_quarterly_employment.py
-uv run python code/a01_sources/04_03_qwi_quarterly_employment.py
 ```
 
 Old root-level A paths map here by dropping the leading `a` from the filename.
@@ -30,7 +29,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | --- | --- | --- |
 | `00_crosswalk_harmonization.py` | Normalize the Census county adjacency source | `county_adjacency2010.parquet` |
 | `01_aewr_extract_tables.py` | Assemble historical AEWR tables | `aewr.parquet` |
-| `02_01_h2a_match_locations.py` | Standardize worksites and assign county FIPS | H-2A and Addendum B files with FIPS |
+| `02_01_h2a_match_locations.py` | Standardize worksites and assign canonical county FIPS lists | H-2A and Addendum B location files |
 | `02_02_h2a_clean_unmatched_locations_using_gemini.py` | Suggest corrections for unmatched locations | Unmatched-location suggestion CSVs |
 | `02_03_h2a_use_places_api_to_get_county.py` | Resolve suggested locations through Places | Place-ID and address-component caches |
 | `03_01_nass_extract_quickstats.py` | Partition raw QuickStats census and survey extracts | `qs_census_*.parquet`, `qs_survey_*.parquet` |
@@ -62,7 +61,8 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 - Within the NASS family, run `03_01` before `03_02`, and `03_02` before
   `03_03`.
 - Within the CDL family, run `06_01` through `06_05` in numeric order.
-- Run `00` before the OEWS crosswalk and county-vintage harmonization steps.
+- Rebuild each county-bearing producer after changing the geographic contract;
+  downstream scripts do not rename or repair stale artifact schemas.
 - `GOOGLE_GEMINI_API_KEY` is used by `02_02`, `03_02`, `06_03`, and `06_04`;
   `GOOGLE_PLACES_API_KEY` by `02_03`; `FRED_API_KEY` by `07`; and
   `USDA_MYMARKETNEWS_API_KEY` by `10`. `04_03` uses `CENSUS_API_KEY` and

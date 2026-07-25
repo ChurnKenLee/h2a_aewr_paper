@@ -109,13 +109,28 @@ def _(pl):
 
 
 @app.cell
-def _(INTERMEDIATE, caemp, caemp_year_cols, employment_long):
+def _(INTERMEDIATE, caemp, caemp_year_cols, employment_long, pl):
+    from h2a.geography import (
+        assert_geo_columns,
+        harmonize_county_fips_2010,
+    )
+
     bea_farm = employment_long(caemp, caemp_year_cols, "70", "bea_farm_emp")
     bea_nonfarm = employment_long(caemp, caemp_year_cols, "80", "bea_nonfarm_emp")
-    bea_farm_nonfarm = bea_farm.join(
-        bea_nonfarm, on=["GeoFIPS", "year"], how="left"
-    ).rename({"GeoFIPS": "county_fips"})
+    bea_farm_nonfarm = (
+        bea_farm.join(bea_nonfarm, on=["GeoFIPS", "year"], how="left")
+        .with_columns(
+            pl.col("GeoFIPS")
+            .map_elements(
+                harmonize_county_fips_2010,
+                return_dtype=pl.String,
+            )
+            .alias("county_fips")
+        )
+        .drop("GeoFIPS")
+    )
 
+    assert_geo_columns(bea_farm_nonfarm, ["county_fips"])
     bea_farm_nonfarm.write_parquet(INTERMEDIATE / "bea_farm_nonfarm_emp.parquet")
     return (bea_farm_nonfarm,)
 

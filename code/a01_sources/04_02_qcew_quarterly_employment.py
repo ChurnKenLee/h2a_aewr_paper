@@ -11,6 +11,10 @@ from pathlib import Path
 import polars as pl
 
 from h2a.paths import INTERMEDIATE, RAW
+from h2a.geography import (
+    assert_geo_columns,
+    harmonize_county_fips_2010,
+)
 
 FIRST_YEAR = 2000
 LAST_YEAR = 2024
@@ -62,9 +66,16 @@ def extract_year(zip_path: Path, year: int) -> pl.DataFrame:
             .otherwise(None)
             .alias("qcew_reference_month_emplvl"),
         )
-        .rename({"area_fips": "countyfips"})
+        .with_columns(
+            pl.col("area_fips")
+            .map_elements(
+                harmonize_county_fips_2010,
+                return_dtype=pl.String,
+            )
+            .alias("county_fips")
+        )
         .select(
-            "countyfips",
+            "county_fips",
             "year",
             "qtr",
             "reference_month",
@@ -87,8 +98,9 @@ def extract_quarterly_employment(output_path: Path = OUTPUT_PATH) -> None:
         )
 
     quarterly_employment = pl.concat(frames, how="vertical_relaxed").sort(
-        "countyfips", "year", "qtr", "industry_code"
+        "county_fips", "year", "qtr", "industry_code"
     )
+    assert_geo_columns(quarterly_employment, ["county_fips"])
     quarterly_employment.write_parquet(output_path)
     print(
         f"Wrote {quarterly_employment.height:,} county-industry-quarter rows "

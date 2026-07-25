@@ -1,0 +1,40 @@
+
+\begin{table}[htbp]
+   \caption{\label{tab:iv_farm_labor_share} IV Effect of the Real AEWR on Hired-labor share of farm production expenses}
+   \centering
+   \begin{tabular}{lcc}
+      \tabularnewline \midrule \midrule
+      Dependent Variable: & \multicolumn{2}{c}{share\_farm\_laborexp\_prodexp}\\
+                                        & No controls           & Lagged controls \\   
+      Model:                            & (1)                   & (2)\\  
+      \midrule
+      \emph{Variables}\\
+      Real AEWR (2012 dollars)          & -0.0022               & -0.0026\\   
+                                        & (0.0027)              & (0.0031)\\   
+      \midrule
+      \emph{Fixed-effects}\\
+      county\_fe                        & Yes                   & Yes\\  
+      year\_fe                          & Yes                   & Yes\\  
+      \midrule
+      \emph{Fit statistics}\\
+      First-stage excluded-instrument F & 78.86                 & 59.18\\  
+      Observations                      & 32,619                & 32,619\\  
+      R$^2$                             & 0.95920               & 0.95928\\  
+      Within R$^2$                      & $6.46\times 10^{-5}$  & 0.00190\\  
+      Controls                          & No                    & Yes\\  
+      County fixed effects              & Yes                   & Yes\\  
+      Year fixed effects                & Yes                   & Yes\\  
+      CZ-clustered SEs                  & Yes                   & Yes\\  
+      Number of SE clusters             & 600                   & 600\\  
+      Common pair sample                & Yes                   & Yes\\  
+      \midrule \midrule
+      \multicolumn{3}{l}{\emph{Clustered (cz\_out10) standard-errors in parentheses}}\\
+      \multicolumn{3}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+   \end{tabular}
+   
+   \par \raggedright 
+   Real AEWR is instrumented with the k = 5, d = 2, rho = 16 donor OEWS wage.\\
+   Both columns use the controlled specification's complete-case sample from 2011 onward.
+\end{table}
+
+

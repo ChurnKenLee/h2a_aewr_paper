@@ -17,6 +17,19 @@ The A and B directories document each script's inputs, outputs, dependencies,
 credentials, and manual command. Their numeric prefixes group related source
 families; they are not an instruction to rebuild unrelated sources.
 
+After a geographic-contract change, rebuild affected artifacts from their
+owning A or B producer before running downstream stages. The pipeline does not
+silently migrate stale artifacts in place.
+
+To rebuild the complete analysis-producing pipeline, run:
+
+```sh
+./scripts/run_all.sh
+```
+
+Stage-specific commands and dry-run usage are documented in
+[`scripts/README.md`](scripts/README.md).
+
 ## C workflow
 
 | Stage | Directory | Responsibility |
@@ -37,9 +50,9 @@ Rscript code/c02_build/01_merge_county_panel.R
 ```
 
 Opening a stage script directly in RStudio is also supported. The script loads
-`code/bootstrap_paths.R`, which walks upward to the `.here` marker, activates
-the repository's `renv` environment when needed, and then loads the shared path
-helpers.
+`code/paths.R` after anchoring `here` on that file. The repository root is then
+stable even when R starts in a nested stage directory, so subsequent paths are
+independent of the current working directory.
 
 The A and B scripts remain the owners of upstream extraction and aggregation
 artifacts. `code/utilities/pull_fred_minimum_wages.R` is an optional
@@ -52,8 +65,10 @@ scripts under `Do/` are not part of the supported workflow.
 - `data/intermediate` contains exchange artifacts between scripts.
 - `data/processed` contains analysis-ready panels.
 - `outputs/figures` and `outputs/tables` contain analysis products.
-- `code/bootstrap_paths.R` locates the repository and initializes R pathing;
-  `code/paths.R` is the shared path interface used after initialization.
+- R entry points load `code/paths.R` with `here::here()` and use its shared path
+  helpers.
+- Persistent geographic identifiers follow the canonical contract documented
+  in [`documentation/geographic_code_contract.md`](documentation/geographic_code_contract.md).
 - Scripts do not depend on objects left in an interactive R workspace.
 
 The reorganization preserves the existing analytical definitions. Known data

@@ -3,13 +3,9 @@
 # Output: data/intermediate/fls_county_weight.parquet.
 # Run after: code/c02_build/04_finalize_county_panel.R and source extractors.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -39,33 +35,39 @@ interpolate_with_nearest_endpoint <- function(year, value) {
 
 county_year <- read_parquet(
   path_processed("county_df_analysis_year.parquet")
-) %>%
+)
+assert_geo_columns(
+  county_year,
+  c("county_fips", "state_fips", "aewr_region_id", "cz_id")
+)
+county_year <- county_year %>%
   select(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     emp_farm
   ) %>%
   rename(bea_farm_emp = emp_farm) %>%
   distinct() %>%
-  filter(!is.na(aewr_region_num))
+  filter(!is.na(aewr_region_id))
 
 census_prior_path <- path_int(
   "census_ag_hired_worker_duration_county.parquet"
 )
 census_county_prior <- if (file.exists(census_prior_path)) {
   census_source <- read_parquet(census_prior_path)
+  assert_geo_columns(census_source, "county_fips")
   if (!"census_hired_labor_expense" %in% names(census_source)) {
     census_source$census_hired_labor_expense <- NA_real_
   }
   census_source %>%
     transmute(
-      countyfips = as.character(countyfips),
-      year = as.integer(year),
+      county_fips,
+      year,
       census_hired_workers_total = as.numeric(
         census_hired_workers_total
       ),
@@ -75,7 +77,7 @@ census_county_prior <- if (file.exists(census_prior_path)) {
     )
 } else {
   tibble(
-    countyfips = character(),
+    county_fips = character(),
     year = integer(),
     census_hired_workers_total = numeric(),
     census_hired_labor_expense = numeric()
@@ -86,12 +88,10 @@ qwi_prior_path <- path_int(
   "qwi_county_ag_quarterly_employment.parquet"
 )
 qwi_county_prior <- if (file.exists(qwi_prior_path)) {
-  read_parquet(qwi_prior_path) %>%
-    mutate(
-      countyfips = as.character(countyfips),
-      year = as.integer(year)
-    ) %>%
-    group_by(countyfips, year, qtr) %>%
+  qwi_source <- read_parquet(qwi_prior_path)
+  assert_geo_columns(qwi_source, "county_fips")
+  qwi_source %>%
+    group_by(county_fips, year, qtr) %>%
     summarise(
       qwi_quarter_ag_employment = if_else(
         all(is.na(qwi_beginning_quarter_employment)),
@@ -100,7 +100,7 @@ qwi_county_prior <- if (file.exists(qwi_prior_path)) {
       ),
       .groups = "drop"
     ) %>%
-    group_by(countyfips, year) %>%
+    group_by(county_fips, year) %>%
     summarise(
       qwi_annual_employment = if_else(
         all(is.na(qwi_quarter_ag_employment)),
@@ -111,7 +111,7 @@ qwi_county_prior <- if (file.exists(qwi_prior_path)) {
     )
 } else {
   tibble(
-    countyfips = character(),
+    county_fips = character(),
     year = integer(),
     qwi_annual_employment = numeric()
   )
@@ -122,6 +122,7 @@ qwi_county_prior <- if (file.exists(qwi_prior_path)) {
 cdl_ag_land <- read_parquet(path_int(
   "croplandcros_county_crop_type_acres.parquet"
 ))
+assert_geo_columns(cdl_ag_land, "county_fips")
 crop_type_list <- c(
   "field crops",
   "fruit & tree nuts",
@@ -135,7 +136,7 @@ crop_type_list <- c(
 )
 county_crop_acreage <- cdl_ag_land %>%
   mutate(cdl_is_ag = crop_type_label %in% crop_type_list) %>%
-  group_by(countyfips, year) %>%
+  group_by(county_fips, year) %>%
   summarise(
     cdl_ag_acres = sum(if_else(cdl_is_ag, acres, 0), na.rm = TRUE),
     cdl_non_ag_acres = sum(if_else(!cdl_is_ag, acres, 0), na.rm = TRUE),
@@ -143,9 +144,9 @@ county_crop_acreage <- cdl_ag_land %>%
   )
 
 fls_county_weight <- county_year %>%
-  left_join(county_crop_acreage, by = c("countyfips", "year")) %>%
-  left_join(census_county_prior, by = c("countyfips", "year")) %>%
-  group_by(countyfips) %>%
+  left_join(county_crop_acreage, by = c("county_fips", "year")) %>%
+  left_join(census_county_prior, by = c("county_fips", "year")) %>%
+  group_by(county_fips) %>%
   arrange(year, .by_group = TRUE) %>%
   mutate(
     census_hired_workers_prior = interpolate_with_nearest_endpoint(
@@ -158,7 +159,7 @@ fls_county_weight <- county_year %>%
     )
   ) %>%
   ungroup() %>%
-  left_join(qwi_county_prior, by = c("countyfips", "year")) %>%
+  left_join(qwi_county_prior, by = c("county_fips", "year")) %>%
   mutate(
     bea_farm_emp_weight_base = if_else(
       is.finite(bea_farm_emp) & bea_farm_emp > 0,
@@ -189,7 +190,7 @@ fls_county_weight <- county_year %>%
       0
     )
   ) %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   mutate(
     aewr_region_bea_farm_emp = sum(
       bea_farm_emp_weight_base,
@@ -238,8 +239,8 @@ fls_county_weight <- county_year %>%
     fls_weight_raw = fls_county_weight_bea,
     fls_county_weight = fls_county_weight_bea
   ) %>%
-  arrange(countyfips, year) %>%
-  group_by(countyfips) %>%
+  arrange(county_fips, year) %>%
+  group_by(county_fips) %>%
   mutate(
     fls_county_weight_l1 = if_else(
       lag(year) == year - 1L,
@@ -249,12 +250,12 @@ fls_county_weight <- county_year %>%
   ) %>%
   ungroup() %>%
   select(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     bea_farm_emp,
     cdl_ag_acres,
@@ -275,6 +276,10 @@ fls_county_weight <- county_year %>%
     fls_county_weight_l1
   )
 
+assert_geo_columns(
+  fls_county_weight,
+  c("county_fips", "state_fips", "cz_id", "aewr_region_id")
+)
 write_parquet(
   fls_county_weight,
   path_int("fls_county_weight.parquet")

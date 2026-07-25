@@ -5,7 +5,7 @@ data, write artifacts, or attach packages globally.
 
 | File | Responsibility |
 | --- | --- |
-| `fips.R` | Normalize state and county FIPS identifiers |
+| `geography.R` | Normalize and validate canonical geographic identifiers |
 | `bea_county_crosswalk.R` | Harmonize BEA county codes to the project vintage |
 | `analysis_helpers.R` | Define the main analysis sample and read the county map |
 | `entropy_calibration.R` | Exact, interval, and soft KL-projection routines plus LP feasibility checks |

@@ -1,16 +1,10 @@
 # Purpose: Impute likely legal status and aggregate immigrant labor measures.
 # Inputs: the ACS five-year imputation extract and PUMA-county crosswalks.
 # Outputs: data/intermediate/acs_immigrant_imputed.parquet.
-
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+rm(list = ls())
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -36,7 +30,7 @@ acs_df <- read_parquet(
     "SERIAL",
     "YEAR",
     "MULTYEAR",
-    "STATEFIP",
+    "state_fips",
     "PUMA",
     "SEX",
     "AGE",
@@ -44,6 +38,10 @@ acs_df <- read_parquet(
   )
 ) %>%
   clean_names()
+assert_geo_columns(
+  distinct(acs_df, state_fips),
+  "state_fips"
+)
 
 # Add identifiers of legal status as in Borjas 2007
 # Military status
@@ -221,15 +219,11 @@ acs_df <- acs_df %>%
       .default = "non_immigrant"
     )
   ) %>%
-  select(year, multyear, statefip, puma, sex, age, perwt, immigrant_type)
+  select(year, multyear, state_fips, puma, sex, age, perwt, immigrant_type)
 
-acs_df <- acs_df %>%
-  select(year, multyear, statefip, puma, sex, age, perwt, immigrant_type)
-
-# Pad state FIPS code and PUMA code for merging with GEOCORR
+# Pad PUMA code for merging with GEOCORR
 acs_df <- acs_df %>%
   mutate(
-    statefip = str_pad(statefip, 2, side = "left", pad = "0"),
     puma = str_pad(puma, 5, side = "left", pad = "0")
   )
 
@@ -253,7 +247,7 @@ geocorr_2000_df <- read_csv(
   col_names = geocorr_2000_names,
   show_col_types = FALSE
 ) %>%
-  mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
+  mutate(state_fips = str_pad(state, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
   select(-c(state, puma2k))
 
@@ -275,24 +269,30 @@ geocorr_2012_df <- read_csv(
   col_names = geocorr_2012_names,
   show_col_types = FALSE
 ) %>%
-  mutate(statefip = str_pad(state, 2, side = "left", pad = "0")) %>%
+  mutate(state_fips = str_pad(state, 2, side = "left", pad = "0")) %>%
   mutate(puma = str_pad(puma12, 5, side = "left", pad = "0")) %>%
   select(-c(state, puma12))
 
 # Split by survey year, then merge with GEOCORR
 acs_puma_2000_df <- acs_df %>%
   filter(multyear < 2012) %>%
-  left_join(geocorr_2000_df, by = c("statefip", "puma"))
+  left_join(geocorr_2000_df, by = c("state_fips", "puma"))
 
 acs_puma_2012_df <- acs_df %>%
   filter(multyear > 2011) %>%
-  left_join(geocorr_2012_df, by = c("statefip", "puma"))
+  left_join(geocorr_2012_df, by = c("state_fips", "puma"))
 
 # Combine back into one df
 acs_puma_2000_2012_df <- bind_rows(acs_puma_2000_df, acs_puma_2012_df)
 
+unmatched_pumas <- acs_puma_2000_2012_df %>%
+  filter(is.na(county) | is.na(afact)) %>%
+  distinct(multyear, state_fips, puma)
+
+
 # Add group identifiers we care about
 acs_puma_2000_2012_df <- acs_puma_2000_2012_df %>%
+  filter(!is.na(county), !is.na(afact)) %>% # This drops Louisiana 77777 Katrina codes
   mutate(prime_age = between(age, 25, 64)) %>%
   mutate(sex = if_else(sex == 1, "male", "female"))
 
@@ -310,10 +310,18 @@ acs_agg_df <- acs_agg_df %>%
   )
 
 acs_agg_df <- acs_agg_df %>%
-  mutate(state_fips_code = substr(state_county_fips_code, 1, 2)) %>%
-  mutate(county_fips_code = substr(state_county_fips_code, 3, 5)) %>%
+  mutate(
+    county_fips = harmonize_county_fips_2010(state_county_fips_code),
+    state_fips = state_from_county_fips(county_fips),
+    county_code = county_code_from_county_fips(county_fips)
+  ) %>%
   select(-state_county_fips_code, -county)
 
 # Export
+assert_geo_columns(
+  acs_agg_df,
+  c("state_fips", "county_code", "county_fips")
+)
+
 acs_agg_df %>%
   write_parquet(path_int("acs_immigrant_imputed.parquet"))

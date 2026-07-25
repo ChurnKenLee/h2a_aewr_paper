@@ -2,15 +2,9 @@
 # Inputs: oews.parquet and oews_area_definitions.parquet.
 # Outputs: oews_county_aggregated.parquet and oews_state_aggregated.parquet.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -87,7 +81,7 @@ oews_area_year_df <- oews_area_definitions_df %>%
 
 # Collapse into county-years-occupations
 oews_county_year_occ <- oews_area_year_df %>%
-  group_by(oews_state_fips, oews_county_fips, year, occ_code, occ_title) %>%
+  group_by(state_fips, county_code, year, occ_code, occ_title) %>%
   summarize(
     tot_emp = sum(tot_emp, na.rm = TRUE),
     hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
@@ -117,7 +111,7 @@ oews_county_year_occ <- oews_area_year_df %>%
 
 # Collapse occupations as well to get AEWR equivalent
 oews_county_year_aewr <- oews_area_year_df %>%
-  group_by(oews_state_fips, oews_county_fips, year) %>%
+  group_by(state_fips, county_code, year) %>%
   summarize(
     tot_emp = sum(tot_emp, na.rm = TRUE),
     hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
@@ -151,25 +145,32 @@ oews_county_year_aewr <- oews_area_year_df %>%
 
 # Combine
 oews_county_year <- rbind(oews_county_year_occ, oews_county_year_aewr) %>%
-  arrange(oews_state_fips, oews_county_fips, year, occ_code)
+  arrange(state_fips, county_code, year, occ_code)
 
 # Harmonize variable names
 oews_county_year <- oews_county_year %>%
+  mutate(
+    county_fips = harmonize_county_fips_2010(
+      combine_county_fips(state_fips, county_code)
+    )
+  ) %>%
   rename(
-    state_fips_code = oews_state_fips,
-    county_fips_code = oews_county_fips,
     oews_mean_hourly_wage = mean_hourly_wage,
     oews_mean_annual_wage = mean_annual_wage,
     oews_tot_emp = tot_emp
   )
 
 # Export
+assert_geo_columns(
+  oews_county_year,
+  c("state_fips", "county_code", "county_fips")
+)
 oews_county_year %>%
   write_parquet(path_int("oews_county_aggregated.parquet"))
 
 # Collapse into state-year as well for comparison with FLS
 oews_state_year_occ <- oews_area_year_df %>%
-  group_by(oews_state_fips, year, occ_code, occ_title) %>%
+  group_by(state_fips, year, occ_code, occ_title) %>%
   summarize(
     tot_emp = sum(tot_emp, na.rm = TRUE),
     hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
@@ -198,7 +199,7 @@ oews_state_year_occ <- oews_area_year_df %>%
   )
 
 oews_state_year_aewr <- oews_area_year_df %>%
-  group_by(oews_state_fips, year) %>%
+  group_by(state_fips, year) %>%
   summarize(
     tot_emp = sum(tot_emp, na.rm = TRUE),
     hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
@@ -232,16 +233,16 @@ oews_state_year_aewr <- oews_area_year_df %>%
 
 # Combine
 oews_state_year <- rbind(oews_state_year_occ, oews_state_year_aewr) %>%
-  arrange(oews_state_fips, year, occ_code)
+  arrange(state_fips, year, occ_code)
 
 # Harmonize variable names
 oews_state_year <- oews_state_year %>%
   rename(
-    state_fips_code = oews_state_fips,
     oews_mean_hourly_wage = mean_hourly_wage,
     oews_mean_annual_wage = mean_annual_wage,
     oews_tot_emp = tot_emp
   )
 
+assert_geo_columns(oews_state_year, "state_fips")
 oews_state_year %>%
   write_parquet(path_int("oews_state_aggregated.parquet"))

@@ -3,29 +3,23 @@
 # Output: data/intermediate/state_real_minwages.parquet.
 # Run after: 03_producer_price_index.R; the FRED parquet is an upstream input.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 
 state_minwages <- read_parquet(path_int("fred_state_minwages.parquet"))
-state_minwages <- state_minwages %>%
-  mutate(fips = state_fips(fips))
+assert_geo_columns(state_minwages, "state_fips")
 
 ## Alt Min Wage from Ken -------------------------------
 
 state_min_alt <- read_parquet(path_int("state_year_min_wage.parquet"))
 ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
+assert_geo_columns(state_min_alt, "state_fips")
 state_min_alt <- state_min_alt %>%
-  mutate(fips = state_fips(state_fips_code)) %>%
   filter(year == 2024) %>% # these are stable, so ignore them
-  select(fips, agriculture_exemption)
+  select(state_fips, agriculture_exemption)
 
 state_minwage_ppi <- merge(
   x = state_minwages,
@@ -38,7 +32,7 @@ state_minwage_ppi <- merge(
 state_minwage_ppi <- merge(
   x = state_minwage_ppi,
   y = state_min_alt,
-  by = "fips",
+  by = "state_fips",
   all.x = T,
   all.y = F
 )
@@ -79,6 +73,7 @@ state_minwage_ppi <- state_minwage_ppi %>%
   dplyr::select(-ppi_2012)
 
 
+assert_geo_columns(state_minwage_ppi, "state_fips")
 write_parquet(
   state_minwage_ppi,
   path_int("state_real_minwages.parquet")

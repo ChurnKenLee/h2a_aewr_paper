@@ -590,7 +590,7 @@ def _():
     ]
 
     # The Geographic/Temporal identifier (note CDL crop as a category we are aggregating into)
-    geo_time_key = ["year", "state_ansi", "cdl_code"]
+    geo_time_key = ["year", "state_fips", "cdl_code"]
 
     # The pivoting key
     pivot_index = nass_identity + geo_time_key
@@ -642,7 +642,7 @@ def _(copy, nass_identity, pivot_index, pl, qs_cleaned):
         ~pl.col("commodity_desc").str.contains("TOTALS"),
     )
     national_pivot_index = copy.deepcopy(pivot_index)
-    national_pivot_index.remove("state_ansi")
+    national_pivot_index.remove("state_fips")
     # Calculate Revenue for every state-year
     qs_national_wide = (
         qs_national_only.with_columns(
@@ -712,7 +712,7 @@ def _(binary_path, pl, qs_state_revenue):
         # Calculate Weight (w)
         .with_columns(
             w=pl.col("revenue")
-            / pl.col("revenue").sum().over(["year", "state_ansi", "cdl_code"])
+            / pl.col("revenue").sum().over(["year", "state_fips", "cdl_code"])
         )
         # Aggregate to create synthetic CDL price and yield
         .with_columns(
@@ -721,7 +721,7 @@ def _(binary_path, pl, qs_state_revenue):
                 (pl.col("eff_y") * pl.col("w")).alias("y_w"),
             ]
         )
-        .group_by(["year", "state_ansi", "cdl_code"])
+        .group_by(["year", "state_fips", "cdl_code"])
         .agg([pl.sum("p_w").alias("p_syn_state"), pl.sum("y_w").alias("y_syn_state")])
     )
     state_synthetic_cdl.write_parquet(

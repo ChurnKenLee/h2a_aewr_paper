@@ -473,7 +473,7 @@ def _(aewr_2009, all_data, pl, us):
     # Add state FIPS code and clean state name
     name_fips_dict = us.states.mapping("name", "fips")
     aewr_df = aewr_df.with_columns(
-        pl.col("state").replace(name_fips_dict).alias("state_fips_code")
+        pl.col("state").replace(name_fips_dict).alias("state_fips")
     ).filter(pl.col("state") != "Nationwide")
 
     # Harmonize name for exporting
@@ -488,7 +488,7 @@ def _(aewr_df, crs_aewr_long, name_fips_dict, pl):
     # also contain 2000--2008 notices, so concatenating them without this
     # restriction duplicates every state-year in the overlap.
     crs_aewr = crs_aewr_long.with_columns(
-        pl.col("state_name").replace(name_fips_dict).alias("state_fips_code")
+        pl.col("state_name").replace(name_fips_dict).alias("state_fips")
     ).filter(pl.col("year") <= 2008)
 
     federal_register_aewr = aewr_df.filter(pl.col("year") >= 2009)
@@ -536,7 +536,7 @@ def _(INTERMEDIATE, check_df, pl):
     # Errors are almost all 0, except for some typos in the USDA dataset I think
     # Export
     export_df = check_df.select(
-        ["aewr", "state_fips_code", "state_name", "year"]
+        ["aewr", "state_fips", "state_name", "year"]
     ).with_columns(pl.col("aewr"))
     export_df.write_parquet(INTERMEDIATE / "aewr.parquet")
     return
@@ -625,16 +625,16 @@ def _(aewr_1990_2025, pl):
     processed_df = (
         aewr_1990_2025.with_columns(
             [
-                pl.col("state_fips_code").cast(pl.Utf8),
+                pl.col("state_fips").cast(pl.Utf8),
                 pl.col("year").cast(pl.Int32, strict=False),
                 pl.col("aewr").cast(pl.Float64, strict=False),
             ]
         )
         .drop_nulls()
-        .sort(["state_fips_code", "year"])
+        .sort(["state_fips", "year"])
         .with_columns(
             # Change = Current Year - Previous Year for each ID
-            aewr_change=pl.col("aewr").diff().over("state_fips_code")
+            aewr_change=pl.col("aewr").diff().over("state_fips")
         )
         .filter(pl.col("aewr_change").is_not_null())
     )

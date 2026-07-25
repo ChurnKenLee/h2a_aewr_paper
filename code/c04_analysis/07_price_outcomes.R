@@ -3,12 +3,9 @@
 # Outputs: price-index figures and table_fisher_price_dd.tex.
 # Run after: code/c02_build/04_finalize_county_panel.R.
 
-source(if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-  file.path("code", "bootstrap_paths.R")
-} else {
-  file.path("..", "bootstrap_paths.R")
-})
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "analysis_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -126,10 +123,10 @@ table_fisher_price <- etable(
 
 fisher_map_data <- samp_base %>%
   filter(year %in% c(2011, 2022), !is.na(fisher_index_ppi)) %>%
-  select(countyfips, year, fisher_index_ppi) %>%
-  distinct(countyfips, year, .keep_all = TRUE) %>%
+  select(county_fips, year, fisher_index_ppi) %>%
+  distinct(county_fips, year, .keep_all = TRUE) %>%
   pivot_wider(
-    id_cols = countyfips,
+    id_cols = county_fips,
     names_from = year,
     values_from = fisher_index_ppi,
     names_prefix = "price_"
@@ -142,7 +139,7 @@ ratio_median <- median(fisher_map_data$price_ratio_2022_2011, na.rm = TRUE)
 fisher_county_map <- merge(
   x = county_map,
   y = fisher_map_data,
-  by = "countyfips",
+  by = "county_fips",
   all.x = TRUE,
   all.y = FALSE
 )

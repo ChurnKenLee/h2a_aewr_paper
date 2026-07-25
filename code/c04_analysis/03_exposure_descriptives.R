@@ -3,12 +3,9 @@
 # Outputs: exposure maps and DD descriptive figures.
 # Run after: 01_aewr_descriptives.R and code/c02_build/04_finalize_county_panel.R.
 
-source(if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-  file.path("code", "bootstrap_paths.R")
-} else {
-  file.path("..", "bootstrap_paths.R")
-})
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "analysis_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -25,7 +22,7 @@ aewr_reg_ts_data <- read_parquet(
   path_int("analysis_aewr_region_trends.parquet")
 )
 aewr_reg_ts_data_color <- aewr_reg_ts_data %>%
-  distinct(aewr_region_num, aewr_high_growth)
+  distinct(aewr_region_id, aewr_high_growth)
 
 #### Exhibit 7: Exposure Map: Counties by Sample Classification ----------------
 ## DDD Sample Map
@@ -33,7 +30,7 @@ aewr_reg_ts_data_color <- aewr_reg_ts_data %>%
 
 ddd_map_data <- county_df %>%
   dplyr::select(
-    countyfips,
+    county_fips,
     high_h2a_share_75,
     high_h2a_share_50,
     any_cropland_2007
@@ -42,7 +39,7 @@ ddd_map_data <- county_df %>%
 ddd_map <- merge(
   x = county_map,
   y = ddd_map_data,
-  by = "countyfips",
+  by = "county_fips",
   all.x = T,
   all.y = F
 )
@@ -106,7 +103,7 @@ aewr_reg_ts_data <- aewr_reg_ts_data %>%
 aewr_reg_ts_h2a <- county_df %>%
   select(
     year,
-    aewr_region_num,
+    aewr_region_id,
     nbr_workers_certified_start_year,
     county_simple_treatment_groups
   )
@@ -114,7 +111,7 @@ aewr_reg_ts_h2a <- county_df %>%
 aewr_reg_ts_data <- merge(
   x = aewr_reg_ts_h2a,
   y = aewr_reg_ts_data,
-  by = c("aewr_region_num", "year"),
+  by = c("aewr_region_id", "year"),
   all = T
 )
 
@@ -211,10 +208,10 @@ aewr_cz_p25_czreg_ts_data <- county_df %>%
   filter(
     any_cropland_2007 == 1,
     county_simple_treatment_groups != "always takers",
-    !is.na(cz_out10),
-    !is.na(aewr_region_num)
+    !is.na(cz_id),
+    !is.na(aewr_region_id)
   ) %>%
-  mutate(cz_aewr_id = paste0(cz_out10, "_", aewr_region_num)) %>%
+  mutate(cz_aewr_id = paste0(cz_id, "_", aewr_region_id)) %>%
   group_by(cz_aewr_id, year) %>%
   summarise(
     aewr_cz_p25_mean = mean(aewr_cz_p25, na.rm = TRUE),
@@ -291,10 +288,10 @@ county_df_dd_vis <- county_df %>%
   filter(
     any_cropland_2007 == 1,
     county_simple_treatment_groups != "always takers",
-    !is.na(cz_out10),
-    !is.na(aewr_region_num)
+    !is.na(cz_id),
+    !is.na(aewr_region_id)
   ) %>%
-  mutate(cz_aewr_id = paste0(cz_out10, "_", aewr_region_num))
+  mutate(cz_aewr_id = paste0(cz_id, "_", aewr_region_id))
 
 county_df_dd_vis <- merge(
   x = county_df_dd_vis,

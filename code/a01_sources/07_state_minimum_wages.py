@@ -4,7 +4,7 @@
 
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.14"
 app = marimo.App(width="full")
 
 
@@ -19,11 +19,8 @@ def _():
     import requests
     import urllib
     import time
-    import addfips
-    import us
 
-    DC_STATEHOOD = 1  # Enables DC to be included in the state list
-    return CODE, INTERMEDIATE, dotenv, mo, os, pl, requests, us
+    return CODE, INTERMEDIATE, RAW, dotenv, mo, os, pl, requests
 
 
 @app.cell
@@ -68,7 +65,9 @@ def _(fred_api_key, requests):
 @app.cell
 def _(fred_api_key):
     # Base URL to call API
-    fred_observations_api_url = "https://api.stlouisfed.org/fred/v2/release/observations"
+    fred_observations_api_url = (
+        "https://api.stlouisfed.org/fred/v2/release/observations"
+    )
 
     # Bearer token has to go in request header
     fred_observations_headers = {"Authorization": f"Bearer {fred_api_key}"}
@@ -152,7 +151,9 @@ def _(mo):
 
 
 @app.cell
-def _(INTERMEDIATE, df, pl, us):
+def _(INTERMEDIATE, RAW, df, pl):
+    from h2a.geography import assert_geo_columns, geo_expr
+
     ag_exemption_list = [
         "AK",
         "DE",
@@ -176,13 +177,52 @@ def _(INTERMEDIATE, df, pl, us):
 
     # Add FIPS code and export
     min_wage_df = df.with_columns(
-        pl.col("state_abbreviation").is_in(ag_exemption_list).alias("agriculture_exemption")
+        pl.col("state_abbreviation")
+        .is_in(ag_exemption_list)
+        .alias("agriculture_exemption")
     )
 
-    state_name_to_fips_dict = us.states.mapping("name", "fips")
-    min_wage_df = min_wage_df.with_columns(
-        pl.col("state_name").replace(state_name_to_fips_dict).alias("state_fips_code")
+    state_fips_lookup = (
+        pl.read_csv(RAW / "geographic_crosswalks" / "phil" / "fips_codes.csv")
+        .select(
+            pl.col("state_abbrev").alias("state_abbreviation"),
+            geo_expr("fips", "state_fips"),
+        )
+        .unique()
     )
+
+    unmatched_abbreviations = (
+        min_wage_df.select("state_abbreviation")
+        .unique()
+        .join(
+            state_fips_lookup.select("state_abbreviation"),
+            on="state_abbreviation",
+            how="anti",
+        )
+        .get_column("state_abbreviation")
+        .to_list()
+    )
+    unexpected_abbreviations = set(unmatched_abbreviations) - {"US"}
+    if unexpected_abbreviations:
+        raise ValueError(
+            "Unexpected minimum-wage state abbreviations: "
+            f"{sorted(unexpected_abbreviations)}"
+        )
+
+    min_wage_df = (
+        min_wage_df.join(
+            state_fips_lookup,
+            on="state_abbreviation",
+            how="inner",
+            validate="m:1",
+        )
+        .with_columns(
+            pl.col("year").cast(pl.Int32),
+            pl.col("value").cast(pl.Float64, strict=False),
+        )
+        .sort(["state_fips", "year"])
+    )
+    assert_geo_columns(min_wage_df, ["state_fips"])
     min_wage_df.write_parquet(INTERMEDIATE / "state_year_min_wage.parquet")
     return
 

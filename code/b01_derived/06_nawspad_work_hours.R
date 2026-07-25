@@ -2,15 +2,8 @@
 # Inputs: NAWSPAD source CSVs and the six-region crosswalk.
 # Outputs: data/intermediate/nawspad.parquet.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -137,7 +130,7 @@ nawspad_state_df <- nawspad_state_df %>%
   left_join(state_fips, by = c("states" = "state_name")) %>%
   select(-region, -region_name, -region6, -states) %>%
   rename(
-    state_fips_code = state_code,
+    state_fips = state_code,
     year = census_year
   )
 

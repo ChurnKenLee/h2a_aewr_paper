@@ -4,7 +4,7 @@
 
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.14"
 app = marimo.App(width="full")
 
 
@@ -21,15 +21,42 @@ def _():
 
 @app.cell
 def _(INTERMEDIATE, RAW, pl):
+    from h2a.geography import (
+        assert_geo_columns,
+        harmonize_county_fips_2010,
+    )
+
     county_adjacency = pl.read_csv(
         RAW / "geographic_crosswalks" / "census" / "county_adjacency2010.txt",
         separator="\t",
-        new_columns=["countyname", "fipscounty", "neighborname", "fipsneighbor"],
+        new_columns=[
+            "countyname",
+            "county_fips",
+            "neighborname",
+            "neighbor_county_fips",
+        ],
         infer_schema=False,
         has_header=False,
         encoding="cp1252",
     )
-    county_adjacency = county_adjacency.fill_null(strategy="forward").sort(by=pl.all())
+    county_adjacency = (
+        county_adjacency.fill_null(strategy="forward")
+        .with_columns(
+            pl.col("county_fips").map_elements(
+                harmonize_county_fips_2010,
+                return_dtype=pl.String,
+            ),
+            pl.col("neighbor_county_fips").map_elements(
+                harmonize_county_fips_2010,
+                return_dtype=pl.String,
+            ),
+        )
+        .sort(by=pl.all())
+    )
+    assert_geo_columns(
+        county_adjacency,
+        ["county_fips", "neighbor_county_fips"],
+    )
     county_adjacency.write_parquet(INTERMEDIATE / "county_adjacency2010.parquet")
     return
 

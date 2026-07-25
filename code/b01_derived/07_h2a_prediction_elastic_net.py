@@ -25,10 +25,12 @@ def _():
     import json
     import time
     from functools import partial
+    from h2a.geography import assert_geo_columns
 
     return (
         CODE,
         INTERMEDIATE,
+        assert_geo_columns,
         itertools,
         jax,
         jnp,
@@ -68,32 +70,34 @@ def _(mo):
 
 
 @app.cell
-def _(binary_path, pl):
+def _(assert_geo_columns, binary_path, pl):
     # BEA farm employment in 2011 as baseline for calculating shares
     bea = pl.read_parquet(binary_path / "bea_farm_nonfarm_emp.parquet")
+    assert_geo_columns(bea, ["county_fips"])
     bea = (
         bea.filter(pl.col("year") == 2011)
-        .rename({"bea_farm_emp": "bea_farm_emp_2011", "county_fips": "county_ansi"})
+        .rename({"bea_farm_emp": "bea_farm_emp_2011"})
         .drop(["bea_nonfarm_emp", "year"])
     )
     return (bea,)
 
 
 @app.cell
-def _(binary_path, pl):
+def _(assert_geo_columns, binary_path, pl):
+    h2a = pl.read_parquet(binary_path / "h2a_aggregated.parquet")
+    assert_geo_columns(
+        h2a,
+        ["state_fips", "county_code", "county_fips"],
+    )
     h2a = (
-        pl.read_parquet(binary_path / "h2a_aggregated.parquet")
-        .with_columns(
-            (pl.col("state_fips_code") + pl.col("county_fips_code")).alias(
-                "county_ansi"
-            ),
+        h2a.with_columns(
             pl.col("year").cast(pl.Int32).alias("year"),
         )
         .rename({"nbr_workers_certified_start_year": "h2a_certified"})
         .select(
             [
                 "year",
-                "county_ansi",
+                "county_fips",
                 "h2a_certified",
             ]
         )
@@ -103,26 +107,26 @@ def _(binary_path, pl):
 
 
 @app.cell
-def _(binary_path, pl):
+def _(assert_geo_columns, binary_path, pl):
     # Use pre-period climate-normal spline/Fourier basis features from a14_01.
     # These are time-invariant (2000-2011) averages
     # Can consider using annual data instead; think averages capture county primitives better?
     climate = pl.read_parquet(
         binary_path / "county_h2a_prediction_climate_basis_annual.parquet"
     )
-    climate = (
-        climate.select(["year", "fips", pl.col("^normal_cb_.*$")])
-        .filter(pl.col("year") >= 2008, pl.col("year") <= 2011)
-        .rename({"fips": "county_ansi"})
+    assert_geo_columns(climate, ["county_fips"])
+    climate = climate.select(["year", "county_fips", pl.col("^normal_cb_.*$")]).filter(
+        pl.col("year") >= 2008, pl.col("year") <= 2011
     )
     return (climate,)
 
 
 @app.cell
-def _(binary_path, pl):
+def _(assert_geo_columns, binary_path, pl):
     soil = pl.read_parquet(
         binary_path / "county_h2a_prediction_gnatsgo_soil_cells.parquet"
     )
+    assert_geo_columns(soil, ["county_fips"])
     return (soil,)
 
 
@@ -130,7 +134,7 @@ def _(binary_path, pl):
 def _(climate):
     county_cont_cols = climate.columns.copy()
     county_cont_cols.remove("year")
-    county_cont_cols.remove("county_ansi")
+    county_cont_cols.remove("county_fips")
 
     # Remember that obs_share merely captures the share within each cell that the variable is missing
     patch_cont_cols = [
@@ -182,11 +186,11 @@ def _(itertools, jnp, np, pl):
         """
         Merge, standardize continuous variables, map categorical variables
         """
-        merged = soil.join(climate, on="county_ansi", how="inner")
-        merged = merged.join(h2a, on=["county_ansi", "year"], how="left").with_columns(
+        merged = soil.join(climate, on="county_fips", how="inner")
+        merged = merged.join(h2a, on=["county_fips", "year"], how="left").with_columns(
             pl.col("h2a_certified").fill_null(0).alias("h2a_certified")
         )
-        merged = merged.join(bea, on="county_ansi", how="inner")
+        merged = merged.join(bea, on="county_fips", how="inner")
 
         # Drop missing or zero employment counties entirely)
         merged = merged.filter(
@@ -196,7 +200,7 @@ def _(itertools, jnp, np, pl):
         if merged.height == 0:
             raise ValueError(
                 "No rows remain after joining soil, climate, H-2A, and BEA data. "
-                "Check that county_ansi/year keys overlap and BEA farm employment is positive."
+                "Check that county_fips/year keys overlap and BEA farm employment is positive."
             )
 
         # Optional: cap target rate at a reasonable ceiling like 2.0 to prevent
@@ -233,7 +237,7 @@ def _(itertools, jnp, np, pl):
 
         # Generate IDs for each county-year
         merged = merged.with_columns(
-            [pl.struct(["county_ansi", "year"]).rank("dense").alias("group_id") - 1]
+            [pl.struct(["county_fips", "year"]).rank("dense").alias("group_id") - 1]
         )
 
         # Calculate acreage fraction AND Patch Exposure (frac of total BEA farm emp allocated that patch)
@@ -2514,6 +2518,7 @@ def _(compute_patch_log_worker, jax, jnp):
 def _(
     X_county_cont,
     X_patch_cont,
+    assert_geo_columns,
     binary_path,
     feature_ids,
     group_ids,
@@ -2536,8 +2541,8 @@ def _(
             num_groups,
         )
     )
-    county_ansi_year_group_id = merged_df.select(
-        ["county_ansi", "year", "group_id"]
+    county_year_group_id = merged_df.select(
+        ["county_fips", "year", "group_id"]
     ).unique()
     results_df = (
         pl.DataFrame(
@@ -2546,10 +2551,11 @@ def _(
                 "predicted_h2a_count": y_pred_count,
             }
         )
-        .join(county_ansi_year_group_id, on="group_id")
-        .group_by("county_ansi")
+        .join(county_year_group_id, on="group_id")
+        .group_by("county_fips")
         .agg(pl.mean("predicted_h2a_count"))
     )
+    assert_geo_columns(results_df, ["county_fips"])
     results_df.write_parquet(
         binary_path / "h2a_prediction_using_elastic_net_continuous_basis.parquet"
     )

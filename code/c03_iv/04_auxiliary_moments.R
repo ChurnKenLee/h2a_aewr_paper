@@ -3,13 +3,9 @@
 # Outputs: auxiliary moments, public bridge, interval bands, and diagnostics.
 # Run after: 03_oews_area_prior_weights.R and the a-stage source extractors.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 source(path_code("c00_shared", "auxiliary_moment_helpers.R"))
 library(arrow)
 library(tidyverse)
@@ -64,20 +60,25 @@ ensure_month_columns <- function(data, prefixes) {
 
 fls_county_area_prior <- read_parquet(path_int(
   "fls_county_oews_area_prior_weight.parquet"
-)) %>%
-  mutate(
-    countyfips = as.character(countyfips),
-    year = as.integer(year),
-    aewr_region_num = as.integer(aewr_region_num)
+))
+assert_geo_columns(
+  fls_county_area_prior,
+  c(
+    "county_fips",
+    "state_fips",
+    "aewr_region_id",
+    "cz_id",
+    "oews_area_code"
   )
+)
 
 fls_oews_area_prior <- read_parquet(path_int(
   "fls_oews_area_prior_weight.parquet"
-)) %>%
-  mutate(
-    year = as.integer(year),
-    aewr_region_num = as.integer(aewr_region_num)
-  )
+))
+assert_geo_columns(
+  fls_oews_area_prior,
+  c("aewr_region_id", "oews_area_code")
+)
 
 # Census duration ------------------------------------------------------------
 
@@ -86,10 +87,12 @@ fls_oews_area_prior <- read_parquet(path_int(
 # matched QWI and Census cells.
 census_county_duration <- read_parquet(path_int(
   "census_ag_hired_worker_duration_county.parquet"
-)) %>%
+))
+assert_geo_columns(census_county_duration, "county_fips")
+census_county_duration <- census_county_duration %>%
   transmute(
-    countyfips = as.character(countyfips),
-    year = as.integer(year),
+    county_fips,
+    year,
     census_hired_workers_150_days_or_more = as.numeric(
       census_hired_workers_150_days_or_more
     ),
@@ -106,9 +109,9 @@ census_county_duration <- read_parquet(path_int(
 
 census_area_mapping <- fls_county_area_prior %>%
   transmute(
-    countyfips,
+    county_fips,
     mapping_year = year,
-    aewr_region_num,
+    aewr_region_id,
     oews_area_code,
     county_area_allocation,
     county_area_prior_weight
@@ -127,18 +130,18 @@ census_year_mapping <- census_county_duration %>%
 census_area_at_census_year <- census_year_mapping %>%
   left_join(
     census_county_duration,
-    by = c("countyfips", "year"),
+    by = c("county_fips", "year"),
     relationship = "many-to-one"
   ) %>%
   mutate(
-    census_area_workers_150_plus =
-      census_hired_workers_150_days_or_more * county_area_allocation,
-    census_area_workers_less_than_150 =
-      census_hired_workers_less_than_150_days * county_area_allocation,
-    census_area_workers_duration_total =
-      census_hired_workers_duration_total * county_area_allocation
+    census_area_workers_150_plus = census_hired_workers_150_days_or_more *
+      county_area_allocation,
+    census_area_workers_less_than_150 = census_hired_workers_less_than_150_days *
+      county_area_allocation,
+    census_area_workers_duration_total = census_hired_workers_duration_total *
+      county_area_allocation
   ) %>%
-  group_by(aewr_region_num, year, oews_area_code) %>%
+  group_by(aewr_region_id, year, oews_area_code) %>%
   summarise(
     census_area_workers_150_plus = sum_if_observed(
       census_area_workers_150_plus
@@ -158,12 +161,12 @@ census_area_at_census_year <- census_year_mapping %>%
     ),
     census_area_prior_mass = sum(county_area_prior_weight, na.rm = TRUE),
     census_duration_counties_observed = n_distinct(
-      countyfips[
+      county_fips[
         !is.na(census_hired_worker_duration_complete) &
           census_hired_worker_duration_complete
       ]
     ),
-    census_duration_counties_total = n_distinct(countyfips),
+    census_duration_counties_total = n_distinct(county_fips),
     .groups = "drop"
   ) %>%
   mutate(
@@ -181,15 +184,15 @@ census_area_at_census_year <- census_year_mapping %>%
   )
 
 census_area_year_skeleton <- fls_oews_area_prior %>%
-  select(aewr_region_num, year, oews_area_code) %>%
+  select(aewr_region_id, year, oews_area_code) %>%
   distinct()
 
 census_area_year <- census_area_year_skeleton %>%
   full_join(
     census_area_at_census_year,
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
-  group_by(aewr_region_num, oews_area_code) %>%
+  group_by(aewr_region_id, oews_area_code) %>%
   arrange(year, .by_group = TRUE) %>%
   mutate(
     census_hired_worker_150_plus_share = interpolate_inside(
@@ -211,20 +214,17 @@ census_area_year <- census_area_year_skeleton %>%
   ungroup() %>%
   semi_join(
     census_area_year_skeleton,
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   )
 
 # QCEW and QWI seasonality ----------------------------------------------------
 
 qcew_county_quarter <- read_parquet(path_int(
   "qcew_county_ag_quarterly_employment.parquet"
-)) %>%
-  mutate(
-    countyfips = as.character(countyfips),
-    year = as.integer(year),
-    qtr = as.integer(qtr)
-  ) %>%
-  group_by(countyfips, year, qtr, reference_month) %>%
+))
+assert_geo_columns(qcew_county_quarter, "county_fips")
+qcew_county_quarter <- qcew_county_quarter %>%
+  group_by(county_fips, year, qtr, reference_month) %>%
   summarise(
     qcew_ag_reference_month_employment_partial = sum_if_observed(
       qcew_reference_month_emplvl
@@ -243,20 +243,16 @@ qcew_county_quarter <- read_parquet(path_int(
       qcew_ag_reference_month_employment_partial,
       NA_real_
     ),
-    qcew_employment_complete =
-      !is.na(qcew_ag_reference_month_employment)
+    qcew_employment_complete = !is.na(qcew_ag_reference_month_employment)
   )
 
 qwi_path <- path_int("qwi_county_ag_quarterly_employment.parquet")
 qwi_available <- file.exists(qwi_path)
 qwi_county_quarter <- if (qwi_available) {
-  read_parquet(qwi_path) %>%
-    mutate(
-      countyfips = as.character(countyfips),
-      year = as.integer(year),
-      qtr = as.integer(qtr)
-    ) %>%
-    group_by(countyfips, year, qtr) %>%
+  qwi_source <- read_parquet(qwi_path)
+  assert_geo_columns(qwi_source, "county_fips")
+  qwi_source %>%
+    group_by(county_fips, year, qtr) %>%
     summarise(
       qwi_beginning_quarter_employment_partial = sum_if_observed(
         qwi_beginning_quarter_employment
@@ -296,7 +292,7 @@ qwi_county_quarter <- if (qwi_available) {
     call. = FALSE
   )
   tibble(
-    countyfips = character(),
+    county_fips = character(),
     year = integer(),
     qtr = integer(),
     qwi_beginning_quarter_employment = numeric(),
@@ -305,7 +301,7 @@ qwi_county_quarter <- if (qwi_available) {
 }
 
 county_quarter_skeleton <- fls_county_area_prior %>%
-  select(countyfips, year) %>%
+  select(county_fips, year) %>%
   distinct() %>%
   crossing(qtr = seq_along(reference_months)) %>%
   mutate(
@@ -320,12 +316,12 @@ county_quarter_skeleton <- fls_county_area_prior %>%
 county_quarter_public <- county_quarter_skeleton %>%
   left_join(
     qcew_county_quarter %>% select(-reference_month),
-    by = c("countyfips", "year", "qtr"),
+    by = c("county_fips", "year", "qtr"),
     relationship = "one-to-one"
   ) %>%
   left_join(
     qwi_county_quarter,
-    by = c("countyfips", "year", "qtr"),
+    by = c("county_fips", "year", "qtr"),
     relationship = "one-to-one"
   ) %>%
   mutate(
@@ -333,8 +329,7 @@ county_quarter_public <- county_quarter_skeleton %>%
       qcew_employment_complete,
       FALSE
     ),
-    qwi_employment_complete =
-      !is.na(qwi_beginning_quarter_employment),
+    qwi_employment_complete = !is.na(qwi_beginning_quarter_employment),
     public_reference_month_employment = coalesce(
       qcew_ag_reference_month_employment,
       qwi_beginning_quarter_employment
@@ -350,27 +345,26 @@ area_quarter_public <- county_quarter_public %>%
   inner_join(
     fls_county_area_prior %>%
       select(
-        countyfips,
+        county_fips,
         year,
-        aewr_region_num,
+        aewr_region_id,
         oews_area_code,
         county_area_allocation,
         county_area_prior_weight
       ),
-    by = c("countyfips", "year")
+    by = c("county_fips", "year")
   ) %>%
   mutate(
-    public_area_reference_month_employment =
-      public_reference_month_employment * county_area_allocation,
-    qcew_area_reference_month_employment =
-      qcew_ag_reference_month_employment * county_area_allocation,
-    qwi_area_reference_month_employment =
-      qwi_beginning_quarter_employment * county_area_allocation,
-    qwi_area_stable_employment =
-      qwi_stable_employment * county_area_allocation
+    public_area_reference_month_employment = public_reference_month_employment *
+      county_area_allocation,
+    qcew_area_reference_month_employment = qcew_ag_reference_month_employment *
+      county_area_allocation,
+    qwi_area_reference_month_employment = qwi_beginning_quarter_employment *
+      county_area_allocation,
+    qwi_area_stable_employment = qwi_stable_employment * county_area_allocation
   ) %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     qtr,
@@ -409,9 +403,9 @@ area_quarter_public <- county_quarter_public %>%
     ),
     area_prior_mass = sum(county_area_prior_weight, na.rm = TRUE),
     public_counties_observed = n_distinct(
-      countyfips[!is.na(public_reference_month_employment)]
+      county_fips[!is.na(public_reference_month_employment)]
     ),
-    public_counties_present = n_distinct(countyfips),
+    public_counties_present = n_distinct(county_fips),
     .groups = "drop"
   ) %>%
   mutate(
@@ -426,7 +420,7 @@ area_quarter_public <- county_quarter_public %>%
 
 area_year_public <- area_quarter_public %>%
   select(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     reference_month,
@@ -501,12 +495,9 @@ area_year_public <- area_year_public %>%
     qwi_stable_quarters_observed = rowSums(
       !is.na(pick(all_of(qwi_stable_columns)))
     ),
-    public_seasonal_employment_complete =
-      public_quarters_observed == 4L,
-    qcew_seasonal_employment_complete =
-      qcew_quarters_observed == 4L,
-    qwi_seasonal_employment_complete =
-      qwi_quarters_observed == 4L,
+    public_seasonal_employment_complete = public_quarters_observed == 4L,
+    qcew_seasonal_employment_complete = qcew_quarters_observed == 4L,
+    qwi_seasonal_employment_complete = qwi_quarters_observed == 4L,
     public_area_reference_month_employment_total = if_else(
       public_seasonal_employment_complete,
       rowSums(pick(all_of(public_employment_columns))),
@@ -603,7 +594,7 @@ for (month in reference_months) {
 
 bridge_matched_cells <- census_area_at_census_year %>%
   select(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     census_hired_worker_150_plus_share_census_year,
@@ -612,23 +603,23 @@ bridge_matched_cells <- census_area_at_census_year %>%
   inner_join(
     area_year_public %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         oews_area_code,
         qwi_area_stable_employment_share,
         qwi_duration_observed_share
       ),
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
   inner_join(
     fls_oews_area_prior %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         oews_area_code,
         oews_area_prior_weight_all
       ),
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
   filter(
     census_duration_observed_prior_share_census_year >= 0.90,
@@ -636,22 +627,18 @@ bridge_matched_cells <- census_area_at_census_year %>%
   )
 
 public_duration_odds_bridge_ratio <- estimate_public_odds_bridge(
-  census_share =
-    bridge_matched_cells$census_hired_worker_150_plus_share_census_year,
-  qwi_persistence_share =
-    bridge_matched_cells$qwi_area_stable_employment_share,
+  census_share = bridge_matched_cells$census_hired_worker_150_plus_share_census_year,
+  qwi_persistence_share = bridge_matched_cells$qwi_area_stable_employment_share,
   weight = bridge_matched_cells$oews_area_prior_weight_all
 )
 
 census_area_year <- census_area_year %>%
   mutate(
-    census_hired_worker_150_plus_share_bridged =
-      apply_public_odds_bridge(
-        census_hired_worker_150_plus_share,
-        public_duration_odds_bridge_ratio
-      ),
-    census_duration_odds_bridge_ratio =
+    census_hired_worker_150_plus_share_bridged = apply_public_odds_bridge(
+      census_hired_worker_150_plus_share,
       public_duration_odds_bridge_ratio
+    ),
+    census_duration_odds_bridge_ratio = public_duration_odds_bridge_ratio
   )
 
 public_duration_bridge_diagnostics <- tibble(
@@ -667,12 +654,12 @@ area_year_with_prior <- area_year_public %>%
   inner_join(
     fls_oews_area_prior %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         oews_area_code,
         oews_area_prior_weight_all
       ),
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   )
 
 seasonal_band_rows <- map_dfr(
@@ -711,7 +698,7 @@ seasonal_band_rows <- map_dfr(
 
 duration_band_data <- census_area_year %>%
   select(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     census_hired_worker_150_plus_share_bridged,
@@ -720,24 +707,22 @@ duration_band_data <- census_area_year %>%
   inner_join(
     area_year_with_prior %>%
       select(
-        aewr_region_num,
+        aewr_region_id,
         year,
         oews_area_code,
         qwi_area_stable_employment_share,
         qwi_duration_observed_share,
         oews_area_prior_weight_all
       ),
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
   filter(
     census_duration_observed_prior_share >= 0.90,
     qwi_duration_observed_share >= 0.90
   )
 duration_band <- fixed_standardized_discrepancy_band(
-  primary_value =
-    duration_band_data$census_hired_worker_150_plus_share_bridged,
-  comparison_value =
-    duration_band_data$qwi_area_stable_employment_share,
+  primary_value = duration_band_data$census_hired_worker_150_plus_share_bridged,
+  comparison_value = duration_band_data$qwi_area_stable_employment_share,
   weight = duration_band_data$oews_area_prior_weight_all,
   probability = 0.90
 )
@@ -759,17 +744,17 @@ auxiliary_interval_bands <- bind_rows(
 fls_oews_area_auxiliary_moments <- fls_oews_area_prior %>%
   left_join(
     census_area_year,
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
   left_join(
     area_year_public,
-    by = c("aewr_region_num", "year", "oews_area_code")
+    by = c("aewr_region_id", "year", "oews_area_code")
   ) %>%
-  arrange(aewr_region_num, year, oews_area_code)
+  arrange(aewr_region_id, year, oews_area_code)
 
 fls_oews_area_auxiliary_moment_diagnostics <-
   fls_oews_area_auxiliary_moments %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   summarise(
     oews_area_count = n(),
     raw_census_duration_feature_prior_mass = sum(
@@ -805,6 +790,10 @@ fls_oews_area_auxiliary_moment_diagnostics <-
     .groups = "drop"
   )
 
+assert_geo_columns(
+  fls_oews_area_auxiliary_moments,
+  c("aewr_region_id", "oews_area_code")
+)
 write_parquet(
   fls_oews_area_auxiliary_moments,
   path_int("fls_oews_area_auxiliary_moments.parquet")

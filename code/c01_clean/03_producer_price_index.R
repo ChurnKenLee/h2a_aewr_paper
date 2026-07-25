@@ -2,13 +2,8 @@
 # Input: data/raw/fred/WPU01.csv.
 # Output: data/intermediate/ppi_2012.parquet.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
 library(arrow)
 library(dplyr)
 library(readr)

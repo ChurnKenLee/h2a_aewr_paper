@@ -3,26 +3,19 @@
 # Output: data/intermediate/nass_fisher_price_index.parquet.
 # Run after: code/b01_derived/02_price_index_nass_synthetic_cdl.py.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 
 price_data <- read_parquet(path_int(
   "price_index_fisher_county_year.parquet"
-)) %>%
-  mutate(
-    countyfips = county_fips(fips),
-    year = as.integer(year)
-  ) %>%
+))
+assert_geo_columns(price_data, "county_fips")
+price_data <- price_data %>%
   select(
-    countyfips,
+    county_fips,
     year,
     fisher_index,
     fisher_quantity_index

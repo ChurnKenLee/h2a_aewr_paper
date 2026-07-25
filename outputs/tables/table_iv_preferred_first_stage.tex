@@ -1,0 +1,38 @@
+
+\begin{table}[htbp]
+   \caption{\label{tab:iv_preferred_first_stage} First Stage: Real AEWR on the Preferred Donor-Wage Instruments}
+   \centering
+   \begin{tabular}{lcccc}
+      \tabularnewline \midrule \midrule
+      Dependent Variable: & \multicolumn{4}{c}{aewr\_ppi}\\
+                            & Basic          & Alternative moments & Basic + controls & Alternative moments + controls (preferred) \\   
+      Model:                & (1)            & (2)                 & (3)              & (4)\\  
+      \midrule
+      \emph{Variables}\\
+      Instrument $Z$        & 0.3856$^{***}$ & 0.0433$^{***}$      & 0.3714$^{***}$   & 0.0367$^{***}$\\   
+                            & (0.0113)       & (0.0048)            & (0.0108)         & (0.0047)\\   
+      \midrule
+      \emph{Fixed-effects}\\
+      county\_fe            & Yes            & Yes                 & Yes              & Yes\\  
+      year\_fe              & Yes            & Yes                 & Yes              & Yes\\  
+      \midrule
+      \emph{Fit statistics}\\
+      Excluded-instrument F & 1,161.97       & 79.96               & 1,188.75         & 60.74\\  
+      Observations          & 33,001         & 33,001              & 33,001           & 33,001\\  
+      R$^2$                 & 0.98113        & 0.97453             & 0.98193          & 0.97579\\  
+      Within R$^2$          & 0.27368        & 0.01959             & 0.30421          & 0.06803\\  
+      Controls              & No             & No                  & Yes              & Yes\\  
+      CZ-clustered SEs      & Yes            & Yes                 & Yes              & Yes\\  
+      Number of SE clusters & 601            & 601                 & 601              & 601\\  
+      Common sample         & Yes            & Yes                 & Yes              & Yes\\  
+      \midrule \midrule
+      \multicolumn{5}{l}{\emph{Clustered (cz\_out10) standard-errors in parentheses}}\\
+      \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+   \end{tabular}
+   
+   \par \raggedright 
+   All columns use county and year fixed effects and the same complete-case sample from 2011 onward.\\
+   The preferred specification is column 4. The excluded-instrument F is the squared cluster-robust t statistic.
+\end{table}
+
+

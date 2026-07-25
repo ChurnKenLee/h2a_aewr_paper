@@ -27,7 +27,7 @@ Scripts `12` and `13` implement the publication design defined in
 `code/c00_shared/iv_preferred_design.R`: five clusters within each AEWR region,
 two donor clusters, the BEA-prior exact wage-plus-seasonal instrument, all
 valid counties from 2011 onward, county and year fixed effects, and standard
-errors clustered by commuting zone (`cz_out10`). The AEWR-region-by-`k = 5`
+errors clustered by commuting zone (`cz_id`). The AEWR-region-by-`k = 5`
 assignment identifier remains available for diagnostics and a possible later
 AEWR-region-level AAIW/CCW correction. Script `11` remains the broader
 sensitivity grid rather than the preferred table.

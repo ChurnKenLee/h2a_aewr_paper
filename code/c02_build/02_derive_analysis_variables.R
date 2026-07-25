@@ -3,19 +3,18 @@
 # Output: data/intermediate/county_df_variable_cleaned_year.parquet.
 # Run after: 01_merge_county_panel.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 
 county_df <- read_parquet(path_int("county_df_build_merge.parquet"))
+assert_geo_columns(
+  county_df,
+  c("state_fips", "county_fips", "cz_id", "aewr_region_id")
+)
 
 ## Variable cleaning ## -----------------
 
@@ -40,7 +39,7 @@ summary(county_df$aewr_cz_p10_l1)
 
 check <- county_df %>%
   filter(is.na(wage_p10_l1)) %>%
-  group_by(state_abbrev, countyfips, countyname) %>%
+  group_by(state_abbrev, county_fips, countyname) %>%
   tally()
 
 county_df <- county_df %>%
@@ -156,8 +155,8 @@ county_df <- county_df %>%
 # Consecutive-year lags used by the preferred IV specifications. Recompute the
 # existing p10 lag here so all four controls follow the same gap-safe rule.
 county_df <- county_df %>%
-  arrange(countyfips, year) %>%
-  group_by(countyfips) %>%
+  arrange(county_fips, year) %>%
+  group_by(county_fips) %>%
   mutate(
     ln_pop_census_l1 = if_else(
       lag(year) == year - 1L,
@@ -186,13 +185,13 @@ county_df <- county_df %>%
 
 county_df_farmempbase <- county_df %>%
   filter(year == 2011) %>%
-  select(countyfips, emp_farm) %>%
+  select(county_fips, emp_farm) %>%
   rename(emp_farm_2011 = emp_farm)
 
 county_df <- merge(
   x = county_df,
   y = county_df_farmempbase,
-  by = "countyfips",
+  by = "county_fips",
   all.x = T,
   all.y = F
 )
@@ -236,7 +235,7 @@ county_df$year_fe <- with(county_df, as.factor(year)) # treats counties in separ
 
 # county
 
-county_df$county_fe <- with(county_df, as.factor(countyfips)) # treats counties in separate clusters as separate
+county_df$county_fe <- with(county_df, as.factor(county_fips)) # treats counties in separate clusters as separate
 
 # state
 
@@ -244,15 +243,15 @@ county_df$state_fe <- with(county_df, as.factor(state_abbrev)) # treats counties
 
 # AEWR Region
 
-county_df$aewr_region_fe <- with(county_df, as.factor(aewr_region_num)) # treats counties in separate clusters as separate
+county_df$aewr_region_fe <- with(county_df, as.factor(aewr_region_id)) # treats counties in separate clusters as separate
 
 # cZ
-county_df$cz_fe <- with(county_df, as.factor(cz_out10)) # treats counties in separate clusters as separate
+county_df$cz_fe <- with(county_df, as.factor(cz_id)) # treats counties in separate clusters as separate
 
 
 # CZ x time
 
-county_df$cztime_fe <- with(county_df, interaction(as.factor(cz_out10), year))
+county_df$cztime_fe <- with(county_df, interaction(as.factor(cz_id), year))
 
 levels(county_df$cztime_fe) <- c(levels(county_df$cztime_fe), "0.0")
 
@@ -264,7 +263,7 @@ county_df$cztime_fe[county_df$year == 2008] <- "0.0" # first period is 0
 
 county_df$aewrregtime_fe <- with(
   county_df,
-  interaction(as.factor(aewr_region_num), year)
+  interaction(as.factor(aewr_region_id), year)
 )
 
 levels(county_df$aewrregtime_fe) <- c(levels(county_df$aewrregtime_fe), "0.0")
@@ -279,7 +278,7 @@ county_df$aewrregtime_fe[county_df$year == 2008] <- "0.0" # first period is 0
 
 county_df$cz_aewr_region_fe <- with(
   county_df,
-  interaction(as.factor(cz_out10), as.factor(aewr_region_num))
+  interaction(as.factor(cz_id), as.factor(aewr_region_id))
 )
 
 
@@ -303,7 +302,7 @@ county_df %>%
 # remove HI, AK, and DC
 
 county_df <- county_df %>%
-  filter(!is.na(aewr) & !is.na(aewr_region_num))
+  filter(!is.na(aewr) & !is.na(aewr_region_id))
 
 # check for NAs in key vars ------------------------------------
 

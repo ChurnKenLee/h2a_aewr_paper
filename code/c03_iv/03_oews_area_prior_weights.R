@@ -3,13 +3,9 @@
 # Outputs: county-to-area and OEWS-area prior-weight parquets.
 # Run after: 02_county_prior_weights.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -38,44 +34,48 @@ first_nonmissing <- function(x) {
 
 fls_county_prior <- read_parquet(path_int(
   "fls_county_weight.parquet"
-)) %>%
+))
+assert_geo_columns(
+  fls_county_prior,
+  c("county_fips", "state_fips", "aewr_region_id", "cz_id")
+)
+fls_county_prior <- fls_county_prior %>%
   transmute(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     fls_county_weight_prior = fls_county_weight,
     fls_county_weight_bea = fls_county_weight_bea,
-    fls_county_weight_census_workers =
-      fls_county_weight_census_workers,
-    fls_county_weight_census_payroll =
-      fls_county_weight_census_payroll,
-    fls_county_weight_qwi_employment =
-      fls_county_weight_qwi_employment
+    fls_county_weight_census_workers = fls_county_weight_census_workers,
+    fls_county_weight_census_payroll = fls_county_weight_census_payroll,
+    fls_county_weight_qwi_employment = fls_county_weight_qwi_employment
   )
 
 oews_area_crosswalk <- read_parquet(path_int(
   "oews_area_definitions.parquet"
-)) %>%
+))
+assert_geo_columns(
+  oews_area_crosswalk,
+  c("county_fips", "oews_area_code")
+)
+oews_area_crosswalk <- oews_area_crosswalk %>%
   transmute(
-    countyfips = str_c(
-      str_pad(as.character(oews_state_fips), 2, pad = "0"),
-      str_pad(as.character(oews_county_fips), 3, pad = "0")
-    ),
+    county_fips,
     year,
     oews_area_code,
     oews_area_name
   ) %>%
   filter(!is.na(oews_area_code), oews_area_code != "") %>%
-  distinct(countyfips, year, oews_area_code, .keep_all = TRUE)
+  distinct(county_fips, year, oews_area_code, .keep_all = TRUE)
 
 oews_area_wage <- read_parquet(path_int("oews.parquet")) %>%
   filter(occ_code %in% big_six_occ_codes) %>%
   transmute(
-    oews_area_code = area,
+    oews_area_code = oews_area_code(area),
     oews_area_name = area_name,
     year,
     oews_tot_emp = as.numeric(tot_emp),
@@ -112,7 +112,7 @@ oews_area_wage <- read_parquet(path_int("oews.parquet")) %>%
 fls_county_area_prior <- fls_county_prior %>%
   inner_join(
     oews_area_crosswalk,
-    by = c("countyfips", "year")
+    by = c("county_fips", "year")
   ) %>%
   left_join(
     oews_area_wage,
@@ -128,7 +128,7 @@ fls_county_area_prior <- fls_county_prior %>%
   ) %>%
   # OEWS areas in New England use townships
   # multiple townships in each county = multiple counties for each OEWS area
-  group_by(countyfips, year) %>%
+  group_by(county_fips, year) %>%
   mutate(
     county_area_count = n(),
     county_area_allocation_total = sum(
@@ -146,12 +146,12 @@ fls_county_area_prior <- fls_county_prior %>%
     county_area_prior_weight = fls_county_weight_prior * county_area_allocation
   ) %>%
   select(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     oews_area_code,
     oews_area_name,
@@ -165,7 +165,7 @@ fls_county_area_prior <- fls_county_prior %>%
 
 fls_oews_area_prior <- fls_county_area_prior %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code
   ) %>%
@@ -177,14 +177,14 @@ fls_oews_area_prior <- fls_county_area_prior %>%
       county_area_prior_weight,
       na.rm = TRUE
     ),
-    oews_area_county_count = n_distinct(countyfips),
+    oews_area_county_count = n_distinct(county_fips),
     .groups = "drop"
   ) %>%
   mutate(
     oews_wage_observed = !is.na(oews_area_mean_hourly_wage) &
       oews_area_mean_hourly_wage > 0
   ) %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   mutate(
     oews_observed_prior_mass = sum(
       if_else(oews_wage_observed, oews_area_prior_weight_all, 0),
@@ -198,6 +198,20 @@ fls_oews_area_prior <- fls_county_area_prior %>%
   ) %>%
   ungroup()
 
+assert_geo_columns(
+  fls_county_area_prior,
+  c(
+    "county_fips",
+    "state_fips",
+    "cz_id",
+    "aewr_region_id",
+    "oews_area_code"
+  )
+)
+assert_geo_columns(
+  fls_oews_area_prior,
+  c("aewr_region_id", "oews_area_code")
+)
 write_parquet(
   fls_county_area_prior,
   path_int("fls_county_oews_area_prior_weight.parquet")
@@ -237,7 +251,7 @@ fls_county_prior_long <- fls_county_prior %>%
 fls_county_area_prior_by_spec <- fls_county_prior_long %>%
   inner_join(
     oews_area_crosswalk,
-    by = c("countyfips", "year")
+    by = c("county_fips", "year")
   ) %>%
   left_join(
     oews_area_wage,
@@ -251,7 +265,7 @@ fls_county_area_prior_by_spec <- fls_county_prior_long %>%
       0
     )
   ) %>%
-  group_by(countyfips, year, prior_spec) %>%
+  group_by(county_fips, year, prior_spec) %>%
   mutate(
     county_area_count = n(),
     county_area_allocation_total = sum(
@@ -270,12 +284,12 @@ fls_county_area_prior_by_spec <- fls_county_prior_long %>%
       county_area_allocation
   ) %>%
   select(
-    countyfips,
+    county_fips,
     year,
-    statefips,
+    state_fips,
     state_abbrev,
-    aewr_region_num,
-    cz_out10,
+    aewr_region_id,
+    cz_id,
     cz_aewr_region_fe,
     prior_spec,
     oews_area_code,
@@ -290,7 +304,7 @@ fls_county_area_prior_by_spec <- fls_county_prior_long %>%
 
 fls_oews_area_prior_by_spec <- fls_county_area_prior_by_spec %>%
   group_by(
-    aewr_region_num,
+    aewr_region_id,
     year,
     prior_spec,
     oews_area_code
@@ -303,14 +317,14 @@ fls_oews_area_prior_by_spec <- fls_county_area_prior_by_spec %>%
       county_area_prior_weight,
       na.rm = TRUE
     ),
-    oews_area_county_count = n_distinct(countyfips),
+    oews_area_county_count = n_distinct(county_fips),
     .groups = "drop"
   ) %>%
   mutate(
     oews_wage_observed = !is.na(oews_area_mean_hourly_wage) &
       oews_area_mean_hourly_wage > 0
   ) %>%
-  group_by(aewr_region_num, year, prior_spec) %>%
+  group_by(aewr_region_id, year, prior_spec) %>%
   mutate(
     oews_observed_prior_mass = sum(
       if_else(oews_wage_observed, oews_area_prior_weight_all, 0),
@@ -324,6 +338,20 @@ fls_oews_area_prior_by_spec <- fls_county_area_prior_by_spec %>%
   ) %>%
   ungroup()
 
+assert_geo_columns(
+  fls_county_area_prior_by_spec,
+  c(
+    "county_fips",
+    "state_fips",
+    "cz_id",
+    "aewr_region_id",
+    "oews_area_code"
+  )
+)
+assert_geo_columns(
+  fls_oews_area_prior_by_spec,
+  c("aewr_region_id", "oews_area_code")
+)
 write_parquet(
   fls_county_area_prior_by_spec,
   path_int("fls_county_oews_area_prior_weight_by_spec.parquet")

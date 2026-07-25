@@ -14,8 +14,20 @@ def _():
     from pathlib import Path
     import polars as pl
     from h2a.paths import INTERMEDIATE, RAW
+    from h2a.geography import (
+        assert_geo_columns,
+        harmonize_county_fips_2010,
+    )
 
-    return INTERMEDIATE, Path, RAW, pl, zipfile
+    return (
+        INTERMEDIATE,
+        Path,
+        RAW,
+        assert_geo_columns,
+        harmonize_county_fips_2010,
+        pl,
+        zipfile,
+    )
 
 
 @app.cell
@@ -48,7 +60,14 @@ def _(pl):
 
 
 @app.cell
-def _(Path, QCEW_DTYPES, REFERENCE_MONTH, pl, zipfile):
+def _(
+    Path,
+    QCEW_DTYPES,
+    REFERENCE_MONTH,
+    harmonize_county_fips_2010,
+    pl,
+    zipfile,
+):
     def extract_year(zip_path: Path, year: int) -> pl.DataFrame:
         """Read and filter one quarterly single-file archive."""
         target_csv = f"{year}.q1-q4.singlefile.csv"
@@ -76,9 +95,16 @@ def _(Path, QCEW_DTYPES, REFERENCE_MONTH, pl, zipfile):
                 .otherwise(None)
                 .alias("qcew_reference_month_emplvl"),
             )
-            .rename({"area_fips": "countyfips"})
+            .with_columns(
+                pl.col("area_fips")
+                .map_elements(
+                    harmonize_county_fips_2010,
+                    return_dtype=pl.String,
+                )
+                .alias("county_fips")
+            )
             .select(
-                "countyfips",
+                "county_fips",
                 "year",
                 "qtr",
                 "reference_month",
@@ -93,7 +119,16 @@ def _(Path, QCEW_DTYPES, REFERENCE_MONTH, pl, zipfile):
 
 
 @app.cell
-def _(FIRST_YEAR, LAST_YEAR, OUTPUT_PATH, Path, RAW, extract_year, pl):
+def _(
+    FIRST_YEAR,
+    LAST_YEAR,
+    OUTPUT_PATH,
+    Path,
+    RAW,
+    assert_geo_columns,
+    extract_year,
+    pl,
+):
     def extract_quarterly_employment(output_path: Path = OUTPUT_PATH) -> None:
         """Extract all years and write the compact calibration input."""
         qcew_path = RAW / "qcew"
@@ -105,8 +140,9 @@ def _(FIRST_YEAR, LAST_YEAR, OUTPUT_PATH, Path, RAW, extract_year, pl):
             )
 
         quarterly_employment = pl.concat(frames, how="vertical_relaxed").sort(
-            "countyfips", "year", "qtr", "industry_code"
+            "county_fips", "year", "qtr", "industry_code"
         )
+        assert_geo_columns(quarterly_employment, ["county_fips"])
         quarterly_employment.write_parquet(output_path)
         print(
             f"Wrote {quarterly_employment.height:,} county-industry-quarter rows "

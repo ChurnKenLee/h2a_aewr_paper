@@ -1,8 +1,8 @@
 # B01: Derived data
 
 These scripts turn A-stage source artifacts into aggregates, proxy measures,
-prediction inputs, and harmonized county files. Run only the artifact family
-you need from the repository root; there is intentionally no master runner.
+and prediction inputs. Geographic identifiers are normalized by their owning
+producer; run only the artifact family you need from the repository root.
 
 ## Manual execution
 
@@ -37,7 +37,7 @@ the remaining family and substep numbers are unchanged.
 | `05_03_qcew_ag_wages.R` | Estimate QCEW agricultural wage proxies | State wage and industry diagnostic files |
 | `06_nawspad_work_hours.R` | Derive regional work hours and seasonality | `nawspad.parquet` |
 | `07_h2a_prediction_elastic_net.py` | Fit county H-2A exposure predictions | Elastic-net prediction Parquet and diagnostics |
-| `08_harmonize_county_ansi_vintage.R` | Convert county-bearing artifacts to the 2010 ANSI vintage | Rewrites listed intermediate artifacts in place |
+| `08_validate_geography_contract.R` | Check canonical fields and types in county-bearing artifacts | Read-only validation |
 
 ## Dependencies
 
@@ -47,7 +47,6 @@ the remaining family and substep numbers are unchanged.
 - `04` also requires A04 annual QCEW; `05_02` requires A05 OEWS; `05_03`
   requires A04 annual QCEW.
 - `07` requires `01` plus the A08 BEA and A09 climate/soil artifacts.
-- Run `08` only after rebuilding the county-bearing inputs it should
-  harmonize. It intentionally overwrites those intermediate artifacts rather
-  than creating a second set of files.
+- Run `08` after rebuilding county-bearing inputs. It validates artifacts
+  without modifying them.
 - `03_01` requires `IPUMS_API_KEY`. Other B scripts use local artifacts only.

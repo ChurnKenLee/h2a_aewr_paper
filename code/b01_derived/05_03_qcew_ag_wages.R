@@ -2,15 +2,9 @@
 # Inputs: data/intermediate/qcew.parquet.
 # Outputs: qcew_state_ag_wage.parquet and industry diagnostics.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -44,7 +38,7 @@ qcew_state_ag_industry <- open_dataset(path_int("qcew.parquet")) %>%
   ) %>%
   collect() %>%
   mutate(
-    state_fips_code = str_sub(area_fips, 1, 2),
+    state_fips = str_sub(area_fips, 1, 2),
     qcew_ag_industry_component = case_when(
       industry_code == "111" ~ "crop_production",
       industry_code == "112" ~ "animal_production",
@@ -58,7 +52,7 @@ qcew_state_ag_industry <- open_dataset(path_int("qcew.parquet")) %>%
   )
 
 qcew_state_ag_wage <- qcew_state_ag_industry %>%
-  group_by(year, state_fips_code) %>%
+  group_by(year, state_fips) %>%
   summarise(
     qcew_ag_workers = sum(
       annual_avg_emplvl[qcew_fls_core_industry],
@@ -116,7 +110,7 @@ qcew_state_ag_wage <- qcew_state_ag_industry %>%
     ),
     qcew_assumed_hours_per_week = qcew_assumed_hours_per_week
   ) %>%
-  arrange(year, state_fips_code)
+  arrange(year, state_fips)
 
 qcew_ag_wage_industry_diagnostics <- qcew_state_ag_industry %>%
   group_by(year, industry_code, qcew_ag_industry_component) %>%
@@ -135,6 +129,7 @@ qcew_ag_wage_industry_diagnostics <- qcew_state_ag_industry %>%
   ) %>%
   arrange(year, industry_code)
 
+assert_geo_columns(qcew_state_ag_wage, "state_fips")
 write_parquet(
   qcew_state_ag_wage,
   path_int("qcew_state_ag_wage.parquet")

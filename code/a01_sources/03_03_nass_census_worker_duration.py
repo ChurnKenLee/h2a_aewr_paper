@@ -20,6 +20,11 @@ def _():
 
 @app.cell
 def _(input_path, pl):
+    from h2a.geography import (
+        county_code_from_county_fips,
+        harmonize_county_fips_2010,
+    )
+
     labor_items = {
         "LABOR, HIRED - NUMBER OF WORKERS": "census_hired_workers_total",
         "LABOR, HIRED - EXPENSE, MEASURED IN $": (
@@ -52,25 +57,16 @@ def _(input_path, pl):
                 pl.col("value").str.replace_all(",", "").cast(pl.Float64, strict=False)
             )
             .alias("numeric_value"),
-            pl.col("state_fips_code").cast(pl.String).str.pad_start(2, "0"),
+            pl.col("state_fips").cast(pl.String).str.pad_start(2, "0"),
             pl.col("county_code").cast(pl.String).str.pad_start(3, "0"),
             pl.col("state_alpha").cast(pl.String),
             pl.col("state_name").cast(pl.String),
             pl.col("county_name").cast(pl.String),
             pl.col("short_desc").cast(pl.String),
         )
-        # Match the 2010 county definition used elsewhere in the project.
-        .with_columns(
-            pl.when(
-                (pl.col("state_fips_code") == "46") & (pl.col("county_code") == "102")
-            )
-            .then(pl.lit("113"))
-            .otherwise(pl.col("county_code"))
-            .alias("county_code")
-        )
         .select(
             "year",
-            "state_fips_code",
+            "state_fips",
             "state_alpha",
             "state_name",
             "county_code",
@@ -85,7 +81,7 @@ def _(input_path, pl):
         on="short_desc",
         index=[
             "year",
-            "state_fips_code",
+            "state_fips",
             "state_alpha",
             "state_name",
             "county_code",
@@ -98,13 +94,24 @@ def _(input_path, pl):
 
     census_labor = (
         census_labor.with_columns(
-            pl.concat_str("state_fips_code", "county_code").alias("countyfips"),
+            pl.concat_str("state_fips", "county_code")
+            .map_elements(
+                harmonize_county_fips_2010,
+                return_dtype=pl.String,
+            )
+            .alias("county_fips"),
             (
                 pl.col("census_hired_workers_150_days_or_more")
                 + pl.col("census_hired_workers_less_than_150_days")
             ).alias("census_hired_workers_duration_total"),
         )
         .with_columns(
+            pl.col("county_fips")
+            .map_elements(
+                county_code_from_county_fips,
+                return_dtype=pl.String,
+            )
+            .alias("county_code"),
             (
                 pl.col("census_hired_workers_total").is_not_null()
                 & pl.col("census_hired_workers_150_days_or_more").is_not_null()
@@ -126,9 +133,9 @@ def _(input_path, pl):
             .alias("census_hired_worker_less_than_150_share"),
         )
         .select(
-            "countyfips",
+            "county_fips",
             "year",
-            "state_fips_code",
+            "state_fips",
             "state_alpha",
             "state_name",
             "county_code",
@@ -142,13 +149,19 @@ def _(input_path, pl):
             "census_hired_worker_150_plus_share",
             "census_hired_worker_less_than_150_share",
         )
-        .sort("countyfips", "year")
+        .sort("county_fips", "year")
     )
     return (census_labor,)
 
 
 @app.cell
 def _(census_labor, output_path):
+    from h2a.geography import assert_geo_columns
+
+    assert_geo_columns(
+        census_labor,
+        ["state_fips", "county_code", "county_fips"],
+    )
     census_labor.write_parquet(output_path)
 
     print(f"Wrote {census_labor.height:,} county-census rows to {output_path}")

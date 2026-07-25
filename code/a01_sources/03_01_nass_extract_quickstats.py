@@ -116,7 +116,24 @@ def _(binary_path, pl, quickstats_path, quickstats_pl_type_dict):
                     has_header=True,
                     schema=quickstats_pl_type_dict,
                 )
-                df = df.select(pl.all().name.to_lowercase())
+                df = (
+                    df.select(pl.all().name.to_lowercase())
+                    .with_columns(
+                        pl.col("state_fips_code")
+                        .cast(pl.String)
+                        .str.pad_start(2, "0")
+                        .alias("state_fips"),
+                        pl.col("county_code")
+                        .cast(pl.String)
+                        .str.pad_start(3, "0")
+                        .alias("county_code"),
+                    )
+                    .drop(
+                        "state_ansi",
+                        "state_fips_code",
+                        "county_ansi",
+                    )
+                )
 
                 census_df = df.filter(pl.col("source_desc") == "CENSUS")
                 census_df.write_parquet(binary_path / f"qs_census_{qs_type}.parquet")

@@ -4,7 +4,7 @@
 
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.14"
 app = marimo.App(width="full")
 
 
@@ -47,9 +47,19 @@ def _(mo):
 
 @app.cell
 def _(binary_path, pl):
+    from h2a.geography import (
+        assert_geo_columns,
+        state_from_county_fips,
+    )
+
     # CroplandCROS CDL acreage aggregated to the county-year-crop level
     cdl_acres = pl.read_parquet(binary_path / "croplandcros_county_crop_acres.parquet")
-    cdl_acres = cdl_acres.with_columns(pl.col("fips").str.slice(0, 2).alias("state_ansi"))
+    assert_geo_columns(cdl_acres, ["county_fips"])
+    cdl_acres = cdl_acres.with_columns(
+        pl.col("county_fips")
+        .map_elements(state_from_county_fips, return_dtype=pl.String)
+        .alias("state_fips")
+    )
     # CDL codes between 80 and 200 are non-ag codes
     cdl_acres = (
         cdl_acres.with_columns(
@@ -59,7 +69,7 @@ def _(binary_path, pl):
         .filter((pl.col("cdl_code") < 80) | (pl.col("cdl_code") > 200))
         .drop("crop_code")
     )
-    return (cdl_acres,)
+    return assert_geo_columns, cdl_acres
 
 
 @app.cell
@@ -91,14 +101,18 @@ def _(national_synthetic_cdl, pl, state_synthetic_cdl):
 @app.cell
 def _(cdl_acres, pl, synthetic_cdl):
     county_cdl_panel = (
-        (cdl_acres.join(synthetic_cdl, on=["year", "state_ansi", "cdl_code"], how="left"))
+        (
+            cdl_acres.join(
+                synthetic_cdl, on=["year", "state_fips", "cdl_code"], how="left"
+            )
+        )
         .with_columns(
             (pl.col("acres") * pl.col("cdl_syn_yield")).alias("q_lbs"),
             pl.col("cdl_syn_price").alias("p_usd_lb"),
         )
         .select(
-            "fips",
-            "state_ansi",
+            "county_fips",
+            "state_fips",
             "year",
             "cdl_code",
             "cdl_name",
@@ -132,7 +146,7 @@ def _(county_cdl_panel, pl):
         # Create a shifted version of the panel to align T with T-1
         df_prev = df.select(
             [
-                "fips",
+                "county_fips",
                 "cdl_code",
                 (pl.col("year") + 1).alias("year"),
                 pl.col("p_usd_lb").alias("p_prev"),
@@ -142,7 +156,7 @@ def _(county_cdl_panel, pl):
 
         # Inner Join ensures we only compare crops present in both years (Matched Set)
         links = (
-            df.join(df_prev, on=["fips", "year", "cdl_code"], how="inner")
+            df.join(df_prev, on=["county_fips", "year", "cdl_code"], how="inner")
             .with_columns(
                 [
                     (pl.col("p_usd_lb") * pl.col("q_prev")).alias("p1_q0"),
@@ -151,7 +165,7 @@ def _(county_cdl_panel, pl):
                     (pl.col("p_prev") * pl.col("q_lbs")).alias("p0_q1"),
                 ]
             )
-            .group_by(["fips", "year"])
+            .group_by(["county_fips", "year"])
             .agg(
                 [
                     pl.sum("p1_q0").alias("sum_p1_q0"),
@@ -179,10 +193,7 @@ def _(county_cdl_panel, pl):
                     # Fisher links are the geometric means of their
                     # Laspeyres and Paasche counterparts.
                     (pl.col("laspeyres") * pl.col("paasche")).sqrt().alias("fisher"),
-                    (
-                        pl.col("quantity_laspeyres")
-                        * pl.col("quantity_paasche")
-                    )
+                    (pl.col("quantity_laspeyres") * pl.col("quantity_paasche"))
                     .sqrt()
                     .alias("quantity_fisher"),
                 ]
@@ -196,7 +207,7 @@ def _(county_cdl_panel, pl):
             )
             .select(
                 [
-                    "fips",
+                    "county_fips",
                     "year",
                     "fisher",
                     "laspeyres",
@@ -213,7 +224,6 @@ def _(county_cdl_panel, pl):
         )
         return links
 
-
     bilateral_links = compute_bilateral_links(county_cdl_panel)
     bilateral_links
     return (bilateral_links,)
@@ -228,11 +238,11 @@ def _(bilateral_links, county_cdl_panel, math, pl):
         # Forward chain (2012 -> 2024)
         forward_chain = (
             bilateral_links.filter(pl.col("year") > base_year)
-            .sort(["fips", "year"])
+            .sort(["county_fips", "year"])
             .with_columns(
-                (
-                    pl.col(log_link_column).cum_sum().over("fips") + log100
-                ).alias("log_index"),
+                (pl.col(log_link_column).cum_sum().over("county_fips") + log100).alias(
+                    "log_index"
+                ),
                 pl.col("year").cast(pl.Int32),
             )
         )
@@ -240,20 +250,19 @@ def _(bilateral_links, county_cdl_panel, math, pl):
         # Backward chaining subtracts each link from the base-year anchor.
         backward_chain = (
             bilateral_links.filter(pl.col("year") <= base_year)
-            .sort(["fips", "year"], descending=[False, True])
+            .sort(["county_fips", "year"], descending=[False, True])
             .with_columns(
-                (
-                    log100
-                    - pl.col(log_link_column).cum_sum().over("fips")
-                ).alias("log_index"),
+                (log100 - pl.col(log_link_column).cum_sum().over("county_fips")).alias(
+                    "log_index"
+                ),
                 (pl.col("year") - 1).alias("target_year"),
             )
-            .select(["fips", pl.col("target_year").alias("year"), "log_index"])
+            .select(["county_fips", pl.col("target_year").alias("year"), "log_index"])
             .with_columns(pl.col("year").cast(pl.Int32))
         )
 
         base_anchor = (
-            county_cdl_panel.select("fips")
+            county_cdl_panel.select("county_fips")
             .unique()
             .with_columns(
                 [
@@ -266,19 +275,19 @@ def _(bilateral_links, county_cdl_panel, math, pl):
         return (
             pl.concat(
                 [
-                    forward_chain.select(["fips", "year", "log_index"]),
+                    forward_chain.select(["county_fips", "year", "log_index"]),
                     backward_chain,
                     base_anchor,
                 ]
             )
             .with_columns(pl.col("log_index").exp().alias(index_column))
-            .select("fips", "year", index_column)
-            .sort(["fips", "year"])
+            .select("county_fips", "year", index_column)
+            .sort(["county_fips", "year"])
         )
 
     chained_fisher = chain_index("log_fisher", "fisher_index").join(
         chain_index("log_quantity_fisher", "fisher_quantity_index"),
-        on=["fips", "year"],
+        on=["county_fips", "year"],
         how="inner",
         validate="1:1",
     )
@@ -286,10 +295,9 @@ def _(bilateral_links, county_cdl_panel, math, pl):
 
 
 @app.cell
-def _(binary_path, chained_fisher):
-    chained_fisher.write_parquet(
-        binary_path / "price_index_fisher_county_year.parquet"
-    )
+def _(assert_geo_columns, binary_path, chained_fisher):
+    assert_geo_columns(chained_fisher, ["county_fips"])
+    chained_fisher.write_parquet(binary_path / "price_index_fisher_county_year.parquet")
     return
 
 

@@ -228,14 +228,23 @@ def _(INTERMEDIATE, df_counts, df_fracs, df_unique, pl):
 
     # Explode the lists and calculate pixel counts
     # Note: Polars handles multiple list explosions in parallel if they have the same length
-    long_df = long_df.explode(["crop_code", "fraction"]).with_columns(
-        (pl.col("fraction") * pl.col("county_pixel_count")).alias("crop_pixel_count")
+    long_df = (
+        long_df.explode(["crop_code", "fraction"])
+        .with_columns(
+            (pl.col("fraction") * pl.col("county_pixel_count")).alias(
+                "crop_pixel_count"
+            )
+        )
+        .rename({"GEOID10": "county_fips"})
     )
 
     # Export as parquet
     binary_file_path = (
         INTERMEDIATE / "county_crop_pixel_count_2008_2024_exactextract.parquet"
     )
+    from h2a.geography import assert_geo_columns
+
+    assert_geo_columns(long_df, ["county_fips"])
     long_df.write_parquet(binary_file_path)
     return
 

@@ -4,14 +4,9 @@
 # Run after: code/b01_derived/01_h2a_aggregation_nodupes.R and
 # code/b01_derived/07_h2a_prediction_elastic_net.py.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 library(stringr)
@@ -21,12 +16,13 @@ h2a_data <- read_parquet(
 )
 h2a_predict <- read_parquet(
   file = path_int("h2a_prediction_using_elastic_net_continuous_basis.parquet")
-) %>%
-  mutate(
-    countyfips = county_fips(county_ansi)
-  ) %>%
-  select(-county_ansi) %>%
-  write_parquet(path_int("h2a_predict.parquet"))
+)
+assert_geo_columns(
+  h2a_data,
+  c("state_fips", "county_code", "county_fips")
+)
+assert_geo_columns(h2a_predict, "county_fips")
+write_parquet(h2a_predict, path_int("h2a_predict.parquet"))
 
 # census period
 h2a_data <- h2a_data %>%
@@ -43,45 +39,19 @@ h2a_data <- h2a_data %>%
   )
 
 
-# fix fips code
-
 h2a_data <- h2a_data %>%
-  mutate(
-    cnty_fips_string = str_pad(
-      as.character(county_fips_code),
-      width = 3,
-      side = "left",
-      pad = "0"
-    ),
-    st_fips_string = str_pad(
-      as.character(state_fips_code),
-      width = 2,
-      side = "left",
-      pad = "0"
-    )
-  )
-
-h2a_data <- h2a_data %>%
-  mutate(countyfips = county_fips(paste0(st_fips_string, cnty_fips_string)))
-
-
-# clean by dropping old codes #
-
-h2a_data <- h2a_data %>%
-  filter(!is.na(census_period) & !is.na(county_fips_code)) %>%
+  filter(!is.na(census_period) & !is.na(county_fips)) %>%
   select(
-    -cnty_fips_string,
-    -st_fips_string,
-    -state_fips_code,
-    -county_fips_code
+    -state_fips,
+    -county_code
   )
 
 # collapse by period, county (county and state fips)
 h2a_prediction <- h2a_data %>%
-  select(countyfips)
+  select(county_fips)
 
 h2a_data <- h2a_data %>%
-  group_by(census_period, countyfips) %>%
+  group_by(census_period, county_fips) %>%
   summarise(
     nbr_workers_requested_all_years = sum(
       nbr_workers_requested_all_years,
@@ -137,6 +107,7 @@ h2a_data <- h2a_data %>%
   )
 
 
+assert_geo_columns(h2a_data, "county_fips")
 write_parquet(h2a_data, path_processed("h2a_data.parquet"))
 
 # yearly, for TS
@@ -144,6 +115,10 @@ write_parquet(h2a_data, path_processed("h2a_data.parquet"))
 h2a_data_ts <- read_parquet(
   path_int("h2a_aggregated.parquet"),
   stringsAsFactors = F
+)
+assert_geo_columns(
+  h2a_data_ts,
+  c("state_fips", "county_code", "county_fips")
 )
 
 h2a_data_ts <- h2a_data_ts %>%
@@ -172,44 +147,22 @@ h2a_data <- read_parquet(
   path_int("h2a_aggregated.parquet"),
   stringsAsFactors = F
 )
-
-
-# fix fips code
-
-h2a_data <- h2a_data %>%
-  mutate(
-    cnty_fips_string = str_pad(
-      as.character(county_fips_code),
-      width = 3,
-      side = "left",
-      pad = "0"
-    ),
-    st_fips_string = str_pad(
-      as.character(state_fips_code),
-      width = 2,
-      side = "left",
-      pad = "0"
-    )
-  )
+assert_geo_columns(
+  h2a_data,
+  c("state_fips", "county_code", "county_fips")
+)
 
 h2a_data <- h2a_data %>%
-  mutate(countyfips = county_fips(paste0(st_fips_string, cnty_fips_string)))
-
-
-# clean by dropping old codes #
-
-h2a_data <- h2a_data %>%
-  filter(year <= 2022 & year > 2007 & !is.na(county_fips_code)) %>%
+  filter(year <= 2022 & year > 2007 & !is.na(county_fips)) %>%
   select(
-    -cnty_fips_string,
-    -st_fips_string,
-    -state_fips_code,
-    -county_fips_code
+    -state_fips,
+    -county_code
   )
 
 # collapse by period, county (county and state fips)
 
 ## Handle NAs?
 
+assert_geo_columns(h2a_data, "county_fips")
 write_parquet(h2a_data, path_int("h2a_data_year.parquet"))
 cat("h2a_data_year:", nrow(h2a_data), "rows,", ncol(h2a_data), "cols\n")

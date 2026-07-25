@@ -4,13 +4,9 @@
 # Run after: 03_classify_treatment_exposure.R.
 # Diagnostics are reports, not substantive data repairs.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 
@@ -26,7 +22,7 @@ stopifnot(all(
     "h2a_cert_share_farm_workers_2011_start_year",
     "county_fe",
     "year_fe",
-    "statefips",
+    "state_fips",
     "ln_pop_census",
     "ln_pop_census_l1",
     "farm_emp_share_l1",
@@ -39,5 +35,8 @@ stopifnot(all(
 ))
 cat("Diagnostic passed: county_df_analysis_year\n")
 
-
+assert_geo_columns(
+  county_df,
+  c("state_fips", "county_fips", "cz_id", "aewr_region_id")
+)
 write_parquet(county_df, path_processed("county_df_analysis_year.parquet"))

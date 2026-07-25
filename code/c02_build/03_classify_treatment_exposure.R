@@ -3,14 +3,9 @@
 # Output: data/intermediate/county_df_classified_year.parquet.
 # Run after: 02_derive_analysis_variables.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -48,7 +43,7 @@ county_type_classification <- county_df %>%
     )
   ) %>%
   select(
-    countyfips,
+    county_fips,
     county_treatment_group_classification,
     county_simple_treatment_groups
   )
@@ -123,7 +118,7 @@ h2a_use_df %>%
 
 h2a_use_df <- h2a_use_df %>%
   select(
-    countyfips,
+    county_fips,
     high_h2a_count_50,
     high_h2a_count_66,
     high_h2a_count_75,
@@ -136,7 +131,7 @@ h2a_use_df <- h2a_use_df %>%
 county_df <- merge(
   x = county_df,
   y = h2a_use_df,
-  by = "countyfips",
+  by = "county_fips",
   all.x = T,
   all.y = F
 )
@@ -146,7 +141,7 @@ county_type_classification <- county_type_classification %>%
   select(-any_of("county_fe"))
 
 county_df <- county_df %>%
-  left_join(county_type_classification, by = "countyfips")
+  left_join(county_type_classification, by = "county_fips")
 
 # year dummys
 
@@ -175,10 +170,10 @@ county_df <- county_df %>%
 # ID border CZs
 
 cz_borders <- county_df %>%
-  group_by(cz_out10) %>%
+  group_by(cz_id) %>%
   summarise(
-    AEWRregmin = min(aewr_region_num, na.rm = T),
-    AEWRregmax = max(aewr_region_num, na.rm = T)
+    AEWRregmin = min(aewr_region_id, na.rm = T),
+    AEWRregmax = max(aewr_region_id, na.rm = T)
   )
 
 cz_borders <- cz_borders %>%
@@ -189,7 +184,7 @@ cz_borders %>% group_by(border_cz) %>% tally()
 county_df <- merge(
   x = county_df,
   y = cz_borders,
-  by = "cz_out10",
+  by = "cz_id",
   all.x = T,
   all.y = F
 )
@@ -212,14 +207,8 @@ county_df <- county_df %>%
     high_h2a_count_50_inverse = ifelse(high_h2a_count_50 == 0, 1, 0)
   )
 
-stopifnot(is.character(county_df$countyfips))
-stopifnot(all(
-  is.na(county_df$countyfips) | str_detect(county_df$countyfips, "^\\d{5}$")
-))
-stopifnot(is.character(county_df$statefips))
-stopifnot(all(
-  is.na(county_df$statefips) | str_detect(county_df$statefips, "^\\d{2}$")
-))
-
-
+assert_geo_columns(
+  county_df,
+  c("state_fips", "county_fips", "cz_id", "aewr_region_id")
+)
 write_parquet(county_df, path_int("county_df_classified_year.parquet"))

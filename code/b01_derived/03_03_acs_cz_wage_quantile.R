@@ -2,15 +2,9 @@
 # Inputs: the ACS one-year wage extract and PUMA-county-CZ crosswalks.
 # Outputs: data/intermediate/acs_czone_wage_quantiles.parquet.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -45,7 +39,7 @@ read_geocorr_puma_county <- function(
   ) %>%
     transmute(
       puma_vintage = puma_vintage,
-      statefip = str_pad(as.character(state), 2, side = "left", pad = "0"),
+      state_fips = state_fips(state),
       puma = str_pad(
         as.character(.data[[puma_column]]),
         5,
@@ -54,18 +48,13 @@ read_geocorr_puma_county <- function(
       ),
       # Convert post-2010 county definitions back to the county vintage used
       # by Penn's 2010 CZ file.
-      countyfips_2010 = recode(
-        str_pad(
-          as.character(.data[[county_column]]),
-          5,
-          side = "left",
-          pad = "0"
-        ),
+      county_fips = harmonize_county_fips_2010(recode(
+        county_fips(.data[[county_column]]),
         "02063" = "02261", # Chugach -> 2010 Valdez-Cordova, Alaska
         "02066" = "02261", # Copper River -> 2010 Valdez-Cordova, Alaska
         "02158" = "02270", # Kusilvak (formerly Wade Hampton), Alaska
         "46102" = "46113" # Oglala Lakota (formerly Shannon), South Dakota
-      ),
+      )),
       puma_county_share = as.numeric(afact)
     )
 }
@@ -75,17 +64,12 @@ penn_county_cz <- read_csv(
   show_col_types = FALSE
 ) %>%
   transmute(
-    countyfips_2010 = str_pad(
-      as.character(FIPS),
-      5,
-      side = "left",
-      pad = "0"
-    ),
-    cz_out10 = as.character(OUT10)
+    county_fips = county_fips(FIPS),
+    cz_id = cz_id(OUT10)
   ) %>%
   distinct()
 
-stopifnot(!anyDuplicated(penn_county_cz$countyfips_2010))
+stopifnot(!anyDuplicated(penn_county_cz$county_fips))
 
 puma_county_2000 <- read_geocorr_puma_county(
   "geocorr2014_puma2000_county2010.csv",
@@ -104,7 +88,7 @@ puma_county_2020 <- read_geocorr_puma_county(
 ) %>%
   # Geocorr now reports Connecticut planning regions as counties. Replace
   # those rows below with the direct legacy-county relationship.
-  filter(statefip != "09") %>%
+  filter(state_fips != "09") %>%
   bind_rows(read_geocorr_puma_county(
     "geocorr2022_puma2020_ctcounty2010.csv",
     "puma22",
@@ -114,19 +98,19 @@ puma_county_2020 <- read_geocorr_puma_county(
 
 collapse_puma_county_to_cz <- function(puma_county) {
   puma_cz <- puma_county %>%
-    left_join(penn_county_cz, by = "countyfips_2010")
+    left_join(penn_county_cz, by = "county_fips")
 
-  if (any(is.na(puma_cz$cz_out10))) {
+  if (any(is.na(puma_cz$cz_id))) {
     stop("Some PUMA-to-county allocations do not match Penn's 2010 CZ file.")
   }
 
   puma_cz <- puma_cz %>%
-    group_by(puma_vintage, statefip, puma, cz_out10) %>%
+    group_by(puma_vintage, state_fips, puma, cz_id) %>%
     summarise(
       puma_cz_share_raw = sum(puma_county_share, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(puma_vintage, statefip, puma) %>%
+    group_by(puma_vintage, state_fips, puma) %>%
     mutate(
       puma_cz_share_total = sum(puma_cz_share_raw),
       puma_cz_share = puma_cz_share_raw / puma_cz_share_total
@@ -140,7 +124,7 @@ collapse_puma_county_to_cz <- function(puma_county) {
   }
 
   puma_cz %>%
-    select(puma_vintage, statefip, puma, cz_out10, puma_cz_share)
+    select(puma_vintage, state_fips, puma, cz_id, puma_cz_share)
 }
 
 puma_cz_2000 <- collapse_puma_county_to_cz(puma_county_2000)
@@ -154,7 +138,7 @@ puma_cz_crosswalk <- bind_rows(
 )
 
 puma_cz_mass_check <- puma_cz_crosswalk %>%
-  group_by(puma_vintage, statefip, puma) %>%
+  group_by(puma_vintage, state_fips, puma) %>%
   summarise(puma_cz_share_total = sum(puma_cz_share), .groups = "drop")
 stopifnot(all(abs(puma_cz_mass_check$puma_cz_share_total - 1) < 1e-8))
 
@@ -174,7 +158,7 @@ acs_ds <- acs_ds %>%
   select(
     "YEAR",
     "INCWAGE",
-    "STATEFIP",
+    "state_fips",
     "PUMA",
     "PERWT",
     "AGE",
@@ -184,16 +168,19 @@ acs_ds <- acs_ds %>%
   )
 
 # Calculate hourly wage
-acs_df <- collect(acs_ds) %>%
+acs_df <- collect(acs_ds)
+assert_geo_columns(
+  distinct(acs_df, state_fips),
+  "state_fips"
+)
+acs_df <- acs_df %>%
   mutate(
     # Convert float PUMA to a proper 5-digit string (e.g., 100 -> "00100")
     PUMA = if_else(
       is.na(PUMA),
       NA_character_,
       sprintf("%05d", as.integer(PUMA))
-    ),
-    # Convert float STATEFIP to a proper 2-digit string (e.g., 6 -> "06")
-    STATEFIP = sprintf("%02d", as.integer(STATEFIP))
+    )
   ) %>%
   mutate(
     old_weeks_worked = case_match(
@@ -220,12 +207,6 @@ acs_df <- collect(acs_ds) %>%
       YEAR < 2022 ~ "2010",
       TRUE ~ "2020"
     ),
-    statefip = str_pad(
-      as.character(STATEFIP),
-      2,
-      side = "left",
-      pad = "0"
-    ),
     puma = str_pad(
       as.character(PUMA),
       5,
@@ -233,7 +214,7 @@ acs_df <- collect(acs_ds) %>%
       pad = "0"
     )
   ) %>%
-  select(YEAR, statefip, puma, puma_vintage, PERWT, hourly_wage)
+  select(YEAR, state_fips, puma, puma_vintage, PERWT, hourly_wage)
 
 # Fractionally allocate every PUMS observation across Penn CZs. This preserves
 # the PUMA population weight while allowing PUMAs that cross CZ boundaries to
@@ -244,27 +225,27 @@ acs_df <- acs_df %>%
   filter(!is.na(puma)) %>%
   left_join(
     puma_cz_crosswalk,
-    by = c("puma_vintage", "statefip", "puma")
+    by = c("puma_vintage", "state_fips", "puma")
   )
 
 unmatched_pumas <- acs_df %>%
-  filter(is.na(cz_out10)) %>%
-  distinct(puma_vintage, statefip, puma)
+  filter(is.na(cz_id)) %>%
+  distinct(puma_vintage, state_fips, puma)
 
 # PUMA 77777 in Louisiana is the special Hurricane Katrina displacement PUMA.
 unexpected_unmatched_pumas <- unmatched_pumas %>%
-  filter(!(puma_vintage == "2000" & statefip == "22" & puma == "77777"))
+  filter(!(puma_vintage == "2000" & state_fips == "22" & puma == "77777"))
 if (nrow(unexpected_unmatched_pumas) > 0) {
   stop("Unexpected ACS PUMAs are missing from the PUMA-to-Penn-CZ crosswalk.")
 }
 
 acs_df <- acs_df %>%
-  filter(!is.na(cz_out10)) %>%
+  filter(!is.na(cz_id)) %>%
   mutate(cz_perwt = PERWT * puma_cz_share)
 
 wage_quantiles_czone <- acs_df %>%
   filter(!is.na(cz_perwt)) %>%
-  group_by(YEAR, cz_out10) %>%
+  group_by(YEAR, cz_id) %>%
   summarize(
     wage_p10 = fquantile(
       hourly_wage,
@@ -306,13 +287,11 @@ wage_quantiles_czone <- acs_df %>%
 
 # Attach county codes
 wage_quantiles_county <- wage_quantiles_czone %>%
-  left_join(
-    penn_county_cz %>% rename(county_ansi = countyfips_2010),
-    by = "cz_out10"
-  ) %>%
-  arrange(county_ansi)
+  left_join(penn_county_cz, by = "cz_id") %>%
+  arrange(county_fips)
 
-stopifnot(!anyDuplicated(wage_quantiles_county[c("YEAR", "county_ansi")]))
+stopifnot(!anyDuplicated(wage_quantiles_county[c("YEAR", "county_fips")]))
+assert_geo_columns(wage_quantiles_county, c("county_fips", "cz_id"))
 
 wage_quantiles_county %>%
   write_parquet(path_int("acs_czone_wage_quantiles.parquet"))

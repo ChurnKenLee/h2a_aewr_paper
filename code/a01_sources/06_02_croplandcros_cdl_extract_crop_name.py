@@ -124,14 +124,17 @@ def _(cdl_pixel, crop_code_keys, pl):
     )
 
     # Keep relevant columns and export
-    county_crop = county_crop.rename({"GEOID10": "fips"}).select(
-        ["fips", "year", "crop_code", "crop_name", "acres"]
+    county_crop = county_crop.select(
+        ["county_fips", "year", "crop_code", "crop_name", "acres"]
     )
     return (county_crop,)
 
 
 @app.cell
 def _(INTERMEDIATE, county_crop):
+    from h2a.geography import assert_geo_columns
+
+    assert_geo_columns(county_crop, ["county_fips"])
     # Save binary
     county_crop.write_parquet(INTERMEDIATE / "croplandcros_county_crop_acres.parquet")
     return

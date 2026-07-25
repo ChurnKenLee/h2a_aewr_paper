@@ -3,25 +3,24 @@
 # Outputs: CZ features, cluster assignments, diagnostics, donor pairs, and maps.
 # Run after: 07_build_cz_features.R and code/c02_build/04_finalize_county_panel.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
-source(path_code("c00_shared", "fips.R"))
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(sf)
 
 cat("Reading IV clustering inputs\n")
 county_features <- read_parquet(path_int("iv_county_features.parquet"))
-county_feature_names <- setdiff(names(county_features), "county_ansi")
+county_feature_names <- setdiff(names(county_features), "county_fips")
 county_df <- read_parquet(
   path_processed("county_df_analysis_year.parquet")
-) %>%
-  janitor::clean_names()
+)
+assert_geo_columns(county_features, "county_fips")
+assert_geo_columns(
+  county_df,
+  c("county_fips", "state_fips", "aewr_region_id", "cz_id")
+)
 
 soil_vars <- c(
   "slope_r",
@@ -38,13 +37,11 @@ soil_vars <- c(
 )
 
 unit_xwalk <- county_df %>%
-  mutate(county_ansi = countyfips) %>%
-  distinct(county_ansi, cz_out10, aewr_region_num, cz_aewr_region_fe)
+  distinct(county_fips, cz_id, aewr_region_id, cz_aewr_region_fe)
 
 county_feature_weights <- county_df %>%
-  mutate(county_ansi = countyfips) %>%
   filter(year >= 2008, year <= 2011) %>%
-  group_by(county_ansi, cz_out10, aewr_region_num, cz_aewr_region_fe) %>%
+  group_by(county_fips, cz_id, aewr_region_id, cz_aewr_region_fe) %>%
   summarise(feature_weight = mean(emp_farm, na.rm = TRUE), .groups = "drop") %>%
   mutate(
     feature_weight = if_else(
@@ -57,11 +54,11 @@ county_feature_weights <- county_df %>%
 unit_features <- unit_xwalk %>%
   left_join(
     county_feature_weights,
-    by = c("county_ansi", "cz_out10", "aewr_region_num", "cz_aewr_region_fe")
+    by = c("county_fips", "cz_id", "aewr_region_id", "cz_aewr_region_fe")
   ) %>%
   mutate(feature_weight = replace_na(feature_weight, 1)) %>%
-  left_join(county_features, by = "county_ansi") %>%
-  group_by(cz_out10, aewr_region_num, cz_aewr_region_fe) %>%
+  left_join(county_features, by = "county_fips") %>%
+  group_by(cz_id, aewr_region_id, cz_aewr_region_fe) %>%
   summarise(
     unit_feature_weight = sum(feature_weight, na.rm = TRUE),
     across(
@@ -73,7 +70,7 @@ unit_features <- unit_xwalk %>%
 
 feature_names <- setdiff(
   names(unit_features),
-  c("cz_out10", "aewr_region_num", "cz_aewr_region_fe", "unit_feature_weight")
+  c("cz_id", "aewr_region_id", "cz_aewr_region_fe", "unit_feature_weight")
 )
 
 share_feature_names <- feature_names[
@@ -121,8 +118,8 @@ cat(
 cluster_list <- list()
 cluster_diagnostic_list <- list()
 donor_cluster_list <- list()
-for (r in sort(unique(unit_features$aewr_region_num))) {
-  d <- unit_features %>% filter(aewr_region_num == r)
+for (r in sort(unique(unit_features$aewr_region_id))) {
+  d <- unit_features %>% filter(aewr_region_id == r)
 
   for (v in feature_names) {
     x <- d[[v]]
@@ -156,16 +153,16 @@ for (r in sort(unique(unit_features$aewr_region_num))) {
     donor_cluster_counts <- seq_len(iv_k - 1L)
 
     cluster_list[[list_key]] <- d %>%
-      select(cz_aewr_region_fe, aewr_region_num) %>%
+      select(cz_aewr_region_fe, aewr_region_id) %>%
       mutate(iv_k = iv_k, iv_cluster = selected_cluster)
 
     cluster_diagnostic_list[[list_key]] <- tibble(
-      aewr_region_num = r,
+      aewr_region_id = r,
       iv_k = iv_k,
       iv_cluster = selected_cluster,
       unit_feature_weight = d$unit_feature_weight
     ) %>%
-      group_by(aewr_region_num, iv_k, iv_cluster) %>%
+      group_by(aewr_region_id, iv_k, iv_cluster) %>%
       summarise(
         cluster_units = n(),
         cluster_feature_weight = sum(unit_feature_weight, na.rm = TRUE),
@@ -192,7 +189,7 @@ for (r in sort(unique(unit_features$aewr_region_num))) {
 
     for (target_cluster_id in cluster_ids) {
       donor_pair_list[[as.character(target_cluster_id)]] <- tibble(
-        aewr_region_num = r,
+        aewr_region_id = r,
         iv_k = iv_k,
         target_cluster = target_cluster_id,
         donor_cluster = cluster_ids,
@@ -216,15 +213,17 @@ for (r in sort(unique(unit_features$aewr_region_num))) {
 
 iv_clusters <- bind_rows(cluster_list)
 cat("Writing cluster assignments and donor pairs\n")
+assert_geo_columns(iv_clusters, "aewr_region_id")
 write_parquet(iv_clusters, path_int("iv_cz_aewr_clusters.parquet"))
 iv_cluster_diagnostics <- bind_rows(cluster_diagnostic_list) %>%
-  group_by(aewr_region_num, iv_k) %>%
+  group_by(aewr_region_id, iv_k) %>%
   mutate(
     region_min_cluster_units = min(cluster_units),
     region_min_cluster_weight_share = min(cluster_feature_weight_share)
   ) %>%
   ungroup()
 iv_donor_clusters <- bind_rows(donor_cluster_list)
+assert_geo_columns(iv_donor_clusters, "aewr_region_id")
 write_parquet(
   iv_cluster_diagnostics,
   path_int("iv_cluster_diagnostics.parquet")
@@ -238,10 +237,10 @@ iv_cluster_figure_dir <- path_figures("iv_dissimilarity_clusters")
 dir.create(iv_cluster_figure_dir, recursive = TRUE, showWarnings = FALSE)
 
 aewr_region_labels <- county_df %>%
-  distinct(aewr_region_num, state_abbrev) %>%
-  filter(!is.na(aewr_region_num), !is.na(state_abbrev)) %>%
-  arrange(aewr_region_num, state_abbrev) %>%
-  group_by(aewr_region_num) %>%
+  distinct(aewr_region_id, state_abbrev) %>%
+  filter(!is.na(aewr_region_id), !is.na(state_abbrev)) %>%
+  arrange(aewr_region_id, state_abbrev) %>%
+  group_by(aewr_region_id) %>%
   summarise(
     aewr_region_states = paste(state_abbrev, collapse = ", "),
     .groups = "drop"
@@ -249,7 +248,7 @@ aewr_region_labels <- county_df %>%
   mutate(
     aewr_region_label = paste0(
       "AEWR Region ",
-      aewr_region_num,
+      aewr_region_id,
       " (",
       aewr_region_states,
       ")"
@@ -277,16 +276,16 @@ iv_cluster_colors <- setNames(
 )
 
 county_iv_clusters <- county_df %>%
-  distinct(countyfips, cz_out10, aewr_region_num, cz_aewr_region_fe) %>%
+  distinct(county_fips, cz_id, aewr_region_id, cz_aewr_region_fe) %>%
   # Analysis data use the pre-2015 Shannon County code; the bundled 2020
   # TIGER shapefile uses the newer Oglala Lakota County code.
-  mutate(countyfips = recode(countyfips, `46113` = "46102")) %>%
+  mutate(county_fips = recode(county_fips, `46113` = "46102")) %>%
   left_join(
     iv_clusters,
-    by = c("cz_aewr_region_fe", "aewr_region_num"),
+    by = c("cz_aewr_region_fe", "aewr_region_id"),
     relationship = "many-to-many"
   ) %>%
-  left_join(aewr_region_labels, by = "aewr_region_num") %>%
+  left_join(aewr_region_labels, by = "aewr_region_id") %>%
   mutate(
     iv_cluster_id = iv_cluster,
     iv_cluster = factor(
@@ -312,24 +311,24 @@ county_map_iv_clusters <- sf::st_read(
   quiet = TRUE
 ) %>%
   mutate(
-    statefip = state_fips(STATEFP),
-    countyfips = combine_county_fips(STATEFP, COUNTYFP)
+    state_fips = state_fips(STATEFP),
+    county_fips = combine_county_fips(STATEFP, COUNTYFP)
   ) %>%
   filter(
-    as.integer(statefip) <= 56,
-    !statefip %in% c("02", "15")
+    as.integer(state_fips) <= 56,
+    !state_fips %in% c("02", "15")
   ) %>%
   sf::st_make_valid() %>%
   sf::st_transform(5070) %>%
-  left_join(county_iv_clusters, by = "countyfips") %>%
-  filter(!is.na(aewr_region_num))
+  left_join(county_iv_clusters, by = "county_fips") %>%
+  filter(!is.na(aewr_region_id))
 
 cz_aewr_cluster_boundaries <- county_map_iv_clusters %>%
-  group_by(iv_k, cz_aewr_region_fe, aewr_region_num, aewr_region_label) %>%
+  group_by(iv_k, cz_aewr_region_fe, aewr_region_id, aewr_region_label) %>%
   summarise(geometry = sf::st_union(geometry), .groups = "drop")
 
 aewr_region_boundaries <- county_map_iv_clusters %>%
-  group_by(iv_k, aewr_region_num, aewr_region_label) %>%
+  group_by(iv_k, aewr_region_id, aewr_region_label) %>%
   summarise(geometry = sf::st_union(geometry), .groups = "drop")
 
 iv_cluster_map_theme <- theme_void(base_size = 10) +
@@ -437,13 +436,13 @@ for (iv_k in iv_k_values) {
     )
   }
 
-  for (r in sort(unique(k_map_data$aewr_region_num))) {
+  for (r in sort(unique(k_map_data$aewr_region_id))) {
     region_map_data <- k_map_data %>%
-      filter(aewr_region_num == .env$r)
+      filter(aewr_region_id == .env$r)
     region_cz_boundaries <- k_cz_boundaries %>%
-      filter(aewr_region_num == .env$r)
+      filter(aewr_region_id == .env$r)
     region_boundary <- k_region_boundaries %>%
-      filter(aewr_region_num == .env$r)
+      filter(aewr_region_id == .env$r)
 
     region_label <- as.character(unique(region_map_data$aewr_region_label))
     region_bbox <- sf::st_bbox(region_map_data)

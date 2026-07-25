@@ -3,13 +3,9 @@
 # Outputs: calibration/IV diagnostic CSV and support/tradeoff figures.
 # Run after: code/c03_iv/09_construct_donor_instruments.R.
 
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 
@@ -79,24 +75,24 @@ full_gap_wage_diagnostics <- read_parquet(path_int(
 
 wage_calibration_years <- full_gap_wage_diagnostics %>%
   filter(str_detect(calibration_status, "^calibrated")) %>%
-  select(aewr_region_num, year) %>%
+  select(aewr_region_id, year) %>%
   distinct()
 
 wage_target_years <- wage_calibration_years %>%
   transmute(
-    aewr_region_num,
-    year = as.integer(year) + 1L
+    aewr_region_id,
+    year = year + 1L
   ) %>%
   distinct()
 
 # Downstream support uses successful wage-only cells as a common denominator,
 # making both calibration loss and donor-overlap loss visible.
 expected_instrument_cells <- iv_clusters %>%
-  select(cz_aewr_region_fe, aewr_region_num, iv_k) %>%
+  select(cz_aewr_region_fe, aewr_region_id, iv_k) %>%
   inner_join(iv_design_specs, by = "iv_k", relationship = "many-to-many") %>%
   inner_join(
     wage_target_years,
-    by = "aewr_region_num",
+    by = "aewr_region_id",
     relationship = "many-to-many"
   )
 
@@ -105,7 +101,7 @@ instrument_cell_support <- expected_instrument_cells %>%
     iv_oews_long %>%
       select(
         cz_aewr_region_fe,
-        aewr_region_num,
+        aewr_region_id,
         year,
         iv_k,
         donor_cluster_count,
@@ -120,7 +116,7 @@ instrument_cell_support <- expected_instrument_cells %>%
       ),
     by = c(
       "cz_aewr_region_fe",
-      "aewr_region_num",
+      "aewr_region_id",
       "year",
       "iv_k",
       "donor_cluster_count",
@@ -168,7 +164,7 @@ seasonal_feature_scaffold <- read_parquet(path_int(
     near(gap_closure, 1)
   ) %>%
   select(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     fls_hired_worker_share_january,
@@ -191,17 +187,17 @@ wage_only_seasonal_balance <- read_parquet(path_int(
     str_detect(calibration_status, "^calibrated")
   ) %>%
   select(
-    aewr_region_num,
+    aewr_region_id,
     year,
     oews_area_code,
     oews_area_weight_wage_calibrated
   ) %>%
   inner_join(
     seasonal_feature_scaffold,
-    by = c("aewr_region_num", "year", "oews_area_code"),
+    by = c("aewr_region_id", "year", "oews_area_code"),
     relationship = "one-to-one"
   ) %>%
-  group_by(aewr_region_num, year) %>%
+  group_by(aewr_region_id, year) %>%
   summarise(
     seasonal_january_standardized_imbalance = (
       sum(
@@ -226,7 +222,7 @@ wage_only_seasonal_balance <- read_parquet(path_int(
 
 wage_only_calibration_cells <- full_gap_wage_diagnostics %>%
   transmute(
-    aewr_region_num,
+    aewr_region_id,
     year,
     weight_spec_label = "wage_only_exact",
     prior_spec = "bea",
@@ -254,7 +250,7 @@ wage_only_calibration_cells <- full_gap_wage_diagnostics %>%
   ) %>%
   left_join(
     wage_only_seasonal_balance,
-    by = c("aewr_region_num", "year"),
+    by = c("aewr_region_id", "year"),
     relationship = "one-to-one"
   )
 
@@ -263,7 +259,7 @@ auxiliary_calibration_cells <- read_parquet(path_int(
 )) %>%
   filter(include_wage_target, near(gap_closure, 1)) %>%
   transmute(
-    aewr_region_num,
+    aewr_region_id,
     year,
     weight_spec_label,
     prior_spec,
@@ -295,7 +291,7 @@ calibration_summary <- bind_rows(
 ) %>%
   semi_join(
     wage_calibration_years,
-    by = c("aewr_region_num", "year")
+    by = c("aewr_region_id", "year")
   ) %>%
   mutate(
     seasonal_balance_complete = if_all(
@@ -394,7 +390,7 @@ calibration_summary <- bind_rows(
 cluster_count_support <- iv_cluster_diagnostics %>%
   group_by(iv_k) %>%
   summarise(
-    aewr_regions = n_distinct(aewr_region_num),
+    aewr_regions = n_distinct(aewr_region_id),
     total_clusters = n(),
     minimum_cluster_units = min(cluster_units),
     median_cluster_units = median(cluster_units),

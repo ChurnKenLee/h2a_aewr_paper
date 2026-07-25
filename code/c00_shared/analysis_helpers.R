@@ -24,12 +24,14 @@ read_county_map <- function(
 
   county_shape <- county_shape |>
     dplyr::mutate(
-      statefip = state_fips(STATEFP),
-      countyfips = combine_county_fips(STATEFP, COUNTYFP)
+      state_fips = state_fips(STATEFP),
+      county_fips = harmonize_county_fips_2010(
+        combine_county_fips(STATEFP, COUNTYFP)
+      )
     ) |>
     dplyr::filter(
-      as.integer(statefip) <= 56,
-      !statefip %in% c("02", "15")
+      as.integer(state_fips) <= 56,
+      !state_fips %in% c("02", "15")
     )
 
   if (simplify) {

@@ -2,15 +2,9 @@
 # Inputs: ACS five-year microdata, QCEW, and PUMA-county crosswalks.
 # Outputs: data/intermediate/acs_qcew.parquet.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -21,6 +15,10 @@ acs_df <- read_parquet(path_int(
   "acs_5year_for_immigrant_status_imputation.parquet"
 )) %>%
   clean_names()
+assert_geo_columns(
+  distinct(acs_df, state_fips),
+  "state_fips"
+)
 
 # We only care about NAICS 111 and 112
 acs_df <- acs_df %>%
@@ -33,9 +31,8 @@ acs_df <- acs_df %>%
   ) %>%
   select(-indnaics)
 
-# Pad state FIPS code and PUMA code for merging with GEOCORR
+# Pad PUMA code for merging with GEOCORR
 acs_df <- acs_df %>%
-  mutate(statefip = str_pad(statefip, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma, 5, side = c("left"), pad = "0"))
 
 
@@ -59,7 +56,7 @@ geocorr_2000_df <- read_csv(
   col_names = geocorr_2000_names,
   show_col_types = FALSE
 ) %>%
-  mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
+  mutate(state_fips = str_pad(state, 2, side = c("left"), pad = "0")) %>%
   mutate(puma = str_pad(puma2k, 5, side = c("left"), pad = "0")) %>%
   select(-c(state, puma2k))
 
@@ -81,21 +78,48 @@ geocorr_2012_df <- read_csv(
   col_names = geocorr_2012_names,
   show_col_types = FALSE
 ) %>%
-  mutate(statefip = str_pad(state, 2, side = "left", pad = "0")) %>%
+  mutate(state_fips = str_pad(state, 2, side = "left", pad = "0")) %>%
   mutate(puma = str_pad(puma12, 5, side = "left", pad = "0")) %>%
   select(-c(state, puma12))
 
 # Split by survey year, then merge with GEOCORR
 acs_puma_2000_df <- acs_df %>%
   filter(multyear < 2012) %>%
-  left_join(geocorr_2000_df, by = c("statefip", "puma"))
+  left_join(geocorr_2000_df, by = c("state_fips", "puma"))
 
 acs_puma_2012_df <- acs_df %>%
   filter(multyear > 2011) %>%
-  left_join(geocorr_2012_df, by = c("statefip", "puma"))
+  left_join(geocorr_2012_df, by = c("state_fips", "puma"))
+
+acs_puma_allocated <- bind_rows(acs_puma_2000_df, acs_puma_2012_df)
+unmatched_pumas <- acs_puma_allocated %>%
+  filter(is.na(county) | is.na(afact)) %>%
+  distinct(multyear, state_fips, puma)
+
+# Louisiana PUMA 77777 is the special Hurricane Katrina displacement PUMA.
+# It has no county allocation and therefore cannot enter a county artifact.
+unexpected_unmatched_pumas <- unmatched_pumas %>%
+  filter(
+    !coalesce(
+      multyear < 2012 & state_fips == "22" & puma == "77777",
+      FALSE
+    )
+  )
+if (nrow(unexpected_unmatched_pumas) > 0L) {
+  stop(
+    "Unexpected ACS PUMAs are missing from the PUMA-to-county crosswalk.",
+    call. = FALSE
+  )
+}
+if (nrow(unmatched_pumas) > 0L) {
+  message(
+    "Dropping unallocatable Louisiana Katrina-displacement PUMA 77777."
+  )
+}
 
 # Combine back into one df and aggregate to county level
-acs_agg <- bind_rows(acs_puma_2000_df, acs_puma_2012_df) %>%
+acs_agg <- acs_puma_allocated %>%
+  filter(!is.na(county), !is.na(afact)) %>%
   mutate(county_perwt = perwt * afact) %>%
   group_by(year, county, industry) %>%
   summarise(n_emp = sum(county_perwt)) %>%
@@ -154,11 +178,18 @@ acs_qcew_df <- acs_agg %>%
 
 # Harmonize variables with other dataset
 acs_qcew_df <- acs_qcew_df %>%
-  mutate(state_fips_code = substr(state_county_fips_code, 1, 2)) %>%
-  mutate(county_fips_code = substr(state_county_fips_code, 3, 5)) %>%
+  mutate(
+    county_fips = harmonize_county_fips_2010(state_county_fips_code),
+    state_fips = state_from_county_fips(county_fips),
+    county_code = county_code_from_county_fips(county_fips)
+  ) %>%
   select(-state_county_fips_code)
 
 # Export
+assert_geo_columns(
+  acs_qcew_df,
+  c("state_fips", "county_code", "county_fips")
+)
 acs_qcew_df %>%
   write_parquet(path_int("acs_qcew.parquet"))
 
@@ -167,7 +198,7 @@ acs_qcew_df %>%
 # skip_second <- all_content[-2]
 # geocorr_2000_df <- read_csv(textConnection(skip_second), header = TRUE, stringsAsFactors = FALSE)
 # geocorr_2000_df <- geocorr_2000_df %>%
-#   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
+#   mutate(state_fips = str_pad(state, 2, side = c("left"), pad = "0")) %>%
 #   mutate(countyfip = str_pad(county, 5, side = c("left"), pad = "0")) %>%
 #   mutate(puma = str_pad(puma5, 5, side = c("left"), pad = "0")) %>%
 #   select(-c(state, county, puma5))
@@ -177,7 +208,7 @@ acs_qcew_df %>%
 # skip_second <- all_content[-2]
 # geocorr_2012_df <- read_csv(textConnection(skip_second), header = TRUE, stringsAsFactors = FALSE)
 # geocorr_2012_df <- geocorr_2012_df %>%
-#   mutate(statefip = str_pad(state, 2, side = c("left"), pad = "0")) %>%
+#   mutate(state_fips = str_pad(state, 2, side = c("left"), pad = "0")) %>%
 #   mutate(countyfip = str_pad(county, 5, side = c("left"), pad = "0")) %>%
 #   mutate(puma = str_pad(puma12, 5, side = c("left"), pad = "0")) %>%
 #   select(-c(state, county, puma12))
@@ -213,7 +244,7 @@ acs_qcew_df %>%
 #
 # qcew_df <- qcew_df %>%
 #   mutate(puma_emp = annual_avg_emplvl*afact) %>%
-#   group_by(statefip, puma, acs_year, industry_code) %>%
+#   group_by(state_fips, puma, acs_year, industry_code) %>%
 #   summarise(n_emp = sum(puma_emp, na.rm = TRUE)) %>%
 #   ungroup()
 #
@@ -223,7 +254,7 @@ acs_qcew_df %>%
 #   mutate(industry = if_else(industry_code == "112", "animal_production", industry))
 #
 # qcew_df <- qcew_df %>%
-#   pivot_wider(id_cols = c("statefip", "puma", "acs_year"), names_from = "industry", values_from = "n_emp") %>%
+#   pivot_wider(id_cols = c("state_fips", "puma", "acs_year"), names_from = "industry", values_from = "n_emp") %>%
 #   mutate(qcew_ratio = crop_production/animal_production) %>%
 #   filter(acs_year != 0)
 #
@@ -240,11 +271,11 @@ acs_qcew_df %>%
 #   select(-indnaics)
 #
 # acs_df <- acs_df %>%
-#   mutate(statefip = str_pad(statefip, 2, side = c("left"), pad = "0")) %>%
+#   mutate(state_fips = str_pad(state_fips, 2, side = c("left"), pad = "0")) %>%
 #   mutate(puma = str_pad(puma, 5, side = c("left"), pad = "0"))
 #
 # acs_df <- acs_df %>%
-#   group_by(statefip, puma, year, industry) %>%
+#   group_by(state_fips, puma, year, industry) %>%
 #   summarise(n_emp = sum(perwt))
 #
 # acs_df <- acs_df %>%
@@ -254,7 +285,7 @@ acs_qcew_df %>%
 #   mutate(acs_ratio = crop_production/animal_production)
 #
 # acs_qcew_df <- acs_df %>%
-#   left_join(qcew_df, by = c("statefip", "puma", "year" = "acs_year")) %>%
+#   left_join(qcew_df, by = c("state_fips", "puma", "year" = "acs_year")) %>%
 #   filter(!is.na(acs_ratio) & !is.na(qcew_ratio))
 #
 # # Scatterplot of ratios

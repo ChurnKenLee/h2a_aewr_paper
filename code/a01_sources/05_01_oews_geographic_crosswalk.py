@@ -42,8 +42,8 @@ def _(oews_path, pl):
     ).select(pl.all().cast(pl.String))
     oews_df = oews_df.rename(
         {
-            "FIPS": "oews_state_fips",
-            "County code": "oews_county_fips",
+            "FIPS": "state_fips",
+            "County code": "county_code",
             "Township code": "oews_township_code",
             "County/town name": "oews_county_name",
             "state": "oews_state_name",
@@ -52,8 +52,8 @@ def _(oews_path, pl):
 
     # Keep only columns we need
     columns_to_keep = [
-        "oews_state_fips",
-        "oews_county_fips",
+        "state_fips",
+        "county_code",
         "oews_township_code",
         "oews_state_name",
         "oews_county_name",
@@ -152,8 +152,8 @@ def _(oews_df, oews_path, pl):
         if c.startswith("Area name ") and c.removeprefix("Area name ").isdigit()
     ]
     id_cols = [
-        "oews_state_fips",
-        "oews_county_fips",
+        "state_fips",
+        "county_code",
         "oews_township_code",
         "oews_state_name",
         "oews_county_name",
@@ -215,8 +215,8 @@ def _(oews_path, pl):
         )
 
         rename_map = {
-            "FIPS code": "oews_state_fips",
-            "County code": "oews_county_fips",
+            "FIPS code": "state_fips",
+            "County code": "county_code",
             "Township code": "oews_township_code",
             county_name_variable: "oews_county_name",
             "State": "oews_state_name",
@@ -234,8 +234,8 @@ def _(oews_path, pl):
             [
                 c
                 for c in [
-                    "oews_state_fips",
-                    "oews_county_fips",
+                    "state_fips",
+                    "county_code",
                     "oews_township_code",
                     "oews_state_name",
                     "oews_county_name",
@@ -269,11 +269,11 @@ def _(mo):
 def _(INTERMEDIATE, pl):
     full_county_set = (
         pl.read_parquet(INTERMEDIATE / "county_adjacency2010.parquet")
-        .select(["fipscounty", "countyname"])
+        .select(["county_fips", "countyname"])
         .unique()
         .cast(pl.String)
-        .with_columns(pl.col("fipscounty").str.pad_start(5, "0").alias("fipscounty"))
-        .sort("fipscounty")
+        .with_columns(pl.col("county_fips").str.pad_start(5, "0").alias("county_fips"))
+        .sort("county_fips")
     )
     return (full_county_set,)
 
@@ -285,9 +285,9 @@ def _(oews_df_post_2019, oews_long_df, pl):
     oews_long_df_both_periods = pl.concat([oews_long_df, oews_df_post_2019], how="diagonal")
 
     oews_long_df_both_periods = oews_long_df_both_periods.with_columns(
-        [pl.col("oews_state_fips").str.zfill(2), pl.col("oews_county_fips").str.zfill(3)]
+        [pl.col("state_fips").str.zfill(2), pl.col("county_code").str.zfill(3)]
     ).with_columns(
-        (pl.col("oews_state_fips") + pl.col("oews_county_fips")).alias("fipscounty")
+        (pl.col("state_fips") + pl.col("county_code")).alias("county_fips")
     )
 
     # Remove whitespace around area codes and FIPS fields. Some source cells
@@ -303,9 +303,9 @@ def _(oews_df_post_2019, oews_long_df, pl):
 def _(full_county_set, oews_long_df_both_periods, pl):
     # Don't care about states outside CONUS
     wrong_oews = (
-        oews_long_df_both_periods.join(full_county_set, on="fipscounty", how="anti")
-        .unique("fipscounty")
-        .sort("fipscounty")
+        oews_long_df_both_periods.join(full_county_set, on="county_fips", how="anti")
+        .unique("county_fips")
+        .sort("county_fips")
         .filter(~pl.col("oews_state_name").is_in(["Alaska", "Puerto Rico"]))
     )
     wrong_oews
@@ -344,16 +344,32 @@ def _(oews_long_df_both_periods, pl):
         .then(pl.lit("086"))
         .when(oglala_lakota_county_sd)
         .then(pl.lit("113"))
-        .otherwise(pl.col("oews_county_fips"))
-        .alias("oews_county_fips")
+        .otherwise(pl.col("county_code"))
+        .alias("county_code")
     )
-    # Drop deprecated counties
-    oews_remapped = oews_remapped.filter(~deprecated_counties).drop("fipscounty")
+    # Drop deprecated counties and publish one canonical county identifier.
+    oews_remapped = (
+        oews_remapped.filter(
+            ~deprecated_counties,
+            pl.col("oews_area_code").is_not_null(),
+            pl.col("oews_area_code") != "",
+        )
+        .drop("county_fips")
+        .with_columns(
+            (pl.col("state_fips") + pl.col("county_code")).alias("county_fips")
+        )
+    )
     return (oews_remapped,)
 
 
 @app.cell
 def _(binary_path, oews_remapped):
+    from h2a.geography import assert_geo_columns
+
+    assert_geo_columns(
+        oews_remapped,
+        ["state_fips", "county_code", "county_fips", "oews_area_code"],
+    )
     # Export as binary
     oews_remapped.write_parquet(
         binary_path / "oews_area_definitions.parquet",

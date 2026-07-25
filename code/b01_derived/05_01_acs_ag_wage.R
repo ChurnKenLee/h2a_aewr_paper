@@ -2,15 +2,9 @@
 # Inputs: data/intermediate/acs_1year_for_wages.parquet.
 # Outputs: data/intermediate/acs_state_ag_wage.parquet.
 
-if (!exists("path_code", mode = "function")) {
-  source(
-    if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-      file.path("code", "bootstrap_paths.R")
-    } else {
-      file.path("..", "bootstrap_paths.R")
-    }
-  )
-}
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
@@ -24,7 +18,7 @@ aewr_packer_indnaics <- "^(111|112|1151|1152)"
 required_acs_vars <- c(
   "YEAR",
   "INCWAGE",
-  "STATEFIP",
+  "state_fips",
   "PERWT",
   "AGE",
   "OCCSOC",
@@ -62,10 +56,6 @@ acs_ds <- acs_ds %>%
 
 # Calculate hourly wage
 acs_df <- collect(acs_ds) %>%
-  mutate(
-    # Convert float STATEFIP to a proper 2-digit string (e.g., 6 -> "06")
-    STATEFIP = sprintf("%02d", as.integer(STATEFIP))
-  ) %>%
   mutate(
     weeks_worked_wkswork2 = case_when(
       WKSWORK2 == 1 ~ 7,
@@ -122,7 +112,7 @@ summarise_acs_ag_wage <- function(df, group_vars) {
 acs_ag_df <- acs_df %>%
   transmute(
     year = YEAR,
-    state_fips_code = STATEFIP,
+    state_fips,
     PERWT,
     OCCSOC,
     OCC2010,
@@ -135,9 +125,10 @@ acs_ag_df <- acs_df %>%
   )
 
 acs_ag_wage_state <- acs_ag_df %>%
-  summarise_acs_ag_wage(c("year", "state_fips_code")) %>%
-  arrange(year, state_fips_code)
+  summarise_acs_ag_wage(c("year", "state_fips")) %>%
+  arrange(year, state_fips)
 
+assert_geo_columns(acs_ag_wage_state, "state_fips")
 write_parquet(
   acs_ag_wage_state,
   path_int("acs_state_ag_wage.parquet")

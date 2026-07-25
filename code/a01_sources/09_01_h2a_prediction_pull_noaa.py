@@ -369,8 +369,15 @@ def _(
     climate_normal_cols,
     pl,
 ):
+    from h2a.geography import (
+        assert_geo_columns,
+        county_code_from_county_fips,
+        harmonize_county_fips_2010,
+        state_from_county_fips,
+    )
+
     select_cols = (
-        ["year", "fips", "state_fips", "county_fips", "n_climate_days"]
+        ["year", "county_fips", "state_fips", "county_code", "n_climate_days"]
         + climate_basis_cols
         + climate_normal_cols
     )
@@ -378,20 +385,36 @@ def _(
     final_df = (
         climate_basis_annual.with_columns(
             [
-                pl.col("fips").str.slice(0, 2).alias("state_fips"),
-                pl.col("fips").str.slice(2, 3).alias("county_fips"),
+                pl.col("fips")
+                .map_elements(
+                    harmonize_county_fips_2010,
+                    return_dtype=pl.String,
+                )
+                .alias("county_fips"),
             ]
         )
+        .with_columns(
+            pl.col("county_fips")
+            .map_elements(state_from_county_fips, return_dtype=pl.String)
+            .alias("state_fips"),
+            pl.col("county_fips")
+            .map_elements(county_code_from_county_fips, return_dtype=pl.String)
+            .alias("county_code"),
+        )
         .select(select_cols)
-        .sort(["fips", "year"])
+        .sort(["county_fips", "year"])
         .filter((pl.col("year") >= START_YEAR) & (pl.col("year") <= END_YEAR))
     )
 
+    assert_geo_columns(
+        final_df,
+        ["state_fips", "county_code", "county_fips"],
+    )
     final_df.write_parquet(OUTPUT_FILE)
 
     print(
         f"\nDone! {final_df.height} rows | "
-        f"{final_df.select('fips').n_unique()} unique counties | "
+        f"{final_df.select('county_fips').n_unique()} unique counties | "
         f"years {START_YEAR}-{END_YEAR}"
     )
     print(f"Annual basis columns: {len(climate_basis_cols)}")

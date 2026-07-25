@@ -3,13 +3,9 @@
 # Outputs: first-stage strength CSV/figure and printed strength summary.
 # Run after: code/c03_iv/10_attach_instruments_to_panel.R.
 rm(list = ls())
-source(
-  if (file.exists(file.path("code", "bootstrap_paths.R"))) {
-    file.path("code", "bootstrap_paths.R")
-  } else {
-    file.path("..", "bootstrap_paths.R")
-  }
-)
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(tidyverse)
 library(janitor)
