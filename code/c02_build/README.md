@@ -1,20 +1,19 @@
-# C02: Build the analysis panel
+# C02: Build the shared county-year panel
 
-Run these scripts in order:
+`01_build_county_panel.R` consumes
+`data/intermediate/county_year_merged.parquet` and writes:
 
-```sh
-Rscript code/c02_build/01_merge_county_panel.R
-Rscript code/c02_build/02_derive_analysis_variables.R
-Rscript code/c02_build/03_classify_treatment_exposure.R
-Rscript code/c02_build/04_finalize_county_panel.R
+```text
+data/processed/county_year_panel.parquet
 ```
 
-| Script | Responsibility | Output |
-| --- | --- | --- |
-| `01_merge_county_panel.R` | Merge cleaned panels onto the county-year backbone | `county_df_build_merge.parquet` |
-| `02_derive_analysis_variables.R` | Construct outcomes, real measures, IV controls and consecutive-year lags, fixed effects, and shares | `county_df_variable_cleaned_year.parquet` |
-| `03_classify_treatment_exposure.R` | Create baseline exposure, treatment, border, and period classifications | `county_df_classified_year.parquet` |
-| `04_finalize_county_panel.R` | Report integrity diagnostics and publish the panel | `processed/county_df_analysis_year.parquet` |
+It owns reusable outcomes, controls, consecutive-year control lags, 2011 farm
+employment, AEWR-p25 gaps, cropland eligibility, and border-CZ status. It does
+not create any design treatment, post period, fixed-effect factor, year dummy,
+target cluster, or instrument.
 
-Finalization reports existing integrity problems but does not silently alter
-the analytical sample.
+Manual command:
+
+```sh
+Rscript code/c02_build/01_build_county_panel.R
+```

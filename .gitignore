@@ -3,6 +3,8 @@
 data/
 *.dta
 *.csv
+!outputs/tables/iv_dissimilarity_model_estimates.csv
+!outputs/tables/iv_dissimilarity_ar_intervals.csv
 *.xlsx
 *.xls
 *.sav

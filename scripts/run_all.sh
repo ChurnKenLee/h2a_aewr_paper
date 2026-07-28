@@ -6,4 +6,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 "$SCRIPT_DIR/run_sources.sh"
 "$SCRIPT_DIR/run_derived.sh"
-"$SCRIPT_DIR/run_analysis.sh"
+"$SCRIPT_DIR/run_shared_panel.sh"
+"$SCRIPT_DIR/run_descriptives.sh"
+"$SCRIPT_DIR/run_did.sh"
+"$SCRIPT_DIR/run_panel_iv.sh"

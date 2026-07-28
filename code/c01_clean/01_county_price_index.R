@@ -5,21 +5,19 @@
 
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
-source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 
 price_data <- read_parquet(path_int(
   "price_index_fisher_county_year.parquet"
 ))
-assert_geo_columns(price_data, "county_fips")
-price_data <- price_data %>%
+price_data <- price_data |>
   select(
     county_fips,
     year,
     fisher_index,
     fisher_quantity_index
-  ) %>%
+  ) |>
   filter(year >= 2008 & year <= 2022)
 
 write_parquet(

@@ -1,5 +1,5 @@
 # Purpose: Reshape, deflate, and harmonize annual BEA county farm-income measures.
-# Inputs: bea_CAINC45_trim.parquet, ppi_2012.parquet, county adjacency, and BEA FIPS crosswalk.
+# Inputs: bea_CAINC45_trim.parquet, ppi_2012.parquet, and the BEA FIPS crosswalk.
 # Output: data/intermediate/bea_cainc45_data_year.parquet.
 # Run after: 03_producer_price_index.R and
 # code/a01_sources/08_bea_farm_nonfarm_emp.py.
@@ -13,19 +13,17 @@ library(dplyr)
 library(readr)
 library(tidyr)
 
-full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
-assert_geo_columns(full_county_set, "county_fips")
 ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 bea_fips_xwalk <- read_csv(
   path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
   show_col_types = FALSE
-) %>%
-  prepare_bea_county_crosswalk(full_county_set = full_county_set)
+) |>
+  prepare_bea_county_crosswalk()
 
 bea_cainc45_data <- read_parquet(path_int("bea_CAINC45_trim.parquet"))
-# save lines: 20 60 130 210 270 150
+# Retain the six farm-receipt, payment, and expense series.
 
-bea_cainc45_data <- bea_cainc45_data %>%
+bea_cainc45_data <- bea_cainc45_data |>
   filter(
     LineCode == 20 |
       LineCode == 60 |
@@ -35,7 +33,7 @@ bea_cainc45_data <- bea_cainc45_data %>%
       LineCode == 150
   )
 
-bea_cainc45_data <- bea_cainc45_data %>%
+bea_cainc45_data <- bea_cainc45_data |>
   mutate(
     county_fips = county_fips(GeoFIPS), # remove quotes
     category = ifelse(
@@ -60,39 +58,31 @@ bea_cainc45_data <- bea_cainc45_data %>%
       )
     )
   ) # Production expenses
-bea_cainc45_data <- bea_cainc45_data %>%
+bea_cainc45_data <- bea_cainc45_data |>
   select(43:64) # be careful, this gets to be really a lot of data.
 
 
-bea_cainc45_data <- bea_cainc45_data %>% # wow, that was easy
+bea_cainc45_data <- bea_cainc45_data |>
   pivot_longer(
     cols = starts_with("y"),
     names_to = "year",
     names_prefix = "y",
     values_to = "temp",
-    values_drop_na = T
+    values_drop_na = TRUE
   )
 
-bea_cainc45_data <- bea_cainc45_data %>%
-  mutate(fin = as.numeric(temp)) %>%
+bea_cainc45_data <- bea_cainc45_data |>
+  mutate(
+    year = as.integer(year),
+    fin = suppressWarnings(as.numeric(temp))
+  ) |>
   select(-temp)
 
-# put into year - county rows, so, pivot again
-
-bea_cainc45_data <- bea_cainc45_data %>% # wow, that was easy
+bea_cainc45_data <- bea_cainc45_data |>
   pivot_wider(names_from = "category", values_from = "fin")
 
-# real
-
-bea_cainc45_data <- merge(
-  bea_cainc45_data,
-  ppi_data,
-  by = "year",
-  all.x = T,
-  all.y = F
-)
-
-bea_cainc45_data <- bea_cainc45_data %>%
+bea_cainc45_data <- bea_cainc45_data |>
+  left_join(ppi_data, by = "year", relationship = "many-to-one") |>
   mutate(
     farm_cashanimal_ppi = farm_cashanimal / ppi_2012,
     farm_cashcrops_ppi = farm_cashcrops / ppi_2012,
@@ -102,20 +92,12 @@ bea_cainc45_data <- bea_cainc45_data %>%
     farm_cashandinc_ppi = farm_cashandinc / ppi_2012
   )
 
-bea_cainc45_data <- bea_cainc45_data %>%
+bea_cainc45_data <- bea_cainc45_data |>
   filter(year > 2007 & year <= 2022)
 
 bea_cainc45_data <- apply_bea_county_crosswalk(bea_cainc45_data, bea_fips_xwalk)
 
-assert_geo_columns(bea_cainc45_data, "county_fips")
 write_parquet(
   bea_cainc45_data,
   path_int("bea_cainc45_data_year.parquet")
-)
-cat(
-  "bea_cainc45_data_year:",
-  nrow(bea_cainc45_data),
-  "rows,",
-  ncol(bea_cainc45_data),
-  "cols\n"
 )

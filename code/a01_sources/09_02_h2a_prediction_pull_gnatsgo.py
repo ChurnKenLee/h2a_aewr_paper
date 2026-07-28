@@ -144,8 +144,7 @@ def _(census_shp_path, converted_raster, gpd, rasterio):
     sq_meters_per_acre = 4046.872
     acres_per_pixel = sq_meters_per_pixel / sq_meters_per_acre
 
-    nodata_val = src.nodata
-    return acres_per_pixel, counties, county_id_col, nodata_val, src
+    return acres_per_pixel, counties, county_id_col, src
 
 
 @app.cell(hide_code=True)
@@ -163,7 +162,6 @@ def _(
     counties,
     county_id_col,
     exactextract,
-    nodata_val,
     pl,
     src,
 ):
@@ -171,10 +169,15 @@ def _(
 
     if not table_a_parquet.exists():
         print("Extracting raster pixels per county using exactextract...")
-        # exact_extract evaluates operations requested in a list.
-        # "values" = raw pixel array, "coverage" = exact intersection fraction array.
+        # Aggregate categorical map-unit values inside exactextract. Returning raw
+        # "values" and "coverage" arrays would retain billions of pixels in memory.
+        # "frac" is the share of valid covered cells for each parallel "unique"
+        # value, while "count" is the total coverage-weighted valid cell count.
         extracted_features = exactextract.exact_extract(
-            src, counties, ["values", "coverage"], include_cols=[county_id_col]
+            src,
+            counties,
+            ["unique", "frac", "count"],
+            include_cols=[county_id_col],
         )
 
         table_a_rows = []
@@ -183,23 +186,19 @@ def _(
             props = feature["properties"]
             geoid = props[county_id_col]
 
-            # Grab the dynamic keys for values and coverage arrays
-            val_key = next((k for k in props.keys() if "values" in k), "values")
-            cov_key = next((k for k in props.keys() if "coverage" in k), "coverage")
-
-            # Create a Polars DataFrame for this specific county
-            df_county = pl.DataFrame({"mukey": props[val_key], "fraction": props[cov_key]})
-
-            # Filter out NoData gaps
-            if nodata_val is not None:
-                df_county = df_county.filter(
-                    pl.col("mukey").is_not_null() & (pl.col("mukey") != nodata_val)
-                )
-
-            # Group by Map Unit Key (mukey), sum exact fractions to get "pixel count"
+            # exactextract excludes NoData and returns one fraction per unique
+            # map-unit key, so no per-pixel Polars aggregation is needed.
             df_county_agg = (
-                df_county.group_by("mukey")
-                .agg(pl.col("fraction").sum().alias("pixel_count"))
+                pl.DataFrame(
+                    {
+                        "mukey": props["unique"],
+                        "fraction": props["frac"],
+                    }
+                )
+                .with_columns(
+                    (pl.col("fraction") * props["count"]).alias("pixel_count")
+                )
+                .select("mukey", "pixel_count")
                 .with_columns(pl.lit(geoid).alias("county_id"))
             )
 

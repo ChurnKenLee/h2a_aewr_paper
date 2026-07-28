@@ -12,7 +12,6 @@
       arrow
       haven
       readxl
-      writexl
       foreign
       janitor
       tidyverse

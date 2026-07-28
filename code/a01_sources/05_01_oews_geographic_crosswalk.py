@@ -359,6 +359,36 @@ def _(oews_long_df_both_periods, pl):
             (pl.col("state_fips") + pl.col("county_code")).alias("county_fips")
         )
     )
+
+    # The historical workbook omits Orange County, NY even though the
+    # corresponding OEWS files publish it in the Poughkeepsie-Newburgh-
+    # Middletown area. Restore the source-year mappings needed before the
+    # post-2019 workbook begins reporting the county directly.
+    orange_county_ny = pl.DataFrame(
+        {
+            "state_fips": ["36"] * 8,
+            "county_code": ["071"] * 8,
+            "oews_township_code": ["000"] * 8,
+            "oews_state_name": ["New York"] * 8,
+            "oews_county_name": ["Orange County"] * 8,
+            "year": list(range(2011, 2019)),
+            "oews_area_code": ["39100"] * 8,
+            "oews_area_name": [
+                "Poughkeepsie-Newburgh-Middletown, NY"
+            ]
+            * 8,
+            "county_fips": ["36071"] * 8,
+        }
+    )
+    orange_missing = orange_county_ny.join(
+        oews_remapped.select("county_fips", "year").unique(),
+        on=["county_fips", "year"],
+        how="anti",
+    )
+    oews_remapped = pl.concat(
+        [oews_remapped, orange_missing],
+        how="diagonal_relaxed",
+    )
     return (oews_remapped,)
 
 

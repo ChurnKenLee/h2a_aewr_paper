@@ -1,29 +1,26 @@
 # Pipeline runners
 
-From the repository root, run:
+All runners execute from the repository root. Set `DRY_RUN=1` to print their
+steps without running them.
 
-```sh
-./scripts/run_all.sh
-```
+| Runner | Responsibility |
+| --- | --- |
+| `run_sources.sh` | Required A-stage source acquisition and normalization |
+| `run_optional_sources.sh` | Optional source refreshes |
+| `run_derived.sh` | Supported B-stage transformations |
+| `run_shared_panel.sh` | C01 normalization/merge followed by C02 shared build |
+| `run_descriptives.sh` | Two retained shared figures |
+| `run_did.sh` | DiD panel, four-column results, summary table, one coefficient plot |
+| `run_panel_iv.sh` | Panel-IV construction, four retained models, first-stage plot, and six design figures with plotting data |
+| `run_all.sh` | Sources, derived data, shared panel, descriptives, DiD, panel IV |
+| `run_tests.sh` | Parse, syntax, ownership, dry-run, and artifact smoke checks |
 
-Individual stages are:
-
-```sh
-./scripts/run_sources.sh
-./scripts/run_derived.sh
-./scripts/run_analysis.sh
-```
-
-Use a dry run to print the execution order without running anything:
+Examples:
 
 ```sh
 DRY_RUN=1 ./scripts/run_all.sh
+./scripts/run_shared_panel.sh
+./scripts/run_did.sh
+./scripts/run_panel_iv.sh
+./scripts/run_tests.sh
 ```
-
-The scripts stop at the first error. Source steps require their documented raw
-files, API credentials in `.env`, `uv`, and the restored R environment.
-Marimo applications are exported to temporary flat scripts for noninteractive
-execution.
-
-A10–A12 are not consumed by the analysis pipeline. Run them separately with
-`./scripts/run_optional_sources.sh`.

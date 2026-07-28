@@ -188,104 +188,6 @@
       "Maintainer": "Brian Ripley <Brian.Ripley@R-project.org>",
       "Repository": "CRAN"
     },
-    "MatchIt": {
-      "Package": "MatchIt",
-      "Version": "4.7.2",
-      "Source": "Repository",
-      "Title": "Nonparametric Preprocessing for Parametric Causal Inference",
-      "Description": "Selects matched samples of the original treated and control groups with similar covariate distributions -- can be used to match exactly on covariates, to match on propensity scores, or perform a variety of other matching procedures.  The package also implements a series of recommendations offered in Ho, Imai, King, and Stuart (2007) <DOI:10.1093/pan/mpl013>. (The  'gurobi' package, which is not on CRAN, is optional and comes with  an installation of the Gurobi Optimizer, available at  <https://www.gurobi.com>.)",
-      "Authors@R": "c( person(\"Daniel\", \"Ho\", email = \"daniel.e.ho@gmail.com\", role = c(\"aut\"), comment = c(ORCID = \"0000-0002-2195-5469\")), person(\"Kosuke\", \"Imai\", email = \"imai@harvard.edu\", role = c(\"aut\"), comment = c(ORCID = \"0000-0002-2748-1022\")), person(\"Gary\", \"King\", email = \"king@harvard.edu\", role = c(\"aut\"), comment = c(ORCID = \"0000-0002-5327-7631\")), person(\"Elizabeth\", \"Stuart\", email = \"estuart@jhu.edu\", role = c(\"aut\"), comment = c(ORCID = \"0000-0002-9042-8611\")), person(\"Alex\", \"Whitworth\", email = \"whitworth.alex@gmail.com\", role = c(\"ctb\")), person(\"Noah\", \"Greifer\", role = c(\"cre\", \"aut\"),  email = \"noah.greifer@gmail.com\", comment = c(ORCID=\"0000-0003-3067-7154\")) )",
-      "Depends": [
-        "R (>= 3.6.0)"
-      ],
-      "Imports": [
-        "backports (>= 1.1.9)",
-        "chk (>= 0.10.0)",
-        "rlang (>= 1.1.0)",
-        "Rcpp",
-        "utils",
-        "stats",
-        "graphics",
-        "grDevices"
-      ],
-      "Suggests": [
-        "optmatch (>= 0.10.6)",
-        "Matching",
-        "rgenoud",
-        "quickmatch (>= 0.2.1)",
-        "nnet",
-        "rpart",
-        "mgcv",
-        "CBPS (>= 0.17)",
-        "dbarts (>= 0.9-28)",
-        "randomForest (>= 4.7-1)",
-        "glmnet (>= 4.0)",
-        "gbm (>= 2.1.7)",
-        "cobalt (>= 4.2.3)",
-        "boot",
-        "marginaleffects (>= 0.25.0)",
-        "sandwich (>= 2.5-1)",
-        "survival",
-        "RcppProgress (>= 0.4.2)",
-        "highs",
-        "Rglpk",
-        "Rsymphony",
-        "gurobi",
-        "knitr",
-        "rmarkdown",
-        "testthat (>= 3.0.0)"
-      ],
-      "LinkingTo": [
-        "Rcpp",
-        "RcppProgress"
-      ],
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "License": "GPL (>= 2)",
-      "URL": "https://kosukeimai.github.io/MatchIt/, https://github.com/kosukeimai/MatchIt",
-      "BugReports": "https://github.com/kosukeimai/MatchIt/issues",
-      "VignetteBuilder": "knitr",
-      "RoxygenNote": "7.3.2",
-      "Config/testthat/edition": "3",
-      "NeedsCompilation": "yes",
-      "Author": "Daniel Ho [aut] (ORCID: <https://orcid.org/0000-0002-2195-5469>), Kosuke Imai [aut] (ORCID: <https://orcid.org/0000-0002-2748-1022>), Gary King [aut] (ORCID: <https://orcid.org/0000-0002-5327-7631>), Elizabeth Stuart [aut] (ORCID: <https://orcid.org/0000-0002-9042-8611>), Alex Whitworth [ctb], Noah Greifer [cre, aut] (ORCID: <https://orcid.org/0000-0003-3067-7154>)",
-      "Maintainer": "Noah Greifer <noah.greifer@gmail.com>",
-      "Repository": "CRAN"
-    },
-    "PriceIndices": {
-      "Package": "PriceIndices",
-      "Version": "0.3.1",
-      "Source": "Repository",
-      "Title": "Calculating Bilateral and Multilateral Price Indexes",
-      "Authors@R": "person(given = \"Jacek\", family = \"Białek\", role = c(\"aut\", \"cre\"), email = \"jacek.bialek@uni.lodz.pl\", comment = c(ORCID = \"0000-0002-0952-5327\"))",
-      "Description": "Preparing a scanner data set for price dynamics calculations (data selecting, data classification, data matching, data filtering). Computing bilateral and multilateral indexes. For details on these methods see: Diewert and Fox (2020)  <doi:10.1080/07350015.2020.1816176>, Białek (2019) <doi:10.2478/jos-2019-0014> or Białek (2020) <doi:10.2478/jos-2020-0037>.",
-      "Depends": [
-        "R (>= 3.5.0)"
-      ],
-      "Imports": [
-        "lubridate (>= 1.7.4)",
-        "dplyr (>= 0.8.3)",
-        "ggplot2 (>= 3.2.0)",
-        "reshape",
-        "reclin2",
-        "stringr",
-        "strex"
-      ],
-      "License": "GPL-3",
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "RoxygenNote": "7.3.3",
-      "Suggests": [
-        "testthat",
-        "knitr",
-        "rmarkdown"
-      ],
-      "VignetteBuilder": "knitr",
-      "NeedsCompilation": "no",
-      "Author": "Jacek Białek [aut, cre] (ORCID: <https://orcid.org/0000-0002-0952-5327>)",
-      "Maintainer": "Jacek Białek <jacek.bialek@uni.lodz.pl>",
-      "Repository": "CRAN"
-    },
     "R6": {
       "Package": "R6",
       "Version": "2.6.1",
@@ -2235,48 +2137,6 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
-    "ggfixest": {
-      "Package": "ggfixest",
-      "Version": "0.4.0",
-      "Source": "Repository",
-      "Title": "Dedicated 'ggplot2' Methods for 'fixest' Objects",
-      "Date": "2025-09-13",
-      "Authors@R": "c( person( given   = \"Grant\", family  = \"McDermott\", role    = c(\"aut\", \"cre\"), email   = \"gmcd@amazon.com\", comment = c(ORCID = \"0000-0001-7883-8573\") ), person( given   = \"Laurent\", family  = \"Berge\", role    = \"ctb\", email   = \"laurent.berge@u-bordeaux.fr\" ), person( given   = \"Teun\", family  = \"van den Brand\", role    = \"ctb\", comment = c(ORCID = \"0000-0002-9335-7468\") ) )",
-      "Description": "Provides 'ggplot2' equivalents of fixest::coefplot() and fixest::iplot(), for producing nice coefficient plots and interaction plots. Enables some additional functionality and convenience features, including grouped multi-'fixest' object faceting and programmatic updates to existing plots (e.g., themes and aesthetics).",
-      "License": "GPL-3",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.3",
-      "URL": "https://grantmcdermott.com/ggfixest/",
-      "BugReports": "https://github.com/grantmcdermott/ggfixest/issues",
-      "Depends": [
-        "ggplot2 (>= 4.0.0)",
-        "fixest (>= 0.13.2)"
-      ],
-      "Imports": [
-        "dreamerr",
-        "scales",
-        "marginaleffects (>= 0.10.0)",
-        "stats",
-        "utils",
-        "legendry (>= 0.2.3)"
-      ],
-      "Suggests": [
-        "knitr",
-        "rmarkdown",
-        "tinytest (>= 1.4.1)",
-        "tinysnapshot (>= 0.0.3)",
-        "magick",
-        "rsvg",
-        "svglite (>= 2.2.0)",
-        "fontquiver",
-        "data.table"
-      ],
-      "VignetteBuilder": "knitr",
-      "NeedsCompilation": "no",
-      "Author": "Grant McDermott [aut, cre] (ORCID: <https://orcid.org/0000-0001-7883-8573>), Laurent Berge [ctb], Teun van den Brand [ctb] (ORCID: <https://orcid.org/0000-0002-9335-7468>)",
-      "Maintainer": "Grant McDermott <gmcd@amazon.com>",
-      "Repository": "CRAN"
-    },
     "ggplot2": {
       "Package": "ggplot2",
       "Version": "4.0.3",
@@ -3529,22 +3389,6 @@
       "Maintainer": "Lionel Henry <lionel@posit.co>",
       "Repository": "CRAN"
     },
-    "lpSolve": {
-      "Package": "lpSolve",
-      "Version": "5.6.23",
-      "Source": "Repository",
-      "Title": "Interface to 'Lp_solve' v. 5.5 to Solve Linear/Integer Programs",
-      "Authors@R": "c( person(\"Gábor\", \"Csárdi\", , \"csardi.gabor@gmail.com\", role = \"cre\"), person(\"Michel\", \"Berkelaar\", role = \"aut\") )",
-      "Description": "Lp_solve is freely available (under LGPL 2) software for solving linear, integer and mixed integer programs. In this implementation we supply a \"wrapper\" function in C and some R functions that solve general linear/integer problems, assignment problems, and transportation problems. This version calls lp_solve version 5.5.",
-      "License": "LGPL-2",
-      "URL": "https://github.com/gaborcsardi/lpSolve",
-      "BugReports": "https://github.com/gaborcsardi/lpSolve/issues",
-      "Encoding": "UTF-8",
-      "NeedsCompilation": "yes",
-      "Author": "Gábor Csárdi [cre], Michel Berkelaar [aut]",
-      "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
-      "Repository": "CRAN"
-    },
     "lubridate": {
       "Package": "lubridate",
       "Version": "1.9.5",
@@ -4537,44 +4381,6 @@
       "Maintainer": "Jennifer Bryan <jenny@posit.co>",
       "Repository": "CRAN"
     },
-    "reclin2": {
-      "Package": "reclin2",
-      "Version": "0.6.0",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Record Linkage Toolkit",
-      "Authors@R": "person(given = \"Jan\", family = \"van der Laan\", role = c(\"aut\", \"cre\"), email = \"r@eoos.dds.nl\", comment = c(ORCID = \"0000-0002-0693-1514\"))",
-      "Description": "Functions to assist in performing probabilistic record linkage and deduplication: generating pairs, comparing records, em-algorithm for estimating m- and u-probabilities (I. Fellegi & A. Sunter (1969) <doi:10.1080/01621459.1969.10501049>,  T.N. Herzog, F.J. Scheuren, & W.E. Winkler (2007),  \"Data Quality and Record Linkage Techniques\", ISBN:978-0-387-69502-0), forcing one-to-one matching. Can also be used for pre- and post-processing for machine learning methods for record linkage. Focus is on memory, CPU performance and flexibility.",
-      "BugReports": "https://github.com/djvanderlaan/reclin2/issues",
-      "URL": "https://github.com/djvanderlaan/reclin2",
-      "Depends": [
-        "R (>= 3.6.0)"
-      ],
-      "Imports": [
-        "data.table",
-        "stringdist",
-        "stats",
-        "utils",
-        "lpSolve",
-        "Rcpp",
-        "parallel"
-      ],
-      "Suggests": [
-        "simplermarkdown"
-      ],
-      "LinkingTo": [
-        "Rcpp"
-      ],
-      "VignetteBuilder": "simplermarkdown",
-      "License": "GPL-3",
-      "LazyLoad": "yes",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.2",
-      "NeedsCompilation": "yes",
-      "Author": "Jan van der Laan [aut, cre] (ORCID: <https://orcid.org/0000-0002-0693-1514>)",
-      "Maintainer": "Jan van der Laan <r@eoos.dds.nl>",
-      "Repository": "CRAN"
-    },
     "rematch": {
       "Package": "rematch",
       "Version": "2.0.0",
@@ -4725,27 +4531,6 @@
       "NeedsCompilation": "no",
       "Author": "Jennifer Bryan [aut, cre] (<https://orcid.org/0000-0002-6983-2759>), Jim Hester [aut] (<https://orcid.org/0000-0002-2739-7082>), David Robinson [aut], Hadley Wickham [aut] (<https://orcid.org/0000-0003-4757-117X>), Christophe Dervieux [aut] (<https://orcid.org/0000-0003-4474-2498>), Posit Software, PBC [cph, fnd]",
       "Maintainer": "Jennifer Bryan <jenny@posit.co>",
-      "Repository": "CRAN"
-    },
-    "reshape": {
-      "Package": "reshape",
-      "Version": "0.8.10",
-      "Source": "Repository",
-      "Title": "Flexibly Reshape Data",
-      "Description": "Flexibly restructure and aggregate data using  just two functions: melt and cast.",
-      "Authors@R": "person(\"Hadley\", \"Wickham\", , \"hadley@rstudio.com\", c(\"aut\", \"cre\"))",
-      "URL": "http://had.co.nz/reshape",
-      "Depends": [
-        "R (>= 2.6.1)"
-      ],
-      "Imports": [
-        "plyr"
-      ],
-      "License": "MIT + file LICENSE",
-      "LazyData": "true",
-      "NeedsCompilation": "no",
-      "Author": "Hadley Wickham [aut, cre]",
-      "Maintainer": "Hadley Wickham <hadley@rstudio.com>",
       "Repository": "CRAN"
     },
     "rlang": {
@@ -5310,49 +5095,6 @@
       "VignetteBuilder": "knitr",
       "NeedsCompilation": "no",
       "Author": "Malte Grosser [aut, cre]",
-      "Repository": "CRAN"
-    },
-    "strex": {
-      "Package": "strex",
-      "Version": "2.1.0",
-      "Source": "Repository",
-      "Title": "Extra String Manipulation Functions",
-      "Authors@R": "person(\"Rory\", \"Nolan\", , \"rorynoolan@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-5239-4043\"))",
-      "Description": "There are some things that I wish were easier with the 'stringr' or 'stringi' packages. The foremost of these is the extraction of numbers from strings. 'stringr' and 'stringi' make you figure out the regular expression for yourself; 'strex' takes care of this for you. There are many other handy functionalities in 'strex'. Contributions to this package are encouraged; it is intended as a miscellany of string manipulation functions that cannot be found in 'stringi' or 'stringr'.",
-      "License": "GPL-3",
-      "URL": "https://rorynolan.github.io/strex/, https://github.com/rorynolan/strex",
-      "BugReports": "https://github.com/rorynolan/strex/issues",
-      "Depends": [
-        "R (>= 3.5)",
-        "stringr (>= 1.5)"
-      ],
-      "Imports": [
-        "checkmate (>= 1.9.3)",
-        "lifecycle",
-        "magrittr (>= 1.5)",
-        "rlang (>= 1.0)",
-        "stats",
-        "stringi (>= 1.7.8)",
-        "utils"
-      ],
-      "Suggests": [
-        "bench",
-        "covr",
-        "knitr",
-        "purrr",
-        "rmarkdown",
-        "spelling",
-        "testthat (>= 3.0)"
-      ],
-      "VignetteBuilder": "knitr",
-      "Biarch": "TRUE",
-      "Config/testthat/edition": "3",
-      "Encoding": "UTF-8",
-      "Language": "en-US",
-      "RoxygenNote": "7.3.3",
-      "NeedsCompilation": "yes",
-      "Author": "Rory Nolan [aut, cre] (ORCID: <https://orcid.org/0000-0002-5239-4043>)",
-      "Maintainer": "Rory Nolan <rorynoolan@gmail.com>",
       "Repository": "CRAN"
     },
     "stringdist": {
@@ -6349,33 +6091,6 @@
       "LazyData": "true",
       "NeedsCompilation": "yes",
       "Author": "Dewey Dunnington [aut, cre] (ORCID: <https://orcid.org/0000-0002-9415-4582>), Edzer Pebesma [aut] (ORCID: <https://orcid.org/0000-0001-8049-7069>), Anthony North [ctb]",
-      "Repository": "CRAN"
-    },
-    "writexl": {
-      "Package": "writexl",
-      "Version": "1.5.4",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Export Data Frames to Excel 'xlsx' Format",
-      "Authors@R": "c( person(\"Jeroen\", \"Ooms\", ,\"jeroenooms@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-4035-0289\")), person(\"John McNamara\", role = \"cph\", comment = \"Author of libxlsxwriter (see AUTHORS and COPYRIGHT files for details)\"))",
-      "Description": "Zero-dependency data frame to xlsx exporter based on 'libxlsxwriter' <https://libxlsxwriter.github.io>. Fast and no Java or Excel required.",
-      "License": "BSD_2_clause + file LICENSE",
-      "Encoding": "UTF-8",
-      "URL": "https://ropensci.r-universe.dev/writexl https://docs.ropensci.org/writexl/",
-      "BugReports": "https://github.com/ropensci/writexl/issues",
-      "RoxygenNote": "7.0.2",
-      "Suggests": [
-        "spelling",
-        "readxl",
-        "nycflights13",
-        "testthat",
-        "bit64"
-      ],
-      "Language": "en-US",
-      "SystemRequirements": "zlib",
-      "NeedsCompilation": "yes",
-      "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>), John McNamara [cph] (Author of libxlsxwriter (see AUTHORS and COPYRIGHT files for details))",
-      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
     "xfun": {

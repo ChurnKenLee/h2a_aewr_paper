@@ -363,7 +363,7 @@ The preferred estimator should not use:
 - the AEWR level or change;
 - separate contemporaneous field and livestock FLS wages;
 - state field-and-livestock FLS wages;
-- all-hired FLS wages as a primary target;
+- combined field-and-livestock FLS wages as a primary target;
 - contemporaneous local outcome variables;
 - crop prices or weather shocks as target moments;
 - H-2A certifications as a major target moment.
@@ -455,4 +455,3 @@ If only a subset can be released, prioritize usable-response counts and final we
 - USDA National Agricultural Statistics Service, [Agricultural (Farm) Labor Survey](https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_Labor/).
 - USDA National Agricultural Statistics Service, [Farm Labor Methodology and Quality Measures archive](https://www.nass.usda.gov/Publications/Methodology_and_Data_Quality/Farm_Labor/).
 - USDA National Agricultural Statistics Service, [Farm Labor Methodology and Quality Measures, February 2021](https://www.nass.usda.gov/Publications/Methodology_and_Data_Quality/Farm_Labor/02_2021/LABQM.pdf).
-

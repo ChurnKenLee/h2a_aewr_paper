@@ -8,25 +8,25 @@
    Model:                                          & (1)            & (2)            & (3)                    & (4)\\  
    \midrule
    \emph{Variables}\\
-   Lagged AEWR vs 25th pct wage gap                & 0.0013$^{***}$ & 0.0013$^{***}$ & 0.0014$^{***}$         & 0.0014$^{***}$\\   
+   Lagged AEWR vs 25th pct wage gap                & 0.0012$^{***}$ & 0.0012$^{***}$ & 0.0014$^{***}$         & 0.0013$^{***}$\\   
                                                    & (0.0003)       & (0.0003)       & (0.0004)               & (0.0004)\\   
-   Lagged AEWR vs 25th pct wage gap $\times$ Post  & -0.0007$^{*}$  & -0.0005        & -0.0010$^{**}$         & -0.0008$^{**}$\\   
-                                                   & (0.0004)       & (0.0004)       & (0.0004)               & (0.0004)\\   
-   Log population                                  &                & 0.0104$^{*}$   &                        & 0.0100\\   
-                                                   &                & (0.0061)       &                        & (0.0073)\\   
-   Employment-to-pop ratio                         &                & 0.0027         &                        & $1.45\times 10^{-5}$\\    
-                                                   &                & (0.0083)       &                        & (0.0093)\\   
+   Lagged AEWR vs 25th pct wage gap $\times$ Post  & -0.0006        & -0.0004        & -0.0009$^{*}$          & -0.0007\\   
+                                                   & (0.0004)       & (0.0004)       & (0.0005)               & (0.0004)\\   
+   Log population                                  &                & 0.0109$^{*}$   &                        & 0.0103\\   
+                                                   &                & (0.0061)       &                        & (0.0072)\\   
+   Employment-to-pop ratio                         &                & 0.0012         &                        & -0.0007\\   
+                                                   &                & (0.0081)       &                        & (0.0091)\\   
    \midrule
    \emph{Fixed-effects}\\
-   county\_fe                                      & Yes            & Yes            & Yes                    & Yes\\  
-   year\_fe                                        & Yes            & Yes            & Yes                    & Yes\\  
+   county\_fips                                    & Yes            & Yes            & Yes                    & Yes\\  
+   year                                            & Yes            & Yes            & Yes                    & Yes\\  
    \midrule
    \emph{Fit statistics}\\
-   Observations                                    & 33,669         & 33,669         & 27,609                 & 27,609\\  
-   R$^2$                                           & 0.94544        & 0.94548        & 0.94903                & 0.94906\\  
-   Within R$^2$                                    & 0.00186        & 0.00258        & 0.00245                & 0.00310\\  
+   Observations                                    & 33,774         & 33,774         & 27,729                 & 27,729\\  
+   R$^2$                                           & 0.94454        & 0.94458        & 0.94811                & 0.94815\\  
+   Within R$^2$                                    & 0.00166        & 0.00244        & 0.00211                & 0.00282\\  
    \midrule \midrule
-   \multicolumn{5}{l}{\emph{Clustered (cz\_aewr\_region\_fe) standard-errors in parentheses}}\\
+   \multicolumn{5}{l}{\emph{Clustered (cz\_id,aewr\_region\_id)) standard-errors in parentheses}}\\
    \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
 \end{tabular}
 \par\endgroup

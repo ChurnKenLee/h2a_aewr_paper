@@ -32,17 +32,53 @@ The intuition for the dissimilarity requirement is substantive: CZs assigned to 
 
 ### 2.2 Instrument Construction
 
-Let $a(i)$ denote the agro-ecological subregion containing CZ *i*, within FLS region $r(i)$. The baseline instrument for CZ *i* in year *t* is the equal-weighted average agricultural wage in year $t-1$ across all CZs *j* that satisfy two conditions: (1) *j* is in the same FLS region as *i*, and (2) *j* is in a different agro-ecological subregion from *i*:
+Let $a(i)$ denote the agro-ecological subregion containing CZ *i*, within FLS region $r(i)$. Let $\mathcal A_{it-1}$ contain the unique OEWS areas that map to the two most dissimilar donor clusters in the same FLS region and do not touch the target cluster. Let $\widehat\omega_{brt-1}$ be the deterministic entropy-balanced weight for area $b$, fitted jointly to the published FLS quarter-by-duration worker-composition moments and annual combined field-and-livestock wage. Let $s_{cbt-1}$ be county $c$'s fixed conditional share within area $b$, derived from the Census frame. The selected entropy mass for area $b$ is
 
-$$Z_{it} = \frac{1}{|\mathcal{J}_{-a(i),r(i)}|} \sum_{j \in \mathcal{J}_{-a(i),r(i)}} \bar{w}^{\text{ag}}_{jt-1}$$
+$$W_{bit-1}
+=
+\widehat\omega_{brt-1}
+\sum_{c \in \mathcal D_i(b)}s_{cbt-1},$$
+
+where $\mathcal D_i(b)$ contains only counties in the selected donor clusters. The primary instrument is:
+
+$$Z_{it} =
+\frac{\sum_{b\in\mathcal A_{it-1}} W_{bit-1}\bar w^{ag}_{bt-1}}
+{\sum_{b\in\mathcal A_{it-1}} W_{bit-1}}.$$
 
 where:
 
-- $\mathcal{J}_{-a(i),r(i)}$ is the set of all CZs in FLS region $r(i)$ that are **not** in subregion $a(i)$
-- $\bar{w}^{\text{ag}}_{jt-1}$ is the donor CZ agricultural wage proxy in year $t-1$
-- donor weights are static and equal among selected donors; alternative donor-share variants add increasingly similar donors by feature-space distance
+- $\bar w^{ag}_{bt-1}$ is the field-and-livestock OEWS wage proxy in area $b$
+- $\widehat\omega_{brt-1}$ is the primary soft-entropy center with $\rho=0.10$, using the Census frame as its prior
+- $s_{cbt-1}$ expands the area weight to counties without adding within-area randomness
+- an OEWS area enters once after selected county weights are re-aggregated, even when it maps to multiple counties or donor units
+- OEWS employment may weight occupations within $\bar w^{ag}_{bt-1}$ but never determines $W_{bit-1}$ or any other cross-area weight
+- county and donor-unit mappings do not reset the resulting mass to equal weights
+
+The Census-frame-weighted version replaces $W_{bit-1}$ with the selected
+county frame mass and is retained as a benchmark on identical donor and wage
+support.
+
+The county frame is reconstructed ex post for 2007–2022. Reported 2007,
+2012, 2017, and 2022 Census worker counts, including published zeros, remain
+fixed. Suppressed or absent benchmarks are filled hierarchically by county
+log-one-plus interpolation, employment-growth projection from another county
+benchmark, then state-, AEWR-region-, or national Census-to-employment ratios.
+Structural zero is used only if Census, QCEW/QWI, and BEA show no positive
+employment signal. QCEW is valid only with both private NAICS 111 and 112 in
+all four reference quarters; QWI beginning-quarter employment is the first
+fallback and BEA `max(farm employment - farm proprietors, 0)` the second.
+Annual growth uses QCEW, then QWI, then BEA when the same source is valid in
+adjacent years, with unit growth otherwise. A two-sided correction in
+`log(1 + employment)` hits both county Census endpoints, after which counties
+are raked to interpolated state Census totals. Valid growth is not
+winsorized, and all fallback and extreme-change flags are retained.
 
 The one-year lag reflects the AEWR-setting mechanism: the FLS annual average from year $t-1$ (published in the November FLS report) becomes the AEWR effective in year *t*. The instrument therefore captures, for each CZ *i*, the wage signal from agro-dissimilar parts of the same FLS region that fed into the determination of the AEWR CZ *i* faces in year *t*, while excluding the wage signal from CZ *i*'s own agro-ecological neighborhood.
+
+The entropy specification, frame construction, and donor geometry are fixed
+without consulting first-stage strength or outcome
+estimates. The center is a public-data analog of realized composition rather
+than a recovery of confidential FLS sampling weights.
 
 Geographic distance is computed from county shapefiles by dissolving counties to CZ-by-AEWR-region polygons, projecting to EPSG:5070, taking representative points, and computing centroid-to-centroid distances within AEWR region. It is currently diagnostic-only and is not included in the default clustering score.
 
@@ -86,7 +122,7 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 
 ### Step 1: Define and Split Commuting Zones at FLS Region Boundaries
 
-**Data:** 
+**Data:**
 - CZ boundary shapefiles (David Dorn's website, 1990 or 2000 vintage county-based CZ definitions)
 - FLS region state membership (NASS Farm Labor Survey documentation)
 - County-to-CZ crosswalk
@@ -120,7 +156,7 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 
 **Actions:**
 - Apply Ward hierarchical clustering separately within each of the 17 FLS regions
-- Require a minimum of 2 clusters per region ($A_r \geq 2$ for all *r*); choose the number of clusters and dissimilarity threshold to maximize within-region agro-dissimilarity across clusters while maintaining adequate CZ counts in each cluster for first-stage power
+- Use the pre-specified five-cluster partition and two furthest donor clusters in every region; do not choose either setting using first-stage strength or outcomes
 - Assign each CZ a subregion label $a(i)$, fixed for the study period
 - Document cluster composition and produce robustness checks showing results are stable across alternative feature-block weights and donor-share rules.
 
@@ -158,14 +194,28 @@ We conduct two empirical exercises to discipline the exclusion restriction.
 **Data:** Outputs from Steps 1–5
 
 **Actions:**
-- For each CZ *i* in FLS region $r(i)$ and agro-ecological subregion $a(i)$, identify the set $\mathcal{J}_{-a(i),r(i)}$: all CZs in the same FLS region that are **not** in subregion $a(i)$
-- Compute the equal-weighted mean donor agricultural wage proxy across this set in year $t-1$. The current implementation uses the county-aggregated OEWS AEWR-equivalent agricultural wage series, aggregated to CZ-by-AEWR-region units:
+- For each target cluster, identify the two most dissimilar donor clusters in the same FLS region.
+- Construct county-year frame mass from fixed Census hired-worker benchmarks,
+  strict QCEW/QWI/BEA updates, two-sided endpoint correction, and state raking.
+- Divide every county's mass across OEWS areas using its share of distinct
+  mapped township codes and normalize within each region-year.
+- Fit the entropy center jointly to the published FLS quarter-by-duration
+  worker-composition moments and annual combined field-and-livestock wage,
+  using the employment-weighted OEWS agricultural wage as the area analog.
+- Expand the center to counties with fixed within-area frame shares. Exclude
+  any OEWS area touching the target cluster, retain selected donor counties,
+  and re-aggregate to one record per OEWS area.
+- Compute the entropy-weighted donor OEWS wage in year $t-1$:
 
-$$Z_{it} = \frac{1}{|\mathcal{J}_{-a(i),r(i)}|} \sum_{j \in \mathcal{J}_{-a(i),r(i)}} \bar{w}^{\text{ag}}_{jt-1}$$
+$$Z_{it} =
+\frac{\sum_{b\in\mathcal A_{it-1}} W_{bit-1}\bar w^{ag}_{bt-1}}
+{\sum_{b\in\mathcal A_{it-1}} W_{bit-1}}.$$
 
 - Construct the bite: $\text{Bite}_{it} = \text{AEWR}_{r(i),t} - w^{25}_{it}$
 - Document the first-stage relationship between $Z_{it}$ and $\text{Bite}_{it}$ by FLS region; flag regions where the instrument is weak
-- Construct donor-share variants using the top 10%, 20%, 30%, 50%, 75%, and 100% most dissimilar same-region donor CZs. Plot the first-stage F-statistic against realized donor share to evaluate the relevance/exclusion tradeoff.
+- Retain the Census-frame-weighted wage as a benchmark on the same support.
+- Keep a missing draw identifier: the deterministic center enters the IV,
+  while Dirichlet draws remain recovery diagnostics.
 
 ---
 
@@ -218,6 +268,10 @@ $$Z_{it} = \frac{1}{|\mathcal{J}_{-a(i),r(i)}|} \sum_{j \in \mathcal{J}_{-a(i),r
 | Cropland Data Layer 2008-2011 | USDA NASS CropScape | Public | Step 2 |
 | ACS 1-year PUMS microdata 2008–2023 | IPUMS USA | Public | Steps 4, 8, 9 |
 | PUMA-to-CZ crosswalk | IPUMS / Census TIGER | Public | Steps 4, 8, 9 |
+| Census of Agriculture hired-worker counts | USDA NASS Quick Stats | Public | Step 6 frame benchmarks and state rake totals |
+| QCEW private NAICS 111 and 112 employment | Bureau of Labor Statistics | Public | Step 6 primary annual frame updates |
+| QWI beginning-quarter NAICS 111 and 112 employment | U.S. Census Bureau | Public | Step 6 incomplete-QCEW fallback |
+| BEA farm employment and farm proprietors | Bureau of Economic Analysis | Public | Step 6 remaining hired-farm-jobs fallback |
 | OEWS agricultural wage series | Bureau of Labor Statistics | Public | Step 6 |
 | NASS Quick Stats farm labor wage data | USDA NASS | Public | Step 5 |
 | Federal Register AEWR notices | federalregister.gov | Public | Step 5 |

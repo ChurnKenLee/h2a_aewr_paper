@@ -1,76 +1,73 @@
 # H-2A Paper
 
-This repository uses three manually run workflow layers. A scripts acquire and
-normalize source data, B scripts construct derived data, and C scripts build
-the analysis panels and results. There is intentionally no master runner: run
-only the scripts needed for the artifact you are updating.
+The supported workflow separates source preparation, a design-neutral
+county-year panel, and two empirical designs. Each entry point is standalone,
+uses repository-root paths from `code/paths.R`, and writes a declared artifact.
 
-## Data workflow
+## Dependency graph
 
-| Layer | Directory | Responsibility |
+```text
+code/a01_sources ──> code/b01_derived ──> code/c01_clean
+                                              │
+                                              v
+                                       county_year_merged
+                                              │
+                                              v
+                                       code/c02_build
+                                              │
+                                              v
+                                        county_year_panel
+                                       /        |        \
+                                      v         v         v
+                            descriptives      DiD      panel IV
+                            border discontinuity: documented future branch
+```
+
+| Branch | Owner | Principal artifact or output |
 | --- | --- | --- |
-| A | [`code/a01_sources`](code/a01_sources/) | External-source acquisition and source-level preparation |
-| B | [`code/b01_derived`](code/b01_derived/) | Aggregates, derived measures, predictors, and county harmonization |
-| C | [`code/c01_clean`](code/c01_clean/) through [`code/c04_analysis`](code/c04_analysis/) | Analysis-panel construction, IV construction, and results |
+| Source data | [`code/a01_sources`](code/a01_sources/) | Normalized source Parquets |
+| Derived data | [`code/b01_derived`](code/b01_derived/) | Reusable upstream measures |
+| Shared clean | [`code/c01_clean`](code/c01_clean/) | `data/intermediate/county_year_merged.parquet` |
+| Shared build | [`code/c02_build`](code/c02_build/) | `data/processed/county_year_panel.parquet` |
+| Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
+| DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
+| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | `data/processed/panel_iv_cluster_year.parquet`, IV results, and retained diagnostic figures |
+| Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
 
-The A and B directories document each script's inputs, outputs, dependencies,
-credentials, and manual command. Their numeric prefixes group related source
-families; they are not an instruction to rebuild unrelated sources.
+The shared panel owns normalized source measures, reusable outcomes and
+controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps,
+cropland eligibility, border-CZ status, and stable geographic identifiers. It
+does not own treatment classifications, post indicators, fixed-effect factors,
+year dummies, target-cluster assignments, or instruments.
 
-After a geographic-contract change, rebuild affected artifacts from their
-owning A or B producer before running downstream stages. The pipeline does not
-silently migrate stale artifacts in place.
+## Commands
 
-To rebuild the complete analysis-producing pipeline, run:
+Run the complete dependency chain:
 
 ```sh
 ./scripts/run_all.sh
 ```
 
-Stage-specific commands and dry-run usage are documented in
-[`scripts/README.md`](scripts/README.md).
-
-## C workflow
-
-| Stage | Directory | Responsibility |
-| --- | --- | --- |
-| Shared | [`code/c00_shared`](code/c00_shared/) | Side-effect-free helpers sourced explicitly by individual scripts |
-| Clean | [`code/c01_clean`](code/c01_clean/) | Normalize upstream source data into project panels |
-| Build | [`code/c02_build`](code/c02_build/) | Assemble and classify the county-year analysis panel |
-| IV | [`code/c03_iv`](code/c03_iv/) | Construct FLS/OEWS calibration weights and donor-wage instruments |
-| Analysis | [`code/c04_analysis`](code/c04_analysis/) | Produce thematic figures, tables, and estimates |
-
-Each stage directory contains its manual execution order and artifact
-contracts. Every R script is standalone: it loads its own packages, reads its
-inputs from disk, and writes its own outputs. Scripts should be launched from
-the repository root, for example:
+Run only a supported C-side branch:
 
 ```sh
-Rscript code/c02_build/01_merge_county_panel.R
+./scripts/run_shared_panel.sh
+./scripts/run_descriptives.sh
+./scripts/run_did.sh
+./scripts/run_panel_iv.sh
 ```
 
-Opening a stage script directly in RStudio is also supported. The script loads
-`code/paths.R` after anchoring `here` on that file. The repository root is then
-stable even when R starts in a nested stage directory, so subsequent paths are
-independent of the current working directory.
-
-The A and B scripts remain the owners of upstream extraction and aggregation
-artifacts. `code/utilities/pull_fred_minimum_wages.R` is an optional
-external-data refresh utility and is not part of the C sequence. Legacy
-scripts under `Do/` are not part of the supported workflow.
+Set `DRY_RUN=1` before a command to print its execution order without running
+it. See [`scripts/README.md`](scripts/README.md) for source/derived runners and
+expected outputs.
 
 ## Conventions
 
 - `data/raw` contains source files and hand-maintained crosswalks.
-- `data/intermediate` contains exchange artifacts between scripts.
+- `data/intermediate` contains exchange artifacts owned by one producer.
 - `data/processed` contains analysis-ready panels.
-- `outputs/figures` and `outputs/tables` contain analysis products.
-- R entry points load `code/paths.R` with `here::here()` and use its shared path
-  helpers.
-- Persistent geographic identifiers follow the canonical contract documented
-  in [`documentation/geographic_code_contract.md`](documentation/geographic_code_contract.md).
-- Scripts do not depend on objects left in an interactive R workspace.
-
-The reorganization preserves the existing analytical definitions. Known data
-issues discovered by diagnostics, including duplicate county-year keys, should
-be addressed as separate substantive changes.
+- `outputs/figures` and `outputs/tables` contain retained manuscript products.
+- Geographic identifiers follow
+  [`documentation/geographic_code_contract.md`](documentation/geographic_code_contract.md).
+- Old local Parquets may remain on disk, but only the artifacts documented
+  above are supported.

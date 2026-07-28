@@ -612,30 +612,15 @@ The model should match moments it was not directly targeted to match:
 
 ## 11. Data issues to resolve before any welfare calibration
 
-### 11.1 County-year duplication
-
-A read-only audit on July 17, 2026 found that `data/processed/county_df_analysis_year.parquet` has 198,892 rows but only 46,615 unique county-year keys. Most county-years appear four times and 2008 often appears eight times. The duplications are multiplicative: `c03_build_03_lags_classification_write.R` constructs 2008 classification tables without enforcing one row per county and then merges them back by county; the upstream build file already contains some duplicated 2008 keys.
-
-This does not merely affect file size. It can change year weights, lags, summary totals, and inference. Before estimating moments or aggregating welfare:
-
-- assert uniqueness at every intended merge key;
-- identify the upstream source of the 2008 duplicate;
-- use `distinct(countyfips, .keep_all = TRUE)` only after verifying that supposedly duplicate rows agree on all substantive fields;
-- rebuild lags after uniqueness is restored;
-- regenerate the regression tables on the unique panel;
-- never sum H-2A hours or BEA dollars from the duplicated final panel.
-
-The cleanest welfare inputs should come from dedicated unique artifacts, not from a wide regression panel.
-
-### 11.2 Certified is not employed
+### 11.1 Certified is not employed
 
 `man_hours_certified_*` is scheduled contract labor: the pipeline multiplies certified positions by stated weekly hours and contract length, imputing missing weekly hours. It is not actual hours worked. This distinction must appear in variable names, tables, and welfare text.
 
-### 11.3 Wage weighting and binding
+### 11.2 Wage weighting and binding
 
 The current county mean offered wage is weighted by certified workers, not contract hours. Welfare needs an hour-weighted wage and the full offered-wage-minus-AEWR distribution. Wage-unit harmonization should be validated at the contract level rather than relying only on a rule that drops reported rates above $100.
 
-### 11.4 Outcome scaling
+### 11.3 Outcome scaling
 
 Keep share units, percentage points, percent changes, semi-elasticities, and elasticities separate. Include a unit-test example in the counterfactual code showing how a one-dollar change maps from the regression coefficient to positions, hours, and percent changes.
 

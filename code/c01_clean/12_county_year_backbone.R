@@ -4,30 +4,13 @@
 
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
-source(path_code("c00_shared", "geography.R"))
 library(arrow)
 library(dplyr)
 
 full_county_set <- read_parquet(path_int("county_adjacency2010.parquet"))
-assert_geo_columns(full_county_set, "county_fips")
 
-county_list_unique <- unique(select(full_county_set, county_fips, countyname))
+county_df <- full_county_set |>
+  distinct(county_fips, countyname) |>
+  cross_join(data.frame(year = 2008:2022))
 
-
-years <- seq(2008, 2022)
-county_df <- NULL
-
-for (i in 1:length(years)) {
-  temp <- county_list_unique %>%
-    mutate(year = years[i])
-  county_df <- bind_rows(county_df, temp)
-}
-
-
-county_df %>%
-  group_by(year) %>%
-  tally()
-
-assert_geo_columns(county_df, "county_fips")
 write_parquet(county_df, path_int("county_df_year.parquet"))
-cat("county_df_year:", nrow(county_df), "rows,", ncol(county_df), "cols\n")

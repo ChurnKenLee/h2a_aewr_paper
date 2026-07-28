@@ -25,8 +25,9 @@ def _():
     import time
     import copy
     import math
+    from h2a.price_index import attach_synthetic_price_yield
 
-    return CACHE, INTERMEDIATE, RAW, math, mo, pl
+    return CACHE, INTERMEDIATE, RAW, attach_synthetic_price_yield, math, mo, pl
 
 
 @app.cell
@@ -85,27 +86,27 @@ def _(binary_path, pl):
 
 
 @app.cell
-def _(national_synthetic_cdl, pl, state_synthetic_cdl):
-    # We want to use national synthetic CDL price and yield as fallback
-    synthetic_cdl = state_synthetic_cdl.join(
-        national_synthetic_cdl, on=["year", "cdl_code"], how="full"
-    ).with_columns(
-        [
-            pl.coalesce(["p_syn_state", "p_syn_nat"]).alias("cdl_syn_price"),
-            pl.coalesce(["y_syn_state", "y_syn_nat"]).alias("cdl_syn_yield"),
-        ]
+def _(
+    attach_synthetic_price_yield,
+    cdl_acres,
+    national_synthetic_cdl,
+    pl,
+    state_synthetic_cdl,
+):
+    # State values take precedence; missing fields fall back independently to
+    # the national synthetic value for the same year and crop.
+    county_cdl_values = attach_synthetic_price_yield(
+        cdl_acres,
+        state_synthetic_cdl,
+        national_synthetic_cdl,
     )
-    return (synthetic_cdl,)
-
-
-@app.cell
-def _(cdl_acres, pl, synthetic_cdl):
+    print(
+        county_cdl_values.group_by("price_source", "yield_source")
+        .len()
+        .sort("price_source", "yield_source")
+    )
     county_cdl_panel = (
-        (
-            cdl_acres.join(
-                synthetic_cdl, on=["year", "state_fips", "cdl_code"], how="left"
-            )
-        )
+        county_cdl_values
         .with_columns(
             (pl.col("acres") * pl.col("cdl_syn_yield")).alias("q_lbs"),
             pl.col("cdl_syn_price").alias("p_usd_lb"),
@@ -291,6 +292,51 @@ def _(bilateral_links, county_cdl_panel, math, pl):
         how="inner",
         validate="1:1",
     )
+
+    index_columns = ["fisher_index", "fisher_quantity_index"]
+    invalid_index_rows = chained_fisher.filter(
+        pl.any_horizontal(
+            [
+                ~pl.col(column).is_finite() | (pl.col(column) <= 0)
+                for column in index_columns
+            ]
+        )
+    ).height
+    if invalid_index_rows:
+        print(
+            "Setting nonfinite or nonpositive Fisher indexes to null:",
+            invalid_index_rows,
+        )
+        chained_fisher = chained_fisher.with_columns(
+            [
+                pl.when(pl.col(column).is_finite() & (pl.col(column) > 0))
+                .then(pl.col(column))
+                .otherwise(None)
+                .alias(column)
+                for column in index_columns
+            ]
+        )
+
+    if chained_fisher.select("county_fips", "year").is_duplicated().any():
+        raise AssertionError("Fisher index output contains duplicate county-years")
+    invalid_anchor = chained_fisher.filter(
+        (pl.col("year") == base_year)
+        & (
+            ((pl.col("fisher_index") - 100).abs() > 1e-10)
+            | ((pl.col("fisher_quantity_index") - 100).abs() > 1e-10)
+        )
+    )
+    if invalid_anchor.height:
+        raise AssertionError("Fisher indexes must equal 100 in the 2011 base year")
+
+    gap_count = (
+        chained_fisher.sort("county_fips", "year")
+        .with_columns(pl.col("year").diff().over("county_fips").alias("year_gap"))
+        .filter(pl.col("year_gap") > 1)
+        .select("county_fips")
+        .n_unique()
+    )
+    print("Counties with unfilled year gaps in the chained index:", gap_count)
     return (chained_fisher,)
 
 

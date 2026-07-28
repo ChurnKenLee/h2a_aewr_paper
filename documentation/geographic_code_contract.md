@@ -14,9 +14,9 @@ geographic identifier:
 | `oews_area_code` | Digits of source-defined width; leading zeroes preserved |
 
 All fields are strings. Producers normalize source-specific fields when they
-first create a persistent artifact. Consumers join directly on the canonical
-fields and fail when a required field is missing, malformed, incorrectly
-typed, or unexpectedly null.
+first create a persistent artifact, and downstream consumers join directly on
+the canonical fields. Final supported artifacts are checked for nonempty,
+unique keys.
 
 The project uses 2010 county geography. The shared normalizers map the current
 Oglala Lakota County, South Dakota code `46102` to its 2010-vintage Shannon
@@ -25,7 +25,6 @@ Source-specific names such as `state_ansi`, `county_ansi`, `GeoFIPS`, and
 `GEOID10` may appear only while reading raw data; they are not persistent
 artifact fields.
 
-R scripts source `code/c00_shared/geography.R`. Python scripts import
-`h2a.geography`. The B-stage
-`08_validate_geography_contract.R` script provides a read-only check after
-artifacts have been rebuilt.
+R scripts that normalize identifiers source `code/c00_shared/geography.R`;
+Python producers import `h2a.geography`. `scripts/run_tests.sh` checks the
+final supported panel keys.
