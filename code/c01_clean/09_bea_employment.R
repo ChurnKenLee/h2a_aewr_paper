@@ -15,13 +15,13 @@ library(tidyr)
 bea_fips_xwalk <- read_csv(
   path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
   show_col_types = FALSE
-) |>
+) %>%
   prepare_bea_county_crosswalk()
 
 bea_caemp25n_data <- read_parquet(path_int("bea_CAEMP25N_trim.parquet"))
 # Retain total, proprietor, farm, nonfarm, and private-nonfarm employment.
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   filter(
     LineCode == 10 |
       LineCode == 50 |
@@ -30,7 +30,7 @@ bea_caemp25n_data <- bea_caemp25n_data |>
       LineCode == 90
   )
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   mutate(
     county_fips = county_fips(GeoFIPS), # remove quotes
     category = ifelse(
@@ -52,10 +52,10 @@ bea_caemp25n_data <- bea_caemp25n_data |>
     )
   )
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   select(9:32)
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   pivot_longer(
     cols = starts_with("y"),
     names_to = "year",
@@ -64,17 +64,17 @@ bea_caemp25n_data <- bea_caemp25n_data |>
     values_drop_na = FALSE
   )
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   mutate(
     year = as.integer(year),
     emp = suppressWarnings(as.numeric(temp))
-  ) |>
+  ) %>%
   select(-temp)
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   pivot_wider(names_from = "category", values_from = "emp")
 
-bea_caemp25n_data <- bea_caemp25n_data |>
+bea_caemp25n_data <- bea_caemp25n_data %>%
   filter(year > 2007 & year <= 2022)
 
 bea_caemp25n_data <- apply_bea_county_crosswalk(

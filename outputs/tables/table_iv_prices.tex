@@ -1,0 +1,40 @@
+
+\begin{table}[htbp]
+   \caption{\label{tab:iv_prices} IV Effect of the Real AEWR on Real Fisher crop price index}
+   \centering
+   \begin{tabular}{lcccc}
+      \tabularnewline \midrule \midrule
+      Dependent Variable: & \multicolumn{4}{c}{fisher\_index\_ppi}\\
+      Specification                     & Wage only & Alt. targets & Wage only + controls & Alt. targets + controls \\   
+      Model:                            & (1)       & (2)          & (3)                  & (4)\\  
+      \midrule
+      \emph{Variables}\\
+      Real AEWR (2012 dollars)          & -5.374    & -4.409       & -5.739               & -4.801\\   
+                                        & (5.343)   & (5.931)      & (5.202)              & (5.974)\\   
+      \midrule
+      \emph{Fixed-effects}\\
+      county\_fips                      & Yes       & Yes          & Yes                  & Yes\\  
+      year                              & Yes       & Yes          & Yes                  & Yes\\  
+      \midrule
+      \emph{Fit statistics}\\
+      First-stage excluded-instrument F & 42.85     & 8.86         & 40.49                & 9.34\\  
+      Observations                      & 33,628    & 33,628       & 33,628               & 33,628\\  
+      R$^2$                             & 0.65515   & 0.65460      & 0.66052              & 0.65997\\  
+      Alternative seasonal targets      & No        & Yes          & No                   & Yes\\  
+      Controls                          & No        & No           & Yes                  & Yes\\  
+      County fixed effects              & Yes       & Yes          & Yes                  & Yes\\  
+      Year fixed effects                & Yes       & Yes          & Yes                  & Yes\\  
+      AEWR-subregion clustered SEs      & Yes       & Yes          & Yes                  & Yes\\  
+      Number of SE clusters             & 80        & 80           & 80                   & 80\\  
+      Common outcome sample             & Yes       & Yes          & Yes                  & Yes\\  
+      \midrule \midrule
+      \multicolumn{5}{l}{\emph{Clustered (aewr\_iv\_cluster\_id) standard-errors in parentheses}}\\
+      \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+   \end{tabular}
+   
+   \par \raggedright 
+   Columns 1 and 3 use the wage-only instrument; columns 2 and 4 use the wage-plus-seasonal instrument.\\
+   All columns use the controlled specification's complete-case county-year sample from 2011 through 2022. Column 4 is preferred.
+\end{table}
+
+

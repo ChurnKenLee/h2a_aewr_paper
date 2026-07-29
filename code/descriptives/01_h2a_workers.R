@@ -8,9 +8,9 @@ library(dplyr)
 library(ggplot2)
 library(ggthemes)
 
-h2a_time_series <- read_parquet(path_int("h2a_aggregated.parquet")) |>
-  filter(year > 2007L, year <= 2022L) |>
-  group_by(year) |>
+h2a_time_series <- read_parquet(path_int("h2a_aggregated.parquet")) %>%
+  filter(year > 2007L, year <= 2022L) %>%
+  group_by(year) %>%
   summarise(
     h2a_nbr_workers_certified = sum(
       nbr_workers_certified_start_year,

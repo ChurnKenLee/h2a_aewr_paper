@@ -13,8 +13,8 @@ county_panel <- read_parquet(
   path_processed("county_year_panel.parquet")
 )
 
-treatment_groups <- county_panel |>
-  filter(year == 2008L) |>
+treatment_groups <- county_panel %>%
+  filter(year == 2008L) %>%
   transmute(
     county_fips,
     county_treatment_group_classification = case_when(
@@ -39,12 +39,12 @@ treatment_groups <- county_panel |>
     )
   )
 
-did_panel <- county_panel |>
+did_panel <- county_panel %>%
   left_join(
     treatment_groups,
     by = "county_fips",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   mutate(post = year > 2011L)
 
 if (

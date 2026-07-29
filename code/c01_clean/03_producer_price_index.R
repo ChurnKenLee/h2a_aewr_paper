@@ -15,21 +15,21 @@ ppi_data <- read_csv(
 
 # average by year
 
-ppi_data <- ppi_data |>
+ppi_data <- ppi_data %>%
   mutate(year = as.numeric(substr(observation_date, 1, 4)))
 
-ppi_data <- ppi_data |>
-  group_by(year) |>
+ppi_data <- ppi_data %>%
+  group_by(year) %>%
   summarise(wpu01 = mean(WPU01))
 
 # change base to 2012
 
 ppi_2012 <- ppi_data$wpu01[ppi_data$year == 2012]
 
-ppi_data <- ppi_data |>
+ppi_data <- ppi_data %>%
   mutate(ppi_2012 = wpu01 / ppi_2012)
 
-ppi_data <- ppi_data |>
+ppi_data <- ppi_data %>%
   select(year, ppi_2012)
 
 write_parquet(ppi_data, path_int("ppi_2012.parquet"))

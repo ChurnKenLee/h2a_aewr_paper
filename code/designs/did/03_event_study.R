@@ -13,9 +13,9 @@ library(tibble)
 
 sample_full <- read_parquet(
   path_processed("did_county_year_panel.parquet")
-) |>
+) %>%
   did_sample()
-sample_no_border <- sample_full |>
+sample_no_border <- sample_full %>%
   filter(!border_cz)
 
 models <- list(
@@ -53,18 +53,18 @@ etable(
   replace = TRUE
 )
 
-coefficient_table <- as.data.frame(coeftable(models[[2]])) |>
-  rownames_to_column("term") |>
-  filter(grepl("^year::[0-9]{4}:aewr_cz_p25_l1$", term)) |>
+coefficient_table <- as.data.frame(coeftable(models[[2]])) %>%
+  rownames_to_column("term") %>%
+  filter(grepl("^year::[0-9]{4}:aewr_cz_p25_l1$", term)) %>%
   transmute(
     year = as.integer(sub("^year::([0-9]{4}).*$", "\\1", term)),
     estimate = Estimate,
     standard_error = `Std. Error`
-  ) |>
+  ) %>%
   bind_rows(
     tibble(year = 2011L, estimate = 0, standard_error = 0)
-  ) |>
-  arrange(year) |>
+  ) %>%
+  arrange(year) %>%
   mutate(
     lower = estimate - 1.96 * standard_error,
     upper = estimate + 1.96 * standard_error

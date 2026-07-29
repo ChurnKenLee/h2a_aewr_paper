@@ -2,7 +2,7 @@
 # Inputs: fixed clusters, recovered primary entropy weights, OEWS/FLS wages,
 # county-area shares, the shared county panel, PPI, and county geometry.
 # Outputs: five diagnostic PNGs and five plotting-data CSVs.
-
+rm(list = ls())
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
 source(path_code("c00_shared", "geography.R"))
@@ -27,8 +27,8 @@ assert_unique_keys <- function(data, keys, label) {
       call. = FALSE
     )
   }
-  duplicates <- data |>
-    count(across(all_of(keys)), name = "key_count") |>
+  duplicates <- data %>%
+    count(across(all_of(keys)), name = "key_count") %>%
     filter(key_count != 1L)
   if (nrow(duplicates) > 0L) {
     stop(label, " does not have unique keys.", call. = FALSE)
@@ -75,7 +75,7 @@ policy_years <- seq.int(
 
 county_panel <- read_parquet(
   path_processed("county_year_panel.parquet")
-) |>
+) %>%
   mutate(
     panel_iv_target_unit_id = make_panel_iv_target_unit_id(
       cz_id,
@@ -83,15 +83,15 @@ county_panel <- read_parquet(
     )
   )
 
-region_labels <- county_panel |>
-  distinct(aewr_region_id, state_abbrev) |>
-  filter(!is.na(aewr_region_id), !is.na(state_abbrev)) |>
-  arrange(as.integer(aewr_region_id), state_abbrev) |>
-  group_by(aewr_region_id) |>
+region_labels <- county_panel %>%
+  distinct(aewr_region_id, state_abbrev) %>%
+  filter(!is.na(aewr_region_id), !is.na(state_abbrev)) %>%
+  arrange(as.integer(aewr_region_id), state_abbrev) %>%
+  group_by(aewr_region_id) %>%
   summarise(
     aewr_region_states = paste(state_abbrev, collapse = ", "),
     .groups = "drop"
-  ) |>
+  ) %>%
   mutate(
     aewr_region_number = as.integer(aewr_region_id),
     aewr_region_label = paste0(
@@ -101,7 +101,7 @@ region_labels <- county_panel |>
       aewr_region_states,
       ")"
     )
-  ) |>
+  ) %>%
   arrange(aewr_region_number)
 
 if (
@@ -112,24 +112,24 @@ if (
 }
 assert_unique_keys(region_labels, "aewr_region_id", "AEWR region labels")
 
-expected_source_cells <- region_labels |>
-  select(aewr_region_id) |>
+expected_source_cells <- region_labels %>%
+  select(aewr_region_id) %>%
   crossing(source_year = source_years)
-expected_policy_cells <- region_labels |>
-  select(aewr_region_id) |>
+expected_policy_cells <- region_labels %>%
+  select(aewr_region_id) %>%
   crossing(policy_year = policy_years)
 
-ppi <- read_parquet(path_int("ppi_2012.parquet")) |>
+ppi <- read_parquet(path_int("ppi_2012.parquet")) %>%
   transmute(
     year = as.integer(year),
     ppi_2012 = as.numeric(ppi_2012)
-  ) |>
+  ) %>%
   filter(
     year >= min(source_years),
     year <= max(policy_years),
     is.finite(ppi_2012),
     ppi_2012 > 0
-  ) |>
+  ) %>%
   distinct()
 assert_unique_keys(ppi, "year", "PPI")
 if (!all(c(source_years, policy_years) %in% ppi$year)) {
@@ -138,14 +138,14 @@ if (!all(c(source_years, policy_years) %in% ppi$year)) {
 
 primary_clusters <- read_parquet(
   path_int("panel_iv_target_clusters.parquet")
-) |>
-  filter(iv_k == DISSIMILARITY_IV_PRIMARY_K) |>
+) %>%
+  filter(iv_k == DISSIMILARITY_IV_PRIMARY_K) %>%
   transmute(
     panel_iv_target_unit_id,
     aewr_region_id,
     iv_k,
     target_cluster = iv_cluster
-  ) |>
+  ) %>%
   distinct()
 assert_unique_keys(
   primary_clusters,
@@ -155,11 +155,11 @@ assert_unique_keys(
 
 primary_donor_map <- read_parquet(
   path_int("panel_iv_donor_clusters.parquet")
-) |>
+) %>%
   filter(
     iv_k == DISSIMILARITY_IV_PRIMARY_K,
     donor_cluster_count == DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
-  ) |>
+  ) %>%
   select(
     aewr_region_id,
     iv_k,
@@ -168,26 +168,25 @@ primary_donor_map <- read_parquet(
     donor_rank,
     donor_cluster_distance,
     donor_cluster_count
-  ) |>
+  ) %>%
   distinct()
 assert_unique_keys(
   primary_donor_map,
   c("aewr_region_id", "target_cluster", "donor_rank"),
   "Primary donor map"
 )
-donor_counts <- primary_donor_map |>
+donor_counts <- primary_donor_map %>%
   count(aewr_region_id, target_cluster, name = "selected_donors")
 if (
   nrow(donor_counts) != 17L * DISSIMILARITY_IV_PRIMARY_K ||
     any(
-      donor_counts$selected_donors !=
-        DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
+      donor_counts$selected_donors != DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
     )
 ) {
   stop("Every target cluster must have exactly two donors.", call. = FALSE)
 }
 
-county_units <- county_panel |>
+county_units <- county_panel %>%
   distinct(
     county_fips,
     countyname,
@@ -196,7 +195,7 @@ county_units <- county_panel |>
     cz_id,
     aewr_region_id,
     panel_iv_target_unit_id
-  ) |>
+  ) %>%
   inner_join(
     primary_clusters,
     by = c("panel_iv_target_unit_id", "aewr_region_id"),
@@ -206,7 +205,7 @@ assert_unique_keys(county_units, "county_fips", "County-to-target-unit map")
 
 primary_weights <- read_parquet(
   path_int("panel_iv_fls_geography_weight_summary.parquet")
-) |>
+) %>%
   filter(
     source_year %in% source_years,
     specification == DISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION,
@@ -223,7 +222,7 @@ primary_weights <- read_parquet(
     str_detect(center_solver_status, "^calibrated"),
     is.finite(calibrated_center_weight),
     calibrated_center_weight >= 0
-  ) |>
+  ) %>%
   transmute(
     aewr_region_id,
     source_year = as.integer(source_year),
@@ -237,14 +236,14 @@ assert_unique_keys(
   "Primary entropy area weights"
 )
 assert_complete_cells(
-  primary_weights |>
+  primary_weights %>%
     distinct(aewr_region_id, source_year),
   expected_source_cells,
   c("aewr_region_id", "source_year"),
   "Primary entropy region-year support"
 )
-primary_weight_sums <- primary_weights |>
-  group_by(aewr_region_id, source_year) |>
+primary_weight_sums <- primary_weights %>%
+  group_by(aewr_region_id, source_year) %>%
   summarise(
     entropy_area_weight_sum = sum(calibrated_center_weight),
     .groups = "drop"
@@ -258,12 +257,12 @@ assert_close(
 
 wage_features <- read_parquet(
   path_int("panel_iv_fls_geography_wage_features.parquet")
-) |>
+) %>%
   filter(
     source_year %in% source_years,
     moment_spec == DISSIMILARITY_IV_PRIMARY_MOMENT_SPEC,
     wage_target_used
-  ) |>
+  ) %>%
   transmute(
     aewr_region_id,
     source_year = as.integer(source_year),
@@ -279,16 +278,16 @@ assert_unique_keys(
   "OEWS wage features"
 )
 assert_complete_cells(
-  wage_features |>
+  wage_features %>%
     distinct(aewr_region_id, source_year),
   expected_source_cells,
   c("aewr_region_id", "source_year"),
   "OEWS wage-feature region-year support"
 )
 
-area_wages_and_weights <- wage_features |>
+area_wages_and_weights <- wage_features %>%
   inner_join(
-    primary_weights |>
+    primary_weights %>%
       select(
         aewr_region_id,
         source_year,
@@ -304,14 +303,14 @@ if (nrow(area_wages_and_weights) != nrow(wage_features)) {
 
 # AEWR and OEWS real-wage series --------------------------------------------
 
-aewr_policy_wages <- county_panel |>
-  filter(as.integer(year) %in% policy_years) |>
+aewr_policy_wages <- county_panel %>%
+  filter(as.integer(year) %in% policy_years) %>%
   transmute(
     aewr_region_id,
     policy_year = as.integer(year),
     effective_aewr_nominal = as.numeric(aewr)
-  ) |>
-  filter(is.finite(effective_aewr_nominal)) |>
+  ) %>%
+  filter(is.finite(effective_aewr_nominal)) %>%
   distinct()
 assert_unique_keys(
   aewr_policy_wages,
@@ -319,20 +318,20 @@ assert_unique_keys(
   "Effective AEWR wages"
 )
 assert_complete_cells(
-  aewr_policy_wages |>
+  aewr_policy_wages %>%
     select(aewr_region_id, policy_year),
   expected_policy_cells,
   c("aewr_region_id", "policy_year"),
   "Effective AEWR region-year support"
 )
 
-regional_oews_wages <- area_wages_and_weights |>
+regional_oews_wages <- area_wages_and_weights %>%
   filter(
     oews_area_wage_observed,
     is.finite(oews_area_mean_hourly_wage),
     oews_area_mean_hourly_wage > 0
-  ) |>
-  group_by(aewr_region_id, source_year) |>
+  ) %>%
+  group_by(aewr_region_id, source_year) %>%
   summarise(
     oews_simple_mean_nominal = mean(oews_area_mean_hourly_wage),
     oews_entropy_mean_nominal = positive_weighted_mean(
@@ -349,34 +348,34 @@ assert_unique_keys(
   "Regional OEWS wages"
 )
 assert_complete_cells(
-  regional_oews_wages |>
+  regional_oews_wages %>%
     select(aewr_region_id, source_year),
   expected_source_cells,
   c("aewr_region_id", "source_year"),
   "Regional OEWS wage support"
 )
 
-wage_series <- regional_oews_wages |>
-  mutate(policy_year = source_year + 1L) |>
+wage_series <- regional_oews_wages %>%
+  mutate(policy_year = source_year + 1L) %>%
   inner_join(
     aewr_policy_wages,
     by = c("aewr_region_id", "policy_year"),
     relationship = "one-to-one"
-  ) |>
+  ) %>%
   inner_join(
-    ppi |>
+    ppi %>%
       transmute(
         policy_year = year,
         policy_year_ppi_2012 = ppi_2012
       ),
     by = "policy_year",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   inner_join(
     region_labels,
     by = "aewr_region_id",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   pivot_longer(
     cols = c(
       effective_aewr_nominal,
@@ -385,7 +384,7 @@ wage_series <- regional_oews_wages |>
     ),
     names_to = "wage_series",
     values_to = "nominal_hourly_wage"
-  ) |>
+  ) %>%
   mutate(
     wage_series_label = recode(
       wage_series,
@@ -393,9 +392,8 @@ wage_series <- regional_oews_wages |>
       oews_simple_mean_nominal = "OEWS simple area mean",
       oews_entropy_mean_nominal = "OEWS entropy-weighted area mean"
     ),
-    real_2012_hourly_wage =
-      nominal_hourly_wage / policy_year_ppi_2012
-  ) |>
+    real_2012_hourly_wage = nominal_hourly_wage / policy_year_ppi_2012
+  ) %>%
   arrange(aewr_region_number, policy_year, wage_series)
 
 assert_unique_keys(
@@ -421,7 +419,7 @@ wage_series_colors <- c(
   "OEWS simple area mean" = "#0072B2",
   "OEWS entropy-weighted area mean" = "#D55E00"
 )
-wage_series_plot <- wage_series |>
+wage_series_plot <- wage_series %>%
   mutate(
     aewr_region_label = factor(
       aewr_region_label,
@@ -431,7 +429,7 @@ wage_series_plot <- wage_series |>
       wage_series_label,
       levels = names(wage_series_colors)
     )
-  ) |>
+  ) %>%
   ggplot(
     aes(
       x = policy_year,
@@ -487,17 +485,72 @@ ggsave(
   bg = "white"
 )
 
+national_wage_series <- wage_series %>%
+  group_by(wage_series_label, policy_year) %>%
+  summarise(real_2012_hourly_wage = mean(real_2012_hourly_wage)) %>%
+  ungroup()
+
+national_wage_series_plot <- national_wage_series %>%
+  mutate(
+    wage_series_label = factor(
+      wage_series_label,
+      levels = names(wage_series_colors)
+    )
+  ) %>%
+  ggplot(
+    aes(
+      x = policy_year,
+      y = real_2012_hourly_wage,
+      color = wage_series_label
+    )
+  ) +
+  scale_color_manual(values = wage_series_colors, drop = FALSE) +
+  geom_line(linewidth = 0.55) +
+  geom_point(size = 0.75) +
+  labs(
+    title = "Effective AEWR and Observed OEWS Wages",
+    subtitle = paste0(
+      "OEWS source-year wages are aligned to the following AEWR policy year; ",
+      "all series are in 2012 dollars."
+    ),
+    x = "AEWR policy year",
+    y = "Real hourly wage (2012 dollars)",
+    color = NULL,
+    caption = paste0(
+      "Simple OEWS means give each AEWR region equal weight. Entropy means ",
+      "renormalize primary area weights over the same observed areas."
+    )
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical",
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 8),
+    plot.title = element_text(face = "bold"),
+    plot.caption = element_text(hjust = 0)
+  )
+
+ggsave(
+  path_figures("fig_iv_national_real_wage_series.png"),
+  national_wage_series_plot,
+  width = 15,
+  height = 12,
+  dpi = 300,
+  device = "png",
+  bg = "white"
+)
+
 # FLS versus own-CZ observed OEWS wages -------------------------------------
 
 county_area_prior <- read_parquet(
   path_int("panel_iv_fls_geography_county_area_prior.parquet")
-) |>
+) %>%
   filter(
     source_year %in% source_years,
     baseline_weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
-    geographic_allocation_spec ==
-      DISSIMILARITY_IV_GEOGRAPHIC_ALLOCATION_SPEC
-  ) |>
+    geographic_allocation_spec == DISSIMILARITY_IV_GEOGRAPHIC_ALLOCATION_SPEC
+  ) %>%
   transmute(
     county_fips,
     aewr_region_id,
@@ -515,11 +568,10 @@ assert_unique_keys(
   ),
   "County-area prior"
 )
-county_conditional_sums <- county_area_prior |>
-  group_by(aewr_region_id, source_year, oews_area_code) |>
+county_conditional_sums <- county_area_prior %>%
+  group_by(aewr_region_id, source_year, oews_area_code) %>%
   summarise(
-    county_conditional_sum =
-      sum(baseline_county_conditional_within_area),
+    county_conditional_sum = sum(baseline_county_conditional_within_area),
     .groups = "drop"
   )
 assert_close(
@@ -529,9 +581,9 @@ assert_close(
   "Within-area county-share conservation"
 )
 
-unmapped_county_areas <- county_area_prior |>
+unmapped_county_areas <- county_area_prior %>%
   anti_join(
-    county_units |>
+    county_units %>%
       select(county_fips, aewr_region_id),
     by = c("county_fips", "aewr_region_id")
   )
@@ -539,9 +591,9 @@ if (nrow(unmapped_county_areas) > 0L) {
   stop("County-area rows lack CZ x AEWR-region units.", call. = FALSE)
 }
 
-expanded_entropy_weights <- county_area_prior |>
+expanded_entropy_weights <- county_area_prior %>%
   inner_join(
-    primary_weights |>
+    primary_weights %>%
       select(
         aewr_region_id,
         source_year,
@@ -550,21 +602,20 @@ expanded_entropy_weights <- county_area_prior |>
       ),
     by = c("aewr_region_id", "source_year", "oews_area_code"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   mutate(
     entropy_county_area_weight = calibrated_center_weight *
       baseline_county_conditional_within_area
   )
 
-expanded_weight_sums <- expanded_entropy_weights |>
-  group_by(aewr_region_id, source_year) |>
+expanded_weight_sums <- expanded_entropy_weights %>%
+  group_by(aewr_region_id, source_year) %>%
   summarise(
-    expanded_entropy_weight_sum =
-      sum(entropy_county_area_weight),
+    expanded_entropy_weight_sum = sum(entropy_county_area_weight),
     .groups = "drop"
   )
 assert_complete_cells(
-  expanded_weight_sums |>
+  expanded_weight_sums %>%
     select(aewr_region_id, source_year),
   expected_source_cells,
   c("aewr_region_id", "source_year"),
@@ -577,9 +628,9 @@ assert_close(
   "Expanded entropy-weight conservation"
 )
 
-cz_area_wages <- expanded_entropy_weights |>
+cz_area_wages <- expanded_entropy_weights %>%
   inner_join(
-    county_units |>
+    county_units %>%
       select(
         county_fips,
         aewr_region_id,
@@ -588,26 +639,26 @@ cz_area_wages <- expanded_entropy_weights |>
       ),
     by = c("county_fips", "aewr_region_id"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   inner_join(
     wage_features,
     by = c("aewr_region_id", "source_year", "oews_area_code"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   group_by(
     panel_iv_target_unit_id,
     cz_id,
     aewr_region_id,
     source_year,
     oews_area_code
-  ) |>
+  ) %>%
   summarise(
     oews_area_name = first_nonmissing_character(oews_area_name),
-    oews_area_mean_hourly_wage =
-      first(oews_area_mean_hourly_wage),
+    oews_area_mean_hourly_wage = first(oews_area_mean_hourly_wage),
     oews_area_wage_observed = first(oews_area_wage_observed),
-    fls_field_livestock_mean_hourly_wage =
-      first(fls_field_livestock_mean_hourly_wage),
+    fls_field_livestock_mean_hourly_wage = first(
+      fls_field_livestock_mean_hourly_wage
+    ),
     cz_area_entropy_weight = sum(entropy_county_area_weight),
     mapped_counties_in_cz = n_distinct(county_fips),
     .groups = "drop"
@@ -623,23 +674,22 @@ assert_unique_keys(
   "CZ-area wage support"
 )
 
-cz_wage_comparison_wide <- cz_area_wages |>
+cz_wage_comparison_wide <- cz_area_wages %>%
   filter(
     oews_area_wage_observed,
     is.finite(oews_area_mean_hourly_wage),
     oews_area_mean_hourly_wage > 0,
     is.finite(fls_field_livestock_mean_hourly_wage),
     fls_field_livestock_mean_hourly_wage > 0
-  ) |>
+  ) %>%
   group_by(
     panel_iv_target_unit_id,
     cz_id,
     aewr_region_id,
     source_year
-  ) |>
+  ) %>%
   summarise(
-    fls_field_livestock_nominal =
-      first(fls_field_livestock_mean_hourly_wage),
+    fls_field_livestock_nominal = first(fls_field_livestock_mean_hourly_wage),
     oews_simple_mean_nominal = mean(oews_area_mean_hourly_wage),
     oews_entropy_mean_nominal = positive_weighted_mean(
       oews_area_mean_hourly_wage,
@@ -648,24 +698,24 @@ cz_wage_comparison_wide <- cz_area_wages |>
     observed_oews_area_count = n_distinct(oews_area_code),
     observed_cz_entropy_weight_mass = sum(cz_area_entropy_weight),
     .groups = "drop"
-  ) |>
+  ) %>%
   inner_join(
-    ppi |>
+    ppi %>%
       transmute(
         source_year = year,
         source_year_ppi_2012 = ppi_2012
       ),
     by = "source_year",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   mutate(
-    fls_field_livestock_real_2012 =
-      fls_field_livestock_nominal / source_year_ppi_2012,
-    oews_simple_mean_real_2012 =
-      oews_simple_mean_nominal / source_year_ppi_2012,
-    oews_entropy_mean_real_2012 =
-      oews_entropy_mean_nominal / source_year_ppi_2012
-  ) |>
+    fls_field_livestock_real_2012 = fls_field_livestock_nominal /
+      source_year_ppi_2012,
+    oews_simple_mean_real_2012 = oews_simple_mean_nominal /
+      source_year_ppi_2012,
+    oews_entropy_mean_real_2012 = oews_entropy_mean_nominal /
+      source_year_ppi_2012
+  ) %>%
   filter(
     is.finite(fls_field_livestock_real_2012),
     is.finite(oews_simple_mean_real_2012),
@@ -680,7 +730,7 @@ if (nrow(cz_wage_comparison_wide) == 0L) {
   stop("The CZ wage comparison has no finite observations.", call. = FALSE)
 }
 
-cz_wage_comparison <- cz_wage_comparison_wide |>
+cz_wage_comparison <- cz_wage_comparison_wide %>%
   pivot_longer(
     cols = c(
       oews_simple_mean_real_2012,
@@ -688,21 +738,19 @@ cz_wage_comparison <- cz_wage_comparison_wide |>
     ),
     names_to = "comparison_panel",
     values_to = "oews_real_2012"
-  ) |>
+  ) %>%
   mutate(
     comparison_panel_label = recode(
       comparison_panel,
-      oews_simple_mean_real_2012 =
-        "Panel A: Simple mean of observed OEWS areas",
-      oews_entropy_mean_real_2012 =
-        "Panel B: Entropy-weighted mean within CZ"
+      oews_simple_mean_real_2012 = "Panel A: Simple mean of observed OEWS areas",
+      oews_entropy_mean_real_2012 = "Panel B: Entropy-weighted mean within CZ"
     )
-  ) |>
+  ) %>%
   inner_join(
     region_labels,
     by = "aewr_region_id",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   arrange(
     comparison_panel,
     aewr_region_number,
@@ -719,7 +767,7 @@ assert_unique_keys(
   ),
   "CZ scatter plotting data"
 )
-scatter_panel_support <- cz_wage_comparison |>
+scatter_panel_support <- cz_wage_comparison %>%
   count(
     panel_iv_target_unit_id,
     aewr_region_id,
@@ -749,7 +797,7 @@ scatter_limits <- range(
 scatter_padding <- max(diff(scatter_limits) * 0.04, 0.25)
 scatter_limits <- scatter_limits + c(-scatter_padding, scatter_padding)
 
-cz_wage_scatter_plot <- cz_wage_comparison |>
+cz_wage_scatter_plot <- cz_wage_comparison %>%
   mutate(
     comparison_panel_label = factor(
       comparison_panel_label,
@@ -758,7 +806,7 @@ cz_wage_scatter_plot <- cz_wage_comparison |>
         "Panel B: Entropy-weighted mean within CZ"
       )
     )
-  ) |>
+  ) %>%
   ggplot(
     aes(
       x = fls_field_livestock_real_2012,
@@ -822,9 +870,9 @@ ggsave(
 
 # Annual changes in CZ entropy weights --------------------------------------
 
-cz_entropy_weights_observed <- expanded_entropy_weights |>
+cz_entropy_weights_observed <- expanded_entropy_weights %>%
   inner_join(
-    county_units |>
+    county_units %>%
       select(
         county_fips,
         aewr_region_id,
@@ -833,13 +881,13 @@ cz_entropy_weights_observed <- expanded_entropy_weights |>
       ),
     by = c("county_fips", "aewr_region_id"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   group_by(
     panel_iv_target_unit_id,
     cz_id,
     aewr_region_id,
     source_year
-  ) |>
+  ) %>%
   summarise(
     cz_entropy_weight = sum(entropy_county_area_weight),
     .groups = "drop"
@@ -850,9 +898,9 @@ assert_unique_keys(
   "Observed CZ entropy weights"
 )
 
-target_units <- primary_clusters |>
+target_units <- primary_clusters %>%
   inner_join(
-    county_units |>
+    county_units %>%
       distinct(
         panel_iv_target_unit_id,
         cz_id,
@@ -860,7 +908,7 @@ target_units <- primary_clusters |>
       ),
     by = c("panel_iv_target_unit_id", "aewr_region_id"),
     relationship = "one-to-one"
-  ) |>
+  ) %>%
   select(
     panel_iv_target_unit_id,
     cz_id,
@@ -873,8 +921,8 @@ assert_unique_keys(
   "Target units"
 )
 
-cz_entropy_weights <- target_units |>
-  crossing(source_year = source_years) |>
+cz_entropy_weights <- target_units %>%
+  crossing(source_year = source_years) %>%
   left_join(
     cz_entropy_weights_observed,
     by = c(
@@ -884,10 +932,10 @@ cz_entropy_weights <- target_units |>
       "source_year"
     ),
     relationship = "one-to-one"
-  ) |>
-  mutate(cz_entropy_weight = replace_na(cz_entropy_weight, 0)) |>
-  group_by(panel_iv_target_unit_id, aewr_region_id) |>
-  arrange(source_year, .by_group = TRUE) |>
+  ) %>%
+  mutate(cz_entropy_weight = replace_na(cz_entropy_weight, 0)) %>%
+  group_by(panel_iv_target_unit_id, aewr_region_id) %>%
+  arrange(source_year, .by_group = TRUE) %>%
   mutate(
     previous_source_year = lag(source_year),
     previous_cz_entropy_weight = lag(cz_entropy_weight),
@@ -896,7 +944,7 @@ cz_entropy_weights <- target_units |>
       100 * (cz_entropy_weight - previous_cz_entropy_weight),
       NA_real_
     )
-  ) |>
+  ) %>%
   ungroup()
 assert_unique_keys(
   cz_entropy_weights,
@@ -904,14 +952,14 @@ assert_unique_keys(
   "CZ entropy-weight changes"
 )
 
-cz_weight_conservation <- cz_entropy_weights |>
-  group_by(aewr_region_id, source_year) |>
+cz_weight_conservation <- cz_entropy_weights %>%
+  group_by(aewr_region_id, source_year) %>%
   summarise(
     region_year_entropy_weight_sum = sum(cz_entropy_weight),
     .groups = "drop"
   )
 assert_complete_cells(
-  cz_weight_conservation |>
+  cz_weight_conservation %>%
     select(aewr_region_id, source_year),
   expected_source_cells,
   c("aewr_region_id", "source_year"),
@@ -924,12 +972,11 @@ assert_close(
   "CZ entropy-weight conservation"
 )
 
-cz_change_conservation <- cz_entropy_weights |>
-  filter(is.finite(entropy_weight_change_pp)) |>
-  group_by(aewr_region_id, source_year) |>
+cz_change_conservation <- cz_entropy_weights %>%
+  filter(is.finite(entropy_weight_change_pp)) %>%
+  group_by(aewr_region_id, source_year) %>%
   summarise(
-    region_year_entropy_weight_change_pp =
-      sum(entropy_weight_change_pp),
+    region_year_entropy_weight_change_pp = sum(entropy_weight_change_pp),
     .groups = "drop"
   )
 assert_close(
@@ -939,22 +986,22 @@ assert_close(
   "Annual CZ entropy-weight-change conservation"
 )
 
-cz_entropy_weight_changes <- cz_entropy_weights |>
+cz_entropy_weight_changes <- cz_entropy_weights %>%
   left_join(
     cz_weight_conservation,
     by = c("aewr_region_id", "source_year"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   left_join(
     cz_change_conservation,
     by = c("aewr_region_id", "source_year"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   inner_join(
     region_labels,
     by = "aewr_region_id",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   arrange(aewr_region_number, as.integer(cz_id), source_year)
 
 write_csv(
@@ -963,7 +1010,7 @@ write_csv(
   na = ""
 )
 
-weight_change_plot_data <- cz_entropy_weight_changes |>
+weight_change_plot_data <- cz_entropy_weight_changes %>%
   filter(is.finite(entropy_weight_change_pp))
 if (nrow(weight_change_plot_data) == 0L) {
   stop("No valid annual CZ entropy-weight changes.", call. = FALSE)
@@ -1026,24 +1073,24 @@ ggsave(
 # California target and donor example --------------------------------------
 
 california_region_id <- "17"
-california_unit_employment <- county_panel |>
+california_unit_employment <- county_panel %>%
   filter(
     as.integer(year) == 2011L,
     aewr_region_id == california_region_id
-  ) |>
+  ) %>%
   group_by(
     panel_iv_target_unit_id,
     cz_id,
     aewr_region_id
-  ) |>
+  ) %>%
   summarise(
     farm_employment_2011 = sum(emp_farm, na.rm = TRUE),
     counties = paste(sort(unique(countyname)), collapse = " | "),
     county_count = n_distinct(county_fips),
     .groups = "drop"
-  ) |>
+  ) %>%
   inner_join(
-    primary_clusters |>
+    primary_clusters %>%
       select(
         panel_iv_target_unit_id,
         aewr_region_id,
@@ -1058,12 +1105,12 @@ assert_unique_keys(
   "California target units"
 )
 
-selected_california_target <- california_unit_employment |>
+selected_california_target <- california_unit_employment %>%
   arrange(
     desc(farm_employment_2011),
     as.integer(cz_id),
     panel_iv_target_unit_id
-  ) |>
+  ) %>%
   slice(1L)
 if (
   nrow(selected_california_target) != 1L ||
@@ -1078,11 +1125,11 @@ if (
 
 california_target_cluster <-
   selected_california_target$target_cluster[[1]]
-california_donors <- primary_donor_map |>
+california_donors <- primary_donor_map %>%
   filter(
     aewr_region_id == california_region_id,
     target_cluster == california_target_cluster
-  ) |>
+  ) %>%
   arrange(donor_rank)
 if (
   nrow(california_donors) != 2L ||
@@ -1095,9 +1142,9 @@ if (
   )
 }
 
-california_plot_metadata <- california_unit_employment |>
+california_plot_metadata <- california_unit_employment %>%
   left_join(
-    california_donors |>
+    california_donors %>%
       select(
         donor_cluster,
         donor_rank,
@@ -1105,7 +1152,7 @@ california_plot_metadata <- california_unit_employment |>
       ),
     by = c("target_cluster" = "donor_cluster"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   mutate(
     selected_target = panel_iv_target_unit_id ==
       selected_california_target$panel_iv_target_unit_id[[1]],
@@ -1119,7 +1166,7 @@ california_plot_metadata <- california_unit_employment |>
       donor_rank == 2L ~ "Donor rank 2: cluster 2",
       TRUE ~ "Unused clusters"
     )
-  ) |>
+  ) %>%
   arrange(
     desc(selected_target),
     donor_rank,
@@ -1132,7 +1179,8 @@ if (
       california_plot_metadata$target_cluster[
         !is.na(california_plot_metadata$donor_rank)
       ]
-    ) != 2L
+    ) !=
+      2L
 ) {
   stop("California selection metadata is incomplete.", call. = FALSE)
 }
@@ -1143,16 +1191,16 @@ write_csv(
   na = ""
 )
 
-california_counties <- county_units |>
-  filter(aewr_region_id == california_region_id) |>
+california_counties <- county_units %>%
+  filter(aewr_region_id == california_region_id) %>%
   select(
     county_fips,
     panel_iv_target_unit_id,
     cz_id,
     aewr_region_id
-  ) |>
+  ) %>%
   inner_join(
-    california_plot_metadata |>
+    california_plot_metadata %>%
       select(panel_iv_target_unit_id, selection_role),
     by = "panel_iv_target_unit_id",
     relationship = "many-to-one"
@@ -1186,27 +1234,30 @@ if (length(county_shape_path) != 1L) {
 california_map <- sf::st_read(
   county_shape_path[[1]],
   quiet = TRUE
-) |>
+) %>%
   mutate(
     state_fips = state_fips(STATEFP),
     county_fips = combine_county_fips(STATEFP, COUNTYFP)
-  ) |>
-  filter(state_fips == "06") |>
-  sf::st_make_valid() |>
-  sf::st_transform(5070) |>
+  ) %>%
+  filter(state_fips == "06") %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(5070) %>%
   inner_join(
     california_counties,
     by = "county_fips",
     relationship = "one-to-one"
   )
 if (nrow(california_map) != nrow(california_counties)) {
-  stop("California geometry does not cover every analysis county.", call. = FALSE)
+  stop(
+    "California geometry does not cover every analysis county.",
+    call. = FALSE
+  )
 }
 
-california_unit_boundaries <- california_map |>
-  group_by(panel_iv_target_unit_id, selection_role) |>
+california_unit_boundaries <- california_map %>%
+  group_by(panel_iv_target_unit_id, selection_role) %>%
   summarise(geometry = sf::st_union(geometry), .groups = "drop")
-california_target_boundary <- california_unit_boundaries |>
+california_target_boundary <- california_unit_boundaries %>%
   filter(
     panel_iv_target_unit_id ==
       selected_california_target$panel_iv_target_unit_id[[1]]
@@ -1227,13 +1278,13 @@ california_role_colors <- c(
   "Unused clusters" = "#D9D9D9"
 )
 
-california_target_plot <- california_map |>
+california_target_plot <- california_map %>%
   mutate(
     selection_role = factor(
       selection_role,
       levels = california_role_levels
     )
-  ) |>
+  ) %>%
   ggplot() +
   geom_sf(
     aes(fill = selection_role),
@@ -1329,23 +1380,22 @@ feature_blocks <- list(
   crops = feature_names[str_detect(feature_names, "^share_cdl_")],
   climate = feature_names[str_detect(feature_names, "^normal_cb_")],
   soil_continuous = intersect(feature_names, soil_continuous_names),
-  soil_categorical =
-    feature_names[str_detect(feature_names, "^share_soil_")]
+  soil_categorical = feature_names[str_detect(feature_names, "^share_soil_")]
 )
 similarity_covariates <- tribble(
-  ~feature_name,
-  ~covariate_label,
-  ~feature_block,
-  "share_cdl_fruit_tree_nuts",
-  "Fruit/tree-nut acreage composition",
-  "crops",
-  "normal_cb_temp_tavg_b00",
-  "Temperature-normal basis b00",
-  "climate",
-  "aws0150wta",
-  "Available water storage, 0-150 cm",
+  ~feature_name                        ,
+  ~covariate_label                     ,
+  ~feature_block                       ,
+  "share_cdl_fruit_tree_nuts"          ,
+  "Fruit/tree-nut acreage composition" ,
+  "crops"                              ,
+  "normal_cb_temp_tavg_b00"            ,
+  "Temperature-normal basis b00"       ,
+  "climate"                            ,
+  "aws0150wta"                         ,
+  "Available water storage, 0-150 cm"  ,
   "soil_continuous"
-) |>
+) %>%
   mutate(
     block_feature_count = vapply(
       feature_block,
@@ -1362,8 +1412,8 @@ if (
 
 transformed_region_list <- list()
 for (region_id in region_labels$aewr_region_id) {
-  region_features <- unit_features |>
-    filter(aewr_region_id == region_id) |>
+  region_features <- unit_features %>%
+    filter(aewr_region_id == region_id) %>%
     select(
       cz_id,
       aewr_region_id,
@@ -1398,9 +1448,9 @@ for (region_id in region_labels$aewr_region_id) {
   transformed_region_list[[region_id]] <- region_features
 }
 
-transformed_similarity_features <- bind_rows(transformed_region_list) |>
+transformed_similarity_features <- bind_rows(transformed_region_list) %>%
   inner_join(
-    primary_clusters |>
+    primary_clusters %>%
       select(
         panel_iv_target_unit_id,
         aewr_region_id,
@@ -1408,24 +1458,28 @@ transformed_similarity_features <- bind_rows(transformed_region_list) |>
       ),
     by = c("panel_iv_target_unit_id", "aewr_region_id"),
     relationship = "one-to-one"
-  ) |>
+  ) %>%
   pivot_longer(
     cols = all_of(similarity_covariates$feature_name),
     names_to = "feature_name",
     values_to = "transformed_feature_value"
-  ) |>
+  ) %>%
   inner_join(
     similarity_covariates,
     by = "feature_name",
     relationship = "many-to-one"
   )
-if (any(!is.finite(
-  transformed_similarity_features$transformed_feature_value
-))) {
+if (
+  any(
+    !is.finite(
+      transformed_similarity_features$transformed_feature_value
+    )
+  )
+) {
   stop("Clustering transformations produced nonfinite values.", call. = FALSE)
 }
 
-target_cluster_means <- transformed_similarity_features |>
+target_cluster_means <- transformed_similarity_features %>%
   group_by(
     aewr_region_id,
     feature_name,
@@ -1433,13 +1487,13 @@ target_cluster_means <- transformed_similarity_features |>
     feature_block,
     block_feature_count,
     target_cluster
-  ) |>
+  ) %>%
   summarise(
     target_cluster_mean = mean(transformed_feature_value),
     target_cluster_units = n(),
     .groups = "drop"
   )
-cluster_mean_counts <- target_cluster_means |>
+cluster_mean_counts <- target_cluster_means %>%
   count(
     aewr_region_id,
     feature_name,
@@ -1448,14 +1502,16 @@ cluster_mean_counts <- target_cluster_means |>
 if (
   nrow(cluster_mean_counts) != 17L * nrow(similarity_covariates) ||
     any(
-      cluster_mean_counts$target_cluster_count !=
-        DISSIMILARITY_IV_PRIMARY_K
+      cluster_mean_counts$target_cluster_count != DISSIMILARITY_IV_PRIMARY_K
     )
 ) {
-  stop("Similarity inputs must have five cluster means per cell.", call. = FALSE)
+  stop(
+    "Similarity inputs must have five cluster means per cell.",
+    call. = FALSE
+  )
 }
 
-donor_cluster_means <- target_cluster_means |>
+donor_cluster_means <- target_cluster_means %>%
   transmute(
     aewr_region_id,
     feature_name,
@@ -1463,9 +1519,9 @@ donor_cluster_means <- target_cluster_means |>
     donor_cluster_mean = target_cluster_mean
   )
 
-target_donor_similarity_points <- target_cluster_means |>
+target_donor_similarity_points <- target_cluster_means %>%
   inner_join(
-    primary_donor_map |>
+    primary_donor_map %>%
       select(
         aewr_region_id,
         target_cluster,
@@ -1474,12 +1530,12 @@ target_donor_similarity_points <- target_cluster_means |>
       ),
     by = c("aewr_region_id", "target_cluster"),
     relationship = "many-to-many"
-  ) |>
+  ) %>%
   inner_join(
     donor_cluster_means,
     by = c("aewr_region_id", "feature_name", "donor_cluster"),
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   group_by(
     aewr_region_id,
     feature_name,
@@ -1489,7 +1545,7 @@ target_donor_similarity_points <- target_cluster_means |>
     target_cluster,
     target_cluster_mean,
     target_cluster_units
-  ) |>
+  ) %>%
   summarise(
     donor_cluster_mean = mean(donor_cluster_mean),
     selected_donor_clusters = n_distinct(donor_cluster),
@@ -1506,11 +1562,14 @@ if (
         DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
     )
 ) {
-  stop("Similarity points do not average exactly two donor clusters.", call. = FALSE)
+  stop(
+    "Similarity points do not average exactly two donor clusters.",
+    call. = FALSE
+  )
 }
 
 fit_similarity_regression <- function(data) {
-  complete <- data |>
+  complete <- data %>%
     filter(
       is.finite(target_cluster_mean),
       is.finite(donor_cluster_mean)
@@ -1601,21 +1660,21 @@ fit_similarity_regression <- function(data) {
   )
 }
 
-similarity_regressions <- target_donor_similarity_points |>
+similarity_regressions <- target_donor_similarity_points %>%
   group_by(
     aewr_region_id,
     feature_name,
     covariate_label,
     feature_block,
     block_feature_count
-  ) |>
-  group_modify(~ fit_similarity_regression(.x)) |>
-  ungroup() |>
+  ) %>%
+  group_modify(~ fit_similarity_regression(.x)) %>%
+  ungroup() %>%
   inner_join(
     region_labels,
     by = "aewr_region_id",
     relationship = "many-to-one"
-  ) |>
+  ) %>%
   arrange(
     match(feature_name, similarity_covariates$feature_name),
     aewr_region_number
@@ -1626,18 +1685,16 @@ assert_unique_keys(
   "Similarity regression results"
 )
 if (
-  nrow(similarity_regressions) !=
-    17L * nrow(similarity_covariates) ||
+  nrow(similarity_regressions) != 17L * nrow(similarity_covariates) ||
     any(
-      similarity_regressions$sample_size !=
-        DISSIMILARITY_IV_PRIMARY_K
+      similarity_regressions$sample_size != DISSIMILARITY_IV_PRIMARY_K
     ) ||
     any(
-      similarity_regressions$target_cluster_count !=
-        DISSIMILARITY_IV_PRIMARY_K
+      similarity_regressions$target_cluster_count != DISSIMILARITY_IV_PRIMARY_K
     )
 ) {
-  stop("Every similarity regression must use five cluster observations.",
+  stop(
+    "Every similarity regression must use five cluster observations.",
     call. = FALSE
   )
 }
@@ -1663,7 +1720,7 @@ write_csv(
   na = ""
 )
 
-similarity_plot_data <- similarity_regressions |>
+similarity_plot_data <- similarity_regressions %>%
   filter(regression_status == "ok", is.finite(slope))
 if (nrow(similarity_plot_data) == 0L) {
   stop("No finite target-donor similarity slopes.", call. = FALSE)

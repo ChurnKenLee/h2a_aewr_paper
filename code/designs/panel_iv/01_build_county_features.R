@@ -15,7 +15,7 @@ library(tibble)
 
 cdl <- read_parquet(path_int(
   "croplandcros_county_crop_type_acres.parquet"
-)) |>
+)) %>%
   filter(!is.na(crop_type_label), crop_type_label != "non-crop")
 
 climate <- read_parquet(path_int(
@@ -27,39 +27,39 @@ soil <- read_parquet(path_int(
 ))
 # Fixed 2008-2011 county primitives
 
-crop_names <- cdl |>
-  distinct(crop_type_label) |>
+crop_names <- cdl %>%
+  distinct(crop_type_label) %>%
   mutate(crop_var = paste0("share_cdl_", make_clean_names(crop_type_label)))
 
-crop_features <- cdl |>
+crop_features <- cdl %>%
   filter(
     year >= DISSIMILARITY_IV_FEATURE_START_YEAR,
     year <= DISSIMILARITY_IV_FEATURE_END_YEAR
-  ) |>
-  left_join(crop_names, by = "crop_type_label") |>
-  group_by(county_fips, year, crop_var) |>
-  summarise(acres = sum(acres, na.rm = TRUE), .groups = "drop") |>
-  group_by(county_fips, year) |>
-  mutate(crop_share = acres / sum(acres, na.rm = TRUE)) |>
-  ungroup() |>
-  group_by(county_fips, crop_var) |>
+  ) %>%
+  left_join(crop_names, by = "crop_type_label") %>%
+  group_by(county_fips, year, crop_var) %>%
+  summarise(acres = sum(acres, na.rm = TRUE), .groups = "drop") %>%
+  group_by(county_fips, year) %>%
+  mutate(crop_share = acres / sum(acres, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(county_fips, crop_var) %>%
   summarise(crop_share = mean(crop_share, na.rm = TRUE), .groups = "drop")
 
 crop_features <- xtabs(
   crop_share ~ county_fips + crop_var,
   data = crop_features
-) |>
-  as.data.frame.matrix() |>
-  rownames_to_column("county_fips") |>
+) %>%
+  as.data.frame.matrix() %>%
+  rownames_to_column("county_fips") %>%
   as_tibble()
 
-climate_features <- climate |>
+climate_features <- climate %>%
   filter(
     year >= DISSIMILARITY_IV_FEATURE_START_YEAR,
     year <= DISSIMILARITY_IV_FEATURE_END_YEAR
-  ) |>
-  select(county_fips, starts_with("normal_cb_")) |>
-  group_by(county_fips) |>
+  ) %>%
+  select(county_fips, starts_with("normal_cb_")) %>%
+  group_by(county_fips) %>%
   summarise(
     across(starts_with("normal_cb_"), ~ mean(.x, na.rm = TRUE)),
     .groups = "drop"
@@ -81,8 +81,8 @@ soil_vars <- c(
 
 soil_cat_vars <- c("taxorder", "drainagecl", "hydgrp", "nirrcapcl")
 
-soil_cont_features <- soil |>
-  group_by(county_fips) |>
+soil_cont_features <- soil %>%
+  group_by(county_fips) %>%
   summarise(
     across(all_of(soil_vars), ~ weighted.mean(.x, total_acres, na.rm = TRUE)),
     .groups = "drop"
@@ -106,7 +106,7 @@ for (v in soil_cat_vars) {
     soil_value = soil_value,
     total_acres = soil$total_acres
   )
-  temp <- temp |>
+  temp <- temp %>%
     left_join(
       soil_value_names,
       by = "soil_value",
@@ -129,19 +129,19 @@ for (v in soil_cat_vars) {
   soil_cat_list[[v]] <- xtabs(
     soil_share ~ county_fips + soil_feature,
     data = temp
-  ) |>
-    as.data.frame.matrix() |>
-    rownames_to_column("county_fips") |>
+  ) %>%
+    as.data.frame.matrix() %>%
+    rownames_to_column("county_fips") %>%
     as_tibble()
 }
 
 soil_cat_features <- reduce(soil_cat_list, full_join, by = "county_fips")
 
-soil_features <- soil_cont_features |>
+soil_features <- soil_cont_features %>%
   full_join(soil_cat_features, by = "county_fips")
 
-county_features <- crop_features |>
-  full_join(climate_features, by = "county_fips") |>
+county_features <- crop_features %>%
+  full_join(climate_features, by = "county_fips") %>%
   full_join(soil_features, by = "county_fips")
 
 write_parquet(county_features, path_int("panel_iv_county_features.parquet"))

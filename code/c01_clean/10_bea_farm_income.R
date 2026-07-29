@@ -17,13 +17,13 @@ ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 bea_fips_xwalk <- read_csv(
   path_raw("geographic_crosswalks", "phil", "bea_fips_xwalk.csv"),
   show_col_types = FALSE
-) |>
+) %>%
   prepare_bea_county_crosswalk()
 
 bea_cainc45_data <- read_parquet(path_int("bea_CAINC45_trim.parquet"))
 # Retain the six farm-receipt, payment, and expense series.
 
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   filter(
     LineCode == 20 |
       LineCode == 60 |
@@ -33,7 +33,7 @@ bea_cainc45_data <- bea_cainc45_data |>
       LineCode == 150
   )
 
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   mutate(
     county_fips = county_fips(GeoFIPS), # remove quotes
     category = ifelse(
@@ -58,11 +58,11 @@ bea_cainc45_data <- bea_cainc45_data |>
       )
     )
   ) # Production expenses
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   select(43:64) # be careful, this gets to be really a lot of data.
 
 
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   pivot_longer(
     cols = starts_with("y"),
     names_to = "year",
@@ -71,18 +71,18 @@ bea_cainc45_data <- bea_cainc45_data |>
     values_drop_na = TRUE
   )
 
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   mutate(
     year = as.integer(year),
     fin = suppressWarnings(as.numeric(temp))
-  ) |>
+  ) %>%
   select(-temp)
 
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   pivot_wider(names_from = "category", values_from = "fin")
 
-bea_cainc45_data <- bea_cainc45_data |>
-  left_join(ppi_data, by = "year", relationship = "many-to-one") |>
+bea_cainc45_data <- bea_cainc45_data %>%
+  left_join(ppi_data, by = "year", relationship = "many-to-one") %>%
   mutate(
     farm_cashanimal_ppi = farm_cashanimal / ppi_2012,
     farm_cashcrops_ppi = farm_cashcrops / ppi_2012,
@@ -92,7 +92,7 @@ bea_cainc45_data <- bea_cainc45_data |>
     farm_cashandinc_ppi = farm_cashandinc / ppi_2012
   )
 
-bea_cainc45_data <- bea_cainc45_data |>
+bea_cainc45_data <- bea_cainc45_data %>%
   filter(year > 2007 & year <= 2022)
 
 bea_cainc45_data <- apply_bea_county_crosswalk(bea_cainc45_data, bea_fips_xwalk)

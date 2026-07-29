@@ -12,13 +12,13 @@ state_minwages <- read_parquet(path_int("fred_state_minwages.parquet"))
 
 state_min_alt <- read_parquet(path_int("state_year_min_wage.parquet"))
 ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
-state_min_alt <- state_min_alt |>
-  filter(year == 2024) |>
+state_min_alt <- state_min_alt %>%
+  filter(year == 2024) %>%
   select(state_fips, agriculture_exemption)
 
-state_minwage_ppi <- state_minwages |>
-  left_join(ppi_data, by = "year", relationship = "many-to-one") |>
-  left_join(state_min_alt, by = "state_fips", relationship = "many-to-one") |>
+state_minwage_ppi <- state_minwages %>%
+  left_join(ppi_data, by = "year", relationship = "many-to-one") %>%
+  left_join(state_min_alt, by = "state_fips", relationship = "many-to-one") %>%
   mutate(
     agriculture_exemption = coalesce(agriculture_exemption, TRUE),
     state_min_wage = coalesce(state_min_wage, federal_min_wage),
@@ -31,7 +31,7 @@ state_minwage_ppi <- state_minwages |>
     prevailing_ag_min_wage_ppi = prevailing_ag_min_wage / ppi_2012,
     federal_min_wage_ppi = federal_min_wage / ppi_2012,
     state_min_wage_ppi = state_min_wage / ppi_2012
-  ) |>
+  ) %>%
   select(-ppi_2012)
 
 write_parquet(

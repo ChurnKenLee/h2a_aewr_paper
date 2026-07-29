@@ -1,5 +1,0 @@
-specification,confidence_level,interval_id,lower,upper,lower_hits_grid,upper_hits_grid
-primary_levels,0.95,1,-0.28508601948534507,0.028498593309763898,FALSE,FALSE
-levels_controls,0.95,1,-0.33851630060278515,0.03195404905034138,FALSE,FALSE
-levels_no_border,0.95,1,-1.1185198366037465,0.021905492358532008,FALSE,FALSE
-census_frame_benchmark,0.95,1,-0.23488164931754385,0.03689168177155011,FALSE,FALSE

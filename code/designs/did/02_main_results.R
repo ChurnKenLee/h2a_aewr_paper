@@ -10,9 +10,9 @@ library(fixest)
 
 sample_full <- read_parquet(
   path_processed("did_county_year_panel.parquet")
-) |>
+) %>%
   did_sample()
-sample_no_border <- sample_full |>
+sample_no_border <- sample_full %>%
   filter(!border_cz)
 
 models <- list(

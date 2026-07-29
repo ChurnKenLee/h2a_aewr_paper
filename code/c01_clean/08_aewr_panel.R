@@ -13,7 +13,7 @@ library(readr)
 fips_codes <- read_csv(
   path_raw("geographic_crosswalks", "phil", "fips_codes.csv"),
   show_col_types = FALSE
-) |>
+) %>%
   transmute(
     state_fips = state_fips(fips),
     across(-fips)
@@ -23,23 +23,23 @@ ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 aewr_data <- read_parquet(
   path_int("aewr.parquet"),
   stringsAsFactors = FALSE
-) |>
-  left_join(ppi_data, by = "year", relationship = "many-to-one") |>
+) %>%
+  left_join(ppi_data, by = "year", relationship = "many-to-one") %>%
   mutate(
     aewr = as.numeric(aewr),
     aewr_ppi = aewr / ppi_2012
-  ) |>
-  arrange(state_fips, year) |>
-  group_by(state_fips) |>
+  ) %>%
+  arrange(state_fips, year) %>%
+  group_by(state_fips) %>%
   mutate(
     aewr_ppi_l1 = lag(aewr_ppi),
     aewr_l1 = lag(aewr),
     aewr_ppi_l2 = lag(aewr_ppi, n = 2),
     aewr_l2 = lag(aewr, n = 2)
-  ) |>
-  ungroup() |>
-  filter(year > 2007, year <= 2022) |>
-  left_join(fips_codes, by = "state_fips", relationship = "many-to-one") |>
+  ) %>%
+  ungroup() %>%
+  filter(year > 2007, year <= 2022) %>%
+  left_join(fips_codes, by = "state_fips", relationship = "many-to-one") %>%
   select(
     aewr,
     aewr_ppi,

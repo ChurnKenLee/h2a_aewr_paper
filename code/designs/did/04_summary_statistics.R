@@ -11,7 +11,7 @@ library(tibble)
 
 sample <- read_parquet(
   path_processed("did_county_year_panel.parquet")
-) |>
+) %>%
   did_sample()
 
 variables <- c(

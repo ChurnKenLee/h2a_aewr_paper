@@ -14,23 +14,23 @@ library(tidyr)
 
 bite_change <- read_parquet(
   path_processed("county_year_panel.parquet")
-) |>
-  filter(any_cropland_2007, year %in% c(2008L, 2022L)) |>
-  select(county_fips, year, aewr_cz_p25) |>
+) %>%
+  filter(any_cropland_2007, year %in% c(2008L, 2022L)) %>%
+  select(county_fips, year, aewr_cz_p25) %>%
   pivot_wider(
     names_from = year,
     values_from = aewr_cz_p25,
     names_prefix = "bite_"
-  ) |>
+  ) %>%
   transmute(
     county_fips,
     bite_change_2008_2022 = bite_2022 - bite_2008
-  ) |>
+  ) %>%
   filter(is.finite(bite_change_2008_2022))
 
 county_map <- read_county_map(
   path_raw("county_shapefile", "tl_2020_us_county.zip")
-) |>
+) %>%
   left_join(
     bite_change,
     by = "county_fips",

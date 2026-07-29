@@ -31,7 +31,7 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Shared build | [`code/c02_build`](code/c02_build/) | `data/processed/county_year_panel.parquet` |
 | Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
 | DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
-| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | `data/processed/panel_iv_cluster_year.parquet`, IV results, and retained diagnostic figures |
+| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | `data/processed/panel_iv_county_year.parquet`, four first stages, seven four-column 2SLS tables, summary statistics, and diagnostics |
 | Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
 
 The shared panel owns normalized source measures, reusable outcomes and

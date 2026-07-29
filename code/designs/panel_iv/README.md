@@ -1,33 +1,50 @@
-# Panel-IV branch
+# Panel IV
 
-This branch consumes `data/processed/county_year_panel.parquet` directly. It
-does not read the DiD panel or any DiD treatment classification.
+This branch consumes `data/processed/county_year_panel.parquet` directly and
+estimates the requested county-year design for 2011--2022. It does not use the
+DiD panel, DiD treatment classifications, cropland restrictions, or
+observation weights.
 
-The design fixes five crop/climate/soil clusters within each AEWR region and
-uses the two most dissimilar donor clusters. The primary donor wage applies a
-soft-entropy center jointly targeting published FLS quarter-by-duration worker
-composition and the annual FLS combined field-and-livestock wage used to set
-the following year's AEWR. OEWS big-six agricultural wages supply the
-area-level wage moment. The Census hired-worker frame remains an explicit
-benchmark; outcomes and first-stage estimates do not enter the fit.
+The design fixes five crop/climate/soil subregions within each of the 17 AEWR
+regions and uses the two most dissimilar donor subregions. Both instruments
+use source information from year \(t-1\), a common Census hired-worker frame
+prior, and soft entropy calibration with \(\rho=0.10\). The basic instrument
+targets the annual FLS field-and-livestock wage only. The alternative-moment
+instrument also targets the published quarterly FLS worker shares; this is
+the preferred instrument. Worker-duration targets and a separate Census-frame
+instrument are not estimation specifications.
+
+All models include county and year fixed effects and cluster standard errors
+by AEWR-region-by-subregion (`aewr_iv_cluster_id`). The four first-stage
+columns use a common complete-case sample:
+
+1. wage-only instrument;
+2. wage-plus-seasonal instrument;
+3. wage-only instrument with lagged controls; and
+4. wage-plus-seasonal instrument with lagged controls (preferred).
+
+The controls are lagged log county population, lagged farm-employment share,
+lagged employment-to-population ratio, and the lagged real county 10th
+percentile wage. Each outcome has four 2SLS columns: wage-only and
+wage-plus-seasonal instruments, each without and with controls. All four
+columns use a common outcome-specific sample, and the controlled
+wage-plus-seasonal specification in column 4 is preferred. The seven outcomes
+are normalized H-2A certifications, real crop prices, farm employment,
+farm-production expense share, real farm income, farm-labor share, and output
+quantities.
 
 ## Order and artifacts
 
 | Script | Principal output |
 | --- | --- |
 | `01_build_county_features.R` | `panel_iv_county_features.parquet` |
-| `02_cluster_target_units.R` | `panel_iv_target_clusters.parquet`, `panel_iv_donor_clusters.parquet`, cluster map |
+| `02_cluster_target_units.R` | Fixed target/donor subregions and cluster map |
 | `03_build_fls_frame.py` | `panel_iv_fls_frame.parquet` |
-| `04_recover_fls_geography.py` | Composition features, wage features, entropy weights, and diagnostics under the `panel_iv_fls_geography_*` prefix |
-| `05_construct_instruments.R` | `panel_iv_area_frame.parquet`, `panel_iv_instrument_cluster_year.parquet` |
-| `06_build_cluster_year_panel.R` | `data/processed/panel_iv_cluster_year.parquet` |
-| `07_estimate_panel_iv.R` | Estimate/AR CSVs, four-column IV table, first-stage figure |
-| `08_generate_figures.R` | Five diagnostic figures and their reproducible plotting-data CSVs |
-
-The four retained estimates are primary levels, levels with lagged controls,
-no-border levels, and the Census-frame benchmark. All use target-cluster and
-year fixed effects, AEWR-region clustered inference, Webb six-point
-wild-cluster tests, and Anderson--Rubin sets.
+| `04_recover_fls_geography.py` | Wage-only and wage-plus-seasonal entropy weights and diagnostics |
+| `05_construct_instruments.R` | Area frame and the two cluster-year instruments |
+| `06_build_county_year_panel.R` | `data/processed/panel_iv_county_year.parquet` |
+| `07_estimate_panel_iv.R` | First stages, seven four-column 2SLS tables, and summary statistics |
+| `08_generate_figures.R` | Six diagnostic figures and reproducible plotting-data CSVs |
 
 Run:
 
@@ -35,21 +52,25 @@ Run:
 ./scripts/run_panel_iv.sh
 ```
 
-Retained final outputs are
-`iv_dissimilarity_model_estimates.csv`,
-`iv_dissimilarity_ar_intervals.csv`,
-`table_iv_dissimilarity_panel.tex`,
-`fig_iv_dissimilarity_first_stage.png`, and these six design figures:
+The retained estimation products under `outputs/tables` are:
 
-- `fig_iv_aewr_region_real_wage_series.png`
-- `fig_iv_fls_oews_cz_scatter.png`
-- `fig_iv_cz_entropy_weight_changes_pp.png`
-- `fig_iv_dissimilarity_clusters_k5.png`
-- `fig_iv_california_target_and_donors.png`
-- `fig_iv_target_donor_similarity_slopes.png`
+- `table_iv_preferred_first_stage.tex` and
+  `iv_preferred_first_stage_estimates.csv`;
+- `table_iv_h2a_normalized.tex`, `table_iv_prices.tex`,
+  `table_iv_farm_employment.tex`, `table_iv_production_expense_share.tex`,
+  `table_iv_farm_income.tex`, `table_iv_farm_labor_share.tex`, and
+  `table_iv_output_quantities.tex`;
+- `iv_preferred_second_stage_estimates.csv` and
+  `iv_preferred_second_stage_samples.csv`; and
+- `table_iv_preferred_summary_statistics.tex` and
+  `iv_preferred_summary_statistics.csv`.
 
-The plotting data for the five figures produced by `08_generate_figures.R`
-are retained under `outputs/tables` with the corresponding `iv_*.csv` names.
-The wage figures use observed OEWS area wages and 2012-dollar PPI deflation.
-The map continues to be produced with the fixed `k = 5` assignments in
-`02_cluster_target_units.R`, now at 300 DPI.
+The diagnostic figures are
+`fig_iv_dissimilarity_clusters_k5.png`,
+`fig_iv_aewr_region_real_wage_series.png`,
+`fig_iv_national_real_wage_series.png`,
+`fig_iv_fls_oews_cz_scatter.png`,
+`fig_iv_cz_entropy_weight_changes_pp.png`,
+`fig_iv_california_target_and_donors.png`, and
+`fig_iv_target_donor_similarity_slopes.png`. The cluster map is produced by
+script 02; the remaining six figures are produced by script 08.

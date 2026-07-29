@@ -17,8 +17,8 @@ h2a_predict <- read_parquet(
 )
 write_parquet(h2a_predict, path_int("h2a_predict.parquet"))
 
-h2a_data <- h2a_data |>
-  filter(year > 2007, year <= 2022, !is.na(county_fips)) |>
+h2a_data <- h2a_data %>%
+  filter(year > 2007, year <= 2022, !is.na(county_fips)) %>%
   select(-state_fips, -county_code)
 
 write_parquet(h2a_data, path_int("h2a_data_year.parquet"))

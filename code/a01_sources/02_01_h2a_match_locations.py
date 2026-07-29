@@ -378,11 +378,17 @@ def _(pl):
         "REQUESTED_START_DATE_OF_NEED",
     ]
     remove_cols_dict[2013] = ["NBR_WORKERS_REQUESTED"]
-    add_cols_dict[2014] = ["WORKSITE_LOCATION_CITY", "WORKSITE_LOCATION_STATE"]
+    # SOC_CODE_ID first appears in FY2014 and is renamed SOC_CODE in FY2015.
+    add_cols_dict[2014] = [
+        "SOC_CODE_ID",
+        "WORKSITE_LOCATION_CITY",
+        "WORKSITE_LOCATION_STATE",
+    ]
     remove_cols_dict[2014] = ["ALIEN_WORK_CITY", "ALIEN_WORK_STATE"]
     add_cols_dict[2015] = [
         "CASE_NUMBER",
         "NBR_WORKERS_REQUESTED",
+        "SOC_CODE",
         "WORKSITE_CITY",
         "WORKSITE_POSTAL_CODE",
         "WORKSITE_STATE",
@@ -391,6 +397,7 @@ def _(pl):
         "CASE_NO",
         "REQUESTED_END_DATE_OF_NEED",
         "REQUESTED_START_DATE_OF_NEED",
+        "SOC_CODE_ID",
         "WORKSITE_LOCATION_CITY",
         "WORKSITE_LOCATION_STATE",
     ]
@@ -407,12 +414,18 @@ def _(pl):
     remove_cols_dict[2018] = ["CASE_NUMBER", "PRIMARY/SUB"]
     add_cols_dict[2019] = ["CASE_NUMBER", "PRMARY/SUB"]
     remove_cols_dict[2019] = ["CASE_NO", "PRIMARY_SUB"]
+    # FLAG-era files rename the receipt date and add emergency-filing and
+    # piece-rate fields.  The harmonized names below remain stable.
     add_cols_dict[2020] = [
         "ANTICIPATED_NUMBER_OF_HOURS",
+        "EMERGENCY_FILING",
         "EMPLOYMENT_BEGIN_DATE",
         "EMPLOYMENT_END_DATE",
         "H2A_LABOR_CONTRACTOR",
         "PER",
+        "PIECE_RATE_OFFER",
+        "PIECE_RATE_UNIT",
+        "RECEIVED_DATE",
         "REQUESTED_BEGIN_DATE",
         "REQUESTED_END_DATE",
         "TOTAL_WORKERS_H2A_CERTIFIED",
@@ -431,6 +444,7 @@ def _(pl):
         "NBR_WORKERS_REQUESTED",
         "ORGANIZATION_FLAG",
         "PRMARY/SUB",
+        "CASE_RECEIVED_DATE",
         "REQUESTED_END_DATE_OF_NEED",
         "REQUESTED_START_DATE_OF_NEED",
     ]
@@ -446,11 +460,14 @@ def _(add_cols_dict, mutate_list, remove_cols_dict, s_map):
 
     cols_dict[2008] = [
         "CASE_NO",
+        "CASE_RECEIVED_DATE",
         "CASE_STATUS",
+        "DECISION_DATE",
         "EMPLOYER_NAME",
         "EMPLOYER_CITY",
         "EMPLOYER_STATE",
         "EMPLOYER_POSTAL_CODE",
+        "JOB_TITLE",
         "NBR_WORKERS_CERTIFIED",
         "CERTIFICATION_BEGIN_DATE",
         "CERTIFICATION_END_DATE",
@@ -479,10 +496,13 @@ def _(s_map):
 
     add_b_cols_dict[2020] = [
         "CASE_NUMBER",
+        "JOB_ORDER_NUMBER",
         "NAME_OF_AGRICULTURAL_BUSINESS",
         "PLACE_OF_EMPLOYMENT_CITY",
         "PLACE_OF_EMPLOYMENT_STATE",
         "PLACE_OF_EMPLOYMENT_POSTAL_CODE",
+        "REQUESTED_BEGIN_DATE",
+        "REQUESTED_END_DATE",
         "TOTAL_WORKERS",
     ]
     add_b_cols_dict[2021] = add_b_cols_dict[2020]
@@ -501,7 +521,10 @@ def _():
     h2a_rename_dict = {
         "CASE_NO": "case_number",
         "CASE_NUMBER": "case_number",
+        "CASE_RECEIVED_DATE": "case_received_date",
         "CASE_STATUS": "case_status",
+        "DECISION_DATE": "decision_date",
+        "RECEIVED_DATE": "case_received_date",
         "EMPLOYER_NAME": "employer_name",
         "EMPLOYER_CITY": "employer_city",
         "EMPLOYER_STATE": "employer_state",
@@ -521,12 +544,17 @@ def _():
         "EMPLOYMENT_END_DATE": "job_end_date",
         "JOB_START_DATE": "job_begin_date",
         "JOB_END_DATE": "job_end_date",
+        "JOB_TITLE": "job_title",
         "BASIC_NUMBER_OF_HOURS": "number_of_hours",
         "ANTICIPATED_NUMBER_OF_HOURS": "number_of_hours",
         "BASIC_RATE_OF_PAY": "wage_rate",
         "WAGE_OFFER": "wage_rate",
         "BASIC_UNIT_OF_PAY": "wage_unit",
         "PER": "wage_unit",
+        "PIECE_RATE_OFFER": "piece_rate_offer",
+        "PIECE_RATE_UNIT": "piece_rate_unit",
+        "SOC_CODE": "soc_code",
+        "SOC_CODE_ID": "soc_code",
         "ALIEN_WORK_CITY": "worksite_city",
         "ALIEN_WORK_STATE": "worksite_state",
         "WORKSITE_LOCATION_CITY": "worksite_city",
@@ -541,16 +569,20 @@ def _():
         "ORGANIZATION_FLAG": "organization_flag",
         "TYPE_OF_EMPLOYER_APPLICATION": "type_of_employer_application",
         "H2A_LABOR_CONTRACTOR": "h2a_labor_contractor",
+        "EMERGENCY_FILING": "emergency_filing",
         "AG_ASSN_OR_AGENCY_STATUS": "ag_association_or_agency",
     }
 
     # Common names in Addendum B files
     add_b_rename_dict = {
         "CASE_NUMBER": "case_number",
+        "JOB_ORDER_NUMBER": "job_order_number",
         "NAME_OF_AGRICULTURAL_BUSINESS": "business_name",
         "PLACE_OF_EMPLOYMENT_CITY": "worksite_city",
         "PLACE_OF_EMPLOYMENT_STATE": "worksite_state",
         "PLACE_OF_EMPLOYMENT_POSTAL_CODE": "worksite_zip",
+        "REQUESTED_BEGIN_DATE": "worksite_requested_begin_date",
+        "REQUESTED_END_DATE": "worksite_requested_end_date",
         "TOTAL_WORKERS": "total_h2a_workers_requested",
     }
     return add_b_rename_dict, h2a_rename_dict
@@ -574,7 +606,6 @@ def _(mo, pl):
 
     if mo.running_in_notebook():
         read_h2a_excel = mo.persistent_cache(read_h2a_excel)
-
     return (read_h2a_excel,)
 
 
@@ -1219,8 +1250,12 @@ def _(pl):
             added_fips_and_placeid.group_by(group_keys)
             .agg(
                 pl.col("county_fips_list").filter(pl.col("county_fips_list") != ""),
-                pl.col("matched_county_fips_list").filter(pl.col("matched_county_fips_list") != ""),
-                pl.col("places_county_fips_list").filter(pl.col("places_county_fips_list") != ""),
+                pl.col("matched_county_fips_list").filter(
+                    pl.col("matched_county_fips_list") != ""
+                ),
+                pl.col("places_county_fips_list").filter(
+                    pl.col("places_county_fips_list") != ""
+                ),
             )
             .with_columns(
                 pl.col("county_fips_list")

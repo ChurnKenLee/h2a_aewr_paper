@@ -19,6 +19,20 @@ Mode <- function(x, na.rm = FALSE) {
   return(ux[which.max(tabulate(match(x, ux)))])
 }
 
+FirstNonempty <- function(x) {
+  x <- x[!is.na(x) & trimws(x) != ""]
+  if (length(x) == 0L) {
+    return(NA_character_)
+  }
+  x[[1]]
+}
+
+PlausibleCaseDate <- function(value, fiscal_year) {
+  value_year <- as.integer(format(value, "%Y"))
+  value[!is.na(value_year) & abs(value_year - fiscal_year) > 1L] <- as.Date(NA)
+  value
+}
+
 # ---- Produce workers requested and certified counts for each worksite entry ----
 h2a_df <- read_parquet(path_int("h2a_with_fips.parquet")) %>%
   clean_names() %>%
@@ -35,6 +49,11 @@ h2a_df <- h2a_df %>%
   mutate(nbr_workers_certified = as.numeric(nbr_workers_certified)) %>%
   mutate(nbr_workers_requested = as.numeric(nbr_workers_requested)) %>%
   mutate(nbr_workers_needed = as.numeric(nbr_workers_needed))
+
+# Preserve every application before the worksite branch drops zero-certified
+# records. This branch is collapsed to county-year moments later; it is not
+# exported as a separate case-level dataset.
+h2a_case_source <- h2a_df
 
 # Entries with 0 workers certified indicate worker lodgings
 h2a_df <- h2a_df %>%
@@ -158,10 +177,10 @@ application_types <- h2a_duped_pre2020 %>%
 # These are associational applications
 drop_master_list <- c(
   "A",
-  "ASSOCIATION - JOINT EMPLOYER (H-2A ONLY)",
-  "ASSOCIATION - SOLE EMPLOYER (H-2A ONLY)",
-  "H-2A LABOR CONTRACTOR OR JOB CONTRACTOR",
-  "ASSOCIATION - FILING AS AGENT (H-2A ONLY)"
+  "Association - Joint Employer (H-2A Only)",
+  "Association - Sole Employer (H-2A Only)",
+  "H-2A Labor Contractor or Job Contractor",
+  "Association - Filing as Agent (H-2A Only)"
 )
 
 # Decide on how we want to perform adjustment
@@ -310,9 +329,12 @@ application_types <- h2a_duped_post2020 %>%
   distinct(type_of_employer_application)
 
 drop_master_list <- c(
-  "ASSOCIATION - AGENT",
-  "ASSOCIATION - SOLE EMPLOYER",
-  "ASSOCIATION - JOINT EMPLOYER"
+  "Association - Agent",
+  "Association - Sole Employer",
+  "Association - Joint Employer",
+  "Association - Filing as Agent (H-2A Only)",
+  "Association - Sole Employer (H-2A Only)",
+  "Association - Joint Employer (H-2A Only)"
 )
 
 # We use the number of workers requested for each worksite as the weights
@@ -425,10 +447,222 @@ sanity_check_total_2 <- h2a_combined %>%
     nbr_workers_requested = sum(adjusted_nbr_workers_requested, na.rm = TRUE),
   )
 # Sanity check numbers match, we are good
+
+# ---- Construct case-level moments before county aggregation ----
+# For applications represented in the allocated worksite data, use the same
+# geography produced by the existing master/sub-entry logic. For applications
+# absent from that branch (principally denied/withdrawn or otherwise
+# zero-certified cases), fall back to their disclosure-file geography.
+case_geography_from_allocated <- h2a_combined %>%
+  select(case_number, fiscal_year, county_fips_list)
+
+cases_with_allocated_geography <- case_geography_from_allocated %>%
+  distinct(case_number, fiscal_year)
+
+case_geography_fallback <- h2a_case_source %>%
+  anti_join(
+    cases_with_allocated_geography,
+    by = c("case_number", "fiscal_year")
+  ) %>%
+  select(case_number, fiscal_year, county_fips_list)
+
+h2a_case_geography <- bind_rows(
+  case_geography_from_allocated,
+  case_geography_fallback
+) %>%
+  mutate(
+    county_fips_list = if_else(
+      is.na(county_fips_list) | county_fips_list == "",
+      "00000",
+      county_fips_list
+    )
+  ) %>%
+  separate_rows(county_fips_list, sep = ",") %>%
+  mutate(
+    county_fips_list = trimws(county_fips_list),
+    county_fips_list = if_else(
+      county_fips_list == "",
+      "00000",
+      county_fips_list
+    ),
+    county_fips = harmonize_county_fips_2010(county_fips_list)
+  ) %>%
+  distinct(case_number, fiscal_year, county_fips) %>%
+  group_by(case_number, fiscal_year) %>%
+  mutate(case_county_weight = 1 / n()) %>%
+  ungroup()
+
+h2a_case_df <- h2a_case_source %>%
+  group_by(case_number, fiscal_year) %>%
+  summarise(
+    case_status = FirstNonempty(case_status),
+    case_received_date = FirstNonempty(case_received_date),
+    decision_date = FirstNonempty(decision_date),
+    certification_begin_date = FirstNonempty(certification_begin_date),
+    job_begin_date = FirstNonempty(job_begin_date),
+    requested_begin_date = FirstNonempty(requested_begin_date),
+    emergency_filing = FirstNonempty(emergency_filing),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    across(
+      c(
+        case_received_date,
+        decision_date,
+        certification_begin_date,
+        job_begin_date,
+        requested_begin_date
+      ),
+      \(value) as.Date(value)
+    ),
+    across(
+      c(
+        case_received_date,
+        decision_date,
+        certification_begin_date,
+        job_begin_date,
+        requested_begin_date
+      ),
+      \(value) PlausibleCaseDate(value, fiscal_year)
+    ),
+    case_begin_date = coalesce(
+      certification_begin_date,
+      job_begin_date,
+      requested_begin_date
+    ),
+    case_start_year = as.integer(format(case_begin_date, "%Y")),
+    case_start_year = coalesce(case_start_year, as.integer(fiscal_year)),
+    case_status_upper = str_to_upper(case_status),
+    case_status_harmonized = case_when(
+      str_detect(case_status_upper, "PARTIAL") ~ "partial_certification",
+      str_detect(case_status_upper, "DENIED") ~ "denied",
+      str_detect(case_status_upper, "WITHDRAWN") ~ "withdrawn",
+      str_detect(case_status_upper, "CERTIF") ~ "certified",
+      TRUE ~ "other"
+    ),
+    emergency_application = case_when(
+      str_to_upper(emergency_filing) == "Y" ~ TRUE,
+      str_to_upper(emergency_filing) == "N" ~ FALSE,
+      TRUE ~ NA
+    ),
+    receipt_to_start_days = as.numeric(
+      case_begin_date - case_received_date
+    ),
+    decision_to_start_days = as.numeric(
+      case_begin_date - decision_date
+    )
+  ) %>%
+  select(
+    case_number,
+    fiscal_year,
+    case_start_year,
+    case_status_harmonized,
+    emergency_application,
+    receipt_to_start_days,
+    decision_to_start_days
+  )
+
+h2a_case_start_year_aggregated_df <- h2a_case_df %>%
+  inner_join(
+    h2a_case_geography,
+    by = c("case_number", "fiscal_year"),
+    relationship = "one-to-many"
+  ) %>%
+  mutate(
+    receipt_timing_weight = if_else(
+      is.na(receipt_to_start_days),
+      0,
+      case_county_weight
+    ),
+    decision_timing_weight = if_else(
+      is.na(decision_to_start_days),
+      0,
+      case_county_weight
+    ),
+    emergency_observed_weight = if_else(
+      is.na(emergency_application),
+      0,
+      case_county_weight
+    )
+  ) %>%
+  group_by(county_fips, year = case_start_year) %>%
+  summarise(
+    nbr_applications_case_start_year = sum(case_county_weight),
+    nbr_applications_certified_start_year = sum(
+      case_county_weight *
+        (case_status_harmonized %in%
+          c("certified", "partial_certification"))
+    ),
+    nbr_applications_partial_start_year = sum(
+      case_county_weight *
+        (case_status_harmonized == "partial_certification")
+    ),
+    nbr_applications_denied_start_year = sum(
+      case_county_weight * (case_status_harmonized == "denied")
+    ),
+    nbr_applications_withdrawn_start_year = sum(
+      case_county_weight * (case_status_harmonized == "withdrawn")
+    ),
+    nbr_applications_emergency_start_year_observed = sum(
+      case_county_weight * coalesce(emergency_application, FALSE)
+    ),
+    emergency_observed_weight = sum(emergency_observed_weight),
+    receipt_to_start_days_weighted = sum(
+      case_county_weight * coalesce(receipt_to_start_days, 0)
+    ),
+    receipt_timing_weight = sum(receipt_timing_weight),
+    decision_to_start_days_weighted = sum(
+      case_county_weight * coalesce(decision_to_start_days, 0)
+    ),
+    decision_timing_weight = sum(decision_timing_weight),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    nbr_applications_emergency_start_year = if_else(
+      year >= 2021 &
+        near(
+          emergency_observed_weight,
+          nbr_applications_case_start_year
+        ),
+      nbr_applications_emergency_start_year_observed,
+      NA_real_
+    ),
+    mean_receipt_to_start_days_start_year = if_else(
+      receipt_timing_weight > 0,
+      receipt_to_start_days_weighted / receipt_timing_weight,
+      NA_real_
+    ),
+    mean_decision_to_start_days_start_year = if_else(
+      decision_timing_weight > 0,
+      decision_to_start_days_weighted / decision_timing_weight,
+      NA_real_
+    )
+  ) %>%
+  select(
+    -nbr_applications_emergency_start_year_observed,
+    -emergency_observed_weight,
+    -receipt_to_start_days_weighted,
+    -receipt_timing_weight,
+    -decision_to_start_days_weighted,
+    -decision_timing_weight
+  )
+
 # ---- Clean before aggregating into county years ----
 h2a_combined <- h2a_combined %>%
-  mutate(county_fips_list = if_else(is.na(county_fips_list), "00000", county_fips_list)) %>%
-  mutate(county_fips_list = if_else(county_fips_list == "", "00000", county_fips_list))
+  mutate(
+    county_fips_list = if_else(
+      is.na(county_fips_list),
+      "00000",
+      county_fips_list
+    )
+  ) %>%
+  mutate(
+    county_fips_list = if_else(
+      county_fips_list == "",
+      "00000",
+      county_fips_list
+    )
+  )
 
 # Add application status
 h2a_combined <- h2a_combined %>%
@@ -971,7 +1205,18 @@ h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_aggregated_df %>%
 # Merge
 h2a_aggregated_df <- h2a_all_years_aggregated_df %>%
   full_join(h2a_start_year_aggregated_df) %>%
-  full_join(h2a_fiscal_year_aggregated_df)
+  full_join(h2a_fiscal_year_aggregated_df) %>%
+  full_join(
+    h2a_case_start_year_aggregated_df,
+    by = c("county_fips", "year")
+  ) %>%
+  mutate(
+    nbr_applications_start_year = coalesce(
+      nbr_applications_case_start_year,
+      0
+    )
+  ) %>%
+  select(-nbr_applications_case_start_year)
 
 # Harmonize name of FIPS code variable
 h2a_aggregated_df <- h2a_aggregated_df %>%

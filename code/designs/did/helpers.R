@@ -1,12 +1,12 @@
 did_sample <- function(panel) {
-  panel |>
+  panel %>%
     dplyr::filter(
       any_cropland_2007,
       county_simple_treatment_groups != "always takers"
     )
 }
 
-did_cluster_formula <- ~cz_id^aewr_region_id
+did_cluster_formula <- ~ cz_id^aewr_region_id
 
 did_model <- function(data, outcome, controls = FALSE) {
   control_terms <- if (controls) {
@@ -57,11 +57,9 @@ did_table_headers <- c(
 )
 
 did_table_dictionary <- c(
-  h2a_cert_share_farm_workers_2011_start_year =
-    "Normalized H-2A program usage",
+  h2a_cert_share_farm_workers_2011_start_year = "Normalized H-2A program usage",
   aewr_cz_p25_l1 = "Lagged AEWR vs 25th pct wage gap",
-  "aewr_cz_p25_l1:postTRUE" =
-    "Lagged AEWR vs 25th pct wage gap $\\times$ Post",
+  "aewr_cz_p25_l1:postTRUE" = "Lagged AEWR vs 25th pct wage gap $\\times$ Post",
   post = "Post",
   postTRUE = "Post",
   ln_pop_census = "Log population",

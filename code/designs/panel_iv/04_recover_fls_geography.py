@@ -50,18 +50,18 @@ def _():
 
 @app.cell
 def _():
-    SUPPORTED_YEARS = tuple(range(2011, 2022))
+    SUPPORTED_YEARS = tuple(range(2010, 2022))
     BASELINE_WEIGHT_SPEC = "census_hired_workers_qcew_updated"
-    # The supported FLS series starts in 2011.  Keep the 2022 terminal Census
-    # benchmark available for temporal feature borrowing; earlier OEWS crosswalk
-    # vintages are not needed and are incomplete for a small number of counties.
-    FRAME_FEATURE_YEARS = tuple(range(2011, 2023))
+    # Policy-year models begin in 2011, so the donor wage, FLS moments, and
+    # geographic weights begin in source year 2010.  Keep the 2022 terminal
+    # Census benchmark available for temporal feature borrowing.
+    FRAME_FEATURE_YEARS = tuple(range(2010, 2023))
     REFERENCE_QUARTERS = ("january", "april", "july", "october")
     QUARTER_NUMBER = {
         quarter: number for number, quarter in enumerate(REFERENCE_QUARTERS, start=1)
     }
     DURATION_CELLS = ("long", "short")
-    MOMENT_SPEC = "fls_joint_quarter_duration_plus_field_livestock_wage"
+    MOMENT_SPEC = "fls_field_livestock_wage_plus_quarterly_worker_shares"
     GEOGRAPHIC_ALLOCATION_SPEC = "oews_township_share_within_county"
     MINIMUM_FRAME_COVERAGE = 0.90
     MINIMUM_CONTRAST_SCALE = 1e-12
@@ -410,15 +410,14 @@ def _(
         ):
             raise ValueError("Frame employment mass must be finite and nonnegative")
 
-        mapping = (
+        mapping_source = (
             area_definitions.with_columns(
-                pl.col("year").cast(pl.Int32).alias("source_year"),
+                pl.col("year").cast(pl.Int32).alias("mapping_source_year"),
                 pl.col("county_fips").cast(pl.String),
                 pl.col("oews_township_code").cast(pl.String).str.strip_chars(),
                 pl.col("oews_area_code").cast(pl.String).str.strip_chars(),
             )
             .filter(
-                pl.col("source_year").is_in(years),
                 pl.col("oews_township_code").is_not_null(),
                 pl.col("oews_township_code") != "",
                 pl.col("oews_area_code").is_not_null(),
@@ -426,7 +425,7 @@ def _(
             )
             .select(
                 "county_fips",
-                "source_year",
+                "mapping_source_year",
                 "oews_township_code",
                 "oews_area_code",
                 "oews_area_name",
@@ -434,13 +433,77 @@ def _(
             .unique(
                 subset=[
                     "county_fips",
-                    "source_year",
+                    "mapping_source_year",
                     "oews_township_code",
                     "oews_area_code",
                 ],
                 maintain_order=True,
             )
         )
+        mapping = (
+            mapping_source.filter(pl.col("mapping_source_year").is_in(years))
+            .with_columns(
+                pl.col("mapping_source_year").alias("source_year"),
+                pl.lit(False).alias("mapping_vintage_fallback"),
+            )
+        )
+
+        # The 2010 OEWS definition file omits Orange County, New York even
+        # though its 2011 definition is available.  More generally, fill an
+        # otherwise unmapped positive-mass county-year with its nearest
+        # adjacent OEWS mapping vintage.  This preserves the county's frame
+        # mass and records the fallback explicitly.
+        missing_exact = frame.filter(pl.col("frame_employment_mass") > 0).join(
+            mapping.select(_COUNTY_YEAR_KEYS).unique(),
+            on=_COUNTY_YEAR_KEYS,
+            how="anti",
+        )
+        if missing_exact.height:
+            fallback_years = (
+                missing_exact.select(_COUNTY_YEAR_KEYS)
+                .join(
+                    mapping_source.select(
+                        "county_fips", "mapping_source_year"
+                    ).unique(),
+                    on="county_fips",
+                    how="inner",
+                )
+                .with_columns(
+                    (
+                        pl.col("mapping_source_year") - pl.col("source_year")
+                    )
+                    .abs()
+                    .alias("mapping_year_distance")
+                )
+                .filter(pl.col("mapping_year_distance") <= 1)
+                .sort(
+                    "county_fips",
+                    "source_year",
+                    "mapping_year_distance",
+                    "mapping_source_year",
+                )
+                .group_by(_COUNTY_YEAR_KEYS, maintain_order=True)
+                .first()
+                .select(
+                    "county_fips",
+                    "source_year",
+                    "mapping_source_year",
+                )
+            )
+            fallback_mapping = (
+                fallback_years.join(
+                    mapping_source,
+                    on=["county_fips", "mapping_source_year"],
+                    how="inner",
+                    validate="m:m",
+                )
+                .with_columns(pl.lit(True).alias("mapping_vintage_fallback"))
+            )
+            mapping = pl.concat(
+                [mapping, fallback_mapping],
+                how="diagonal_relaxed",
+            )
+
         township_contract = (
             mapping.group_by("county_fips", "source_year", "oews_township_code")
             .agg(pl.col("oews_area_code").n_unique().alias("mapped_area_count"))
@@ -453,6 +516,8 @@ def _(
             mapping.group_by("county_fips", "source_year", "oews_area_code")
             .agg(
                 pl.col("oews_area_name").drop_nulls().first(),
+                pl.col("mapping_source_year").first(),
+                pl.col("mapping_vintage_fallback").any(),
                 pl.col("oews_township_code")
                 .n_unique()
                 .alias("oews_area_mapped_townships"),
@@ -2148,13 +2213,14 @@ def _(
         return expanded
 
     WEIGHT_SPEC = "fls_realized_geography_dirichlet_entropy"
-    RHO_VALUES = (0.01, 0.03, 0.10, 0.30, 1.00)
-    KAPPA_MULTIPLIERS = (2.0, 5.0, 10.0, 20.0)
     PRIMARY_RHO = 0.10
     PRIMARY_KAPPA_MULTIPLIER = 10.0
-    PRIMARY_SPECIFICATION = "fls_geo_field_livestock_dirichlet_m10_rho010"
-    PRIMARY_DRAW_COUNT = 999
-    SENSITIVITY_DRAW_COUNT = 199
+    WAGE_ONLY_SPECIFICATION = "fls_geo_wage_only_soft_rho010"
+    PRIMARY_SPECIFICATION = "fls_geo_wage_seasonal_soft_rho010"
+    # Instruments use deterministic centers only.  Retain one reproducible
+    # prior draw so the existing recovery diagnostics keep a stable schema
+    # without carrying forward the obsolete sensitivity grids.
+    DIAGNOSTIC_DRAW_COUNT = 1
     SIMULATION_SEED = 20260726
     WEIGHT_SUM_TOLERANCE = 1e-10
     OPTIMIZER_GRADIENT_TOLERANCE = 1e-10
@@ -2173,60 +2239,33 @@ def _(
         "98902",
     )
 
-    def rho_code(rho: float) -> str:
-        return f"{int(round(100 * rho)):03d}"
-
-    def multiplier_code(multiplier: float) -> str:
-        if float(multiplier).is_integer():
-            return f"{int(multiplier):02d}"
-        return str(multiplier).replace(".", "p")
-
-    def specification_label(multiplier: float, rho: float) -> str:
-        return (
-            "fls_geo_field_livestock_dirichlet_"
-            f"m{multiplier_code(multiplier)}_rho{rho_code(rho)}"
-        )
-
     def specification_grid() -> tuple[dict[str, Any], ...]:
-        """Return the fixed primary and one-dimensional sensitivity grid."""
+        """Return the two publication instrument specifications."""
 
-        specifications: list[dict[str, Any]] = [
+        specifications = (
             {
-                "specification": PRIMARY_SPECIFICATION,
+                "specification": WAGE_ONLY_SPECIFICATION,
+                "moment_spec": "fls_field_livestock_wage_only",
+                "include_seasonal_targets": False,
                 "rho": PRIMARY_RHO,
                 "kappa_multiplier": PRIMARY_KAPPA_MULTIPLIER,
-                "draw_count": PRIMARY_DRAW_COUNT,
+                "draw_count": DIAGNOSTIC_DRAW_COUNT,
+                "is_primary": False,
+            },
+            {
+                "specification": PRIMARY_SPECIFICATION,
+                "moment_spec": MOMENT_SPEC,
+                "include_seasonal_targets": True,
+                "rho": PRIMARY_RHO,
+                "kappa_multiplier": PRIMARY_KAPPA_MULTIPLIER,
+                "draw_count": DIAGNOSTIC_DRAW_COUNT,
                 "is_primary": True,
-            }
-        ]
-        for rho in RHO_VALUES:
-            if math.isclose(rho, PRIMARY_RHO):
-                continue
-            specifications.append(
-                {
-                    "specification": specification_label(PRIMARY_KAPPA_MULTIPLIER, rho),
-                    "rho": rho,
-                    "kappa_multiplier": PRIMARY_KAPPA_MULTIPLIER,
-                    "draw_count": SENSITIVITY_DRAW_COUNT,
-                    "is_primary": False,
-                }
-            )
-        for multiplier in KAPPA_MULTIPLIERS:
-            if math.isclose(multiplier, PRIMARY_KAPPA_MULTIPLIER):
-                continue
-            specifications.append(
-                {
-                    "specification": specification_label(multiplier, PRIMARY_RHO),
-                    "rho": PRIMARY_RHO,
-                    "kappa_multiplier": multiplier,
-                    "draw_count": SENSITIVITY_DRAW_COUNT,
-                    "is_primary": False,
-                }
-            )
+            },
+        )
         labels = [specification["specification"] for specification in specifications]
         if len(labels) != len(set(labels)):
             raise AssertionError("Duplicate FLS realized-geography specifications")
-        return tuple(specifications)
+        return specifications
 
     def deterministic_seed(
         aewr_region_id: str,
@@ -2729,6 +2768,7 @@ def _(
         *,
         aewr_region_id: str,
         source_year: int,
+        specification: dict[str, Any],
     ) -> dict[str, Any]:
         area = area_prior.filter(
             pl.col("aewr_region_id") == str(aewr_region_id),
@@ -2747,43 +2787,100 @@ def _(
             pl.col("aewr_region_id") == str(aewr_region_id),
             pl.col("source_year") == int(source_year),
         )
-        contrast = feature_cell.filter(
-            pl.col("feature_row_type") == "helmert_contrast",
-            pl.col("supported_frame"),
-            pl.col("contrast_active"),
-        )
-        active_ids = sorted(
-            int(value)
-            for value in contrast.get_column("contrast_id").drop_nulls().unique()
-        )
         supported_codes = supported.get_column("oews_area_code").to_list()
-        if active_ids:
-            design_lookup = {
-                (row["oews_area_code"], int(row["contrast_id"])): float(
-                    row["area_standardized_contrast"]
+        prior = np.array(
+            supported.get_column("frame_prior_weight").to_numpy(),
+            dtype=float,
+            copy=True,
+        )
+        prior /= prior.sum()
+
+        joint = feature_cell.filter(
+            pl.col("feature_row_type") == "joint_cell",
+            pl.col("supported_frame"),
+        )
+        active_ids: list[int] = []
+        if specification["include_seasonal_targets"]:
+            target_rows = (
+                joint.filter(pl.col("oews_area_code") == supported_codes[0])
+                .unique(subset=["cell_index"], maintain_order=True)
+                .sort("cell_index")
+            )
+            quarters = sorted(
+                int(value)
+                for value in target_rows.get_column("qtr").drop_nulls().unique()
+            )
+            if len(quarters) < 3:
+                raise ValueError(
+                    f"Fewer than three seasonal targets for region "
+                    f"{aewr_region_id}, {source_year}"
                 )
-                for row in contrast.iter_rows(named=True)
+
+            target_quarter_counts = {
+                quarter: float(
+                    target_rows.filter(pl.col("qtr") == quarter)
+                    .get_column("fls_worker_count")
+                    .sum()
+                )
+                for quarter in quarters
             }
-            target_lookup = {
-                int(row["contrast_id"]): float(row["target_standardized_contrast"])
-                for row in contrast.unique(
-                    subset=["contrast_id"], maintain_order=True
-                ).iter_rows(named=True)
-            }
-            design = np.asarray(
+            target_total = sum(target_quarter_counts.values())
+            if target_total <= 0:
+                raise ValueError(
+                    f"Nonpositive seasonal target for region "
+                    f"{aewr_region_id}, {source_year}"
+                )
+            seasonal_target = np.asarray(
+                [target_quarter_counts[quarter] / target_total for quarter in quarters],
+                dtype=float,
+            )
+
+            seasonal_lookup: dict[tuple[str, int], float] = {}
+            for row in joint.unique(
+                subset=["oews_area_code", "qtr"], maintain_order=True
+            ).iter_rows(named=True):
+                seasonal_lookup[(row["oews_area_code"], int(row["qtr"]))] = float(
+                    row["seasonal_employment_share"]
+                )
+            seasonal_design = np.asarray(
                 [
                     [
-                        design_lookup[(area_code, contrast_id)]
-                        for contrast_id in active_ids
+                        seasonal_lookup[(area_code, quarter)]
+                        for quarter in quarters
                     ]
                     for area_code in supported_codes
                 ],
                 dtype=float,
             )
-            target = np.asarray(
-                [target_lookup[contrast_id] for contrast_id in active_ids],
-                dtype=float,
-            )
+            if (
+                not np.all(np.isfinite(seasonal_design))
+                or not np.allclose(
+                    seasonal_design.sum(axis=1),
+                    1,
+                    atol=1e-12,
+                    rtol=0,
+                )
+            ):
+                raise ValueError(
+                    f"Invalid seasonal area features for region "
+                    f"{aewr_region_id}, {source_year}"
+                )
+
+            basis = helmert_basis(len(quarters))
+            area_contrasts = seasonal_design @ basis
+            target_contrasts = seasonal_target @ basis
+            centers = prior @ area_contrasts
+            scales = np.sqrt(prior @ (area_contrasts - centers) ** 2)
+            active = np.isfinite(scales) & (scales > MINIMUM_CONTRAST_SCALE)
+            active_ids = [
+                index + 1 for index, is_active in enumerate(active) if is_active
+            ]
+            design = (
+                area_contrasts[:, active] - centers[active]
+            ) / scales[active]
+            target = (
+                target_contrasts[active] - centers[active]
+            ) / scales[active]
         else:
             design = np.empty((supported.height, 0), dtype=float)
             target = np.empty(0, dtype=float)
@@ -2821,15 +2918,12 @@ def _(
         design = np.column_stack([design, wage_design])
         target = np.append(target, wage_targets.pop())
 
-        joint = feature_cell.filter(
-            pl.col("feature_row_type") == "joint_cell",
-            pl.col("supported_frame"),
-        )
         imputed_lookup: dict[str, bool] = defaultdict(bool)
-        for row in joint.iter_rows(named=True):
-            imputed_lookup[row["oews_area_code"]] |= bool(
-                row["employment_feature_imputed"] or row["duration_feature_imputed"]
-            )
+        if specification["include_seasonal_targets"]:
+            for row in joint.iter_rows(named=True):
+                imputed_lookup[row["oews_area_code"]] |= bool(
+                    row["employment_feature_imputed"]
+                )
         for area_code in supported_codes:
             imputed_lookup[area_code] |= bool(
                 wage_lookup[area_code]["oews_area_wage_imputed"]
@@ -2839,7 +2933,7 @@ def _(
             "area": area,
             "supported": supported,
             "supported_codes": supported_codes,
-            "prior": supported.get_column("frame_prior_weight").to_numpy(),
+            "prior": prior,
             "design": design,
             "target": target,
             "active_contrast_ids": active_ids,
@@ -2871,7 +2965,7 @@ def _(
             "specification": specification["specification"],
             "weight_spec": WEIGHT_SPEC,
             "baseline_weight_spec": BASELINE_WEIGHT_SPEC,
-            "moment_spec": MOMENT_SPEC,
+            "moment_spec": specification["moment_spec"],
             "wage_target_used": True,
             "rho": specification["rho"],
             "kappa_multiplier": specification["kappa_multiplier"],
@@ -2955,6 +3049,7 @@ def _(
             wage_features,
             aewr_region_id=aewr_region_id,
             source_year=source_year,
+            specification=specification,
         )
         area = cell["area"]
         prior = np.array(cell["prior"], dtype=float, copy=True)
@@ -3193,6 +3288,7 @@ def _(
             wage_features,
             aewr_region_id=aewr_region_id,
             source_year=source_year,
+            specification=specifications[0],
         )
         prior = np.array(cell["prior"], dtype=float, copy=True)
         prior /= prior.sum()
@@ -3441,7 +3537,7 @@ def _(
         regions: list[str] | None,
     ) -> None:
         inputs = _read_inputs()
-        print("Building public FLS quarter-duration features", flush=True)
+        print("Building public FLS seasonal features and wage targets", flush=True)
         artifacts = build_feature_artifacts(
             frame_employment=inputs["panel_iv_fls_frame"],
             area_definitions=inputs["oews_area_definitions"],
@@ -3558,7 +3654,7 @@ def _(
             nargs="+",
             type=int,
             default=list(SUPPORTED_YEARS),
-            help="source years to build (default: 2011 through 2021)",
+            help="source years to build (default: 2010 through 2021)",
         )
         parser.add_argument(
             "--regions",

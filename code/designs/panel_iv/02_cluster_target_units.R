@@ -20,7 +20,7 @@ county_features <- read_parquet(path_int("panel_iv_county_features.parquet"))
 county_feature_names <- setdiff(names(county_features), "county_fips")
 county_df <- read_parquet(
   path_processed("county_year_panel.parquet")
-) |>
+) %>%
   mutate(
     panel_iv_target_unit_id = make_panel_iv_target_unit_id(
       cz_id,
@@ -42,16 +42,16 @@ soil_vars <- c(
   "cropprodindex"
 )
 
-unit_xwalk <- county_df |>
+unit_xwalk <- county_df %>%
   distinct(county_fips, cz_id, aewr_region_id, panel_iv_target_unit_id)
 
-county_feature_weights <- county_df |>
+county_feature_weights <- county_df %>%
   filter(
     year >= DISSIMILARITY_IV_FEATURE_START_YEAR,
     year <= DISSIMILARITY_IV_FEATURE_END_YEAR
-  ) |>
-  group_by(county_fips, cz_id, aewr_region_id, panel_iv_target_unit_id) |>
-  summarise(feature_weight = mean(emp_farm, na.rm = TRUE), .groups = "drop") |>
+  ) %>%
+  group_by(county_fips, cz_id, aewr_region_id, panel_iv_target_unit_id) %>%
+  summarise(feature_weight = mean(emp_farm, na.rm = TRUE), .groups = "drop") %>%
   mutate(
     feature_weight = if_else(
       is.nan(feature_weight) | is.na(feature_weight) | feature_weight <= 0,
@@ -60,14 +60,14 @@ county_feature_weights <- county_df |>
     )
   )
 
-unit_features <- unit_xwalk |>
+unit_features <- unit_xwalk %>%
   left_join(
     county_feature_weights,
     by = c("county_fips", "cz_id", "aewr_region_id", "panel_iv_target_unit_id")
-  ) |>
-  mutate(feature_weight = replace_na(feature_weight, 1)) |>
-  left_join(county_features, by = "county_fips") |>
-  group_by(cz_id, aewr_region_id, panel_iv_target_unit_id) |>
+  ) %>%
+  mutate(feature_weight = replace_na(feature_weight, 1)) %>%
+  left_join(county_features, by = "county_fips") %>%
+  group_by(cz_id, aewr_region_id, panel_iv_target_unit_id) %>%
   summarise(
     unit_feature_weight = sum(feature_weight, na.rm = TRUE),
     across(
@@ -86,7 +86,7 @@ share_feature_names <- feature_names[
   str_detect(feature_names, "^share_cdl_|^share_soil_")
 ]
 
-unit_features <- unit_features |>
+unit_features <- unit_features %>%
   mutate(
     across(
       all_of(share_feature_names),
@@ -120,7 +120,7 @@ cluster_list <- list()
 cluster_diagnostic_list <- list()
 donor_cluster_list <- list()
 for (r in sort(unique(unit_features$aewr_region_id))) {
-  d <- unit_features |> filter(aewr_region_id == r)
+  d <- unit_features %>% filter(aewr_region_id == r)
 
   for (v in feature_names) {
     x <- d[[v]]
@@ -153,8 +153,8 @@ for (r in sort(unique(unit_features$aewr_region_id))) {
     selected_cluster <- cutree(hclust_fit, k = iv_k)
     donor_cluster_counts <- DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
 
-    cluster_list[[list_key]] <- d |>
-      select(panel_iv_target_unit_id, aewr_region_id) |>
+    cluster_list[[list_key]] <- d %>%
+      select(panel_iv_target_unit_id, aewr_region_id) %>%
       mutate(iv_k = iv_k, iv_cluster = selected_cluster)
 
     cluster_diagnostic_list[[list_key]] <- tibble(
@@ -162,21 +162,21 @@ for (r in sort(unique(unit_features$aewr_region_id))) {
       iv_k = iv_k,
       iv_cluster = selected_cluster,
       unit_feature_weight = d$unit_feature_weight
-    ) |>
-      group_by(aewr_region_id, iv_k, iv_cluster) |>
+    ) %>%
+      group_by(aewr_region_id, iv_k, iv_cluster) %>%
       summarise(
         cluster_units = n(),
         cluster_feature_weight = sum(unit_feature_weight, na.rm = TRUE),
         .groups = "drop"
-      ) |>
+      ) %>%
       mutate(
         cluster_feature_weight_share = cluster_feature_weight /
           sum(cluster_feature_weight, na.rm = TRUE)
       )
 
-    cluster_centroids <- as_tibble(x) |>
-      mutate(iv_cluster = selected_cluster) |>
-      group_by(iv_cluster) |>
+    cluster_centroids <- as_tibble(x) %>%
+      mutate(iv_cluster = selected_cluster) %>%
+      group_by(iv_cluster) %>%
       summarise(
         across(all_of(feature_names), ~ mean(.x)),
         .groups = "drop"
@@ -198,13 +198,13 @@ for (r in sort(unique(unit_features$aewr_region_id))) {
           as.character(target_cluster_id),
           as.character(cluster_ids)
         ]
-      ) |>
-        filter(donor_cluster != target_cluster) |>
-        arrange(desc(donor_cluster_distance), donor_cluster) |>
-        mutate(donor_rank = row_number()) |>
+      ) %>%
+        filter(donor_cluster != target_cluster) %>%
+        arrange(desc(donor_cluster_distance), donor_cluster) %>%
+        mutate(donor_rank = row_number()) %>%
         crossing(
           donor_cluster_count = donor_cluster_counts
-        ) |>
+        ) %>%
         filter(donor_rank <= donor_cluster_count)
     }
 
@@ -214,12 +214,12 @@ for (r in sort(unique(unit_features$aewr_region_id))) {
 
 iv_clusters <- bind_rows(cluster_list)
 write_parquet(iv_clusters, path_int("panel_iv_target_clusters.parquet"))
-iv_cluster_diagnostics <- bind_rows(cluster_diagnostic_list) |>
-  group_by(aewr_region_id, iv_k) |>
+iv_cluster_diagnostics <- bind_rows(cluster_diagnostic_list) %>%
+  group_by(aewr_region_id, iv_k) %>%
   mutate(
     region_min_cluster_units = min(cluster_units),
     region_min_cluster_weight_share = min(cluster_feature_weight_share)
-  ) |>
+  ) %>%
   ungroup()
 iv_donor_clusters <- bind_rows(donor_cluster_list)
 write_parquet(
@@ -230,15 +230,15 @@ write_parquet(iv_donor_clusters, path_int("panel_iv_donor_clusters.parquet"))
 
 # Map CZ x AEWR-region clusters ----------------------------------------------
 
-aewr_region_labels <- county_df |>
-  distinct(aewr_region_id, state_abbrev) |>
-  filter(!is.na(aewr_region_id), !is.na(state_abbrev)) |>
-  arrange(aewr_region_id, state_abbrev) |>
-  group_by(aewr_region_id) |>
+aewr_region_labels <- county_df %>%
+  distinct(aewr_region_id, state_abbrev) %>%
+  filter(!is.na(aewr_region_id), !is.na(state_abbrev)) %>%
+  arrange(aewr_region_id, state_abbrev) %>%
+  group_by(aewr_region_id) %>%
   summarise(
     aewr_region_states = paste(state_abbrev, collapse = ", "),
     .groups = "drop"
-  ) |>
+  ) %>%
   mutate(
     aewr_region_label = paste0(
       "AEWR Region ",
@@ -269,17 +269,17 @@ iv_cluster_colors <- setNames(
   iv_cluster_levels
 )
 
-county_iv_clusters <- county_df |>
-  distinct(county_fips, cz_id, aewr_region_id, panel_iv_target_unit_id) |>
+county_iv_clusters <- county_df %>%
+  distinct(county_fips, cz_id, aewr_region_id, panel_iv_target_unit_id) %>%
   # Analysis data use the pre-2015 Shannon County code; the bundled 2020
   # TIGER shapefile uses the newer Oglala Lakota County code.
-  mutate(county_fips = recode(county_fips, `46113` = "46102")) |>
+  mutate(county_fips = recode(county_fips, `46113` = "46102")) %>%
   left_join(
     iv_clusters,
     by = c("panel_iv_target_unit_id", "aewr_region_id"),
     relationship = "many-to-many"
-  ) |>
-  left_join(aewr_region_labels, by = "aewr_region_id") |>
+  ) %>%
+  left_join(aewr_region_labels, by = "aewr_region_id") %>%
   mutate(
     iv_cluster_id = iv_cluster,
     iv_cluster = factor(
@@ -302,26 +302,26 @@ unzip(county_shape_zip, exdir = tempdir())
 county_map_iv_clusters <- sf::st_read(
   file.path(tempdir(), "tl_2020_us_county.shp"),
   quiet = TRUE
-) |>
+) %>%
   mutate(
     state_fips = state_fips(STATEFP),
     county_fips = combine_county_fips(STATEFP, COUNTYFP)
-  ) |>
+  ) %>%
   filter(
     as.integer(state_fips) <= 56,
     !state_fips %in% c("02", "15")
-  ) |>
-  sf::st_make_valid() |>
-  sf::st_transform(5070) |>
-  left_join(county_iv_clusters, by = "county_fips") |>
+  ) %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(5070) %>%
+  left_join(county_iv_clusters, by = "county_fips") %>%
   filter(!is.na(aewr_region_id))
 
-cz_aewr_cluster_boundaries <- county_map_iv_clusters |>
-  group_by(iv_k, panel_iv_target_unit_id, aewr_region_id, aewr_region_label) |>
+cz_aewr_cluster_boundaries <- county_map_iv_clusters %>%
+  group_by(iv_k, panel_iv_target_unit_id, aewr_region_id, aewr_region_label) %>%
   summarise(geometry = sf::st_union(geometry), .groups = "drop")
 
-aewr_region_boundaries <- county_map_iv_clusters |>
-  group_by(iv_k, aewr_region_id, aewr_region_label) |>
+aewr_region_boundaries <- county_map_iv_clusters %>%
+  group_by(iv_k, aewr_region_id, aewr_region_label) %>%
   summarise(geometry = sf::st_union(geometry), .groups = "drop")
 
 iv_cluster_map_theme <- theme_void(base_size = 10) +
@@ -340,17 +340,17 @@ iv_cluster_map_theme <- theme_void(base_size = 10) +
 
 for (iv_k in DISSIMILARITY_IV_PRIMARY_K) {
   k_cluster_levels <- paste0("Cluster ", seq_len(iv_k))
-  k_map_data <- county_map_iv_clusters |>
-    filter(iv_k == .env$iv_k) |>
+  k_map_data <- county_map_iv_clusters %>%
+    filter(iv_k == .env$iv_k) %>%
     mutate(
       iv_cluster = factor(
         as.character(iv_cluster),
         levels = k_cluster_levels
       )
     )
-  k_cz_boundaries <- cz_aewr_cluster_boundaries |>
+  k_cz_boundaries <- cz_aewr_cluster_boundaries %>%
     filter(iv_k == .env$iv_k)
-  k_region_boundaries <- aewr_region_boundaries |>
+  k_region_boundaries <- aewr_region_boundaries %>%
     filter(iv_k == .env$iv_k)
 
   iv_cluster_map_all <- ggplot() +
