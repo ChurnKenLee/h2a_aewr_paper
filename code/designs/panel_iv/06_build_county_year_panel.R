@@ -51,10 +51,11 @@ instrument_long <- read_parquet(
   path_int("panel_iv_instrument_cluster_year.parquet")
 ) %>%
   filter(
-    instrument_spec_label %in% c(
-      DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL,
-      DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
-    ),
+    instrument_spec_label %in%
+      c(
+        DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL,
+        DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
+      ),
     is.na(weight_draw_id)
   )
 
@@ -67,8 +68,7 @@ instrument_keys <- c(
 
 wage_only_instrument <- instrument_long %>%
   filter(
-    instrument_spec_label ==
-      DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL
+    instrument_spec_label == DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL
   ) %>%
   transmute(
     across(all_of(instrument_keys)),
@@ -78,8 +78,7 @@ wage_only_instrument <- instrument_long %>%
 
 wage_seasonal_instrument <- instrument_long %>%
   filter(
-    instrument_spec_label ==
-      DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
+    instrument_spec_label == DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
   ) %>%
   transmute(
     across(all_of(instrument_keys)),
@@ -97,11 +96,9 @@ instrument_pair <- wage_only_instrument %>%
 if (
   nrow(instrument_pair) !=
     85L *
-      (
-        DISSIMILARITY_IV_POLICY_END_YEAR -
-          DISSIMILARITY_IV_POLICY_START_YEAR +
-          1L
-      ) ||
+      (DISSIMILARITY_IV_POLICY_END_YEAR -
+        DISSIMILARITY_IV_POLICY_START_YEAR +
+        1L) ||
     any(instrument_pair$source_year != instrument_pair$policy_year - 1L)
 ) {
   stop(

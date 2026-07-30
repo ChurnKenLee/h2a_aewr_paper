@@ -10,6 +10,8 @@ library(tidyverse)
 library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 
+AEWR_OFFER_TOLERANCE <- 0.05
+
 Mode <- function(x, na.rm = FALSE) {
   if (na.rm) {
     x <- x[!is.na(x)]
@@ -33,6 +35,33 @@ PlausibleCaseDate <- function(value, fiscal_year) {
   value
 }
 
+AssertNestedHours <- function(total, hourly, aewr_observed, at_aewr, label) {
+  tolerance <- 1e-8 * pmax(1, abs(total))
+  checks <- cbind(
+    negative_total = total < -tolerance,
+    negative_hourly = hourly < -tolerance,
+    negative_aewr_observed = aewr_observed < -tolerance,
+    negative_at_aewr = at_aewr < -tolerance,
+    hourly_exceeds_total = hourly > total + tolerance,
+    observed_exceeds_hourly = aewr_observed > hourly + tolerance,
+    at_aewr_exceeds_observed = at_aewr > aewr_observed + tolerance
+  )
+  checks[is.na(checks)] <- FALSE
+  invalid <- rowSums(checks) > 0
+  invalid[is.na(invalid)] <- FALSE
+  if (any(invalid)) {
+    failure_counts <- colSums(checks)
+    failure_counts <- failure_counts[failure_counts > 0]
+    stop(
+      "Invalid certified-hour exposure accounting in ",
+      label,
+      ": ",
+      paste(names(failure_counts), failure_counts, sep = "=", collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
+
 # ---- Produce workers requested and certified counts for each worksite entry ----
 h2a_df <- read_parquet(path_int("h2a_with_fips.parquet")) %>%
   clean_names() %>%
@@ -42,6 +71,23 @@ addendum_b <- read_parquet(path_int(
   "h2a_addendum_b_with_fips.parquet"
 )) %>%
   clean_names()
+
+aewr_rates <- read_parquet(path_int("aewr.parquet")) %>%
+  transmute(
+    state_fips = state_fips(state_fips),
+    year = as.integer(year),
+    nominal_aewr = as.numeric(aewr)
+  ) %>%
+  filter(year <= 2022L) %>%
+  distinct() %>%
+  arrange(state_fips, year) %>%
+  group_by(state_fips) %>%
+  mutate(lag_nominal_aewr = lag(nominal_aewr)) %>%
+  ungroup()
+
+if (anyDuplicated(aewr_rates[c("state_fips", "year")]) > 0L) {
+  stop("AEWR rates must have unique state-year keys.", call. = FALSE)
+}
 
 # Handle master entries that include worker counts in all sub entries
 # Split cases into those with duplicated worker counts in sub-entries and those without
@@ -282,7 +328,16 @@ h2a_duped_post2020 <- h2a_duped_post2020 %>%
   mutate(entry_type = "master")
 
 addendum_b <- addendum_b %>%
-  mutate(nbr_workers_requested = as.numeric(total_h2a_workers_requested)) %>%
+  mutate(
+    nbr_workers_requested = as.numeric(total_h2a_workers_requested),
+    # Nine FY2022--2023 addendum rows contain impossible negative counts.
+    # Treat them like the other missing worksite weights and impute below.
+    nbr_workers_requested = if_else(
+      nbr_workers_requested < 0,
+      NA_real_,
+      nbr_workers_requested
+    )
+  ) %>%
   select(-total_h2a_workers_requested) %>%
   mutate(entry_type = "sub")
 
@@ -919,6 +974,14 @@ h2a_cleaned_df <- h2a_cleaned_df %>%
     hourly_wage = case_when(
       wage_rate <= 100 ~ wage_rate,
       .default = NaN
+    ),
+    wage_unit_harmonized = str_to_upper(str_trim(wage_unit)),
+    hourly_offered_wage = case_when(
+      wage_unit_harmonized %in%
+        c("HOUR", "HOURLY", "HR") &
+        is.finite(wage_rate) &
+        wage_rate > 0 ~ wage_rate,
+      TRUE ~ NA_real_
     )
   )
 
@@ -1060,11 +1123,57 @@ h2a_start_year_df <- h2a_cleaned_df %>%
 h2a_start_year_df <- h2a_start_year_df %>%
   mutate(n_counties = str_count(county_fips_list, ",") + 1) %>%
   separate_rows(county_fips_list, sep = ",") %>%
+  mutate(
+    county_fips_list = trimws(county_fips_list),
+    state_fips = state_from_county_fips(county_fips_list)
+  ) %>%
+  left_join(
+    aewr_rates,
+    by = c("state_fips", "start_year" = "year"),
+    relationship = "many-to-one"
+  ) %>%
   mutate(county_nbr_workers_requested = nbr_workers_requested / n_counties) %>%
   mutate(county_nbr_workers_certified = nbr_workers_certified / n_counties) %>%
   mutate(county_man_hours_requested = man_hours_requested / n_counties) %>%
   mutate(county_man_hours_certified = man_hours_certified / n_counties) %>%
-  mutate(county_n_applications = (1 / n_entries) / n_counties)
+  mutate(
+    county_n_applications = (1 / n_entries) / n_counties,
+    # Job orders can be filed before the annual rate update, so an offer at
+    # either the contract start-year AEWR or its lag is AEWR-exposed.
+    cert_hours_with_hourly_wage = if_else(
+      !is.na(hourly_offered_wage),
+      county_man_hours_certified,
+      0
+    ),
+    cert_hours_with_hourly_wage_and_aewr = if_else(
+      !is.na(hourly_offered_wage) &
+        (!is.na(nominal_aewr) | !is.na(lag_nominal_aewr)),
+      county_man_hours_certified,
+      0
+    ),
+    cert_hours_at_aewr = if_else(
+      !is.na(hourly_offered_wage) &
+        ((!is.na(nominal_aewr) &
+          abs(hourly_offered_wage - nominal_aewr) <= AEWR_OFFER_TOLERANCE) |
+          (!is.na(lag_nominal_aewr) &
+            abs(hourly_offered_wage - lag_nominal_aewr) <=
+              AEWR_OFFER_TOLERANCE)),
+      county_man_hours_certified,
+      0
+    ),
+    nominal_offered_wage_bill_certified = coalesce(
+      hourly_offered_wage * county_man_hours_certified,
+      0
+    )
+  )
+
+AssertNestedHours(
+  h2a_start_year_df$county_man_hours_certified,
+  h2a_start_year_df$cert_hours_with_hourly_wage,
+  h2a_start_year_df$cert_hours_with_hourly_wage_and_aewr,
+  h2a_start_year_df$cert_hours_at_aewr,
+  "allocated worksite rows"
+)
 
 # We have to manually calculate weighted average of hourly wage because R cannot handle NAs in weights
 h2a_start_year_df <- h2a_start_year_df %>%
@@ -1090,6 +1199,22 @@ h2a_start_year_aggregated_df <- h2a_start_year_df %>%
       county_man_hours_certified,
       na.rm = TRUE
     ),
+    cert_hours_with_hourly_wage_start_year = sum(
+      cert_hours_with_hourly_wage,
+      na.rm = TRUE
+    ),
+    cert_hours_with_hourly_wage_and_aewr_start_year = sum(
+      cert_hours_with_hourly_wage_and_aewr,
+      na.rm = TRUE
+    ),
+    cert_hours_at_aewr_start_year = sum(
+      cert_hours_at_aewr,
+      na.rm = TRUE
+    ),
+    nominal_offered_wage_bill_certified_start_year = sum(
+      nominal_offered_wage_bill_certified,
+      na.rm = TRUE
+    ),
     nbr_applications_start_year = sum(county_n_applications, na.rm = TRUE),
     total_hourly_wage_X_nbr_workers = sum(
       hourly_wage_X_nbr_workers,
@@ -1099,9 +1224,29 @@ h2a_start_year_aggregated_df <- h2a_start_year_df %>%
   ungroup() %>%
   mutate(
     mean_hourly_wage_start_year = total_hourly_wage_X_nbr_workers /
-      nbr_workers_certified_start_year
+      nbr_workers_certified_start_year,
+    share_cert_hours_with_hourly_wage_start_year = if_else(
+      man_hours_certified_start_year > 0,
+      cert_hours_with_hourly_wage_start_year /
+        man_hours_certified_start_year,
+      NA_real_
+    ),
+    share_cert_hours_at_aewr_start_year = if_else(
+      cert_hours_with_hourly_wage_and_aewr_start_year > 0,
+      cert_hours_at_aewr_start_year /
+        cert_hours_with_hourly_wage_and_aewr_start_year,
+      NA_real_
+    )
   ) %>%
   select(-total_hourly_wage_X_nbr_workers)
+
+AssertNestedHours(
+  h2a_start_year_aggregated_df$man_hours_certified_start_year,
+  h2a_start_year_aggregated_df$cert_hours_with_hourly_wage_start_year,
+  h2a_start_year_aggregated_df$cert_hours_with_hourly_wage_and_aewr_start_year,
+  h2a_start_year_aggregated_df$cert_hours_at_aewr_start_year,
+  "county start-year rows"
+)
 
 # Calculate same variables, but aggregated into case fiscal year
 h2a_fiscal_year_df <- h2a_cleaned_df %>%
@@ -1187,7 +1332,29 @@ h2a_start_year_aggregated_df <- h2a_start_year_aggregated_df %>%
   select(-county_fips_list) %>%
   group_by(county_fips, year) %>%
   summarise_all(sum, na.rm = TRUE) %>%
-  ungroup()
+  ungroup() %>%
+  mutate(
+    share_cert_hours_with_hourly_wage_start_year = if_else(
+      man_hours_certified_start_year > 0,
+      cert_hours_with_hourly_wage_start_year /
+        man_hours_certified_start_year,
+      NA_real_
+    ),
+    share_cert_hours_at_aewr_start_year = if_else(
+      cert_hours_with_hourly_wage_and_aewr_start_year > 0,
+      cert_hours_at_aewr_start_year /
+        cert_hours_with_hourly_wage_and_aewr_start_year,
+      NA_real_
+    )
+  )
+
+AssertNestedHours(
+  h2a_start_year_aggregated_df$man_hours_certified_start_year,
+  h2a_start_year_aggregated_df$cert_hours_with_hourly_wage_start_year,
+  h2a_start_year_aggregated_df$cert_hours_with_hourly_wage_and_aewr_start_year,
+  h2a_start_year_aggregated_df$cert_hours_at_aewr_start_year,
+  "harmonized county start-year rows"
+)
 
 h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_aggregated_df %>%
   mutate(

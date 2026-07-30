@@ -28,10 +28,11 @@ lagged employment-to-population ratio, and the lagged real county 10th
 percentile wage. Each outcome has four 2SLS columns: wage-only and
 wage-plus-seasonal instruments, each without and with controls. All four
 columns use a common outcome-specific sample, and the controlled
-wage-plus-seasonal specification in column 4 is preferred. The seven outcomes
-are normalized H-2A certifications, real crop prices, farm employment,
-farm-production expense share, real farm income, farm-labor share, and output
-quantities.
+wage-plus-seasonal specification in column 4 is preferred. The eleven outcomes
+are normalized H-2A certifications, certified contract hours, applications,
+positions per application, hours per position, real crop prices, farm
+employment, farm-production expense share, real farm income, farm-labor
+share, and output quantities.
 
 ## Order and artifacts
 
@@ -43,7 +44,7 @@ quantities.
 | `04_recover_fls_geography.py` | Wage-only and wage-plus-seasonal entropy weights and diagnostics |
 | `05_construct_instruments.R` | Area frame and the two cluster-year instruments |
 | `06_build_county_year_panel.R` | `data/processed/panel_iv_county_year.parquet` |
-| `07_estimate_panel_iv.R` | First stages, seven four-column 2SLS tables, and summary statistics |
+| `07_estimate_panel_iv.R` | First stages, eleven four-column 2SLS tables, the H-2A margin table, and summary statistics |
 | `08_generate_figures.R` | Six diagnostic figures and reproducible plotting-data CSVs |
 
 Run:
@@ -56,10 +57,15 @@ The retained estimation products under `outputs/tables` are:
 
 - `table_iv_preferred_first_stage.tex` and
   `iv_preferred_first_stage_estimates.csv`;
-- `table_iv_h2a_normalized.tex`, `table_iv_prices.tex`,
+- `table_iv_h2a_normalized.tex`, `table_iv_h2a_certified_hours.tex`,
+  `table_iv_h2a_applications.tex`,
+  `table_iv_h2a_positions_per_application.tex`,
+  `table_iv_h2a_hours_per_position.tex`, `table_iv_prices.tex`,
   `table_iv_farm_employment.tex`, `table_iv_production_expense_share.tex`,
   `table_iv_farm_income.tex`, `table_iv_farm_labor_share.tex`, and
   `table_iv_output_quantities.tex`;
+- `table_iv_h2a_adjustment_margins.tex` and
+  `iv_preferred_h2a_adjustment_margin_estimates.csv`;
 - `iv_preferred_second_stage_estimates.csv` and
   `iv_preferred_second_stage_samples.csv`; and
 - `table_iv_preferred_summary_statistics.tex` and

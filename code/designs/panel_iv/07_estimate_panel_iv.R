@@ -41,6 +41,18 @@ outcomes <- tribble(
   "h2a_cert_share_farm_workers_2011_start_year"               ,
   "H-2A certified workers / 2011 farm employment"             ,
   "h2a_normalized"                                            ,
+  "h2a_cert_hours_per_farm_worker_2011_start_year"            ,
+  "H-2A certified hours / 2011 farm employment"               ,
+  "h2a_certified_hours"                                       ,
+  "h2a_applications_per_farm_worker_2011_start_year"          ,
+  "H-2A applications / 2011 farm employment"                  ,
+  "h2a_applications"                                          ,
+  "h2a_cert_positions_per_application_start_year"             ,
+  "H-2A certified positions / application"                    ,
+  "h2a_positions_per_application"                             ,
+  "h2a_cert_hours_per_position_start_year"                    ,
+  "H-2A certified hours / certified position"                 ,
+  "h2a_hours_per_position"                                    ,
   "fisher_index_ppi"                                          ,
   "Real Fisher crop price index"                              ,
   "prices"                                                    ,
@@ -59,6 +71,13 @@ outcomes <- tribble(
   "fisher_quantity_index"                                     ,
   "Fisher crop output-quantity index (2011 = 100)"            ,
   "output_quantities"
+)
+
+h2a_adjustment_outcomes <- c(
+  "h2a_cert_hours_per_farm_worker_2011_start_year",
+  "h2a_applications_per_farm_worker_2011_start_year",
+  "h2a_cert_positions_per_application_start_year",
+  "h2a_cert_hours_per_position_start_year"
 )
 
 required_columns <- unique(c(
@@ -328,6 +347,7 @@ second_stage_specs <- tribble(
 
 iv_result_rows <- list()
 iv_sample_rows <- list()
+h2a_adjustment_models <- list()
 
 for (outcome_index in seq_len(nrow(outcomes))) {
   outcome_spec <- outcomes[outcome_index, ]
@@ -389,6 +409,9 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     ,
     drop = FALSE
   ]
+  if (outcome_name %in% h2a_adjustment_outcomes) {
+    h2a_adjustment_models[[outcome_name]] <- iv_models[[4]]
+  }
 
   first_stage_models_outcome <- pmap(
     second_stage_specs,
@@ -540,6 +563,112 @@ for (outcome_index in seq_len(nrow(outcomes))) {
 
 iv_results <- bind_rows(iv_result_rows)
 iv_samples <- bind_rows(iv_sample_rows)
+
+h2a_adjustment_specs <- tibble(
+  outcome = h2a_adjustment_outcomes,
+  column_header = c(
+    "Certified hours",
+    "Applications",
+    "Positions/application",
+    "Hours/position"
+  ),
+  conditioning = c(
+    "None",
+    "None",
+    "Applications $>0$",
+    "Certified positions $>0$"
+  )
+)
+
+h2a_adjustment_results <- iv_results %>%
+  filter(column == 4L) %>%
+  inner_join(
+    h2a_adjustment_specs,
+    by = "outcome",
+    relationship = "many-to-one"
+  ) %>%
+  arrange(match(outcome, h2a_adjustment_outcomes))
+
+if (
+  nrow(h2a_adjustment_results) != length(h2a_adjustment_outcomes) ||
+    !identical(h2a_adjustment_results$outcome, h2a_adjustment_outcomes)
+) {
+  stop(
+    "The preferred H-2A adjustment-margin results are incomplete.",
+    call. = FALSE
+  )
+}
+
+write_csv(
+  h2a_adjustment_results,
+  path_tables("iv_preferred_h2a_adjustment_margin_estimates.csv")
+)
+
+h2a_adjustment_models <- unname(
+  h2a_adjustment_models[h2a_adjustment_outcomes]
+)
+
+etable(
+  h2a_adjustment_models,
+  tex = TRUE,
+  title = "IV Effects of the Real AEWR on H-2A Adjustment Margins",
+  label = "tab:iv_h2a_adjustment_margins",
+  depvar = FALSE,
+  headers = list(
+    "Outcome" = h2a_adjustment_specs$column_header
+  ),
+  keep_raw = "^(fit_)?aewr_ppi$",
+  dict = c(
+    fit_aewr_ppi = "Real AEWR (2012 dollars)",
+    aewr_ppi = "Real AEWR (2012 dollars)",
+    ln_pop_census_l1 = "Lagged log population",
+    farm_emp_share_l1 = "Lagged farm-employment share",
+    emp_pop_ratio_l1 = "Lagged employment/population",
+    wage_p10_l1 = "Lagged real p10 wage"
+  ),
+  fitstat = ~ n + r2,
+  extralines = list(
+    "_^First-stage excluded-instrument F" = format_number(
+      h2a_adjustment_results$first_stage_f
+    ),
+    "_Conditioning" = h2a_adjustment_specs$conditioning,
+    "_Controls" = rep("Yes", length(h2a_adjustment_outcomes)),
+    "_County fixed effects" = rep(
+      "Yes",
+      length(h2a_adjustment_outcomes)
+    ),
+    "_Year fixed effects" = rep(
+      "Yes",
+      length(h2a_adjustment_outcomes)
+    ),
+    "_AEWR-subregion clustered SEs" = rep(
+      "Yes",
+      length(h2a_adjustment_outcomes)
+    ),
+    "_Number of SE clusters" = as.character(
+      h2a_adjustment_results$inference_clusters
+    )
+  ),
+  notes = c(
+    paste(
+      "All columns use the preferred wage-plus-seasonal instrument and",
+      "lagged controls."
+    ),
+    paste(
+      "Certified hours and applications are normalized by 2011 farm",
+      "employment. Ratio outcomes retain only positive-denominator",
+      "county-years."
+    ),
+    paste(
+      "The identity H = A x (N/A) x (H/N) holds in the underlying data;",
+      "the level-IV coefficients use different samples and are not",
+      "algebraically additive."
+    )
+  ),
+  signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
+  file = path_tables("table_iv_h2a_adjustment_margins.tex"),
+  replace = TRUE
+)
 
 sample_contract <- iv_results %>%
   count(outcome, observations) %>%

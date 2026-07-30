@@ -1,31 +1,31 @@
 
 \begin{table}[htbp]
-   \caption{\label{tab:iv_h2a_normalized} IV Effect of the Real AEWR on H-2A certified workers / 2011 farm employment}
+   \caption{\label{tab:iv_h2a_positions_per_application} IV Effect of the Real AEWR on H-2A certified positions / application}
    \centering
    \begin{tabular}{lcccc}
       \tabularnewline \midrule \midrule
-      Dependent Variable: & \multicolumn{4}{c}{h2a\_cert\_share\_farm\_workers\_2011\_start\_year}\\
+      Dependent Variable: & \multicolumn{4}{c}{h2a\_cert\_positions\_per\_application\_start\_year}\\
       Specification                     & Wage only & Alt. targets & Wage only + controls & Alt. targets + controls \\   
       Model:                            & (1)       & (2)          & (3)                  & (4)\\  
       \midrule
       \emph{Variables}\\
-      Real AEWR (2012 dollars)          & -0.0415   & -0.0159      & -0.0370              & -0.0107\\   
-                                        & (0.0392)  & (0.0240)     & (0.0356)             & (0.0228)\\   
+      Real AEWR (2012 dollars)          & 1.101     & -1.309       & 1.020                & -1.524\\   
+                                        & (2.300)   & (2.812)      & (2.345)              & (2.901)\\   
       \midrule
       \emph{Fixed-effects}\\
       county\_fips                      & Yes       & Yes          & Yes                  & Yes\\  
       year                              & Yes       & Yes          & Yes                  & Yes\\  
       \midrule
       \emph{Fit statistics}\\
-      First-stage excluded-instrument F & 42.46     & 8.78         & 40.07                & 9.22\\  
-      Observations                      & 33,355    & 33,355       & 33,355               & 33,355\\  
-      R$^2$                             & 0.51336   & 0.51325      & 0.51361              & 0.51354\\  
+      First-stage excluded-instrument F & 51.96     & 7.75         & 50.46                & 8.54\\  
+      Observations                      & 21,128    & 21,128       & 21,128               & 21,128\\  
+      R$^2$                             & 0.59396   & 0.59396      & 0.59405              & 0.59405\\  
       Alternative seasonal targets      & No        & Yes          & No                   & Yes\\  
       Controls                          & No        & No           & Yes                  & Yes\\  
       County fixed effects              & Yes       & Yes          & Yes                  & Yes\\  
       Year fixed effects                & Yes       & Yes          & Yes                  & Yes\\  
       AEWR-subregion clustered SEs      & Yes       & Yes          & Yes                  & Yes\\  
-      Number of SE clusters             & 79        & 79           & 79                   & 79\\  
+      Number of SE clusters             & 80        & 80           & 80                   & 80\\  
       Common outcome sample             & Yes       & Yes          & Yes                  & Yes\\  
       \midrule \midrule
       \multicolumn{5}{l}{\emph{Clustered (aewr\_iv\_cluster\_id) standard-errors in parentheses}}\\

@@ -18,6 +18,10 @@ h2a_zero_columns <- c(
   "nbr_workers_certified_start_year",
   "man_hours_requested_start_year",
   "man_hours_certified_start_year",
+  "cert_hours_with_hourly_wage_start_year",
+  "cert_hours_with_hourly_wage_and_aewr_start_year",
+  "cert_hours_at_aewr_start_year",
+  "nominal_offered_wage_bill_certified_start_year",
   "nbr_applications_start_year",
   "nbr_applications_certified_start_year",
   "nbr_applications_partial_start_year",
@@ -37,6 +41,18 @@ county_panel <- read_parquet(path_int("county_year_merged.parquet")) %>%
       year < 2021L ~ NA_real_,
       nbr_applications_start_year == 0 ~ 0,
       TRUE ~ nbr_applications_emergency_start_year
+    ),
+    share_cert_hours_with_hourly_wage_start_year = if_else(
+      man_hours_certified_start_year > 0,
+      cert_hours_with_hourly_wage_start_year /
+        man_hours_certified_start_year,
+      NA_real_
+    ),
+    share_cert_hours_at_aewr_start_year = if_else(
+      cert_hours_with_hourly_wage_and_aewr_start_year > 0,
+      cert_hours_at_aewr_start_year /
+        cert_hours_with_hourly_wage_and_aewr_start_year,
+      NA_real_
     ),
     across(
       c(cropland_acr, cropland_acr_2007),
@@ -134,6 +150,56 @@ county_panel <- county_panel %>%
     h2a_cert_share_farm_workers_2011_start_year = if_else(
       is.finite(emp_farm_2011) & emp_farm_2011 > 0,
       nbr_workers_certified_start_year / emp_farm_2011,
+      NA_real_
+    ),
+    h2a_cert_hours_per_farm_worker_2011_start_year = if_else(
+      is.finite(emp_farm_2011) & emp_farm_2011 > 0,
+      man_hours_certified_start_year / emp_farm_2011,
+      NA_real_
+    ),
+    h2a_applications_per_farm_worker_2011_start_year = if_else(
+      is.finite(emp_farm_2011) & emp_farm_2011 > 0,
+      nbr_applications_start_year / emp_farm_2011,
+      NA_real_
+    ),
+    h2a_cert_positions_per_application_start_year = if_else(
+      is.finite(nbr_applications_start_year) &
+        nbr_applications_start_year > 0,
+      nbr_workers_certified_start_year / nbr_applications_start_year,
+      NA_real_
+    ),
+    h2a_cert_hours_per_position_start_year = if_else(
+      is.finite(nbr_workers_certified_start_year) &
+        nbr_workers_certified_start_year > 0,
+      man_hours_certified_start_year / nbr_workers_certified_start_year,
+      NA_real_
+    ),
+    # Certified applications include partial certifications.
+    h2a_application_certification_rate_start_year = if_else(
+      is.finite(nbr_applications_start_year) &
+        nbr_applications_start_year > 0,
+      nbr_applications_certified_start_year /
+        nbr_applications_start_year,
+      NA_real_
+    ),
+    h2a_application_partial_certification_rate_start_year = if_else(
+      is.finite(nbr_applications_start_year) &
+        nbr_applications_start_year > 0,
+      nbr_applications_partial_start_year /
+        nbr_applications_start_year,
+      NA_real_
+    ),
+    h2a_application_denial_rate_start_year = if_else(
+      is.finite(nbr_applications_start_year) &
+        nbr_applications_start_year > 0,
+      nbr_applications_denied_start_year / nbr_applications_start_year,
+      NA_real_
+    ),
+    h2a_application_withdrawal_rate_start_year = if_else(
+      is.finite(nbr_applications_start_year) &
+        nbr_applications_start_year > 0,
+      nbr_applications_withdrawn_start_year /
+        nbr_applications_start_year,
       NA_real_
     ),
     h2a_predicted_share_2011 = if_else(
