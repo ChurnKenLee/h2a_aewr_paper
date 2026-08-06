@@ -12,6 +12,10 @@ employment, AEWR-p25 gaps, cropland eligibility, and border-CZ status. It does
 not create any design treatment, post period, fixed-effect factor, year dummy,
 target cluster, or instrument.
 
+The shared H-2A employer outcome uses the raw balanced-linkage employer count.
+Conservative and high-recall counts remain in the panel for
+linkage-sensitivity analyses.
+
 Manual command:
 
 ```sh

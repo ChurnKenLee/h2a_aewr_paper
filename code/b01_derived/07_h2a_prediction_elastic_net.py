@@ -1,10 +1,10 @@
 # Purpose: Predict county H-2A exposure using climate, soil, and economic features.
 # Inputs: H-2A aggregates, BEA employment, NOAA climate, and gNATSGO soil artifacts.
-# Outputs: h2a_prediction_using_elastic_net_continuous_basis.parquet and diagnostics.
+# Outputs: cutoff-specific fitted-model parameters and legacy cutoff-2011 predictions.
 
 import marimo
 
-__generated_with = "0.23.14"
+__generated_with = "0.23.16"
 app = marimo.App(width="full")
 
 
@@ -14,6 +14,7 @@ def _():
     from pathlib import Path
     from h2a.paths import CODE, RAW, INTERMEDIATE
     import itertools
+    import os
     import polars as pl
     import polars.selectors as cs
     import numpy as np
@@ -39,6 +40,7 @@ def _():
         mo,
         np,
         optax,
+        os,
         partial,
         pl,
         ravel_pytree,
@@ -51,6 +53,34 @@ def _(CODE, INTERMEDIATE):
     binary_path = INTERMEDIATE
     code_path = CODE
     return binary_path, code_path
+
+
+@app.cell
+def _(os):
+    _raw_cutoff_year = os.environ.get("H2A_CUTOFF_YEAR")
+    cutoff_year_was_explicit = _raw_cutoff_year is not None
+    if cutoff_year_was_explicit:
+        try:
+            cutoff_year = int(_raw_cutoff_year)
+        except ValueError as exc:
+            raise ValueError(
+                "H2A_CUTOFF_YEAR must be an integer from 2008 through 2025; "
+                f"received {_raw_cutoff_year!r}."
+            ) from exc
+    else:
+        cutoff_year = 2011
+
+    if not 2008 <= cutoff_year <= 2025:
+        raise ValueError(
+            "H2A_CUTOFF_YEAR must be from 2008 through 2025; "
+            f"received {cutoff_year}."
+        )
+
+    print(
+        f"H-2A model training window: 2008-{cutoff_year} "
+        f"(cutoff explicitly supplied: {cutoff_year_was_explicit})"
+    )
+    return cutoff_year, cutoff_year_was_explicit
 
 
 @app.cell
@@ -83,7 +113,7 @@ def _(assert_geo_columns, binary_path, pl):
 
 
 @app.cell
-def _(assert_geo_columns, binary_path, pl):
+def _(assert_geo_columns, binary_path, cutoff_year, pl):
     h2a = pl.read_parquet(binary_path / "h2a_aggregated.parquet")
     assert_geo_columns(
         h2a,
@@ -101,13 +131,13 @@ def _(assert_geo_columns, binary_path, pl):
                 "h2a_certified",
             ]
         )
-        .filter(pl.col("year") >= 2008, pl.col("year") <= 2011)
+        .filter(pl.col("year") >= 2008, pl.col("year") <= cutoff_year)
     )
     return (h2a,)
 
 
 @app.cell
-def _(assert_geo_columns, binary_path, pl):
+def _(assert_geo_columns, binary_path, cutoff_year, pl):
     # Use pre-period climate-normal spline/Fourier basis features from a14_01.
     # These are time-invariant (2000-2011) averages
     # Can consider using annual data instead; think averages capture county primitives better?
@@ -116,7 +146,7 @@ def _(assert_geo_columns, binary_path, pl):
     )
     assert_geo_columns(climate, ["county_fips"])
     climate = climate.select(["year", "county_fips", pl.col("^normal_cb_.*$")]).filter(
-        pl.col("year") >= 2008, pl.col("year") <= 2011
+        pl.col("year") >= 2008, pl.col("year") <= cutoff_year
     )
     return (climate,)
 
@@ -217,23 +247,45 @@ def _(itertools, jnp, np, pl):
 
         # For continuous variables, fill missing with the column mean. Weighted
         # soil summaries can contain NaN when a soil cell has no observed acreage
-        # for that attribute, so normalize NaN to null first.
-        # For categorical variables, create new missing category for missing
-        merged = (
-            merged.with_columns(
-                [
-                    pl.when(pl.col(c).is_nan()).then(None).otherwise(pl.col(c)).alias(c)
-                    for c in continuous_cols
-                ]
-            )
-            .with_columns(
-                pl.col(c).fill_null(pl.col(c).mean()) for c in county_cont_cols
-            )
-            .with_columns(
-                pl.col(c).fill_null(pl.col(c).mean()) for c in patch_cont_cols
-            )
-            .with_columns(pl.col(c).fill_null("MISSING") for c in cat_cols)
+        # for that attribute, so normalize NaN to null first. Keep the precise
+        # values used here so future scoring never has to estimate transforms on
+        # the scoring sample.
+        merged = merged.with_columns(
+            [
+                pl.when(pl.col(c).is_nan()).then(None).otherwise(pl.col(c)).alias(c)
+                for c in continuous_cols
+            ]
         )
+
+        imputation_values = {}
+        for scope, columns in (
+            ("county", county_cont_cols),
+            ("patch", patch_cont_cols),
+        ):
+            means = merged.select(
+                [pl.col(c).mean().alias(c) for c in columns]
+            ).row(0, named=True)
+            for c in columns:
+                value = (
+                    None if means[c] is None else float(np.float32(means[c]))
+                )
+                if value is None or not np.isfinite(value):
+                    raise ValueError(
+                        f"Cannot impute continuous covariate {c!r}: "
+                        "its training-sample mean is not finite."
+                    )
+                imputation_values[(scope, c)] = value
+
+        merged = merged.with_columns(
+            [
+                pl.col(c).fill_null(pl.lit(imputation_values[("county", c)]))
+                for c in county_cont_cols
+            ]
+            + [
+                pl.col(c).fill_null(pl.lit(imputation_values[("patch", c)]))
+                for c in patch_cont_cols
+            ]
+        ).with_columns(pl.col(c).fill_null("MISSING") for c in cat_cols)
 
         # Generate IDs for each county-year
         merged = merged.with_columns(
@@ -276,20 +328,38 @@ def _(itertools, jnp, np, pl):
 
         # Standardize continuous variables
         # County-specific continuous variables
-        X_county_cont = (
+        X_county_cont_raw = (
             county_design.select(county_cont_cols).to_numpy().astype(np.float32)
         )
-        X_county_cont = (X_county_cont - X_county_cont.mean(axis=0)) / (
-            X_county_cont.std(axis=0) + 1e-8
-        )
+        county_centers = X_county_cont_raw.mean(axis=0)
+        county_scales = X_county_cont_raw.std(axis=0) + 1e-8
+        X_county_cont = (
+            X_county_cont_raw - county_centers
+        ) / county_scales
         X_county_cont = jnp.array(X_county_cont, dtype=jnp.float32)
 
         # Patch-specific continuous variables
-        X_patch_cont = merged.select(patch_cont_cols).to_numpy().astype(np.float32)
-        X_patch_cont = (X_patch_cont - X_patch_cont.mean(axis=0)) / (
-            X_patch_cont.std(axis=0) + 1e-8
-        )
+        X_patch_cont_raw = merged.select(patch_cont_cols).to_numpy().astype(np.float32)
+        patch_centers = X_patch_cont_raw.mean(axis=0)
+        patch_scales = X_patch_cont_raw.std(axis=0) + 1e-8
+        X_patch_cont = (X_patch_cont_raw - patch_centers) / patch_scales
         X_patch_cont = jnp.array(X_patch_cont, dtype=jnp.float32)
+
+        continuous_transforms = []
+        for scope, columns, centers, scales in (
+            ("county", county_cont_cols, county_centers, county_scales),
+            ("patch", patch_cont_cols, patch_centers, patch_scales),
+        ):
+            for column_index, column in enumerate(columns):
+                continuous_transforms.append(
+                    {
+                        "covariate_scope": scope,
+                        "covariate": column,
+                        "imputation_value": imputation_values[(scope, column)],
+                        "center": float(centers[column_index]),
+                        "scale": float(scales[column_index]),
+                    }
+                )
 
         # Build categorical interaction matrices plus parent-specific heredity metadata
         feature_ids = {}
@@ -314,13 +384,6 @@ def _(itertools, jnp, np, pl):
                 combined_str = combo_df.select(
                     pl.concat_str(pl.all(), separator=_KEY_SEP)
                 ).to_series()
-            current_offset = 0
-
-            for combo in cols:
-                combo_df = merged.select(list(combo))
-                combined_str = combo_df.select(
-                    pl.concat_str(pl.all(), separator=_KEY_SEP)
-                ).to_series()
 
                 uniques, integer_ids = np.unique(combined_str, return_inverse=True)
 
@@ -330,10 +393,13 @@ def _(itertools, jnp, np, pl):
                 for local_id, key in enumerate(uniques):
                     value_tuple = tuple(str(key).split(_KEY_SEP))
                     feature_id = current_offset + local_id
+                    readable_name = f"{combo_label}: {'|'.join(value_tuple)}"
 
                     feature_lookup[(order, combo, value_tuple)] = feature_id
-                    order_meta.append((feature_id, combo, value_tuple))
-                    readable_names.append(f"{combo_label}: {'|'.join(value_tuple)}")
+                    order_meta.append(
+                        (feature_id, readable_name, combo, value_tuple)
+                    )
+                    readable_names.append(readable_name)
 
                 order_names.extend(readable_names)
                 order_id_matrix.append((integer_ids + current_offset).astype(np.int32))
@@ -352,7 +418,7 @@ def _(itertools, jnp, np, pl):
         for order in range(2, max_order + 1):
             parent_id_rows = []
 
-            for _, combo, value_tuple in sorted(
+            for _, _, combo, value_tuple in sorted(
                 feature_meta[order], key=lambda x: x[0]
             ):
                 row_parent_ids = []
@@ -372,6 +438,7 @@ def _(itertools, jnp, np, pl):
             feature_ids,
             feature_sizes,
             feature_names,
+            feature_meta,
             parent_ids,
             X_county_cont,
             X_patch_cont,
@@ -380,6 +447,7 @@ def _(itertools, jnp, np, pl):
             y_count_county_year,
             num_groups,
             merged,
+            continuous_transforms,
         )
 
     return (prep_jax_composition_arrays,)
@@ -1785,7 +1853,6 @@ def to_serializable(x):
 
 @app.cell
 def _(
-    code_path,
     compiled_meta_loop,
     get_hparam_templates,
     initialize_params,
@@ -1822,10 +1889,10 @@ def _(
         clip_norm=1.0,
         reset=False,
     ):
-        if checkpoint_path is None:
-            checkpoint_path = code_path / "json" / "meta_ppml_opt_checkpoint.json"
-        if log_path is None:
-            log_path = code_path / "json" / "meta_ppml_opt_log.csv"
+        if checkpoint_path is None or log_path is None:
+            raise ValueError(
+                "Cutoff-specific checkpoint_path and log_path are required."
+            )
 
         meta_optimizer = make_meta_optimizer(meta_lr=meta_lr, clip_norm=clip_norm)
 
@@ -2303,9 +2370,11 @@ def _(
     cat_cols,
     climate,
     county_cont_cols,
+    cutoff_year,
     h2a,
     np,
     patch_cont_cols,
+    pl,
     prep_jax_composition_arrays,
     soil,
 ):
@@ -2313,7 +2382,8 @@ def _(
     (
         feature_ids,
         feature_sizes,
-        feature_names,
+        _feature_names,
+        categorical_feature_metadata,
         parent_ids,
         X_county_cont,
         X_patch_cont,
@@ -2322,6 +2392,7 @@ def _(
         y_target_count,
         num_groups,
         merged_df,
+        continuous_transforms,
     ) = prep_jax_composition_arrays(
         h2a,
         bea,
@@ -2333,6 +2404,21 @@ def _(
         max_order=3,
     )
     feature_sizes_tup = tuple(sorted(feature_sizes.items()))
+
+    _training_year_min, _training_year_max = merged_df.select(
+        pl.min("year").alias("year_min"),
+        pl.max("year").alias("year_max"),
+    ).row(0)
+    if _training_year_min != 2008 or _training_year_max != cutoff_year:
+        raise ValueError(
+            "Unexpected fitted-model training window: "
+            f"expected 2008-{cutoff_year}, observed "
+            f"{_training_year_min}-{_training_year_max}."
+        )
+    print(
+        f"Fitted-model training sample spans "
+        f"{_training_year_min}-{_training_year_max} (inclusive)."
+    )
 
     # Check for any remaining NaNs or Infs
     assert not np.isnan(y_target_count).any(), "NaNs detected in target count!"
@@ -2353,6 +2439,8 @@ def _(
     return (
         X_county_cont,
         X_patch_cont,
+        categorical_feature_metadata,
+        continuous_transforms,
         feature_ids,
         feature_sizes_tup,
         group_ids,
@@ -2369,6 +2457,7 @@ def _(
     X_county_cont,
     X_patch_cont,
     code_path,
+    cutoff_year,
     feature_ids,
     feature_sizes_tup,
     group_ids,
@@ -2380,8 +2469,12 @@ def _(
 ):
     start_time = time.perf_counter()
     # Tune L1 and L2 (full GPU dispatch)
-    checkpoint_path = code_path / "json" / "meta_ppml_opt_checkpoint.json"
-    log_path = code_path / "json" / "meta_ppml_opt_log.csv"
+    checkpoint_path = (
+        code_path
+        / "json"
+        / f"meta_ppml_opt_checkpoint_cutoff_{cutoff_year}.json"
+    )
+    log_path = code_path / "json" / f"meta_ppml_opt_log_cutoff_{cutoff_year}.csv"
     _best_l1, _best_l2, _final_inner_param = run_meta_optimization_chunked(
         feature_ids,
         X_county_cont,
@@ -2473,6 +2566,169 @@ def _(
     return (trained_params,)
 
 
+@app.cell
+def _(np, pl):
+    def flatten_fitted_model(
+        params,
+        categorical_feature_metadata,
+        continuous_transforms,
+        county_cont_cols,
+        patch_cont_cols,
+        cutoff_year,
+    ):
+        covariates = [
+            ("county", covariate) for covariate in county_cont_cols
+        ] + [("patch", covariate) for covariate in patch_cont_cols]
+
+        rows = [
+            {
+                "cutoff_year": cutoff_year,
+                "record_type": "global_bias",
+                "interaction_order": None,
+                "feature_id": None,
+                "feature_name": None,
+                "categorical_columns": None,
+                "categorical_values": None,
+                "covariate_scope": None,
+                "covariate": None,
+                "coefficient": float(np.float32(params["bias"])),
+                "imputation_value": None,
+                "center": None,
+                "scale": None,
+            }
+        ]
+
+        expected_width = 1 + len(covariates)
+        for order in sorted(params["weights"]):
+            weights = np.asarray(params["weights"][order], dtype=np.float32)
+            metadata = sorted(
+                categorical_feature_metadata[order], key=lambda item: item[0]
+            )
+            if weights.shape != (len(metadata), expected_width):
+                raise ValueError(
+                    f"Order-{order} coefficient shape {weights.shape} does not match "
+                    f"{len(metadata)} categorical features and {len(covariates)} "
+                    "continuous covariates."
+                )
+
+            for feature_id, feature_name, columns, values in metadata:
+                for coefficient_index in range(expected_width):
+                    if coefficient_index == 0:
+                        covariate_scope = None
+                        covariate = None
+                    else:
+                        covariate_scope, covariate = covariates[
+                            coefficient_index - 1
+                        ]
+
+                    coefficient = weights[feature_id, coefficient_index]
+                    if not np.isfinite(coefficient):
+                        raise ValueError(
+                            f"Non-finite coefficient for order {order}, "
+                            f"feature {feature_id}, index {coefficient_index}."
+                        )
+                    rows.append(
+                        {
+                            "cutoff_year": cutoff_year,
+                            "record_type": "weight",
+                            "interaction_order": order,
+                            "feature_id": feature_id,
+                            "feature_name": feature_name,
+                            "categorical_columns": list(columns),
+                            "categorical_values": list(values),
+                            "covariate_scope": covariate_scope,
+                            "covariate": covariate,
+                            "coefficient": float(coefficient),
+                            "imputation_value": None,
+                            "center": None,
+                            "scale": None,
+                        }
+                    )
+
+        transform_keys = {
+            (transform["covariate_scope"], transform["covariate"])
+            for transform in continuous_transforms
+        }
+        if (
+            len(continuous_transforms) != len(covariates)
+            or transform_keys != set(covariates)
+        ):
+            raise ValueError(
+                "Saved continuous transforms do not match the model covariates."
+            )
+        for transform in continuous_transforms:
+            for field in ("imputation_value", "center", "scale"):
+                if not np.isfinite(transform[field]):
+                    raise ValueError(
+                        f"Non-finite {field} for continuous covariate "
+                        f"{transform['covariate']!r}."
+                    )
+            rows.append(
+                {
+                    "cutoff_year": cutoff_year,
+                    "record_type": "continuous_transform",
+                    "interaction_order": None,
+                    "feature_id": None,
+                    "feature_name": None,
+                    "categorical_columns": None,
+                    "categorical_values": None,
+                    "covariate_scope": transform["covariate_scope"],
+                    "covariate": transform["covariate"],
+                    "coefficient": None,
+                    "imputation_value": transform["imputation_value"],
+                    "center": transform["center"],
+                    "scale": transform["scale"],
+                }
+            )
+
+        schema = {
+            "cutoff_year": pl.Int32,
+            "record_type": pl.String,
+            "interaction_order": pl.Int32,
+            "feature_id": pl.Int32,
+            "feature_name": pl.String,
+            "categorical_columns": pl.List(pl.String),
+            "categorical_values": pl.List(pl.String),
+            "covariate_scope": pl.String,
+            "covariate": pl.String,
+            "coefficient": pl.Float32,
+            "imputation_value": pl.Float32,
+            "center": pl.Float32,
+            "scale": pl.Float32,
+        }
+        return pl.DataFrame(rows, schema=schema, orient="row")
+
+    return (flatten_fitted_model,)
+
+
+@app.cell
+def _(
+    binary_path,
+    categorical_feature_metadata,
+    continuous_transforms,
+    county_cont_cols,
+    cutoff_year,
+    flatten_fitted_model,
+    patch_cont_cols,
+    trained_params,
+):
+    model_parameters_df = flatten_fitted_model(
+        trained_params,
+        categorical_feature_metadata,
+        continuous_transforms,
+        county_cont_cols,
+        patch_cont_cols,
+        cutoff_year,
+    )
+    model_parameters_path = (
+        binary_path
+        / f"h2a_prediction_elastic_net_model_cutoff_{cutoff_year}.parquet"
+    )
+    model_parameters_df.write_parquet(model_parameters_path)
+    print(f"Saved fitted model parameters to {model_parameters_path}")
+    return (model_parameters_path,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -2518,8 +2774,227 @@ def _(compute_patch_log_worker, jax, jnp):
 def _(
     X_county_cont,
     X_patch_cont,
+    county_cont_cols,
+    feature_ids,
+    group_ids,
+    jnp,
+    merged_df,
+    model_parameters_path,
+    np,
+    num_groups,
+    patch_cont_cols,
+    patch_exposure,
+    pl,
+    predicted_h2a_county_year,
+    trained_params,
+):
+    # Read the artifact back and reconstruct the full fitted design/parameters.
+    # This makes the saved model self-checking and guards against schema changes
+    # that would silently make later scoring disagree with training.
+    _saved_model = pl.read_parquet(model_parameters_path)
+    _expected_columns = [
+        "cutoff_year",
+        "record_type",
+        "interaction_order",
+        "feature_id",
+        "feature_name",
+        "categorical_columns",
+        "categorical_values",
+        "covariate_scope",
+        "covariate",
+        "coefficient",
+        "imputation_value",
+        "center",
+        "scale",
+    ]
+    if _saved_model.columns != _expected_columns:
+        raise ValueError(
+            f"Unexpected saved-model schema: {_saved_model.columns!r}."
+        )
+
+    _bias_rows = _saved_model.filter(pl.col("record_type") == "global_bias")
+    if _bias_rows.height != 1:
+        raise ValueError("Saved model must contain exactly one global bias row.")
+
+    _covariates = [
+        ("county", covariate) for covariate in county_cont_cols
+    ] + [("patch", covariate) for covariate in patch_cont_cols]
+    _coefficient_index = {
+        covariate_key: index + 1
+        for index, covariate_key in enumerate(_covariates)
+    }
+
+    _transform_rows = _saved_model.filter(
+        pl.col("record_type") == "continuous_transform"
+    )
+    _transform_by_key = {
+        (row["covariate_scope"], row["covariate"]): row
+        for row in _transform_rows.iter_rows(named=True)
+    }
+    if (
+        _transform_rows.height != len(_covariates)
+        or set(_transform_by_key) != set(_covariates)
+    ):
+        raise ValueError(
+            "Saved model must contain exactly one transform for every "
+            "continuous covariate."
+        )
+
+    _county_raw = (
+        merged_df.select(["group_id"] + county_cont_cols)
+        .unique()
+        .sort("group_id")
+        .select(county_cont_cols)
+        .to_numpy()
+        .astype(np.float32)
+    )
+    _patch_raw = merged_df.select(patch_cont_cols).to_numpy().astype(np.float32)
+
+    def _apply_saved_transforms(raw, scope, columns):
+        transformed = np.empty_like(raw, dtype=np.float32)
+        for column_index, column in enumerate(columns):
+            transform = _transform_by_key[(scope, column)]
+            transformed[:, column_index] = (
+                raw[:, column_index] - np.float32(transform["center"])
+            ) / np.float32(transform["scale"])
+        return transformed
+
+    _saved_X_county = _apply_saved_transforms(
+        _county_raw, "county", county_cont_cols
+    )
+    _saved_X_patch = _apply_saved_transforms(_patch_raw, "patch", patch_cont_cols)
+    np.testing.assert_allclose(
+        _saved_X_county,
+        np.asarray(X_county_cont),
+        rtol=0.0,
+        atol=2e-6,
+    )
+    np.testing.assert_allclose(
+        _saved_X_patch,
+        np.asarray(X_patch_cont),
+        rtol=0.0,
+        atol=2e-6,
+    )
+
+    _weight_rows = _saved_model.filter(pl.col("record_type") == "weight")
+    _orders = sorted(
+        int(order) for order in _weight_rows["interaction_order"].unique()
+    )
+    _saved_params = {
+        "bias": jnp.array(_bias_rows["coefficient"][0], dtype=jnp.float32),
+        "weights": {},
+    }
+    _saved_feature_ids = {}
+    for _order in _orders:
+        _order_rows = _weight_rows.filter(pl.col("interaction_order") == _order)
+        _feature_count = int(_order_rows["feature_id"].max()) + 1
+        _weight_matrix = np.full(
+            (_feature_count, 1 + len(_covariates)), np.nan, dtype=np.float32
+        )
+        _seen_coefficients = set()
+        _feature_records = {}
+
+        for _row in _order_rows.iter_rows(named=True):
+            _feature_id = int(_row["feature_id"])
+            if _row["covariate"] is None:
+                _column_index = 0
+            else:
+                _column_index = _coefficient_index[
+                    (_row["covariate_scope"], _row["covariate"])
+                ]
+            _coefficient_key = (_feature_id, _column_index)
+            if _coefficient_key in _seen_coefficients:
+                raise ValueError(
+                    f"Duplicate saved coefficient for order {_order}, "
+                    f"feature {_feature_id}, column {_column_index}."
+                )
+            _seen_coefficients.add(_coefficient_key)
+            _weight_matrix[_feature_id, _column_index] = _row["coefficient"]
+
+            _metadata = (
+                _row["feature_name"],
+                tuple(_row["categorical_columns"]),
+                tuple(_row["categorical_values"]),
+            )
+            if _feature_id in _feature_records:
+                if _feature_records[_feature_id] != _metadata:
+                    raise ValueError(
+                        f"Inconsistent categorical metadata for order {_order}, "
+                        f"feature {_feature_id}."
+                    )
+            else:
+                _feature_records[_feature_id] = _metadata
+
+        if not np.isfinite(_weight_matrix).all():
+            raise ValueError(
+                f"Saved order-{_order} weight matrix is incomplete or non-finite."
+            )
+        _saved_params["weights"][_order] = jnp.array(
+            _weight_matrix, dtype=jnp.float32
+        )
+
+        _combo_maps = {}
+        for _feature_id, (_, _columns, _values) in _feature_records.items():
+            _combo_maps.setdefault(_columns, {})[_values] = _feature_id
+        _order_id_columns = []
+        for _columns, _value_map in sorted(
+            _combo_maps.items(), key=lambda item: min(item[1].values())
+        ):
+            _integer_ids = np.array(
+                [
+                    _value_map[tuple(str(value) for value in row)]
+                    for row in merged_df.select(list(_columns)).iter_rows()
+                ],
+                dtype=np.int32,
+            )
+            _order_id_columns.append(_integer_ids)
+        _saved_feature_ids[_order] = jnp.array(
+            np.column_stack(_order_id_columns), dtype=jnp.int32
+        )
+
+    _in_memory_prediction = np.asarray(
+        predicted_h2a_county_year(
+            trained_params,
+            feature_ids,
+            X_county_cont,
+            X_patch_cont,
+            patch_exposure,
+            group_ids,
+            num_groups,
+        )
+    )
+    _saved_model_prediction = np.asarray(
+        predicted_h2a_county_year(
+            _saved_params,
+            _saved_feature_ids,
+            jnp.array(_saved_X_county, dtype=jnp.float32),
+            jnp.array(_saved_X_patch, dtype=jnp.float32),
+            patch_exposure,
+            group_ids,
+            num_groups,
+        )
+    )
+    np.testing.assert_allclose(
+        _saved_model_prediction,
+        _in_memory_prediction,
+        rtol=2e-6,
+        atol=2e-5,
+    )
+    print(
+        "Validated saved preprocessing, categorical mappings, and coefficients; "
+        "maximum prediction difference: "
+        f"{np.max(np.abs(_saved_model_prediction - _in_memory_prediction)):.3g}"
+    )
+    return
+
+
+@app.cell
+def _(
+    X_county_cont,
+    X_patch_cont,
     assert_geo_columns,
     binary_path,
+    cutoff_year_was_explicit,
     feature_ids,
     group_ids,
     merged_df,
@@ -2556,9 +3031,17 @@ def _(
         .agg(pl.mean("predicted_h2a_count"))
     )
     assert_geo_columns(results_df, ["county_fips"])
-    results_df.write_parquet(
+    prediction_path = (
         binary_path / "h2a_prediction_using_elastic_net_continuous_basis.parquet"
     )
+    if cutoff_year_was_explicit:
+        print(
+            "H2A_CUTOFF_YEAR was explicitly supplied; skipping legacy county "
+            f"prediction write to {prediction_path}."
+        )
+    else:
+        results_df.write_parquet(prediction_path)
+        print(f"Saved legacy cutoff-2011 county predictions to {prediction_path}")
     return (results_df,)
 
 

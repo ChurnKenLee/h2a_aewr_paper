@@ -72,6 +72,82 @@ addendum_b <- read_parquet(path_int(
 )) %>%
   clean_names()
 
+employer_xwalk <- read_parquet(path_int("h2a_employer_crosswalk.parquet")) %>%
+  clean_names()
+
+test <- employer_xwalk %>%
+  group_by(employer_id_balanced) %>%
+  mutate(n_appear = n()) %>%
+  ungroup() %>%
+  arrange(n_appear, employer_id_balanced)
+
+
+# Crosswalk join keys: input column = crosswalk column
+h2a_employer_keys <- c(
+  "employer_name" = "source_name_raw",
+  "trade_name_dba" = "source_trade_name_raw",
+  "employer_address_1" = "source_address_1_raw",
+  "employer_address_2" = "source_address_2_raw",
+  "employer_city" = "source_city_raw",
+  "employer_state" = "source_state_raw",
+  "employer_postal_code" = "source_postal_code_raw",
+  "employer_phone" = "source_phone_raw",
+  "employer_fein" = "source_fein_raw"
+)
+
+addendum_employer_keys <- c(
+  "business_name" = "source_name_raw",
+  "worksite_address_1" = "source_address_1_raw",
+  "worksite_address_2" = "source_address_2_raw",
+  "worksite_city" = "source_city_raw",
+  "worksite_state" = "source_state_raw",
+  "worksite_zip" = "source_postal_code_raw"
+)
+
+employer_id_columns <- c(
+  "employer_record_id",
+  "employer_id_conservative",
+  "employer_id_balanced",
+  "employer_id_high_recall"
+)
+
+# The crosswalk represents missing source values as empty strings.
+EmptyIfMissing <- function(x) {
+  replace_na(as.character(x), "")
+}
+
+h2a_employer_xwalk <- employer_xwalk %>%
+  filter(source_dataset == "h2a_with_fips") %>%
+  select(
+    all_of(unname(h2a_employer_keys)),
+    all_of(employer_id_columns)
+  )
+
+addendum_employer_xwalk <- employer_xwalk %>%
+  filter(source_dataset == "h2a_addendum_b_with_fips") %>%
+  select(
+    all_of(unname(addendum_employer_keys)),
+    all_of(employer_id_columns)
+  )
+
+# Canonicalize missing values exactly as the Python notebook does.
+h2a_df <- h2a_df %>%
+  mutate(across(all_of(names(h2a_employer_keys)), EmptyIfMissing)) %>%
+  left_join(
+    h2a_employer_xwalk,
+    by = h2a_employer_keys,
+    relationship = "many-to-one"
+  )
+
+addendum_b <- addendum_b %>%
+  mutate(across(all_of(names(addendum_employer_keys)), EmptyIfMissing)) %>%
+  left_join(
+    addendum_employer_xwalk,
+    by = addendum_employer_keys,
+    relationship = "many-to-one"
+  )
+
+
 aewr_rates <- read_parquet(path_int("aewr.parquet")) %>%
   transmute(
     state_fips = state_fips(state_fips),
@@ -959,7 +1035,8 @@ h2a_cleaned_df <- h2a_cleaned_df %>%
     man_hours_certified,
     number_of_hours,
     wage_rate,
-    wage_unit
+    wage_unit,
+    all_of(employer_id_columns)
   )
 
 # We want to calculate the average wage rate of H-2A workers within each county-year
@@ -1175,6 +1252,49 @@ AssertNestedHours(
   "allocated worksite rows"
 )
 
+# Construct employer counts separately from the additive worker totals.
+h2a_start_year_employer_counts <- h2a_start_year_df %>%
+  mutate(
+    county_fips = harmonize_county_fips_2010(if_else(
+      county_fips_list == "" | county_fips_list == "00000",
+      "00000",
+      county_fips_list
+    )),
+    year = as.integer(start_year)
+  ) %>%
+  filter(
+    is.finite(county_nbr_workers_certified),
+    county_nbr_workers_certified > 0
+  ) %>%
+  group_by(county_fips, year) %>%
+  summarise(
+    nbr_employers_conservative_start_year = n_distinct(
+      employer_id_conservative,
+      na.rm = TRUE
+    ),
+    nbr_employers_balanced_start_year = n_distinct(
+      employer_id_balanced,
+      na.rm = TRUE
+    ),
+    nbr_employers_high_recall_start_year = n_distinct(
+      employer_id_high_recall,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  )
+
+# The matching tiers are nested, so these inequalities must hold.
+stopifnot(
+  all(
+    h2a_start_year_employer_counts$nbr_employers_conservative_start_year >=
+      h2a_start_year_employer_counts$nbr_employers_balanced_start_year
+  ),
+  all(
+    h2a_start_year_employer_counts$nbr_employers_balanced_start_year >=
+      h2a_start_year_employer_counts$nbr_employers_high_recall_start_year
+  )
+)
+
 # We have to manually calculate weighted average of hourly wage because R cannot handle NAs in weights
 h2a_start_year_df <- h2a_start_year_df %>%
   mutate(hourly_wage_X_nbr_workers = hourly_wage * county_nbr_workers_certified)
@@ -1355,6 +1475,20 @@ AssertNestedHours(
   h2a_start_year_aggregated_df$cert_hours_at_aewr_start_year,
   "harmonized county start-year rows"
 )
+
+# Add county-start-year employer count
+h2a_start_year_aggregated_df <- h2a_start_year_aggregated_df %>%
+  left_join(
+    h2a_start_year_employer_counts,
+    by = c("county_fips", "year"),
+    relationship = "one-to-one"
+  ) %>%
+  mutate(
+    across(
+      starts_with("nbr_employers_"),
+      ~ replace_na(.x, 0L)
+    )
+  )
 
 h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_aggregated_df %>%
   mutate(

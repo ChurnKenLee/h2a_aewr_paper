@@ -26,7 +26,16 @@ unlink(obsolete_outputs[file.exists(obsolete_outputs)])
 panel <- read_parquet(
   path_processed("panel_iv_county_year.parquet")
 ) %>%
-  mutate(year = as.integer(year))
+  mutate(
+    year = as.integer(year),
+    farm_cashandinc_ppi_per_farm_worker = if_else(
+      is.finite(farm_cashandinc_ppi) &
+        is.finite(emp_farm) &
+        emp_farm > 0,
+      1000 * farm_cashandinc_ppi / emp_farm,
+      NA_real_
+    )
+  )
 
 endogenous <- "aewr_ppi"
 fixed_effects <- "county_fips + year"
@@ -37,39 +46,42 @@ control_terms <- paste(
 )
 
 outcomes <- tribble(
-  ~outcome                                                    , ~outcome_label , ~table_stub ,
-  "h2a_cert_share_farm_workers_2011_start_year"               ,
-  "H-2A certified workers / 2011 farm employment"             ,
-  "h2a_normalized"                                            ,
-  "h2a_cert_hours_per_farm_worker_2011_start_year"            ,
-  "H-2A certified hours / 2011 farm employment"               ,
-  "h2a_certified_hours"                                       ,
-  "h2a_applications_per_farm_worker_2011_start_year"          ,
-  "H-2A applications / 2011 farm employment"                  ,
-  "h2a_applications"                                          ,
-  "h2a_cert_positions_per_application_start_year"             ,
-  "H-2A certified positions / application"                    ,
-  "h2a_positions_per_application"                             ,
-  "h2a_cert_hours_per_position_start_year"                    ,
-  "H-2A certified hours / certified position"                 ,
-  "h2a_hours_per_position"                                    ,
-  "fisher_index_ppi"                                          ,
-  "Real Fisher crop price index"                              ,
-  "prices"                                                    ,
-  "emp_farm"                                                  ,
-  "Farm employment"                                           ,
-  "farm_employment"                                           ,
-  "share_farm_prodexp_cashandinc"                             ,
-  "Farm production expenses / cash receipts and other income" ,
-  "production_expense_share"                                  ,
-  "farm_cashandinc_ppi"                                       ,
-  "Real farm cash receipts and other income"                  ,
-  "farm_income"                                               ,
-  "share_farm_laborexp_prodexp"                               ,
-  "Hired-labor share of farm production expenses"             ,
-  "farm_labor_share"                                          ,
-  "fisher_quantity_index"                                     ,
-  "Fisher crop output-quantity index (2011 = 100)"            ,
+  ~outcome                                                             , ~outcome_label , ~table_stub ,
+  "h2a_cert_share_farm_workers_2011_start_year"                        ,
+  "H-2A certified workers / 2011 farm employment"                      ,
+  "h2a_normalized"                                                     ,
+  "h2a_cert_hours_per_farm_worker_2011_start_year"                     ,
+  "H-2A certified hours / 2011 farm employment"                        ,
+  "h2a_certified_hours"                                                ,
+  "h2a_applications_per_farm_worker_2011_start_year"                   ,
+  "H-2A applications / 2011 farm employment"                           ,
+  "h2a_applications"                                                   ,
+  "nbr_employers_balanced_start_year"                                  ,
+  "H-2A employers (balanced linkage)"                                  ,
+  "h2a_employers"                                                      ,
+  "h2a_cert_positions_per_application_start_year"                      ,
+  "H-2A certified positions / application"                             ,
+  "h2a_positions_per_application"                                      ,
+  "h2a_cert_hours_per_position_start_year"                             ,
+  "H-2A certified hours / certified position"                          ,
+  "h2a_hours_per_position"                                             ,
+  "fisher_index_ppi"                                                   ,
+  "Real Fisher crop price index"                                       ,
+  "prices"                                                             ,
+  "emp_farm"                                                           ,
+  "Farm employment"                                                    ,
+  "farm_employment"                                                    ,
+  "share_farm_prodexp_cashandinc"                                      ,
+  "Farm production expenses / cash receipts and other income"          ,
+  "production_expense_share"                                           ,
+  "farm_cashandinc_ppi_per_farm_worker"                                ,
+  "Farm cash receipts and other income per farm worker (2012 dollars)" ,
+  "farm_income"                                                        ,
+  "share_farm_laborexp_prodexp"                                        ,
+  "Hired-labor share of farm production expenses"                      ,
+  "farm_labor_share"                                                   ,
+  "fisher_quantity_index"                                              ,
+  "Fisher crop output-quantity index (2011 = 100)"                     ,
   "output_quantities"
 )
 

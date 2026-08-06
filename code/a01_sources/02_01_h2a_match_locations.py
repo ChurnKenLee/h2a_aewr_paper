@@ -387,6 +387,7 @@ def _(pl):
     remove_cols_dict[2014] = ["ALIEN_WORK_CITY", "ALIEN_WORK_STATE"]
     add_cols_dict[2015] = [
         "CASE_NUMBER",
+        "EMPLOYER_PHONE",
         "NBR_WORKERS_REQUESTED",
         "SOC_CODE",
         "WORKSITE_CITY",
@@ -409,7 +410,7 @@ def _(pl):
         "REQUESTED_START_DATE_OF_NEED",
     ]
     remove_cols_dict[2016] = ["CERTIFICATION_BEGIN_DATE", "CERTIFICATION_END_DATE"]
-    add_cols_dict[2017] = ["WORKSITE_COUNTY"]
+    add_cols_dict[2017] = ["TRADE_NAME_DBA", "WORKSITE_COUNTY"]
     add_cols_dict[2018] = ["CASE_NO", "PRIMARY_SUB"]
     remove_cols_dict[2018] = ["CASE_NUMBER", "PRIMARY/SUB"]
     add_cols_dict[2019] = ["CASE_NUMBER", "PRMARY/SUB"]
@@ -419,6 +420,8 @@ def _(pl):
     add_cols_dict[2020] = [
         "ANTICIPATED_NUMBER_OF_HOURS",
         "EMERGENCY_FILING",
+        "EMPLOYER_ADDRESS_1",
+        "EMPLOYER_ADDRESS_2",
         "EMPLOYMENT_BEGIN_DATE",
         "EMPLOYMENT_END_DATE",
         "H2A_LABOR_CONTRACTOR",
@@ -438,6 +441,8 @@ def _(pl):
         "BASIC_NUMBER_OF_HOURS",
         "BASIC_RATE_OF_PAY",
         "BASIC_UNIT_OF_PAY",
+        "EMPLOYER_ADDRESS1",
+        "EMPLOYER_ADDRESS2",
         "JOB_END_DATE",
         "JOB_START_DATE",
         "NBR_WORKERS_CERTIFIED",
@@ -448,7 +453,7 @@ def _(pl):
         "REQUESTED_END_DATE_OF_NEED",
         "REQUESTED_START_DATE_OF_NEED",
     ]
-    add_cols_dict[2024] = ["AG_ASSN_OR_AGENCY_STATUS"]
+    add_cols_dict[2024] = ["AG_ASSN_OR_AGENCY_STATUS", "EMPLOYER_FEIN"]
     return add_cols_dict, mutate_list, remove_cols_dict, s_map
 
 
@@ -464,6 +469,8 @@ def _(add_cols_dict, mutate_list, remove_cols_dict, s_map):
         "CASE_STATUS",
         "DECISION_DATE",
         "EMPLOYER_NAME",
+        "EMPLOYER_ADDRESS1",
+        "EMPLOYER_ADDRESS2",
         "EMPLOYER_CITY",
         "EMPLOYER_STATE",
         "EMPLOYER_POSTAL_CODE",
@@ -498,6 +505,8 @@ def _(s_map):
         "CASE_NUMBER",
         "JOB_ORDER_NUMBER",
         "NAME_OF_AGRICULTURAL_BUSINESS",
+        "PLACE_OF_EMPLOYMENT_ADDRESS1",
+        "PLACE_OF_EMPLOYMENT_ADDRESS2",
         "PLACE_OF_EMPLOYMENT_CITY",
         "PLACE_OF_EMPLOYMENT_STATE",
         "PLACE_OF_EMPLOYMENT_POSTAL_CODE",
@@ -526,9 +535,16 @@ def _():
         "DECISION_DATE": "decision_date",
         "RECEIVED_DATE": "case_received_date",
         "EMPLOYER_NAME": "employer_name",
+        "TRADE_NAME_DBA": "trade_name_dba",
+        "EMPLOYER_ADDRESS1": "employer_address_1",
+        "EMPLOYER_ADDRESS_1": "employer_address_1",
+        "EMPLOYER_ADDRESS2": "employer_address_2",
+        "EMPLOYER_ADDRESS_2": "employer_address_2",
         "EMPLOYER_CITY": "employer_city",
         "EMPLOYER_STATE": "employer_state",
         "EMPLOYER_POSTAL_CODE": "employer_postal_code",
+        "EMPLOYER_PHONE": "employer_phone",
+        "EMPLOYER_FEIN": "employer_fein",
         "NBR_WORKERS_REQUESTED": "nbr_workers_requested",
         "NBR_WORKERS_CERTIFIED": "nbr_workers_certified",
         "TOTAL_WORKERS_NEEDED": "nbr_workers_needed",
@@ -578,6 +594,8 @@ def _():
         "CASE_NUMBER": "case_number",
         "JOB_ORDER_NUMBER": "job_order_number",
         "NAME_OF_AGRICULTURAL_BUSINESS": "business_name",
+        "PLACE_OF_EMPLOYMENT_ADDRESS1": "worksite_address_1",
+        "PLACE_OF_EMPLOYMENT_ADDRESS2": "worksite_address_2",
         "PLACE_OF_EMPLOYMENT_CITY": "worksite_city",
         "PLACE_OF_EMPLOYMENT_STATE": "worksite_state",
         "PLACE_OF_EMPLOYMENT_POSTAL_CODE": "worksite_zip",

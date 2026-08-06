@@ -10,3 +10,4 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 "$SCRIPT_DIR/run_descriptives.sh"
 "$SCRIPT_DIR/run_did.sh"
 "$SCRIPT_DIR/run_panel_iv.sh"
+"$SCRIPT_DIR/run_mundlak_chamberlain.sh"

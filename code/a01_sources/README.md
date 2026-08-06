@@ -32,6 +32,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `02_01_h2a_match_locations.py` | Standardize worksites and assign canonical county FIPS lists | H-2A and Addendum B location files |
 | `02_02_h2a_clean_unmatched_locations_using_gemini.py` | Suggest corrections for unmatched locations | Unmatched-location suggestion CSVs |
 | `02_03_h2a_use_places_api_to_get_county.py` | Resolve suggested locations through Places | Place-ID and address-component caches |
+| `02_04_h2a_match_employers.py` | Build conservative, balanced, and high-recall longitudinal employer identifiers | `h2a_employer_crosswalk.parquet` |
 | `03_01_nass_extract_quickstats.py` | Partition raw QuickStats census and survey extracts | `qs_census_*.parquet`, `qs_survey_*.parquet` |
 | `03_02_nass_select_quickstats_obs.py` | Select and harmonize downstream NASS observations | Selected census and survey Parquet files |
 | `03_03_nass_census_worker_duration.py` | Derive county hired-worker duration shares and hired-labor payroll | `census_ag_hired_worker_duration_county.parquet` |
@@ -57,7 +58,9 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 ## Ordering and credentials
 
 - The H-2A geocoding loop is `02_01`, `02_02`, `02_03`, then `02_01` again
-  to incorporate the completed caches into the final FIPS outputs.
+  to incorporate the completed caches into the final FIPS outputs. Run `02_04`
+  after that final pass; it reads both with-FIPS files without rewriting them
+  and retains their raw employer fields as crosswalk join keys.
 - Within the NASS family, run `03_01` before `03_02`, and `03_02` before
   `03_03`.
 - Within the CDL family, run `06_01` through `06_05` in numeric order.

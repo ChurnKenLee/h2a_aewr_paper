@@ -8,6 +8,7 @@ run_step code/a01_sources/02_01_h2a_match_locations.py
 run_step code/a01_sources/02_02_h2a_clean_unmatched_locations_using_gemini.py
 run_step code/a01_sources/02_03_h2a_use_places_api_to_get_county.py
 run_step code/a01_sources/02_01_h2a_match_locations.py
+run_step code/a01_sources/02_04_h2a_match_employers.py
 run_step code/a01_sources/03_01_nass_extract_quickstats.py
 run_step code/a01_sources/03_02_nass_select_quickstats_obs.py
 run_step code/a01_sources/03_03_nass_census_worker_duration.py
