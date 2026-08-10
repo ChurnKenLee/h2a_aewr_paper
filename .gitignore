@@ -32,7 +32,8 @@ code/json/
 /outputs/figures/*
 
 # PDFs
-literature/
+papers/imm_lit/*
+papers/h2a_lit/*
 
 # LaTeX auxiliary files
 draft/*
