@@ -24,16 +24,29 @@ columns use a common complete-case sample:
 4. wage-plus-seasonal instrument with lagged controls (preferred).
 
 The controls are lagged log county population, lagged farm-employment share,
-lagged employment-to-population ratio, and the lagged real county 10th
-percentile wage. Each outcome has four 2SLS columns: wage-only and
-wage-plus-seasonal instruments, each without and with controls. All four
-columns use a common outcome-specific sample, and the controlled
-wage-plus-seasonal specification in column 4 is preferred. The twelve outcomes
+lagged employment-to-population ratio, the lagged real county 10th-percentile
+wage, and a differential trend formed by interacting the standardized static
+H-2A PPML propensity with `year - 2011`. The propensity comes from the single
+cutoff selected globally with `H2A_PREDICTION_CUTOFF_YEAR`; its predicted count
+uses fixed 2011 farm employment and is constant across panel years. The score
+level is omitted because county fixed effects absorb it, and the interaction is
+a control in both IV stages, never an excluded instrument. Each
+outcome has four 2SLS columns: wage-only and wage-plus-seasonal instruments,
+each without and with controls. All four columns use a common outcome-specific
+sample, and the controlled wage-plus-seasonal specification in column 4 is
+preferred. The twelve outcomes
 are normalized H-2A certifications, certified contract hours, applications,
-the raw balanced-linkage employer count, positions per application, hours per
+the balanced-linkage employer count per 2011 farm employee, positions per application, hours per
 position, real crop prices, farm employment, farm-production expense share,
 real farm income per current-year farm worker, farm-labor share, and output
 quantities.
+
+`07_estimate_panel_iv.R` also writes an identical-sample diagnostic comparing
+the committed four-control preferred specification with those same controls
+plus the static propensity differential trend. For all twelve outcomes it
+reports the AEWR coefficient, clustered standard error, within-$R^2$,
+excluded-instrument F, observations, counties, and changes from the four-control
+specification without imposing a precision-improvement sign.
 
 ## Order and artifacts
 
@@ -45,7 +58,7 @@ quantities.
 | `04_recover_fls_geography.py` | Wage-only and wage-plus-seasonal entropy weights and diagnostics |
 | `05_construct_instruments.R` | Area frame and the two cluster-year instruments |
 | `06_build_county_year_panel.R` | `data/processed/panel_iv_county_year.parquet` |
-| `07_estimate_panel_iv.R` | First stages, twelve four-column 2SLS tables, the H-2A margin table, and summary statistics |
+| `07_estimate_panel_iv.R` | First stages, twelve four-column 2SLS tables, static-trend diagnostic, H-2A margin table, and summary statistics |
 | `08_generate_figures.R` | Six diagnostic figures and reproducible plotting-data CSVs |
 
 Run:
@@ -69,6 +82,8 @@ The retained estimation products under `outputs/tables` are:
   `iv_preferred_h2a_adjustment_margin_estimates.csv`;
 - `iv_preferred_second_stage_estimates.csv` and
   `iv_preferred_second_stage_samples.csv`; and
+- `iv_static_propensity_trend_diagnostic.csv` and
+  `table_iv_static_propensity_trend_diagnostic.tex`; and
 - `table_iv_preferred_summary_statistics.tex` and
   `iv_preferred_summary_statistics.csv`.
 

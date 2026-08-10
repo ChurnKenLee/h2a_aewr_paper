@@ -23,6 +23,13 @@ CCV_NOTE = (
     "re-solved in every equally likely state; and the centered coefficient-"
     "error covariance uses probability weight 1/17. Intervals use t(16)."
 )
+PRIMARY_CCV_NOTE = (
+    CCV_NOTE
+    + " For the selected Mundlak-Chamberlain effects, the headline variance "
+    "is multiplied by N/(N-K); the unadjusted design variance is retained in "
+    "the underlying results. Employer counts are never scaled by farm "
+    "employment."
+)
 
 
 def effect_cell(estimate: float, standard_error: float, digits: int = 2) -> str:
@@ -106,7 +113,7 @@ def dynamic_effects_table() -> GT:
             "Effects are county-year-standardized responses to one log "
             "percentage point of AEWR growth; the any-application outcome is "
             "reported in percentage points. "
-            + CCV_NOTE
+            + PRIMARY_CCV_NOTE
         )
     )
     return common_style(table)
@@ -150,7 +157,7 @@ def heterogeneity_table() -> GT:
         .tab_source_note(
             "Effects are certified positions per 1,000 baseline farm workers "
             "per one log percentage point of contemporaneous AEWR growth. "
-            + CCV_NOTE
+            + PRIMARY_CCV_NOTE
         )
     )
     return common_style(table)
@@ -226,7 +233,7 @@ def lead_placebo_table() -> GT:
             "A nonzero lead can indicate anticipation, feedback, omitted "
             "dynamics, or misspecification; a zero lead does not establish the "
             "identifying assumptions. "
-            + CCV_NOTE
+            + PRIMARY_CCV_NOTE
         )
     )
     return common_style(table)

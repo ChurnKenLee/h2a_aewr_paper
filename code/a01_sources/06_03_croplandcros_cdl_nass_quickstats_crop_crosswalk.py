@@ -16,6 +16,9 @@ def _():
     import dotenv, os
     import polars as pl
     import pdfplumber
+    # DSPy 3.3 lazily proxies NumPy. Initialize Arrow/NumPy first so Polars'
+    # calamine Excel reader does not encounter that proxy during Arrow import.
+    import pyarrow
     import dspy
     from pydantic import BaseModel, Field
     from typing import List, Literal
@@ -41,6 +44,7 @@ def _():
         os,
         pdfplumber,
         pl,
+        pyarrow,
         tempfile,
         tqdm,
     )

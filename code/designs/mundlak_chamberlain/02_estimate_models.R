@@ -22,6 +22,27 @@ library(purrr)
 library(readr)
 library(tibble)
 
+legacy_fixest_threads <- suppressWarnings(as.integer(Sys.getenv(
+  "MC_FIXEST_THREADS",
+  unset = as.character(MC_SPEC_DEFAULT_FIXEST_THREADS)
+)))
+if (
+  length(legacy_fixest_threads) != 1L ||
+    !is.finite(legacy_fixest_threads) ||
+    legacy_fixest_threads < 1L
+) {
+  legacy_fixest_threads <- MC_SPEC_DEFAULT_FIXEST_THREADS
+}
+fixest::setFixest_nthreads(legacy_fixest_threads)
+
+estimation_model_ids <- if (
+  identical(Sys.getenv("MC_BENCHMARK_ONLY", unset = "0"), "1")
+) {
+  c("twfe_benchmark", "mundlak_multilevel")
+} else {
+  MC_MODEL_IDS
+}
+
 dir.create(path_int(), recursive = TRUE, showWarnings = FALSE)
 dir.create(path_tables(), recursive = TRUE, showWarnings = FALSE)
 
@@ -33,7 +54,7 @@ metadata <- readRDS(
   path_int("mundlak_chamberlain_metadata.rds")
 )
 
-if (!identical(metadata$design_version, MC_DESIGN_VERSION)) {
+if (!identical(metadata$design_version, MC_LEGACY_DESIGN_VERSION)) {
   stop("Unexpected MC metadata version.", call. = FALSE)
 }
 if (
@@ -151,7 +172,7 @@ for (outcome_index in seq_len(nrow(metadata$outcomes))) {
   model_store[[outcome_id]] <- list()
   sample_store[[outcome_id]] <- list()
 
-  for (model_id in MC_MODEL_IDS) {
+  for (model_id in estimation_model_ids) {
     message("Estimating ", outcome_id, ": ", model_id)
     formula <- mc_build_formula(
       outcome = outcome_column,

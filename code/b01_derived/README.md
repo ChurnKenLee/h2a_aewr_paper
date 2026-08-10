@@ -12,11 +12,12 @@ Run R scripts with `Rscript`:
 Rscript code/b01_derived/01_h2a_aggregation_nodupes.R
 ```
 
-The two Python files are Marimo applications:
+The three Python files are Marimo applications:
 
 ```sh
 uv run marimo edit code/b01_derived/02_price_index_nass_synthetic_cdl.py
 uv run marimo edit code/b01_derived/07_h2a_prediction_elastic_net.py
+uv run marimo edit code/b01_derived/08_h2a_prediction_from_estimated_weights.py
 ```
 
 Old root-level B paths map here by dropping the leading `b` from the filename;
@@ -36,7 +37,8 @@ the remaining family and substep numbers are unchanged.
 | `05_02_oews_farm_wages.R` | Aggregate OEWS agricultural wages to counties and states | County and state OEWS Parquet files |
 | `05_03_qcew_ag_wages.R` | Estimate QCEW agricultural wage proxies | State wage and industry diagnostic files |
 | `06_nawspad_work_hours.R` | Derive regional work hours and seasonality | `nawspad.parquet` |
-| `07_h2a_prediction_elastic_net.py` | Fit county H-2A exposure predictions | Elastic-net prediction Parquet and diagnostics |
+| `07_h2a_prediction_elastic_net.py` | Fit cutoff-specific H-2A PPML models from climate normals, static soil features, and fixed 2011 employment | Stamped model Parquet and diagnostics |
+| `08_h2a_prediction_from_estimated_weights.py` | Score every completed compatible PPML model once per county | `h2a_prediction_using_elastic_net_by_cutoff.parquet` keyed by cutoff and county |
 
 ## Dependencies
 
@@ -46,4 +48,14 @@ the remaining family and substep numbers are unchanged.
 - `04` also requires A04 annual QCEW; `05_02` requires A05 OEWS; `05_03`
   requires A04 annual QCEW.
 - `07` requires `01` plus the A08 BEA and A09 climate/soil artifacts.
+- `08` consumes the cutoff-specific model Parquets from `07` plus the same BEA,
+  climate, and soil artifacts.
+- Every cutoff model trains on county-year outcomes from 2008 through the
+  requested `H2A_CUTOFF_YEAR`, but its predictors and 2011 farm-employment
+  exposure are time-invariant. Each fitted model therefore produces one static
+  county propensity. The scorer discovers all compatible cutoffs and never
+  treats them as rolling annual scores.
+- Checkpoints and model Parquets must carry
+  `model_spec = climate_norm_static_v1`; stale dynamic and mixed-spec artifacts
+  are rejected.
 - `03_01` requires `IPUMS_API_KEY`. Other B scripts use local artifacts only.

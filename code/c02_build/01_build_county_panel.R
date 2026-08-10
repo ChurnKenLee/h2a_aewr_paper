@@ -204,13 +204,69 @@ county_panel <- county_panel %>%
       nbr_applications_withdrawn_start_year /
         nbr_applications_start_year,
       NA_real_
-    ),
-    h2a_predicted_share_2011 = if_else(
-      is.finite(emp_farm_2011) & emp_farm_2011 > 0,
-      predicted_h2a_count / emp_farm_2011,
-      NA_real_
     )
   )
+
+prediction_contract <- county_panel %>%
+  filter(!is.na(h2a_prediction_cutoff_year)) %>%
+  select(
+    county_fips,
+    h2a_prediction_cutoff_year,
+    h2a_prediction_model_spec,
+    predicted_h2a_count,
+    bea_farm_emp_2011,
+    h2a_predicted_share_2011,
+    emp_farm_2011
+  ) %>%
+  distinct()
+
+if (
+  nrow(prediction_contract) == 0L ||
+    anyDuplicated(prediction_contract$county_fips) > 0L ||
+    any(
+      prediction_contract$h2a_prediction_cutoff_year !=
+        H2A_PREDICTION_CUTOFF_YEAR
+    ) ||
+    !identical(
+      unique(prediction_contract$h2a_prediction_model_spec),
+      H2A_PREDICTION_MODEL_SPEC
+    ) ||
+    any(
+      !is.finite(prediction_contract$predicted_h2a_count) |
+        prediction_contract$predicted_h2a_count < 0
+    ) ||
+    any(
+      !is.finite(prediction_contract$emp_farm_2011) |
+        prediction_contract$emp_farm_2011 <= 0
+    ) ||
+    any(
+      !is.finite(prediction_contract$bea_farm_emp_2011) |
+        prediction_contract$bea_farm_emp_2011 <= 0
+    ) ||
+    any(
+      abs(
+        prediction_contract$bea_farm_emp_2011 -
+          prediction_contract$emp_farm_2011
+      ) > 1e-8,
+      na.rm = TRUE
+    ) ||
+    any(
+      !is.finite(prediction_contract$h2a_predicted_share_2011) |
+        prediction_contract$h2a_predicted_share_2011 < 0
+    ) ||
+    !isTRUE(all.equal(
+      prediction_contract$h2a_predicted_share_2011,
+      prediction_contract$predicted_h2a_count /
+        prediction_contract$bea_farm_emp_2011,
+      tolerance = 2e-6,
+      check.attributes = FALSE
+    ))
+) {
+  stop(
+    "The shared panel must use one valid canonical static prediction per county.",
+    call. = FALSE
+  )
+}
 
 if (
   nrow(county_panel) == 0L ||

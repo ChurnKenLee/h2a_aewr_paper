@@ -1114,11 +1114,10 @@ selected_california_target <- california_unit_employment %>%
   slice(1L)
 if (
   nrow(selected_california_target) != 1L ||
-    selected_california_target$cz_id[[1]] != "62" ||
-    selected_california_target$target_cluster[[1]] != 1L
+    selected_california_target$cz_id[[1]] != "62"
 ) {
   stop(
-    "The deterministic California target must be CZ 62 in cluster 1.",
+    "The deterministic California target must be CZ 62.",
     call. = FALSE
   )
 }
@@ -1131,16 +1130,41 @@ california_donors <- primary_donor_map %>%
     target_cluster == california_target_cluster
   ) %>%
   arrange(donor_rank)
+expected_california_donor_ranks <- seq_len(
+  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
+)
 if (
-  nrow(california_donors) != 2L ||
-    !identical(california_donors$donor_rank, 1:2) ||
-    !identical(california_donors$donor_cluster, c(4L, 2L))
+  nrow(california_donors) != DISSIMILARITY_IV_PRIMARY_DONOR_COUNT ||
+    !identical(
+      california_donors$donor_rank,
+      expected_california_donor_ranks
+    ) ||
+    any(california_donors$target_cluster != california_target_cluster) ||
+    any(california_donors$donor_cluster == california_target_cluster) ||
+    n_distinct(california_donors$donor_cluster) !=
+      DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
 ) {
   stop(
-    "California cluster 1 must use cluster 4 then cluster 2 as donors.",
+    "The California target cluster has an invalid donor ranking.",
     call. = FALSE
   )
 }
+
+selected_california_role <- paste0(
+  "Selected target: CZ ",
+  selected_california_target$cz_id[[1]]
+)
+california_target_cluster_role <- paste0(
+  "Other CZs in target cluster ",
+  california_target_cluster
+)
+california_donor_roles <- paste0(
+  "Donor rank ",
+  california_donors$donor_rank,
+  ": cluster ",
+  california_donors$donor_cluster
+)
+california_unused_role <- "Unused clusters"
 
 california_plot_metadata <- california_unit_employment %>%
   left_join(
@@ -1159,12 +1183,12 @@ california_plot_metadata <- california_unit_employment %>%
     selected_target_cz_id = selected_california_target$cz_id[[1]],
     selected_target_cluster = california_target_cluster,
     selection_role = case_when(
-      selected_target ~ "Selected target: CZ 62",
+      selected_target ~ selected_california_role,
       target_cluster == california_target_cluster ~
-        "Other CZs in target cluster 1",
-      donor_rank == 1L ~ "Donor rank 1: cluster 4",
-      donor_rank == 2L ~ "Donor rank 2: cluster 2",
-      TRUE ~ "Unused clusters"
+        california_target_cluster_role,
+      donor_rank == 1L ~ california_donor_roles[[1]],
+      donor_rank == 2L ~ california_donor_roles[[2]],
+      TRUE ~ california_unused_role
     )
   ) %>%
   arrange(
@@ -1264,18 +1288,20 @@ california_target_boundary <- california_unit_boundaries %>%
   )
 
 california_role_levels <- c(
-  "Selected target: CZ 62",
-  "Donor rank 1: cluster 4",
-  "Donor rank 2: cluster 2",
-  "Other CZs in target cluster 1",
-  "Unused clusters"
+  selected_california_role,
+  california_donor_roles,
+  california_target_cluster_role,
+  california_unused_role
 )
-california_role_colors <- c(
-  "Selected target: CZ 62" = "#D55E00",
-  "Donor rank 1: cluster 4" = "#0072B2",
-  "Donor rank 2: cluster 2" = "#56B4E9",
-  "Other CZs in target cluster 1" = "#E69F00",
-  "Unused clusters" = "#D9D9D9"
+california_role_colors <- setNames(
+  c(
+    "#D55E00",
+    "#0072B2",
+    "#56B4E9",
+    "#E69F00",
+    "#D9D9D9"
+  ),
+  california_role_levels
 )
 
 california_target_plot <- california_map %>%

@@ -4,6 +4,48 @@ For a brace-annotated walkthrough of the specification, treatment contrasts,
 and delta-method ATE/AME calculation, see
 [`specification_and_delta_method.md`](specification_and_delta_method.md).
 
+For the implemented version-3 architecture—which turns lag order, dose basis,
+moderator richness, and calendar windows into an audited specification
+program—see
+[saturation_budgets_and_specification_program.md](saturation_budgets_and_specification_program.md).
+The frozen version-2.3 estimator is retained as a compatibility record and
+benchmark.
+
+Version 3 is run by `scripts/run_mundlak_chamberlain.sh`. Its program-specific
+stages are:
+
+1. `01_01_build_specification_registry.R` compiles 648 declared records over
+   54 admissible calendars and writes the arithmetic region-rank ledger. The
+   declaration registry is not the default execution queue.
+2. `02_01_estimate_specification_program.R` builds calendar caches and writes
+   restartable specification-outcome checkpoints. By default it executes a
+   compact, predeclared set of 16 specifications: four primary-family records,
+   eight additional lag/basis records, and four calendar records. It supports
+   `MC_SPEC_STAGE`, `MC_SPEC_IDS`, `MC_OUTCOME_IDS`, `MC_SPEC_MAX`,
+   `MC_SPEC_WORKERS`, `MC_FIXEST_THREADS`, `MC_SPEC_MAX_DENSE_GIB`,
+   `MC_SPEC_MAX_PEAK_GIB`, and `MC_SPEC_FORCE`.
+3. `03_01_report_specification_program.R` promotes the richest admissible
+   predeclared primary per outcome and computes all effects through the exact
+   delta method.
+4. `04_01_diagnostics.R` audits support, moderator alignment, reassignment
+   influence, and the selected-primary one-year-lead placebo.
+5. `06_01_validate_specification_program.R` enforces the registry, rank,
+   row-guard, common-basis, variance-adjustment, gradient, and employer-scale
+   contracts.
+
+The resource-safe defaults are one outcome worker, four `fixest` threads, a
+1.25-GiB ceiling for one dense \(N\times K\) matrix, and a 6-GiB estimated
+per-worker matrix working set. Models that exceed either memory ceiling are
+guard-rejected before fitting. Delta gradients are aggregated directly from
+the named causal dictionary and do not construct full factual and
+counterfactual model matrices.
+
+`MC_SPEC_STAGE=primary` runs only the four primary-family records (32
+specification-outcome checkpoints). `MC_SPEC_STAGE=exhaustive` explicitly
+opts into all 648 records; it is not used by the pipeline default. Exact
+`MC_SPEC_IDS` override the stage. Completed checkpoints satisfying the current
+resource limits are reused.
+
 This is a standalone design for estimating how annual changes in the Adverse
 Effect Wage Rate (AEWR) affect county H-2A program use. It does not modify or
 depend on the repository's existing DiD or panel-IV designs.
@@ -191,6 +233,11 @@ All baseline inputs use only 2008–2010 information.
 | Low wage | `wage_p25` | log |
 | Cropland intensity | `cropland_acr` | \(\log(1+\text{acres}/\max(\text{farm employment},1))\) |
 | Predicted H-2A intensity | `h2a_predicted_share_2011` | inverse hyperbolic sine |
+
+Predicted H-2A intensity is the selected cutoff's static county propensity,
+based on fixed 2011 farm-employment exposure. It is repeated unchanged over
+panel years; repeated pre-period entries therefore carry no annual-score
+interpretation.
 
 Finite missing baseline values are imputed first by AEWR-region median and
 then, if necessary, by the national median. Missingness indicators are

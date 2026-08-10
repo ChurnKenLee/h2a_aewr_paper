@@ -1,6 +1,6 @@
 # Purpose: Predict county H-2A exposure using climate, soil, and economic features.
 # Inputs: H-2A aggregates, BEA employment, NOAA climate, and gNATSGO soil artifacts.
-# Outputs: cutoff-specific fitted-model parameters and legacy cutoff-2011 predictions.
+# Outputs: cutoff-specific fitted-model parameters.
 
 import marimo
 
@@ -10,23 +10,23 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    import marimo as mo
-    from pathlib import Path
-    from h2a.paths import CODE, RAW, INTERMEDIATE
     import itertools
-    import os
-    import polars as pl
-    import polars.selectors as cs
-    import numpy as np
-    import jax
-    import jax.numpy as jnp
-    import optax
-    import lineax as lx
-    from jax.flatten_util import ravel_pytree
     import json
+    import os
     import time
     from functools import partial
+
+    import jax
+    import jax.numpy as jnp
+    import lineax as lx
+    import marimo as mo
+    import numpy as np
+    import optax
+    import polars as pl
+    from jax.flatten_util import ravel_pytree
+
     from h2a.geography import assert_geo_columns
+    from h2a.paths import CODE, INTERMEDIATE
 
     return (
         CODE,
@@ -57,6 +57,7 @@ def _(CODE, INTERMEDIATE):
 
 @app.cell
 def _(os):
+    model_spec = "climate_norm_static_v1"
     _raw_cutoff_year = os.environ.get("H2A_CUTOFF_YEAR")
     cutoff_year_was_explicit = _raw_cutoff_year is not None
     if cutoff_year_was_explicit:
@@ -72,15 +73,15 @@ def _(os):
 
     if not 2008 <= cutoff_year <= 2025:
         raise ValueError(
-            "H2A_CUTOFF_YEAR must be from 2008 through 2025; "
-            f"received {cutoff_year}."
+            f"H2A_CUTOFF_YEAR must be from 2008 through 2025; received {cutoff_year}."
         )
 
     print(
         f"H-2A model training window: 2008-{cutoff_year} "
-        f"(cutoff explicitly supplied: {cutoff_year_was_explicit})"
+        f"(cutoff explicitly supplied: {cutoff_year_was_explicit}); "
+        f"model spec: {model_spec}"
     )
-    return cutoff_year, cutoff_year_was_explicit
+    return cutoff_year, model_spec
 
 
 @app.cell
@@ -88,7 +89,6 @@ def _(jax):
     # Check CUDA working
     print(jax.devices())
     print(jax.default_backend())
-    return
 
 
 @app.cell(hide_code=True)
@@ -96,7 +96,6 @@ def _(mo):
     mo.md(r"""
     # Load and preprocess data for JAX
     """)
-    return
 
 
 @app.cell
@@ -138,15 +137,41 @@ def _(assert_geo_columns, binary_path, cutoff_year, pl):
 
 @app.cell
 def _(assert_geo_columns, binary_path, cutoff_year, pl):
-    # Use pre-period climate-normal spline/Fourier basis features from a14_01.
-    # These are time-invariant (2000-2011) averages
-    # Can consider using annual data instead; think averages capture county primitives better?
+    # Climate normals are time-invariant county primitives. Repeating them over
+    # the training years aligns them with the county-year outcome without
+    # introducing realized annual weather into either fitting or scoring.
     climate = pl.read_parquet(
         binary_path / "county_h2a_prediction_climate_basis_annual.parquet"
     )
     assert_geo_columns(climate, ["county_fips"])
-    climate = climate.select(["year", "county_fips", pl.col("^normal_cb_.*$")]).filter(
-        pl.col("year") >= 2008, pl.col("year") <= cutoff_year
+    climate = climate.select(
+        "year", "county_fips", pl.col("^normal_cb_.*$")
+    ).filter(
+        pl.col("year") >= 2008,
+        pl.col("year") <= cutoff_year,
+    )
+    if climate.select("county_fips", "year").unique().height != climate.height:
+        raise ValueError("Climate inputs must be unique by county_fips and year.")
+    if not all(
+        climate.select(
+            pl.all().exclude("county_fips", "year").is_finite().all()
+        ).row(0)
+    ):
+        raise ValueError("Climate-normal inputs must be finite.")
+    normal_columns = [
+        column for column in climate.columns if column.startswith("normal_cb_")
+    ]
+    if not normal_columns or len(normal_columns) != len(climate.columns) - 2:
+        raise ValueError("The PPML county design must contain climate normals only.")
+    if (
+        climate.select("county_fips", *normal_columns).unique().height
+        != climate["county_fips"].n_unique()
+    ):
+        raise ValueError("Climate normals must be constant within county.")
+
+    print(
+        f"Climate design contains {len(normal_columns)} time-invariant normal "
+        f"features repeated over 2008-{cutoff_year}."
     )
     return (climate,)
 
@@ -262,13 +287,11 @@ def _(itertools, jnp, np, pl):
             ("county", county_cont_cols),
             ("patch", patch_cont_cols),
         ):
-            means = merged.select(
-                [pl.col(c).mean().alias(c) for c in columns]
-            ).row(0, named=True)
+            means = merged.select([pl.col(c).mean().alias(c) for c in columns]).row(
+                0, named=True
+            )
             for c in columns:
-                value = (
-                    None if means[c] is None else float(np.float32(means[c]))
-                )
+                value = None if means[c] is None else float(np.float32(means[c]))
                 if value is None or not np.isfinite(value):
                     raise ValueError(
                         f"Cannot impute continuous covariate {c!r}: "
@@ -333,9 +356,7 @@ def _(itertools, jnp, np, pl):
         )
         county_centers = X_county_cont_raw.mean(axis=0)
         county_scales = X_county_cont_raw.std(axis=0) + 1e-8
-        X_county_cont = (
-            X_county_cont_raw - county_centers
-        ) / county_scales
+        X_county_cont = (X_county_cont_raw - county_centers) / county_scales
         X_county_cont = jnp.array(X_county_cont, dtype=jnp.float32)
 
         # Patch-specific continuous variables
@@ -396,9 +417,7 @@ def _(itertools, jnp, np, pl):
                     readable_name = f"{combo_label}: {'|'.join(value_tuple)}"
 
                     feature_lookup[(order, combo, value_tuple)] = feature_id
-                    order_meta.append(
-                        (feature_id, readable_name, combo, value_tuple)
-                    )
+                    order_meta.append((feature_id, readable_name, combo, value_tuple))
                     readable_names.append(readable_name)
 
                 order_names.extend(readable_names)
@@ -458,7 +477,6 @@ def _(mo):
     mo.md(r"""
     # PPML objective function
     """)
-    return
 
 
 @app.cell
@@ -576,7 +594,7 @@ def _(compute_patch_log_worker, heredity_multiplier, jax, jnp):
         nll = jnp.mean(mu_count_cy - y_count_county_year * jnp.log(mu_count_cy + 1e-7))
 
         total_penalty = 0.0
-        for k in feature_ids.keys():
+        for k in feature_ids:
             w_matrix = params["weights"][k]
 
             # Exact L1 Heredity Multiplier
@@ -623,7 +641,7 @@ def _(compute_patch_log_worker, jax, jnp):
 
         # L2 ridge penalty only
         total_l2_penalty = 0.0
-        for k in feature_ids.keys():
+        for k in feature_ids:
             w_matrix = params["weights"][k]
             total_l2_penalty += l2_rates[k] * jnp.sum(w_matrix**2)
 
@@ -665,7 +683,6 @@ def _(mo):
     mo.md(r"""
     # JAX custom autodiff
     """)
-    return
 
 
 @app.cell
@@ -740,7 +757,7 @@ def _(
         inner_iters,
         inner_tol,
     ):  # note smaller tol, we are using FISTA
-        num_continuous = X_county_cont.shape[1] + X_patch_cont.shape[1]
+        X_county_cont.shape[1] + X_patch_cont.shape[1]
 
         # FISTA initializations
         p = init_params  # Current parameters
@@ -777,14 +794,14 @@ def _(
             return jnp.logical_and(i < inner_iters, mpc > inner_tol)
 
         def body_fn_outer(carry):
-            (i, p, y_mom, t, L, prev_max_param_change, best_p, best_loss) = carry
+            (i, p, y_mom, t, L, _prev_max_param_change, best_p, best_loss) = carry
 
             # --- Backtracking Line Search (Nested While Loop) ---
             # The line search requires the smooth part of the objective only
             loss_y_val, grad_y_val = val_and_grad_smooth_fn(y_mom)
 
             def cond_fn_bt(carry_bt):
-                (k_bt, _, loss_p_next_candidate, L_bt_current) = carry_bt
+                (k_bt, _, _loss_p_next_candidate, L_bt_current) = carry_bt
                 # Majorization condition: f(p_next) <= f(y) + <grad f(y), p_next - y> + (L/2)*||p_next - y||^2
 
                 # Compute p_next_candidate for the current L_bt_current
@@ -1075,11 +1092,11 @@ def _(
             group_ids,
             y_county_year,
             num_groups,
-            feature_sizes_tup,
-            l1_rates,
+            _feature_sizes_tup,
+            _l1_rates,
             l2_rates,
-            inner_iters,
-            inner_tol,
+            _inner_iters,
+            _inner_tol,
         ) = residuals
 
         v = cotangents  # This 'v' is a pytree matching opt_params
@@ -1118,7 +1135,7 @@ def _(
             l2_param_pytree["weights"][k] = jnp.full_like(
                 opt_params["weights"][k], l2_val, dtype=opt_params["weights"][k].dtype
             )
-        flat_l2_param_pytree, _ = ravel_pytree(l2_param_pytree)
+        _flat_l2_param_pytree, _ = ravel_pytree(l2_param_pytree)
         flat_active_mask, _ = ravel_pytree(active_mask)
 
         def full_hvp_plus_ridge(tangent_vec_flat):
@@ -1176,7 +1193,7 @@ def _(
         grad_l1 = {}
         grad_l2 = {}
 
-        for k in feature_ids.keys():
+        for k in feature_ids:
             w_matrix_k = w_pytree["weights"][k]
             opt_w_matrix_k = opt_params["weights"][k]
             active_sub_mask_k = active_mask["weights"][k]
@@ -1230,7 +1247,6 @@ def _(mo):
     mo.md(r"""
     # ALO-CV using lineax to take advantage of JAX autodiff
     """)
-    return
 
 
 @app.cell
@@ -1356,7 +1372,7 @@ def _(compute_patch_log_worker, jax, jnp, lx, np, ravel_pytree):
             p = expand_active(theta)
             group_nlls = group_nlls_from_mu(chunked_mu(p))
             total_l2_penalty = 0.0
-            for k in feature_ids.keys():
+            for k in feature_ids:
                 total_l2_penalty += l2_rates[k] * jnp.sum(p["weights"][k] ** 2)
             return jnp.mean(group_nlls) + total_l2_penalty
 
@@ -1444,7 +1460,7 @@ def _(
         l2_param_pytree = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x), params)
         for k, l2_val in l2_rates.items():
             l2_param_pytree["weights"][k] = jnp.full_like(params["weights"][k], l2_val)
-        flat_l2_param_pytree, _ = ravel_pytree(l2_param_pytree)
+        _flat_l2_param_pytree, _ = ravel_pytree(l2_param_pytree)
 
         # 2. Smooth-Only Loss (Crucial: Do not take Hessian of L1 penalty!)
         def flat_smooth_only_loss(p_flat):
@@ -1564,7 +1580,6 @@ def _(mo):
     mo.md(r"""
     # Bilevel meta-optimization to select optimal hyperparameters that minimize ALO-CV score
     """)
-    return
 
 
 @app.cell
@@ -1707,7 +1722,7 @@ def _(jax, jnp, meta_val_and_grad, optax, partial):
 
         def cond_fn(carry):
             # 1. Unpack the exact state we need to check
-            i, chunk_i, _, _, _, _, wait, _, _ = carry
+            i, _chunk_i, _, _, _, _, wait, _, _ = carry
 
             # 2. Loop continues ONLY if both conditions are True
             not_max_iter = i < target_iters
@@ -1873,6 +1888,7 @@ def _(
         y_county_year,
         num_groups,
         feature_sizes_tup,
+        model_spec,
         outer_iters=400,
         outer_tol=1e-3,
         patience=30,
@@ -1907,6 +1923,7 @@ def _(
             inner_params_template = initialize_params(feature_sizes_tup, num_continuous)
             checkpoint = load_meta_checkpoint(
                 checkpoint_path,
+                expected_model_spec=model_spec,
                 hparams_template=hparams_template,
                 state_template=state_template,
                 inner_params_template=inner_params_template,
@@ -2022,6 +2039,7 @@ def _(
 
             save_meta_checkpoint(
                 checkpoint_path,
+                model_spec=model_spec,
                 iteration=current_iter,
                 hparams=hparams,
                 opt_state=state,
@@ -2053,7 +2071,6 @@ def _(mo):
     mo.md(r"""
     Create functions for robust restarting and refinement
     """)
-    return
 
 
 @app.cell
@@ -2061,6 +2078,7 @@ def _(jax, json):
     def save_meta_checkpoint(
         path,
         *,
+        model_spec,
         iteration,
         hparams,
         opt_state,
@@ -2071,6 +2089,7 @@ def _(jax, json):
     ):
         tmp_path = path.with_suffix(path.suffix + ".tmp")
         data = {
+            "model_spec": model_spec,
             "iter": int(iteration),
             "hparams_leaves": [
                 to_serializable(x) for x in jax.tree_util.tree_leaves(hparams)
@@ -2099,12 +2118,20 @@ def _(jax, jnp, json, restore_leaves):
     def load_meta_checkpoint(
         path,
         *,
+        expected_model_spec,
         hparams_template,
         state_template,
         inner_params_template,
     ):
         with open(path, "r") as f:
             chkpt = json.load(f)
+        if chkpt.get("model_spec") != expected_model_spec:
+            raise ValueError(
+                f"Stale or incompatible checkpoint {path.name}: expected "
+                f"model_spec={expected_model_spec!r}, observed "
+                f"{chkpt.get('model_spec')!r}. Delete it or use a checkpoint "
+                "created by the current specification."
+            )
 
         hparams_template_leaves, hparams_treedef = jax.tree_util.tree_flatten(
             hparams_template
@@ -2170,6 +2197,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
         source_checkpoint_path,
         restart_checkpoint_path,
         *,
+        model_spec,
         meta_optimizer,
         initialize_params,
         train_model_inner,
@@ -2197,6 +2225,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
 
         loaded = load_meta_checkpoint(
             source_checkpoint_path,
+            expected_model_spec=model_spec,
             hparams_template=hparams_template,
             state_template=state_template,
             inner_params_template=inner_template,
@@ -2230,6 +2259,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
 
         save_meta_checkpoint(
             restart_checkpoint_path,
+            model_spec=model_spec,
             iteration=restart_iter,
             hparams=best_hparams,
             opt_state=fresh_state,
@@ -2241,7 +2271,6 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
 
         return restart_checkpoint_path
 
-    return
 
 
 @app.cell
@@ -2254,6 +2283,7 @@ def _(
     def evaluate_checkpoint_best_hparams(
         checkpoint_path,
         *,
+        model_spec,
         meta_optimizer,
         initialize_params,
         train_model_inner,
@@ -2288,6 +2318,7 @@ def _(
 
         loaded = load_meta_checkpoint(
             checkpoint_path,
+            expected_model_spec=model_spec,
             hparams_template=hparams_template,
             state_template=state_template,
             inner_params_template=inner_template,
@@ -2361,7 +2392,6 @@ def _(mo):
     mo.md(r"""
     # Perform bilevel optimization to find optimal L1 and L2 rates
     """)
-    return
 
 
 @app.cell
@@ -2461,6 +2491,7 @@ def _(
     feature_ids,
     feature_sizes_tup,
     group_ids,
+    model_spec,
     num_groups,
     patch_exposure,
     run_meta_optimization_chunked,
@@ -2470,9 +2501,7 @@ def _(
     start_time = time.perf_counter()
     # Tune L1 and L2 (full GPU dispatch)
     checkpoint_path = (
-        code_path
-        / "json"
-        / f"meta_ppml_opt_checkpoint_cutoff_{cutoff_year}.json"
+        code_path / "json" / f"meta_ppml_opt_checkpoint_cutoff_{cutoff_year}.json"
     )
     log_path = code_path / "json" / f"meta_ppml_opt_log_cutoff_{cutoff_year}.csv"
     _best_l1, _best_l2, _final_inner_param = run_meta_optimization_chunked(
@@ -2484,6 +2513,7 @@ def _(
         y_target_count,
         num_groups,
         feature_sizes_tup,
+        model_spec=model_spec,
         outer_iters=1000,
         patience=50,
         chunk_size=10,
@@ -2506,7 +2536,6 @@ def _(
 def _(start_time, time):
     end_time = time.perf_counter()
     print(f"Execution time: {end_time - start_time:.6f} seconds")
-    return
 
 
 @app.cell(hide_code=True)
@@ -2514,7 +2543,6 @@ def _(mo):
     mo.md(r"""
     Check best iter with stricter parameters
     """)
-    return
 
 
 @app.cell
@@ -2530,6 +2558,7 @@ def _(
     initialize_params,
     jax_inv_softplus,
     make_meta_optimizer,
+    model_spec,
     num_groups,
     parent_ids,
     patch_exposure,
@@ -2537,8 +2566,9 @@ def _(
     y_target_count,
 ):
     meta_optimizer = make_meta_optimizer(meta_lr=0.01, clip_norm=1.0)
-    alo_check, trained_params, best_l1, best_l2 = evaluate_checkpoint_best_hparams(
+    alo_check, trained_params, _best_l1, _best_l2 = evaluate_checkpoint_best_hparams(
         checkpoint_path,
+        model_spec=model_spec,
         meta_optimizer=meta_optimizer,
         initialize_params=initialize_params,
         train_model_inner=train_model_inner,
@@ -2575,14 +2605,16 @@ def _(np, pl):
         county_cont_cols,
         patch_cont_cols,
         cutoff_year,
+        model_spec,
     ):
-        covariates = [
-            ("county", covariate) for covariate in county_cont_cols
-        ] + [("patch", covariate) for covariate in patch_cont_cols]
+        covariates = [("county", covariate) for covariate in county_cont_cols] + [
+            ("patch", covariate) for covariate in patch_cont_cols
+        ]
 
         rows = [
             {
                 "cutoff_year": cutoff_year,
+                "model_spec": model_spec,
                 "record_type": "global_bias",
                 "interaction_order": None,
                 "feature_id": None,
@@ -2617,9 +2649,7 @@ def _(np, pl):
                         covariate_scope = None
                         covariate = None
                     else:
-                        covariate_scope, covariate = covariates[
-                            coefficient_index - 1
-                        ]
+                        covariate_scope, covariate = covariates[coefficient_index - 1]
 
                     coefficient = weights[feature_id, coefficient_index]
                     if not np.isfinite(coefficient):
@@ -2630,6 +2660,7 @@ def _(np, pl):
                     rows.append(
                         {
                             "cutoff_year": cutoff_year,
+                            "model_spec": model_spec,
                             "record_type": "weight",
                             "interaction_order": order,
                             "feature_id": feature_id,
@@ -2649,9 +2680,8 @@ def _(np, pl):
             (transform["covariate_scope"], transform["covariate"])
             for transform in continuous_transforms
         }
-        if (
-            len(continuous_transforms) != len(covariates)
-            or transform_keys != set(covariates)
+        if len(continuous_transforms) != len(covariates) or transform_keys != set(
+            covariates
         ):
             raise ValueError(
                 "Saved continuous transforms do not match the model covariates."
@@ -2666,6 +2696,7 @@ def _(np, pl):
             rows.append(
                 {
                     "cutoff_year": cutoff_year,
+                    "model_spec": model_spec,
                     "record_type": "continuous_transform",
                     "interaction_order": None,
                     "feature_id": None,
@@ -2683,6 +2714,7 @@ def _(np, pl):
 
         schema = {
             "cutoff_year": pl.Int32,
+            "model_spec": pl.String,
             "record_type": pl.String,
             "interaction_order": pl.Int32,
             "feature_id": pl.Int32,
@@ -2709,7 +2741,9 @@ def _(
     county_cont_cols,
     cutoff_year,
     flatten_fitted_model,
+    model_spec,
     patch_cont_cols,
+    pl,
     trained_params,
 ):
     model_parameters_df = flatten_fitted_model(
@@ -2719,13 +2753,19 @@ def _(
         county_cont_cols,
         patch_cont_cols,
         cutoff_year,
+        model_spec,
     )
     model_parameters_path = (
-        binary_path
-        / f"h2a_prediction_elastic_net_model_cutoff_{cutoff_year}.parquet"
+        binary_path / f"h2a_prediction_elastic_net_model_cutoff_{cutoff_year}.parquet"
     )
     model_parameters_df.write_parquet(model_parameters_path)
-    print(f"Saved fitted model parameters to {model_parameters_path}")
+    _coefficient_count = model_parameters_df.filter(
+        pl.col("record_type").is_in(["global_bias", "weight"])
+    ).height
+    print(
+        f"Saved {_coefficient_count:,} fitted coefficients for {model_spec} "
+        f"to {model_parameters_path}"
+    )
     return (model_parameters_path,)
 
 
@@ -2734,7 +2774,6 @@ def _(mo):
     mo.md(r"""
     # Obtain predictions
     """)
-    return
 
 
 @app.cell
@@ -2743,7 +2782,6 @@ def _(jnp, trained_params):
     for _order, _w in sorted(trained_params["weights"].items()):
         _active_weights = jnp.sum(jnp.abs(_w) > 1e-3)
         print(f"  Order {_order} total weights active: {_active_weights} / {_w.size}")
-    return
 
 
 @app.cell
@@ -2780,6 +2818,7 @@ def _(
     jnp,
     merged_df,
     model_parameters_path,
+    model_spec,
     np,
     num_groups,
     patch_cont_cols,
@@ -2794,6 +2833,7 @@ def _(
     _saved_model = pl.read_parquet(model_parameters_path)
     _expected_columns = [
         "cutoff_year",
+        "model_spec",
         "record_type",
         "interaction_order",
         "feature_id",
@@ -2808,20 +2848,19 @@ def _(
         "scale",
     ]
     if _saved_model.columns != _expected_columns:
-        raise ValueError(
-            f"Unexpected saved-model schema: {_saved_model.columns!r}."
-        )
+        raise ValueError(f"Unexpected saved-model schema: {_saved_model.columns!r}.")
+    if _saved_model["model_spec"].unique().to_list() != [model_spec]:
+        raise ValueError("Saved model has an unexpected model_spec marker.")
 
     _bias_rows = _saved_model.filter(pl.col("record_type") == "global_bias")
     if _bias_rows.height != 1:
         raise ValueError("Saved model must contain exactly one global bias row.")
 
-    _covariates = [
-        ("county", covariate) for covariate in county_cont_cols
-    ] + [("patch", covariate) for covariate in patch_cont_cols]
+    _covariates = [("county", covariate) for covariate in county_cont_cols] + [
+        ("patch", covariate) for covariate in patch_cont_cols
+    ]
     _coefficient_index = {
-        covariate_key: index + 1
-        for index, covariate_key in enumerate(_covariates)
+        covariate_key: index + 1 for index, covariate_key in enumerate(_covariates)
     }
 
     _transform_rows = _saved_model.filter(
@@ -2831,9 +2870,8 @@ def _(
         (row["covariate_scope"], row["covariate"]): row
         for row in _transform_rows.iter_rows(named=True)
     }
-    if (
-        _transform_rows.height != len(_covariates)
-        or set(_transform_by_key) != set(_covariates)
+    if _transform_rows.height != len(_covariates) or set(_transform_by_key) != set(
+        _covariates
     ):
         raise ValueError(
             "Saved model must contain exactly one transform for every "
@@ -2859,9 +2897,7 @@ def _(
             ) / np.float32(transform["scale"])
         return transformed
 
-    _saved_X_county = _apply_saved_transforms(
-        _county_raw, "county", county_cont_cols
-    )
+    _saved_X_county = _apply_saved_transforms(_county_raw, "county", county_cont_cols)
     _saved_X_patch = _apply_saved_transforms(_patch_raw, "patch", patch_cont_cols)
     np.testing.assert_allclose(
         _saved_X_county,
@@ -2877,9 +2913,7 @@ def _(
     )
 
     _weight_rows = _saved_model.filter(pl.col("record_type") == "weight")
-    _orders = sorted(
-        int(order) for order in _weight_rows["interaction_order"].unique()
-    )
+    _orders = sorted(int(order) for order in _weight_rows["interaction_order"].unique())
     _saved_params = {
         "bias": jnp.array(_bias_rows["coefficient"][0], dtype=jnp.float32),
         "weights": {},
@@ -2929,9 +2963,7 @@ def _(
             raise ValueError(
                 f"Saved order-{_order} weight matrix is incomplete or non-finite."
             )
-        _saved_params["weights"][_order] = jnp.array(
-            _weight_matrix, dtype=jnp.float32
-        )
+        _saved_params["weights"][_order] = jnp.array(_weight_matrix, dtype=jnp.float32)
 
         _combo_maps = {}
         for _feature_id, (_, _columns, _values) in _feature_records.items():
@@ -2985,70 +3017,6 @@ def _(
         "maximum prediction difference: "
         f"{np.max(np.abs(_saved_model_prediction - _in_memory_prediction)):.3g}"
     )
-    return
-
-
-@app.cell
-def _(
-    X_county_cont,
-    X_patch_cont,
-    assert_geo_columns,
-    binary_path,
-    cutoff_year_was_explicit,
-    feature_ids,
-    group_ids,
-    merged_df,
-    np,
-    num_groups,
-    patch_exposure,
-    pl,
-    predicted_h2a_county_year,
-    trained_params,
-):
-    y_pred_count = np.array(
-        predicted_h2a_county_year(
-            trained_params,
-            feature_ids,
-            X_county_cont,
-            X_patch_cont,
-            patch_exposure,
-            group_ids,
-            num_groups,
-        )
-    )
-    county_year_group_id = merged_df.select(
-        ["county_fips", "year", "group_id"]
-    ).unique()
-    results_df = (
-        pl.DataFrame(
-            {
-                "group_id": np.arange(num_groups),
-                "predicted_h2a_count": y_pred_count,
-            }
-        )
-        .join(county_year_group_id, on="group_id")
-        .group_by("county_fips")
-        .agg(pl.mean("predicted_h2a_count"))
-    )
-    assert_geo_columns(results_df, ["county_fips"])
-    prediction_path = (
-        binary_path / "h2a_prediction_using_elastic_net_continuous_basis.parquet"
-    )
-    if cutoff_year_was_explicit:
-        print(
-            "H2A_CUTOFF_YEAR was explicitly supplied; skipping legacy county "
-            f"prediction write to {prediction_path}."
-        )
-    else:
-        results_df.write_parquet(prediction_path)
-        print(f"Saved legacy cutoff-2011 county predictions to {prediction_path}")
-    return (results_df,)
-
-
-@app.cell
-def _(results_df):
-    results_df
-    return
 
 
 if __name__ == "__main__":

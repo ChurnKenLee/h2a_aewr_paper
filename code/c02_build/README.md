@@ -12,6 +12,12 @@ employment, AEWR-p25 gaps, cropland eligibility, and border-CZ status. It does
 not create any design treatment, post period, fixed-effect factor, year dummy,
 target cluster, or instrument.
 
+The panel's static predicted H-2A propensity comes from the one global cutoff
+selected by `H2A_PREDICTION_CUTOFF_YEAR` in `code/paths.R`. The corresponding
+one-row-per-county score is joined by county and repeated unchanged over panel
+years. Predicted counts use fixed 2011 BEA farm employment, and predicted shares
+divide by that same stored exposure.
+
 The shared H-2A employer outcome uses the raw balanced-linkage employer count.
 Conservative and high-recall counts remain in the panel for
 linkage-sensitivity analyses.

@@ -14,6 +14,8 @@ county_panel <- read_parquet(
 )
 
 treatment_groups <- county_panel %>%
+  # The PPML propensity is static; 2008 selects the observed H-2A baseline
+  # used with it to define time-invariant treatment groups.
   filter(year == 2008L) %>%
   transmute(
     county_fips,
@@ -47,9 +49,26 @@ did_panel <- county_panel %>%
   ) %>%
   mutate(post = year > 2011L)
 
+prediction_contract <- did_panel %>%
+  filter(!is.na(h2a_predicted_share_2011)) %>%
+  distinct(county_fips, h2a_predicted_share_2011)
+
 if (
   nrow(did_panel) == 0L ||
-    anyDuplicated(did_panel[c("county_fips", "year")]) > 0L
+    anyDuplicated(did_panel[c("county_fips", "year")]) > 0L ||
+    anyDuplicated(treatment_groups$county_fips) > 0L ||
+    anyDuplicated(prediction_contract$county_fips) > 0L ||
+    any(
+      !is.na(did_panel$h2a_prediction_cutoff_year) &
+        did_panel$h2a_prediction_cutoff_year !=
+          H2A_PREDICTION_CUTOFF_YEAR
+    ) ||
+    !identical(
+      unique(did_panel$h2a_prediction_model_spec[
+        !is.na(did_panel$h2a_prediction_model_spec)
+      ]),
+      H2A_PREDICTION_MODEL_SPEC
+    )
 ) {
   stop(
     "did_county_year_panel must have unique county-year keys.",

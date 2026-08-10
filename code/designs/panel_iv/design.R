@@ -75,11 +75,31 @@ DISSIMILARITY_IV_BIG_SIX_OCC_CODES <- c(
   "98902"
 )
 
-DISSIMILARITY_IV_CONTROL_COLUMNS <- c(
+DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS <- c(
   "ln_pop_census_l1",
   "farm_emp_share_l1",
   "emp_pop_ratio_l1",
   "wage_p10_l1"
+)
+
+# The time-invariant PPML level is absorbed by county fixed effects. The
+# controlled publication specifications instead allow counties with different
+# baseline propensities to follow different linear trends.
+DISSIMILARITY_IV_PROPENSITY_COLUMN <- "h2a_ppml_static_propensity_z"
+DISSIMILARITY_IV_PROPENSITY_TREND_TERM <- paste0(
+  DISSIMILARITY_IV_PROPENSITY_COLUMN,
+  ":year_centered"
+)
+
+DISSIMILARITY_IV_CONTROL_COLUMNS <- c(
+  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,
+  DISSIMILARITY_IV_PROPENSITY_COLUMN,
+  "year_centered"
+)
+
+DISSIMILARITY_IV_CONTROL_TERMS <- c(
+  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,
+  DISSIMILARITY_IV_PROPENSITY_TREND_TERM
 )
 
 make_dissimilarity_cluster_id <- function(aewr_region_id, target_cluster) {

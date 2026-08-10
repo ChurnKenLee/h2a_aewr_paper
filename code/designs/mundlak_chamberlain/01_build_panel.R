@@ -45,6 +45,8 @@ required_columns <- unique(c(
   "aewr",
   "emp_farm",
   "emp_farm_2011",
+  "h2a_prediction_cutoff_year",
+  "h2a_prediction_model_spec",
   unname(MC_BASELINE_VARIABLES),
   "nbr_applications_start_year",
   "nbr_employers_balanced_start_year",
@@ -63,6 +65,36 @@ if (length(missing_columns) > 0L) {
 
 if (anyDuplicated(shared_panel[c("county_fips", "year")]) > 0L) {
   stop("Shared panel must have unique county-year keys.", call. = FALSE)
+}
+if (
+  any(
+    !is.na(shared_panel$h2a_prediction_cutoff_year) &
+      shared_panel$h2a_prediction_cutoff_year != H2A_PREDICTION_CUTOFF_YEAR
+  )
+) {
+  stop(
+    "Shared MC rows have an unexpected H-2A prediction cutoff.",
+    call. = FALSE
+  )
+}
+if (
+  !identical(
+    unique(shared_panel$h2a_prediction_model_spec[
+      !is.na(shared_panel$h2a_prediction_model_spec)
+    ]),
+    H2A_PREDICTION_MODEL_SPEC
+  )
+) {
+  stop("Shared MC rows have an unexpected H-2A model spec.", call. = FALSE)
+}
+prediction_contract <- shared_panel %>%
+  filter(!is.na(h2a_predicted_share_2011)) %>%
+  distinct(county_fips, h2a_predicted_share_2011)
+if (anyDuplicated(prediction_contract$county_fips) > 0L) {
+  stop(
+    "Shared MC rows must use one static H-2A propensity per county.",
+    call. = FALSE
+  )
 }
 
 state_region_contract <- shared_panel %>%
@@ -553,7 +585,9 @@ region_treatment_history_map <- tibble(
 )
 
 metadata <- list(
-  design_version = MC_DESIGN_VERSION,
+  design_version = MC_LEGACY_DESIGN_VERSION,
+  h2a_prediction_cutoff_year = H2A_PREDICTION_CUTOFF_YEAR,
+  h2a_prediction_model_spec = H2A_PREDICTION_MODEL_SPEC,
   baseline_years = MC_BASELINE_YEARS,
   treatment_history_years = MC_TREATMENT_HISTORY_YEARS,
   analysis_years = MC_ANALYSIS_YEARS,

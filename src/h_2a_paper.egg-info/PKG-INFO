@@ -73,7 +73,7 @@ Requires-Dist: liteparse>=2.0.8
 # H-2A Paper
 
 The supported workflow separates source preparation, a design-neutral
-county-year panel, and two empirical designs. Each entry point is standalone,
+county-year panel, and multiple empirical designs. Each entry point is standalone,
 uses repository-root paths from `code/paths.R`, and writes a declared artifact.
 
 ## Dependency graph
@@ -89,9 +89,9 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
                                               │
                                               v
                                         county_year_panel
-                                       /        |        \
-                                      v         v         v
-                            descriptives      DiD      panel IV
+                                       /        |        |        \
+                                      v         v        v         v
+                            descriptives      DiD    panel IV   MC dose response
                             border discontinuity: documented future branch
 ```
 
@@ -103,7 +103,8 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Shared build | [`code/c02_build`](code/c02_build/) | `data/processed/county_year_panel.parquet` |
 | Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
 | DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
-| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | `data/processed/panel_iv_county_year.parquet` and preferred IV results |
+| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | `data/processed/panel_iv_county_year.parquet`, four first stages, seven four-column 2SLS tables, summary statistics, and diagnostics |
+| Multilevel Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | 28-model dose-response ladder, finite-design continuous-treatment CCV inference, gt tables, coefficient graphs, and diagnostics |
 | Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
 
 The shared panel owns normalized source measures, reusable outcomes and
@@ -127,6 +128,7 @@ Run only a supported C-side branch:
 ./scripts/run_descriptives.sh
 ./scripts/run_did.sh
 ./scripts/run_panel_iv.sh
+./scripts/run_mundlak_chamberlain.sh
 ```
 
 Set `DRY_RUN=1` before a command to print its execution order without running

@@ -13,3 +13,4 @@ run_step code/b01_derived/05_02_oews_farm_wages.R
 run_step code/b01_derived/05_03_qcew_ag_wages.R
 run_step code/b01_derived/06_nawspad_work_hours.R
 run_step code/b01_derived/07_h2a_prediction_elastic_net.py
+run_step code/b01_derived/08_h2a_prediction_from_estimated_weights.py

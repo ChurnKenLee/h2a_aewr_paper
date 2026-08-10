@@ -13,7 +13,47 @@ MC_BASELINE_YEARS <- 2008:2010
 MC_TREATMENT_HISTORY_YEARS <- 2011:2022
 MC_ANALYSIS_YEARS <- 2013:2022
 MC_REFERENCE_YEAR <- 2013L
-MC_DESIGN_VERSION <- "2.3.0"
+MC_LEGACY_DESIGN_VERSION <- "2.3.0"
+MC_DESIGN_VERSION <- "3.0.0"
+
+# Version 3 is a specification program.  The constants above remain the
+# calendar of the frozen version-2.3 compatibility record and the target
+# calendar for the version-3 primary model.  All grid models read their
+# calendar and causal dictionary from an explicit specification record.
+MC_SPEC_PROGRAM_VERSION <- "3.0.0"
+MC_SPEC_HISTORY_YEARS <- 2011:2022
+MC_SPEC_ANALYSIS_END <- 2022L
+MC_SPEC_PREPERIOD_LENGTHS <- 2:4
+MC_SPEC_ANALYSIS_START_DELAYS <- 0:2
+MC_SPEC_POLYNOMIAL_DEGREES <- 1:3
+MC_SPEC_RICHNESS_TIERS <- 0:3
+MC_SPEC_REGION_BUDGET <- 16L
+# The per-year ledger is not the whole rank calculation once region and year
+# effects are included jointly.  Six additional region-time coordinates are
+# held out before the all-state basis audit; this reproduces the slack in the
+# identified version-2.3 block without privileging a reference year.
+MC_SPEC_GLOBAL_REGION_RESERVE <- 6L
+MC_SPEC_FULL_SAMPLE_PARAMETER_ROW_MAX <- 0.25
+MC_SPEC_RESTRICTED_SAMPLE_PARAMETER_ROW_MAX <- 0.15
+MC_SPEC_DF_ADJUSTMENT <- "N_over_N_minus_K"
+# Resource defaults are intentionally conservative.  One outcome process may
+# still use several fixest threads, so two forked workers can otherwise occupy
+# every logical CPU while duplicating multi-gigabyte design matrices.
+MC_SPEC_DEFAULT_STAGE <- "compact"
+MC_SPEC_DEFAULT_WORKERS <- 1L
+MC_SPEC_DEFAULT_FIXEST_THREADS <- 4L
+MC_SPEC_MAX_DENSE_MATRIX_GIB <- 1.25
+MC_SPEC_MAX_ESTIMATED_PEAK_GIB <- 6
+MC_SPEC_DENSE_PEAK_COPIES <- 4
+MC_SPEC_GRAM_PEAK_COPIES <- 3
+MC_SPEC_GRADIENT_TOLERANCE <- 1e-9
+
+MC_SPEC_RICHNESS_LABELS <- c(
+  "bite_only",
+  "county_market_means",
+  "county_market_trajectories",
+  "bite_three_way_and_county_quadratic"
+)
 
 # The CCV reference design below has one state for each of the 17 AEWR-region
 # treatment paths.  We use t_(17 - 1) critical values because the independent
@@ -97,7 +137,8 @@ MC_CHAMBERLAIN_VARIABLES <- c(
   "employment_population_ratio",
   "crop_income_share",
   "hired_labor_cost_share",
-  "low_wage"
+  "low_wage",
+  "predicted_h2a_intensity"
 )
 
 # These variables receive unrestricted calendar-year interactions in the
@@ -111,7 +152,8 @@ MC_UNTREATED_TREND_VARIABLES <- c(
   "farm_employment_share",
   "crop_income_share",
   "hired_labor_cost_share",
-  "low_wage"
+  "low_wage",
+  "predicted_h2a_intensity"
 )
 
 # Lagged treatment effects are allowed to vary with the most important

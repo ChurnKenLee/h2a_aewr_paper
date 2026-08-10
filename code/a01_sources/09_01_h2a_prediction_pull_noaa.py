@@ -4,7 +4,7 @@
 
 import marimo
 
-__generated_with = "0.23.6"
+__generated_with = "0.23.16"
 app = marimo.App(width="full")
 
 
@@ -35,11 +35,11 @@ def _(INTERMEDIATE, RAW):
 
 @app.cell
 def _():
-    START_YEAR = 2000
+    START_YEAR = 1981
     END_YEAR = 2025
 
-    NORMAL_START_YEAR = 2000
-    NORMAL_END_YEAR = 2011
+    NORMAL_START_YEAR = 1981
+    NORMAL_END_YEAR = 2010
 
     WET_DAY_MM = 1.0
 
@@ -92,7 +92,9 @@ def _(CACHE_DIR, Path, ssl, urllib):
 
                 if not data.startswith(b"PAR1"):
                     print(f"ERROR: URL {url} did not return a Parquet file.")
-                    preview = data[:250].decode("utf-8", errors="ignore").replace("\n", " ")
+                    preview = (
+                        data[:250].decode("utf-8", errors="ignore").replace("\n", " ")
+                    )
                     print(f"Preview of downloaded content: {preview}...\n")
                     return None
 
@@ -161,7 +163,8 @@ def _(
             )
             .with_columns(pl.col("date").dt.year().alias("year"))
             .filter(
-                (pl.col("year") >= NORMAL_START_YEAR) & (pl.col("year") <= NORMAL_END_YEAR)
+                (pl.col("year") >= NORMAL_START_YEAR)
+                & (pl.col("year") <= NORMAL_END_YEAR)
             )
         )
 
@@ -178,7 +181,6 @@ def _(
             .astype(np.float32)
         )
         return temp_part, prcp_part
-
 
     temp_parts = []
     prcp_parts = []
@@ -230,7 +232,9 @@ def _(
     temp_basis_cols = [
         f"temp_{TEMP_SPLINE_VAR}_b{k:02d}" for k in range(temp_spline.n_features_out_)
     ]
-    prcp_basis_cols = [f"prcp_log1p_b{k:02d}" for k in range(prcp_spline.n_features_out_)]
+    prcp_basis_cols = [
+        f"prcp_log1p_b{k:02d}" for k in range(prcp_spline.n_features_out_)
+    ]
 
     climate_basis_cols = []
     for c in temp_basis_cols + prcp_basis_cols:
@@ -241,7 +245,6 @@ def _(
     for c in prcp_basis_cols:
         for s in season_cols:
             climate_basis_cols.append(f"cb_{c}_x_{s}")
-
 
     def build_monthly_basis_sums(cache_file):
         year = int(cache_file.stem[:4])
@@ -320,7 +323,6 @@ def _(
             [pl.col(c).sum().alias(c) for c in climate_basis_cols]
             + [pl.len().alias("_n_cb_days")]
         )
-
 
     annual_parts = []
     for _cache_file in sorted(CACHE_DIR.glob("*.parquet")):

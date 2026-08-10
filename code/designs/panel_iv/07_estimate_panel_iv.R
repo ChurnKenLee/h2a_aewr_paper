@@ -34,6 +34,13 @@ panel <- read_parquet(
         emp_farm > 0,
       1000 * farm_cashandinc_ppi / emp_farm,
       NA_real_
+    ),
+    h2a_employers_per_farm_worker_2011_start_year = if_else(
+      is.finite(nbr_employers_balanced_start_year) &
+        is.finite(emp_farm_2011) &
+        emp_farm_2011 > 0,
+      nbr_employers_balanced_start_year / emp_farm_2011,
+      NA_real_
     )
   )
 
@@ -41,7 +48,7 @@ endogenous <- "aewr_ppi"
 fixed_effects <- "county_fips + year"
 cluster_vcov <- ~aewr_iv_cluster_id
 control_terms <- paste(
-  DISSIMILARITY_IV_CONTROL_COLUMNS,
+  DISSIMILARITY_IV_CONTROL_TERMS,
   collapse = " + "
 )
 
@@ -56,8 +63,8 @@ outcomes <- tribble(
   "h2a_applications_per_farm_worker_2011_start_year"                   ,
   "H-2A applications / 2011 farm employment"                           ,
   "h2a_applications"                                                   ,
-  "nbr_employers_balanced_start_year"                                  ,
-  "H-2A employers (balanced linkage)"                                  ,
+  "h2a_employers_per_farm_worker_2011_start_year"                      ,
+  "H-2A employers / 2011 farm employment (balanced linkage)"          ,
   "h2a_employers"                                                      ,
   "h2a_cert_positions_per_application_start_year"                      ,
   "H-2A certified positions / application"                             ,
@@ -97,6 +104,11 @@ required_columns <- unique(c(
   "year",
   "aewr_region_id",
   "aewr_iv_cluster_id",
+  "h2a_prediction_cutoff_year",
+  "h2a_prediction_model_spec",
+  "h2a_predicted_share_2011",
+  "h2a_ppml_static_propensity_z",
+  "year_centered",
   endogenous,
   "z_wage_only_real",
   "z_wage_seasonal_real",
@@ -108,6 +120,53 @@ if (length(missing_columns) > 0L) {
   stop(
     "County IV panel is missing: ",
     paste(missing_columns, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+prediction_cutoffs <- sort(unique(
+  panel$h2a_prediction_cutoff_year[
+    !is.na(panel$h2a_predicted_share_2011)
+  ]
+))
+if (!identical(
+  as.integer(prediction_cutoffs),
+  H2A_PREDICTION_CUTOFF_YEAR
+)) {
+  stop(
+    "Panel-IV controls must use only the canonical static H-2A prediction.",
+    call. = FALSE
+  )
+}
+prediction_model_specs <- unique(
+  panel$h2a_prediction_model_spec[
+    !is.na(panel$h2a_predicted_share_2011)
+  ]
+)
+if (!identical(
+  prediction_model_specs,
+  H2A_PREDICTION_MODEL_SPEC
+)) {
+  stop("Panel-IV controls have an incompatible H-2A model spec.", call. = FALSE)
+}
+
+propensity_contract <- panel %>%
+  filter(!is.na(h2a_ppml_static_propensity_z)) %>%
+  distinct(
+    county_fips,
+    h2a_predicted_share_2011,
+    h2a_ppml_static_propensity_z
+  )
+if (
+  nrow(propensity_contract) == 0L ||
+    anyDuplicated(propensity_contract$county_fips) > 0L ||
+    any(!is.finite(propensity_contract$h2a_ppml_static_propensity_z)) ||
+    abs(mean(propensity_contract$h2a_ppml_static_propensity_z)) > 1e-12 ||
+    abs(sd(propensity_contract$h2a_ppml_static_propensity_z) - 1) > 1e-12 ||
+    any(panel$year_centered != panel$year - 2011L)
+) {
+  stop(
+    "Panel-IV static PPML propensities violate the equal-county trend contract.",
     call. = FALSE
   )
 }
@@ -296,7 +355,9 @@ etable(
     ln_pop_census_l1 = "Lagged log population",
     farm_emp_share_l1 = "Lagged farm-employment share",
     emp_pop_ratio_l1 = "Lagged employment/population",
-    wage_p10_l1 = "Lagged real p10 wage"
+    wage_p10_l1 = "Lagged real p10 wage",
+    h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
+    year_centered = "Year minus 2011"
   ),
   fitstat = ~ n + r2,
   extralines = list(
@@ -305,6 +366,15 @@ etable(
     ),
     "_Alternative seasonal targets" = c("No", "Yes", "No", "Yes"),
     "_Controls" = if_else(first_stage_specs$controls, "Yes", "No"),
+    "_Static propensity differential trend" = if_else(
+      first_stage_specs$controls,
+      "Yes",
+      "No"
+    ),
+    "_Prediction training cutoff" = rep(
+      as.character(H2A_PREDICTION_CUTOFF_YEAR),
+      4
+    ),
     "_County fixed effects" = rep("Yes", 4),
     "_Year fixed effects" = rep("Yes", 4),
     "_AEWR-subregion clustered SEs" = rep("Yes", 4),
@@ -324,6 +394,13 @@ etable(
     paste(
       "Column 4 is preferred. The excluded-instrument F is the squared",
       "AEWR-region-by-subregion clustered t statistic."
+    ),
+    paste0(
+      "Controlled columns include the standardized static PPML propensity ",
+      "interacted with year minus 2011; ",
+      "the selected PPML training cutoff is ",
+      H2A_PREDICTION_CUTOFF_YEAR,
+      "."
     )
   ),
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
@@ -359,6 +436,7 @@ second_stage_specs <- tribble(
 
 iv_result_rows <- list()
 iv_sample_rows <- list()
+iv_control_diagnostic_rows <- list()
 h2a_adjustment_models <- list()
 
 for (outcome_index in seq_len(nrow(outcomes))) {
@@ -458,6 +536,120 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     estimation_data$aewr_iv_cluster_id
   )
 
+  # Identical-sample diagnostic: compare the four committed controls with the
+  # same controls plus the static PPML propensity differential trend.
+  diagnostic_data <- estimation_data %>%
+    mutate(z = z_wage_seasonal_real)
+  baseline_control_terms <- paste(
+    DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,
+    collapse = " + "
+  )
+  four_control_iv <- feols(
+    as.formula(paste(
+      outcome_name,
+      "~",
+      baseline_control_terms,
+      "|",
+      fixed_effects,
+      "|",
+      endogenous,
+      "~ z"
+    )),
+    data = diagnostic_data,
+    vcov = cluster_vcov,
+    warn = FALSE,
+    notes = FALSE
+  )
+  four_control_first_stage <- feols(
+    as.formula(paste(
+      endogenous,
+      "~ z +",
+      baseline_control_terms,
+      "|",
+      fixed_effects
+    )),
+    data = diagnostic_data,
+    vcov = cluster_vcov,
+    warn = FALSE,
+    notes = FALSE
+  )
+  trend_control_iv <- iv_models[[4]]
+  trend_control_first_stage <- first_stage_models_outcome[[4]]
+  observation_keys <- function(data, model) {
+    selected <- data[
+      fixest::obs(model),
+      c("county_fips", "year"),
+      drop = FALSE
+    ]
+    paste(selected$county_fips, selected$year, sep = "_")
+  }
+  diagnostic_observations <- list(
+    four_control_iv = observation_keys(diagnostic_data, four_control_iv),
+    trend_control_iv = observation_keys(outcome_data, trend_control_iv),
+    four_control_first_stage = observation_keys(
+      diagnostic_data,
+      four_control_first_stage
+    ),
+    trend_control_first_stage = observation_keys(
+      estimation_data,
+      trend_control_first_stage
+    )
+  )
+  if (
+    !all(map_lgl(
+      diagnostic_observations,
+      ~ identical(.x, diagnostic_observations[[1]])
+    )) ||
+      length(diagnostic_observations[[1]]) != nrow(diagnostic_data)
+  ) {
+    stop(
+      "Four-control and differential-trend diagnostics must use identical samples.",
+      call. = FALSE
+    )
+  }
+  four_iv_result <- coefficient_row(
+    four_control_iv,
+    "^(fit_)?aewr_ppi$"
+  )
+  trend_iv_result <- coefficient_row(
+    trend_control_iv,
+    "^(fit_)?aewr_ppi$"
+  )
+  four_first_stage_result <- coefficient_row(
+    four_control_first_stage,
+    "^z$"
+  )
+  trend_first_stage_result <- coefficient_row(
+    trend_control_first_stage,
+    "^z$"
+  )
+  iv_control_diagnostic_rows[[length(iv_control_diagnostic_rows) + 1L]] <-
+    tibble(
+      outcome = outcome_name,
+      outcome_label = outcome_spec$outcome_label[[1]],
+      observations = nobs(trend_control_iv),
+      counties = n_distinct(diagnostic_data$county_fips),
+      inference_clusters = inference_clusters,
+      h2a_prediction_cutoff_year = H2A_PREDICTION_CUTOFF_YEAR,
+      h2a_prediction_model_spec = H2A_PREDICTION_MODEL_SPEC,
+      four_control_estimate = four_iv_result$estimate[[1]],
+      trend_control_estimate = trend_iv_result$estimate[[1]],
+      estimate_change = trend_control_estimate - four_control_estimate,
+      four_control_clustered_se = four_iv_result$standard_error[[1]],
+      trend_control_clustered_se = trend_iv_result$standard_error[[1]],
+      clustered_se_change =
+        trend_control_clustered_se - four_control_clustered_se,
+      four_control_within_r2 = model_r2(four_control_iv, "wr2"),
+      trend_control_within_r2 = model_r2(trend_control_iv, "wr2"),
+      within_r2_change = trend_control_within_r2 - four_control_within_r2,
+      four_control_first_stage_f =
+        four_first_stage_result$t_statistic[[1]]^2,
+      trend_control_first_stage_f =
+        trend_first_stage_result$t_statistic[[1]]^2,
+      first_stage_f_change =
+        trend_control_first_stage_f - four_control_first_stage_f
+    )
+
   for (model_index in seq_along(iv_models)) {
     result <- coefficient_row(
       iv_models[[model_index]],
@@ -523,7 +715,9 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       ln_pop_census_l1 = "Lagged log population",
       farm_emp_share_l1 = "Lagged farm-employment share",
       emp_pop_ratio_l1 = "Lagged employment/population",
-      wage_p10_l1 = "Lagged real p10 wage"
+      wage_p10_l1 = "Lagged real p10 wage",
+      h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
+      year_centered = "Year minus 2011"
     ),
     fitstat = ~ n + r2,
     extralines = list(
@@ -539,6 +733,15 @@ for (outcome_index in seq_len(nrow(outcomes))) {
         second_stage_specs$controls,
         "Yes",
         "No"
+      ),
+      "_Static propensity differential trend" = if_else(
+        second_stage_specs$controls,
+        "Yes",
+        "No"
+      ),
+      "_Prediction training cutoff" = rep(
+        as.character(H2A_PREDICTION_CUTOFF_YEAR),
+        4
       ),
       "_County fixed effects" = rep("Yes", 4),
       "_Year fixed effects" = rep("Yes", 4),
@@ -561,6 +764,13 @@ for (outcome_index in seq_len(nrow(outcomes))) {
         " through ",
         DISSIMILARITY_IV_POLICY_END_YEAR,
         ". Column 4 is preferred."
+      ),
+      paste0(
+        "Controlled columns include the standardized static PPML propensity ",
+        "interacted with year minus 2011; ",
+        "the selected PPML training cutoff is ",
+        H2A_PREDICTION_CUTOFF_YEAR,
+        "."
       )
     ),
     signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
@@ -575,6 +785,74 @@ for (outcome_index in seq_len(nrow(outcomes))) {
 
 iv_results <- bind_rows(iv_result_rows)
 iv_samples <- bind_rows(iv_sample_rows)
+iv_control_diagnostic <- bind_rows(iv_control_diagnostic_rows)
+
+write_csv(
+  iv_control_diagnostic,
+  path_tables("iv_static_propensity_trend_diagnostic.csv")
+)
+
+diagnostic_table_rows <- vapply(
+  seq_len(nrow(iv_control_diagnostic)),
+  function(index) {
+    row <- iv_control_diagnostic[index, ]
+    sprintf(
+      paste0(
+        "%s & %.3f (%.3f) & %.3f (%.3f) & %.3f & %.3f & ",
+        "%.3f $\\rightarrow$ %.3f & %.2f $\\rightarrow$ %.2f & %d & %d \\\\"
+      ),
+      row$outcome_label,
+      row$four_control_estimate,
+      row$four_control_clustered_se,
+      row$trend_control_estimate,
+      row$trend_control_clustered_se,
+      row$estimate_change,
+      row$clustered_se_change,
+      row$four_control_within_r2,
+      row$trend_control_within_r2,
+      row$four_control_first_stage_f,
+      row$trend_control_first_stage_f,
+      row$observations,
+      row$counties
+    )
+  },
+  character(1)
+)
+diagnostic_table_tex <- c(
+  "\\begin{table}[htbp]",
+  "\\centering",
+  "\\caption{Identical-Sample Static PPML Differential-Trend Diagnostic}",
+  "\\label{tab:iv_static_propensity_trend_diagnostic}",
+  "\\resizebox{\\textwidth}{!}{%",
+  "\\begin{tabular}{lrrrrrrrr}",
+  "\\hline\\hline",
+  paste0(
+    "Outcome & Four controls & + Static trend & $\\Delta$ coefficient & ",
+    "$\\Delta$ clustered SE & Within $R^2$ & Excluded-instrument F & ",
+    "$N$ & Counties \\\\"
+  ),
+  "\\hline",
+  diagnostic_table_rows,
+  "\\hline\\hline",
+  "\\end{tabular}%",
+  "}",
+  paste0(
+    "\\begin{minipage}{0.98\\textwidth}\\footnotesize Notes: ",
+    "Each pair uses the same outcome-specific county-year observations, ",
+    "county and year fixed effects, the preferred wage-plus-seasonal ",
+    "instrument, and AEWR-subregion clustered standard errors. The static-trend ",
+    "column adds standardized static PPML propensity interacted with year ",
+    "minus 2011. The PPML model is trained through ",
+    H2A_PREDICTION_CUTOFF_YEAR,
+    ". Changes are static-trend minus ",
+    "four-control; no precision improvement is imposed.\\end{minipage}"
+  ),
+  "\\end{table}"
+)
+writeLines(
+  diagnostic_table_tex,
+  path_tables("table_iv_static_propensity_trend_diagnostic.tex")
+)
 
 h2a_adjustment_specs <- tibble(
   outcome = h2a_adjustment_outcomes,
@@ -636,7 +914,9 @@ etable(
     ln_pop_census_l1 = "Lagged log population",
     farm_emp_share_l1 = "Lagged farm-employment share",
     emp_pop_ratio_l1 = "Lagged employment/population",
-    wage_p10_l1 = "Lagged real p10 wage"
+    wage_p10_l1 = "Lagged real p10 wage",
+    h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
+    year_centered = "Year minus 2011"
   ),
   fitstat = ~ n + r2,
   extralines = list(
@@ -645,6 +925,14 @@ etable(
     ),
     "_Conditioning" = h2a_adjustment_specs$conditioning,
     "_Controls" = rep("Yes", length(h2a_adjustment_outcomes)),
+    "_Static propensity differential trend" = rep(
+      "Yes",
+      length(h2a_adjustment_outcomes)
+    ),
+    "_Prediction training cutoff" = rep(
+      as.character(H2A_PREDICTION_CUTOFF_YEAR),
+      length(h2a_adjustment_outcomes)
+    ),
     "_County fixed effects" = rep(
       "Yes",
       length(h2a_adjustment_outcomes)
@@ -664,7 +952,7 @@ etable(
   notes = c(
     paste(
       "All columns use the preferred wage-plus-seasonal instrument and",
-      "lagged controls."
+      "the four lagged controls plus the static propensity differential trend."
     ),
     paste(
       "Certified hours and applications are normalized by 2011 farm",
@@ -708,6 +996,8 @@ summary_variable_labels <- c(
   farm_emp_share_l1 = "Lagged farm-employment share",
   emp_pop_ratio_l1 = "Lagged employment/population",
   wage_p10_l1 = "Lagged real p10 wage",
+  h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
+  year_centered = "Year minus 2011",
   setNames(outcomes$outcome_label, outcomes$outcome)
 )
 

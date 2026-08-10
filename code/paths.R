@@ -19,6 +19,12 @@ path_figures <- function(...) here::here("outputs", "figures", ...)
 path_tables <- function(...) here::here("outputs", "tables", ...)
 path_logs <- function(...) here::here("outputs", "logs", ...)
 
+# Canonical H-2A prediction used by every shared and design-specific panel.
+# Changing the training window is a source-controlled specification change and
+# requires rebuilding the prediction artifact and all downstream panels.
+H2A_PREDICTION_CUTOFF_YEAR <- 2011L
+H2A_PREDICTION_MODEL_SPEC <- "climate_norm_static_v1"
+
 env_file <- here::here(".env")
 if (file.exists(env_file)) {
   dotenv::load_dot_env(file = env_file)
