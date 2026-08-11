@@ -1,248 +1,226 @@
-# Purpose: Aggregate agricultural OEWS employment and wages to counties and states.
+# Purpose: Publish county-mapped OEWS agricultural occupation source measures.
 # Inputs: oews.parquet and oews_area_definitions.parquet.
-# Outputs: oews_county_aggregated.parquet and oews_state_aggregated.parquet.
+# Output: oews_county_area_year_occupation.parquet.
 
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
 source(path_code("c00_shared", "geography.R"))
 library(arrow)
-library(tidyverse)
-library(tidylog, warn.conflicts = FALSE)
-library(janitor)
+library(dplyr)
+library(stringr)
 
-# Load crosswalks
-oews_area_definitions_df <- read_parquet(path_int(
-  "oews_area_definitions.parquet"
-))
+# The modern and historical OEWS occupation codes corresponding to the six
+# occupations used by DOL to determine the AEWR. The historical releases do
+# not publish a predecessor for every modern occupation.
+oews_aewr_occupation_codes <- c(
+  "45-2041", # Graders and Sorters, Agricultural Products
+  "45-2091", # Agricultural Equipment Operators
+  "45-2092", # Farmworkers: Crops, Nursery, and Greenhouse
+  "45-2093", # Farmworkers: Farm, Ranch, and Aquacultural Animals
+  "53-7064", # Packers and Packagers, Hand
+  "45-2099", # Agricultural Workers, Other
+  "79011", # Historical: graders and sorters
+  "79021", # Historical: farm equipment operators
+  "79856", # Historical: food and fiber crop farmworkers
+  "79858", # Historical: farm and ranch animal workers
+  "98902" # Historical: hand packers and packagers
+)
 
-# Load OEWS data
-oews_df <- read_parquet(path_int("oews.parquet"))
+parse_oews_numeric <- function(value) {
+  value <- str_replace_all(str_trim(as.character(value)), ",", "")
+  suppressWarnings(as.numeric(value))
+}
 
-# Keep only the "Big Six" SOCs used to calculate the AEWR, as detailed in the DOL OFLC final rule for AEWR determination:
-# https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/2023%20AEWR%20Rule%20FAQ%20-%20Round%202%20-%207-11-2023.pdf
-# 45-2041 Graders and Sorters, Agricultural Products
-# 45-2091 Agricultural Equipment Operators
-# 45-2092 Farmworkers and Laborers, Crop, Nursery and Greenhouse
-# 45-2093 Farmworkers, Farm, Ranch, and Aquacultural Animals
-# 53-7064 Packers and Packagers, Hand
-# 45-2099 Agricultural Workers – Other
-# For years 1997 and 1998, we have to use the BLS' own codes:
-# https://www.bls.gov/oes/special-requests/oesdic_98.pdf
-# 79011 GRADERS AND SORTERS, AGRICULTURAL PRODUCTS
-# 79021 FARM EQUIPMENT OPERATORS
-# 79856 FARMWORKERS, FOOD AND FIBER CROPS
-# 79858 FARMWORKERS, FARM AND RANCH ANIMALS
-# 98902 HAND PACKERS AND PACKAGERS
-oews_df <- oews_df %>%
-  filter(
-    occ_code == "45-2041" |
-      occ_code == "45-2091" |
-      occ_code == "45-2092" |
-      occ_code == "45-2093" |
-      occ_code == "53-7064" |
-      occ_code == "45-2099" |
-      occ_code == "79011" |
-      occ_code == "79021" |
-      occ_code == "79856" |
-      occ_code == "79858" |
-      occ_code == "98902"
+oews_source <- read_parquet(path_int("oews.parquet")) %>%
+  transmute(
+    oews_area_code = oews_area_code(area),
+    oews_area_name = str_squish(as.character(area_name)),
+    occ_code = str_trim(as.character(occ_code)),
+    occ_title = str_squish(as.character(occ_title)),
+    year = as.integer(year),
+    oews_tot_emp = parse_oews_numeric(tot_emp),
+    oews_mean_hourly_wage = parse_oews_numeric(h_mean),
+    oews_mean_annual_wage = parse_oews_numeric(a_mean)
+  ) %>%
+  filter(occ_code %in% oews_aewr_occupation_codes) %>%
+  mutate(
+    across(
+      c(oews_tot_emp, oews_mean_hourly_wage, oews_mean_annual_wage),
+      \(value) if_else(is.finite(value), value, NA_real_)
+    ),
+    oews_employment_published = !is.na(oews_tot_emp),
+    oews_hourly_wage_published = !is.na(oews_mean_hourly_wage),
+    oews_annual_wage_published = !is.na(oews_mean_annual_wage)
   )
 
-oews_df <- oews_df %>%
-  mutate(tot_emp = as.numeric(tot_emp)) %>%
-  mutate(mean_hourly_wage = as.numeric(h_mean)) %>%
-  mutate(mean_annual_wage = as.numeric(a_mean)) %>%
-  mutate(oews_area_code = str_trim(as.character(area)))
+assert_geo_columns(oews_source, "oews_area_code")
+if (
+  nrow(oews_source) == 0L ||
+    anyNA(oews_source[c("year", "occ_code")]) ||
+    anyDuplicated(
+      oews_source[c("oews_area_code", "year", "occ_code")]
+    ) >
+      0L
+) {
+  stop(
+    "OEWS source rows must be nonempty and unique by area, year, and occupation.",
+    call. = FALSE
+  )
+}
 
-# Drop occ-area-year without average wage or total employment data
-# oews_df <- oews_df %>% filter(!is.na(h_mean) & !is.na(tot_emp))
+oews_county_area_map <- read_parquet(
+  path_int("oews_area_definitions.parquet")
+) %>%
+  transmute(
+    county_fips = harmonize_county_fips_2010(county_fips),
+    state_fips = state_from_county_fips(county_fips),
+    county_code = county_code_from_county_fips(county_fips),
+    year = as.integer(year),
+    oews_area_code = oews_area_code(oews_area_code)
+  ) %>%
+  distinct()
 
-# Combine with OEWS area definitons to calculate county-level wages
-oews_df <- oews_df %>%
+assert_geo_columns(
+  oews_county_area_map,
+  c("state_fips", "county_code", "county_fips", "oews_area_code")
+)
+if (
+  nrow(oews_county_area_map) == 0L ||
+    anyNA(oews_county_area_map$year) ||
+    anyDuplicated(
+      oews_county_area_map[c("county_fips", "year", "oews_area_code")]
+    ) >
+      0L
+) {
+  stop(
+    "OEWS county-area mappings must be nonempty and unique by county, year, and area.",
+    call. = FALSE
+  )
+}
+
+oews_county_area_year_occupation <- oews_county_area_map %>%
+  inner_join(
+    oews_source,
+    by = c("oews_area_code", "year"),
+    relationship = "many-to-many"
+  ) %>%
   select(
+    county_fips,
+    state_fips,
+    county_code,
+    year,
     oews_area_code,
-    area_name,
+    oews_area_name,
     occ_code,
     occ_title,
-    tot_emp,
-    mean_hourly_wage,
-    mean_annual_wage,
-    year
+    oews_tot_emp,
+    oews_mean_hourly_wage,
+    oews_mean_annual_wage,
+    oews_employment_published,
+    oews_hourly_wage_published,
+    oews_annual_wage_published
   ) %>%
-  mutate(
-    hourly_wage_bill = mean_hourly_wage * tot_emp,
-    annual_wage_bill = mean_annual_wage * tot_emp,
-    hourly_wage_emp = if_else(!is.na(mean_hourly_wage), tot_emp, NA_real_),
-    annual_wage_emp = if_else(!is.na(mean_annual_wage), tot_emp, NA_real_)
-  )
+  arrange(county_fips, year, oews_area_code, occ_code)
 
-oews_area_year_df <- oews_area_definitions_df %>%
-  left_join(oews_df, by = c("oews_area_code", "year"))
-
-# Collapse into county-years-occupations
-oews_county_year_occ <- oews_area_year_df %>%
-  group_by(state_fips, county_code, year, occ_code, occ_title) %>%
-  summarize(
-    tot_emp = sum(tot_emp, na.rm = TRUE),
-    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
-    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
-    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
-    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    mean_hourly_wage = if_else(
-      hourly_wage_emp > 0,
-      tot_hourly_wage / hourly_wage_emp,
-      NA_real_
-    ),
-    mean_annual_wage = if_else(
-      annual_wage_emp > 0,
-      tot_annual_wage / annual_wage_emp,
-      NA_real_
-    )
-  ) %>%
-  select(
-    -hourly_wage_emp,
-    -annual_wage_emp,
-    -tot_hourly_wage,
-    -tot_annual_wage
-  )
-
-# Collapse occupations as well to get AEWR equivalent
-oews_county_year_aewr <- oews_area_year_df %>%
-  group_by(state_fips, county_code, year) %>%
-  summarize(
-    tot_emp = sum(tot_emp, na.rm = TRUE),
-    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
-    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
-    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
-    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    mean_hourly_wage = if_else(
-      hourly_wage_emp > 0,
-      tot_hourly_wage / hourly_wage_emp,
-      NA_real_
-    ),
-    mean_annual_wage = if_else(
-      annual_wage_emp > 0,
-      tot_annual_wage / annual_wage_emp,
-      NA_real_
-    )
-  ) %>%
-  select(
-    -hourly_wage_emp,
-    -annual_wage_emp,
-    -tot_hourly_wage,
-    -tot_annual_wage
-  ) %>%
-  mutate(
-    occ_code = "AEWR",
-    occ_title = "Aggregated occupation for AEWR equivalent"
-  )
-
-# Combine
-oews_county_year <- rbind(oews_county_year_occ, oews_county_year_aewr) %>%
-  arrange(state_fips, county_code, year, occ_code)
-
-# Harmonize variable names
-oews_county_year <- oews_county_year %>%
-  mutate(
-    county_fips = harmonize_county_fips_2010(
-      combine_county_fips(state_fips, county_code)
-    )
-  ) %>%
-  rename(
-    oews_mean_hourly_wage = mean_hourly_wage,
-    oews_mean_annual_wage = mean_annual_wage,
-    oews_tot_emp = tot_emp
-  )
-
-# Export
-assert_geo_columns(
-  oews_county_year,
-  c("state_fips", "county_code", "county_fips")
+oews_descriptions <- c(
+  oews_area_code = "Source-defined OEWS reporting-area code; leading zeroes are preserved",
+  oews_tot_emp = "OEWS source-published occupation employment in the reporting area",
+  oews_mean_hourly_wage = "OEWS source-published mean hourly wage for the area and occupation",
+  oews_mean_annual_wage = "OEWS source-published mean annual wage for the area and occupation",
+  oews_employment_published = "Whether OEWS publishes numeric employment for the area and occupation",
+  oews_hourly_wage_published = "Whether OEWS publishes a numeric hourly mean for the area and occupation",
+  oews_annual_wage_published = "Whether OEWS publishes a numeric annual mean for the area and occupation"
 )
-oews_county_year %>%
-  write_parquet(path_int("oews_county_aggregated.parquet"))
 
-# Collapse into state-year as well for comparison with FLS
-oews_state_year_occ <- oews_area_year_df %>%
-  group_by(state_fips, year, occ_code, occ_title) %>%
-  summarize(
-    tot_emp = sum(tot_emp, na.rm = TRUE),
-    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
-    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
-    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
-    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    mean_hourly_wage = if_else(
-      hourly_wage_emp > 0,
-      tot_hourly_wage / hourly_wage_emp,
-      NA_real_
-    ),
-    mean_annual_wage = if_else(
-      annual_wage_emp > 0,
-      tot_annual_wage / annual_wage_emp,
-      NA_real_
+missing_output_columns <- setdiff(
+  c(
+    "county_fips",
+    "state_fips",
+    "county_code",
+    "year",
+    "oews_area_name",
+    "occ_code",
+    "occ_title",
+    names(oews_descriptions)
+  ),
+  names(oews_county_area_year_occupation)
+)
+if (length(missing_output_columns) > 0L) {
+  stop(
+    "OEWS output is missing required columns: ",
+    paste(missing_output_columns, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+for (column in names(oews_descriptions)) {
+  attr(
+    oews_county_area_year_occupation[[column]],
+    "description"
+  ) <- oews_descriptions[[column]]
+  attr(
+    oews_county_area_year_occupation[[column]],
+    "level_of_aggregation"
+  ) <- "OEWS reporting area"
+}
+
+assert_geo_columns(
+  oews_county_area_year_occupation,
+  c("state_fips", "county_code", "county_fips", "oews_area_code")
+)
+
+oews_output_key <- c(
+  "county_fips",
+  "year",
+  "oews_area_code",
+  "occ_code"
+)
+if (
+  nrow(oews_county_area_year_occupation) == 0L ||
+    anyNA(oews_county_area_year_occupation[oews_output_key]) ||
+    anyDuplicated(oews_county_area_year_occupation[oews_output_key]) > 0L
+) {
+  stop(
+    "OEWS output must be nonempty and unique by county, year, area, and occupation.",
+    call. = FALSE
+  )
+}
+
+oews_measure_columns <- c(
+  "oews_tot_emp",
+  "oews_mean_hourly_wage",
+  "oews_mean_annual_wage"
+)
+if (
+  any(
+    unlist(oews_county_area_year_occupation[oews_measure_columns]) < 0,
+    na.rm = TRUE
+  )
+) {
+  stop("OEWS employment and wage measures must be nonnegative.", call. = FALSE)
+}
+
+oews_coverage_contract <- c(
+  oews_tot_emp = "oews_employment_published",
+  oews_mean_hourly_wage = "oews_hourly_wage_published",
+  oews_mean_annual_wage = "oews_annual_wage_published"
+)
+for (measure in names(oews_coverage_contract)) {
+  published <- oews_county_area_year_occupation[[
+    oews_coverage_contract[[measure]]
+  ]]
+  value <- oews_county_area_year_occupation[[measure]]
+  if (any(published != !is.na(value))) {
+    stop(
+      "OEWS publication flag is inconsistent with ",
+      measure,
+      ".",
+      call. = FALSE
     )
-  ) %>%
-  select(
-    -hourly_wage_emp,
-    -annual_wage_emp,
-    -tot_hourly_wage,
-    -tot_annual_wage
-  )
+  }
+}
 
-oews_state_year_aewr <- oews_area_year_df %>%
-  group_by(state_fips, year) %>%
-  summarize(
-    tot_emp = sum(tot_emp, na.rm = TRUE),
-    hourly_wage_emp = sum(hourly_wage_emp, na.rm = TRUE),
-    annual_wage_emp = sum(annual_wage_emp, na.rm = TRUE),
-    tot_hourly_wage = sum(hourly_wage_bill, na.rm = TRUE),
-    tot_annual_wage = sum(annual_wage_bill, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    mean_hourly_wage = if_else(
-      hourly_wage_emp > 0,
-      tot_hourly_wage / hourly_wage_emp,
-      NA_real_
-    ),
-    mean_annual_wage = if_else(
-      annual_wage_emp > 0,
-      tot_annual_wage / annual_wage_emp,
-      NA_real_
-    )
-  ) %>%
-  select(
-    -hourly_wage_emp,
-    -annual_wage_emp,
-    -tot_hourly_wage,
-    -tot_annual_wage
-  ) %>%
-  mutate(
-    occ_code = "AEWR",
-    occ_title = "Aggregated occupation for AEWR equivalent"
-  )
-
-# Combine
-oews_state_year <- rbind(oews_state_year_occ, oews_state_year_aewr) %>%
-  arrange(state_fips, year, occ_code)
-
-# Harmonize variable names
-oews_state_year <- oews_state_year %>%
-  rename(
-    oews_mean_hourly_wage = mean_hourly_wage,
-    oews_mean_annual_wage = mean_annual_wage,
-    oews_tot_emp = tot_emp
-  )
-
-assert_geo_columns(oews_state_year, "state_fips")
-oews_state_year %>%
-  write_parquet(path_int("oews_state_aggregated.parquet"))
+write_parquet(
+  oews_county_area_year_occupation,
+  path_int("oews_county_area_year_occupation.parquet")
+)

@@ -36,10 +36,12 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
 
 The shared panel owns normalized source measures, reusable outcomes and
-controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps,
-cropland eligibility, border-CZ status, and stable geographic identifiers. It
-does not own treatment classifications, post indicators, fixed-effect factors,
-year dummies, target-cluster assignments, or instruments.
+controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps, the
+BEA employment and farm wage-bill totals, the nominal OEWS Big-Six hourly-wage
+proxy and its support fields, cropland eligibility, border-CZ status, and
+stable geographic identifiers. It does not own treatment classifications,
+post indicators, fixed-effect factors, year dummies, target-cluster
+assignments, or instruments.
 
 ## Commands
 

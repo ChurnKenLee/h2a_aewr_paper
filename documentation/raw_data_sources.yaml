@@ -1,176 +1,246 @@
-id: acs
-  name: American Community Survey
-  provider: IPUMS
+- id: acs
+  name: "American Community Survey"
+  provider: "IPUMS USA"
   coverage:
     years: "2000-2024"
   access:
-    method: "IPUMS API via ipumsr package"
-  notes: "ipumsr takes manifest defined in code/json: acs_immigrant_status_imputation_extract_spec.json and acs_wage_quantile_extract_spect.json, and produces a request spec that is sent to the IPUMS API"
-id: aewr
-  name: Adverse Effect Wage Rate
-  provider: Department of Labor OFLC
+    url: "https://usa.ipums.org/usa/"
+    access_date: ""
+    method: "IPUMS extract API via ipumsr and the specifications under code/json"
+    credentials: "IPUMS_API_KEY"
+  notes: "The executable extract specifications are code/json/acs_5year_immigrant_status_imputation_extract_spec.json and code/json/acs_1year_wages_extract_spec.json."
+
+- id: aewr
+  name: "Adverse Effect Wage Rate"
+  provider: "U.S. Department of Labor, Office of Foreign Labor Certification"
   coverage:
     years: "1990-2025"
   access:
     url: ""
     access_date: ""
-    method: "Extracted from notices posted in the Federal Register by the Department of Labor, and a CRS report"
-id: bea
-  name: BEA tables
-  provider: Bureau of Economic Analysis
+    method: "Historical tables assembled from Federal Register notices and a Congressional Research Service report"
+    credentials: null
+  notes: "Source formats and geographic definitions vary across the historical notices."
+
+- id: bea
+  name: "BEA county employment and farm-income tables"
+  provider: "U.S. Bureau of Economic Analysis"
   coverage:
-    years: ""
+    years: "CAEMP25N: 2001-2022; CAINC45: 1969-2022"
   access:
     url:
       CAEMP25N: "https://apps.bea.gov/regional/histdata/releases/1123lapi/CAEMP25N.zip"
       CAINC45: "https://apps.bea.gov/regional/histdata/releases/1123lapi/CAINC45.zip"
     access_date: ""
-    method: ""
-id: census_population_estimates
-  name: Census Population Estimates
-  provider: Census Bureau
+    method: "Archived BEA Regional historical-data ZIP files cached under data/raw/bea"
+    credentials: null
+  notes: "The project intentionally uses the fixed November 2023 archival release through 2022; BEA combined Virginia areas are harmonized by the county producer."
+
+- id: census_population_estimates
+  name: "Census Population Estimates"
+  provider: "U.S. Census Bureau"
   coverage:
-    years: "2009, 2019, 2024"
+    years: "2009, 2019, and 2024 release vintages"
   access:
     url: "https://www2.census.gov/programs-surveys/popest/datasets/"
     access_date: ""
-    method: ""
-id: county_shapefile
-  name: TIGER/Line Shapefiles
-  provider: Census Bureau
+    method: "Direct download of published population-estimate files"
+    credentials: null
+  notes: "The cleaning stage harmonizes release vintages to the project county geography."
+
+- id: county_shapefile
+  name: "TIGER/Line county shapefiles"
+  provider: "U.S. Census Bureau"
   coverage:
-    years: "2010, 2020"
+    years: "2010 and 2020"
   access:
-    url: 
-      2020: "https://www2.census.gov/geo/tiger/TIGER2020/COUNTY/tl_2020_us_county.zip"
-      2010: "https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/tl_2010_us_county10.zip"
-id: croplandcros_cdl
-  name: CroplandCROS CDL
-  provider: USDA
+    url:
+      "2010": "https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/tl_2010_us_county10.zip"
+      "2020": "https://www2.census.gov/geo/tiger/TIGER2020/COUNTY/tl_2020_us_county.zip"
+    access_date: ""
+    method: "Direct download of TIGER/Line ZIP archives"
+    credentials: null
+  notes: "The supported county panel uses the 2010 county vintage."
+
+- id: croplandcros_cdl
+  name: "Cropland Data Layer"
+  provider: "USDA National Agricultural Statistics Service"
   coverage:
     years: "2008-2025"
   access:
     url: "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/index.php"
     access_date: ""
-    method: ""
-id: epinoaa_nclimgrid
-  name: NOAA Daily ‘Analysis Ready’ NClimGrid Climate Dataset at County Scale
+    method: "Published annual raster archives cached locally and aggregated with exactextract"
+    credentials: null
+  notes: "County aggregates depend on the project county geometry and the reviewed NASS-to-CDL crop crosswalk."
+
+- id: epinoaa_nclimgrid
+  name: "EpiNOAA daily Analysis-Ready NClimGrid at county scale"
+  provider: "NOAA and the North Carolina Institute for Climate Studies"
   coverage:
-    years: "1990-2025"
+    years: "1981-2025"
   access:
     url: "https://noaa-nclimgrid-daily-pds.s3.amazonaws.com/index.html"
     access_date: ""
-    method: ""
-  notes: "EpiNOAA is a cleaned analysis-ready version of NClimGrid produced by the North Carolina Institute for Climate Studies"
-id: fred
-  name: Producer Price Index by Commodity, Farm Products (WPU01)
-  provider: FRED
+    method: "Public county-year Parquet downloads from the NOAA NClimGrid S3 bucket, with a local cache"
+    credentials: null
+  notes: "The prediction producer uses 1981-2010 for climate normals and retains annual data through 2025."
+
+- id: fred
+  name: "Producer Price Index by Commodity: Farm Products (WPU01)"
+  provider: "Federal Reserve Bank of St. Louis"
   coverage:
     years: "1913-2025"
   access:
     url: "https://fred.stlouisfed.org/series/WPU01"
     access_date: ""
-    method: ""
-id: gnatsgo
-  name: Gridded National Soil Survey Geographic Database (gNATSGO)
-  provider: USDA Natural Resources Conservation Service
+    method: "FRED CSV download cached as data/raw/fred/WPU01.csv"
+    credentials: null
+  notes: "The cleaning producer converts monthly observations to annual means and rebases the index to 2012."
+
+- id: gnatsgo
+  name: "Gridded National Soil Survey Geographic Database"
+  provider: "USDA Natural Resources Conservation Service"
+  coverage:
+    years: "2026-02 snapshot"
   access:
     url: "https://www.nrcs.usda.gov/resources/data-and-reports/gridded-national-soil-survey-geographic-database-gnatsgo"
-id: h2a
-  name: H-2A disclosure data
-  provider: DOL OFLC
+    access_date: ""
+    method: "Manually downloaded 7z archive cached under data/raw/gnatsgo"
+    credentials: null
+  notes: "The prediction producer extracts only the required raster and GeoPackage members and aggregates them to 2010 counties."
+
+- id: h2a
+  name: "H-2A disclosure data"
+  provider: "U.S. Department of Labor, Office of Foreign Labor Certification"
   coverage:
     years: "2008-2025"
   access:
     url: "https://www.dol.gov/agencies/eta/foreign-labor/performance"
     access_date: ""
-    method: ""
-id: mymarketnews_reports
-  name: My Market News
-  provider: USDA AMS
+    method: "Published disclosure files downloaded from the OFLC performance-data page and cached locally"
+    credentials: null
+  notes: "Disclosure files describe certifications and applications, not realized employment or paid payroll."
+
+- id: mymarketnews_reports
+  name: "My Market News"
+  provider: "USDA Agricultural Marketing Service"
   coverage:
     years: "2004-2025"
   access:
     url: "https://mymarketnews.ams.usda.gov/"
     access_date: ""
-    method: "API call using USDA AMS API and API key"
-id: oews
-  name: Occupational Employment and Wage Statistics
+    method: "MyMarketNews API requests cached by report slug and year"
+    credentials: "USDA_MYMARKETNEWS_API_KEY"
+  notes: "The downloader is an optional source refresh and records unavailable slug-years in its cache."
+
+- id: oews
+  name: "Occupational Employment and Wage Statistics"
+  provider: "U.S. Bureau of Labor Statistics"
   coverage:
-    years: "1997-2021"
+    years: "1997-2024"
   access:
     url: "https://www.bls.gov/oes/tables.htm"
     access_date: ""
-    method: ""
-id: qcew
-  name: Quarterly Census of Employment and Wages
+    method: "Historical OEWS ZIP and workbook releases cached under data/raw/oews"
+    credentials: null
+  notes: "Reporting areas, occupation codes, publication flags, and employer coverage vary across releases; the project retains these source distinctions."
+
+- id: qcew
+  name: "Quarterly Census of Employment and Wages"
+  provider: "U.S. Bureau of Labor Statistics"
   coverage:
     years: "2000-2024"
   access:
     url: "https://www.bls.gov/cew/downloadable-data-files.htm"
     access_date: ""
-    method: ""
-id: quickstats
-  name: USDA QuickStats
+    method: "Annual and quarterly single-file ZIP archives cached under data/raw/qcew"
+    credentials: null
+  notes: "Published county-industry cells can be disclosure-suppressed; the derived producer preserves that distinction."
+
+- id: quickstats
+  name: "USDA Quick Stats"
+  provider: "USDA National Agricultural Statistics Service"
   coverage:
     years: "2000-2025"
   access:
     url: "https://www.nass.usda.gov/datasets/"
     access_date: ""
-    method: ""
-id: rma_adm
-  name: USDA Risk Management Agency - Actuarial Data Master
+    method: "Raw tab-delimited Census of Agriculture and survey extracts cached under data/raw/quickstats"
+    credentials: null
+  notes: "The source producer partitions existing extracts; observation selection and crop-definition review occur in later source-stage scripts."
+
+- id: rma_adm
+  name: "Actuarial Data Master"
+  provider: "USDA Risk Management Agency"
   coverage:
     years: "2000-2023"
   access:
     url: "https://pubfs-rma.fpac.usda.gov/pub/References/actuarial_data_master/index.html"
     access_date: ""
-    method: ""
-id: rma_sob
-  name: USDA Risk Management Agency - Summary of Business
+    method: "Published Actuarial Data Master archives downloaded and cached locally"
+    credentials: null
+  notes: "The current source script inspects price records and layouts but does not yet publish a persistent project artifact."
+
+- id: rma_sob
+  name: "Summary of Business"
+  provider: "USDA Risk Management Agency"
   coverage:
     years: "2000-2025"
   access:
     url: "https://www.rma.usda.gov/tools-reports/summary-of-business/state-county-crop-summary-business"
     access_date: ""
-    method: ""
-id: geo_xwalk
-  - name: PUMA to 1990 CZ crosswalk
-      provider: David Dorn
-      coverage: "PUMA 2000 and PUMA 2010"
+    method: "Published Summary of Business archives downloaded and cached locally"
+    credentials: null
+  notes: "The source producer normalizes coverage and type-practice-unit files; source geography and program definitions remain provider-defined."
+
+- id: geo_xwalk
+  name: "Geographic crosswalks and reference files"
+  provider: "Multiple providers"
+  coverage:
+    years: "Provider-specific vintages listed below"
+  access:
+    url: null
+    access_date: ""
+    method: "Direct downloads and hand-maintained project crosswalk inputs"
+    credentials: null
+  notes: "Persistent project identifiers follow the canonical geographic-code contract; source crosswalks are inputs rather than downstream repair tables."
+  sources:
+    - name: "PUMA to 1990 commuting-zone crosswalk"
+      provider: "David Dorn"
+      coverage: "2000 and 2010 PUMAs to 1990 commuting zones"
       url: "https://www.ddorn.net/data.htm"
-  - name: CZ to county crosswalk
-      provider: Fabian Eckert
-      coverage:
-        years: "1790-1990"
+    - name: "County to commuting-zone crosswalk"
+      provider: "Fabian Eckert"
+      coverage: "1790-1990 county and commuting-zone vintages"
       url: "http://fpeckert.me/eglp/Materials/Crosswalk%20Files/eglp_cz_crosswalk_endyr_1990.csv"
-  - name: PUMA to county crosswalk
-      provider: Geocorr
-      coverage: "PUMA 2000 to 2010 county, PUMA 2010 to 2010 county"
+    - name: "PUMA to county crosswalk"
+      provider: "Geocorr"
+      coverage: "2000 PUMAs to 2010 counties and 2010 PUMAs to 2010 counties"
       url: "https://mcdc.missouri.edu/applications/geocorr.html"
-  - name: PUMA to PUMA crosswalk
-      provider: IPUMS
-      coverage: "PUMA 2010 to PUMA 2020"
+    - name: "PUMA to PUMA crosswalk"
+      provider: "IPUMS USA"
+      coverage: "2010 PUMAs to 2020 PUMAs"
       url: "https://usa.ipums.org/usa/volii/pumas20.shtml"
-  - name: County to CZ crosswalk
-      provider: Penn State Commuting Zones / Labor Markets data repository
-      coverage: "2010 counties to 2010 CZs"
+    - name: "County to 2010 commuting-zone crosswalk"
+      provider: "Penn State Commuting Zones / Labor Markets data repository"
+      coverage: "2010 counties to 2010 commuting zones"
       url: "https://sites.psu.edu/psucz/files/2018/09/counties10-zqvz0r.csv"
-  - name: County adjacency
-      provider: Census Bureau
+    - name: "County adjacency"
+      provider: "U.S. Census Bureau"
       coverage: "2010 counties"
       url: "https://www2.census.gov/geo/docs/reference/county_adjacency/county_adjacency2010.txt"
-  - name: County names and codes
-      provider: Census Bureau
-      coverage: "2010 counties, 2020 counties"
+    - name: "County names and codes"
+      provider: "U.S. Census Bureau"
+      coverage: "2010 and 2020 counties"
       url: "https://www.census.gov/library/reference/code-lists/ansi.2010.html"
-  - name: Census places
-      provider: Census Bureau
-      coverage: "2010 places, 2020 places"
+    - name: "Census places"
+      provider: "U.S. Census Bureau"
+      coverage: "2010 and 2020 places"
       url: "https://www.census.gov/library/reference/code-lists/ansi.html"
-  - name: Zipcode to county crosswalk
-      provider: Census Bureau
-      coverage: "2010 counties, 2020 counties"
+    - name: "ZIP Code Tabulation Area to county relationship files"
+      provider: "U.S. Census Bureau"
+      coverage: "2010 and 2020 ZCTAs and counties"
       url:
-        2010: "https://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt"
-        2020: "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta510_zcta520_natl.txt"
+        "2010": "https://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt"
+        "2020": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta510_zcta520_natl.txt"

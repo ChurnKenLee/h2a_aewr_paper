@@ -45,7 +45,7 @@ causal employer outcome.
 | Hired-labor share of farm production expenses | `share_farm_laborexp_prodexp` | DiD; panel IV |
 | Fisher crop output-quantity index | `fisher_quantity_index` | Panel IV |
 
-{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="972f599deffedb5dfd467f7d965bd0a0fcecb713dd3383a545c8690c467f247a") }}
+{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="93f0e3fa0c2df5126f30580f66c680491575dd56ca1f23f4ed36cc09e299d797") }}
 
 These are downstream responses to the policy exposure, not controls. Moving
 one of them to the right-hand side or using it for sample selection would
@@ -149,6 +149,12 @@ supported estimators:
 - prediction scores, treatment groups, post indicators, and moderators;
 - population, employment shares, local wages, baseline histories, and trend
   interactions used as controls or correlated-effects projections;
+- BEA all-industry wage-and-salary jobs, farm wages and salaries, and farm wage
+  supplements; these are shared source totals, not average-wage outcomes unless
+  a design defines a positive hired-job denominator and promotes the result;
+- the shared nominal OEWS Big-Six hourly-wage proxy and its geographic and
+  publication-support fields, joined one-to-one by county-year but not treated
+  as an outcome unless an executable design registry explicitly promotes it;
 - county/year fixed-effect identifiers, clusters, reassignment states, and
   design weights;
 - fixed-2011 farm employment and positive application/position counts used as

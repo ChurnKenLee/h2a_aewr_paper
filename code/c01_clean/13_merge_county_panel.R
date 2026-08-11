@@ -91,12 +91,12 @@ county_panel <- read_parquet(path_int("county_df_year.parquet")) %>%
   left_join(
     read_year_panel("bea_caemp25n_data_year.parquet"),
     by = c("county_fips", "year"),
-    relationship = "many-to-one"
+    relationship = "one-to-one"
   ) %>%
   left_join(
     read_year_panel("bea_cainc45_data_year.parquet"),
     by = c("county_fips", "year"),
-    relationship = "many-to-one"
+    relationship = "one-to-one"
   ) %>%
   left_join(
     read_year_panel("h2a_data_year.parquet"),
@@ -134,11 +134,25 @@ county_panel <- read_parquet(path_int("county_df_year.parquet")) %>%
     relationship = "many-to-one"
   ) %>%
   left_join(
+    read_year_panel("oews_county_year.parquet"),
+    by = c("county_fips", "year"),
+    relationship = "one-to-one"
+  ) %>%
+  left_join(
     wage_quantiles,
     by = c("county_fips", "year", "cz_id"),
     relationship = "many-to-one"
   ) %>%
   mutate(fisher_index_ppi = fisher_index / ppi_2012)
+
+assert_geo_columns(
+  county_panel,
+  "oews_area_code",
+  allow_na = "oews_area_code"
+)
+if (all(is.na(county_panel$oews_area_code))) {
+  stop("The shared merge has no county-year OEWS coverage.", call. = FALSE)
+}
 
 if (
   nrow(county_panel) == 0L ||

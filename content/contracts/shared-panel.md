@@ -35,6 +35,21 @@ The shared H-2A employer outcome uses the raw balanced-linkage employer count.
 Conservative and high-recall counts remain in the panel for
 linkage-sensitivity analyses.
 
+The shared panel carries BEA CAEMP25N employment totals, including all-industry
+wage-and-salary jobs, and CAINC45 farm wages and wage supplements in nominal
+thousands of dollars and PPI-deflated 2012-dollar equivalents. It does not
+construct hired farm jobs, average annual farm wages, or average annual farm
+compensation. Designs that use those statistics own their denominator and
+sample rules.
+
+The shared panel also carries a nominal OEWS Big-Six mean hourly-wage proxy.
+The C01 producer employment-weights occupations within reporting areas and
+uses mapped-township shares when a county-year spans multiple areas. It retains
+the primary `oews_area_code`, mapped-area count, observed mapping share, and
+wage-covered area-occupation count. OEWS source years are not shifted to AEWR
+policy years, missing wages are not replaced with zero, and reporting-area
+employment is not represented as county employment.
+
 Manual command:
 
 ```sh

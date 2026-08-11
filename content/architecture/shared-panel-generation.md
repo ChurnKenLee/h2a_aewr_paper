@@ -42,8 +42,8 @@ artifacts:
 | --- | --- | --- |
 | `aewr_data_year.parquet` | state, state abbreviation, year | Nominal and 2012-PPI-deflated AEWR, with one- and two-year lags |
 | `cz_file_2010_small.parquet` | county | 2010 commuting zone |
-| `bea_caemp25n_data_year.parquet` | county, year | Total, farm, proprietor, and nonfarm employment |
-| `bea_cainc45_data_year.parquet` | county, year | Farm receipts, government payments, production costs, and labor expenses in nominal and real terms |
+| `bea_caemp25n_data_year.parquet` | county, year | Total, wage-and-salary, farm, proprietor, and nonfarm jobs |
+| `bea_cainc45_data_year.parquet` | county, year | Farm receipts, government payments, production costs, hired-labor expenses, wages, and wage supplements in nominal and real terms |
 | `h2a_data_year.parquet` | county, year | Aggregated H-2A applications, positions, hours, wages, and employer counts |
 | `census_pop_ests_year.parquet` | county, year | Harmonized annual population |
 | `census_ag_cropland_year.parquet` | county, year | Census of Agriculture cropland |
@@ -51,6 +51,7 @@ artifacts:
 | `h2a_predict.parquet` | county | One canonical static H-2A propensity record |
 | `census_ag_cropland_2007_year.parquet` | county | Fixed 2007 cropland baseline |
 | `state_real_minwages.parquet` | state, year | Nominal and real minimum-wage measures, plus lags created before the join |
+| `oews_county_year.parquet` | county, year | Nominal OEWS Big-Six mean hourly-wage proxy, primary reporting area, and coverage support |
 | `acs_czone_wage_quantiles.parquet` | county, year, CZ | Real local wage quantiles and their lags |
 
 The merge reads `ppi_2012.parquet` to deflate the ACS wage quantiles. The same
@@ -58,14 +59,34 @@ PPI field, retained on the normalized BEA farm-income rows, is used to deflate
 the Fisher price index. Raw state/AEWR crosswalks attach stable state names and
 AEWR regions.
 
+The two BEA normalizers retain source totals rather than constructing
+per-job statistics. CAEMP25N wage-and-salary employment is an all-industry job
+count. CAINC45 farm wages and salaries and farm wage supplements are nominal
+thousands of dollars, with parallel 2012-dollar fields. Hired farm jobs,
+average annual farm wages, and average annual farm compensation remain
+downstream design constructions.
+
+`12_oews_county_year.R` first recovers each source reporting-area-year-
+occupation cell once because the upstream OEWS artifact repeats source measures
+for mapped counties. It uses source employment to weight usable Big-Six
+occupation wages within reporting areas. When a county-year maps to multiple
+reporting areas, it averages observed area wages using each area's share of
+mapped county townships and renormalizes the shares over areas with observed
+wages. The primary `oews_area_code` is the area with the largest
+mapped-township share, with reporting-area code as the deterministic
+tie-break. Missing wages remain missing, and reporting-area employment is not
+published as county employment.
+
 Except for the AEWR-region dimension, which is an inner join by state
 abbreviation, source panels are left-joined onto the county-year backbone.
 Missing source coverage therefore remains missing rather than deleting the
-backbone row. Every declared relationship is many-to-one, so duplicate source
-keys fail during the join. The completed intermediate artifact must also be
+backbone row. Each join declares its expected cardinality. The BEA and OEWS
+joins are one-to-one on `county_fips, year`; repeated state-, CZ-, or other
+county-level values use many-to-one joins. Duplicate source keys therefore
+fail during the join. The completed intermediate artifact must also be
 nonempty and unique by `county_fips, year`.
 
-{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="972f599deffedb5dfd467f7d965bd0a0fcecb713dd3383a545c8690c467f247a") }}
+{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="93f0e3fa0c2df5126f30580f66c680491575dd56ca1f23f4ed36cc09e299d797") }}
 
 The result of this stage is:
 
@@ -98,6 +119,14 @@ following transformations:
    employment, application counts, or certified positions as the appropriate
    positive denominator. The three employer-linkage counts remain separate
    source measures.
+
+The nominal OEWS wage proxy and its geographic and publication-support fields
+pass through this stage without policy-year realignment, zero filling, or
+further aggregation.
+
+The BEA wage-and-salary job count, farm wage bill, and farm wage supplements
+also pass through without constructing hired-job counts, per-job wages, or
+compensation ratios.
 
 {{ grounding(path="code/c02_build/01_build_county_panel.R", anchor="shared-panel-construction", sha256="2b7bc73b507e5b8c67b4964eb693412066519ae003469531e4b6ef2972d9e2df") }}
 

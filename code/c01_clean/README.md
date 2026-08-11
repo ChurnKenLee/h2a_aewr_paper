@@ -1,8 +1,12 @@
 # C01: Normalize and merge the county panel
 
-Scripts `01` through `12` normalize individual source families. Script `13`
-joins their county-, state-, CZ-, and year-level outputs onto the balanced
-county-year backbone.
+Scripts before `13` normalize individual source families. In particular,
+`09_bea_employment.R` and `10_bea_farm_income.R` publish unique county-year
+BEA employment, farm-financial, farm-wage, and farm-wage-supplement totals.
+`12_oews_county_year.R` writes `oews_county_year.parquet`: a unique
+county-year OEWS Big-Six hourly-wage proxy with geographic and publication
+support fields. Script `13` joins the normalized county-, state-, CZ-, and
+year-level outputs onto the balanced county-year backbone.
 
 The branch artifact is:
 
@@ -19,7 +23,24 @@ Run the complete shared branch with:
 Run only the final merge after its normalized inputs exist:
 
 ```sh
-Rscript code/c01_clean/13_merge_county_panel.R
+Rscript --vanilla code/c01_clean/13_merge_county_panel.R
+```
+
+Rebuild only the normalized BEA inputs with:
+
+```sh
+Rscript --vanilla code/c01_clean/09_bea_employment.R
+Rscript --vanilla code/c01_clean/10_bea_farm_income.R
+```
+
+The BEA artifacts retain source totals and column metadata. Hired-farm-job,
+average-wage, and average-compensation statistics are delegated to downstream
+design code.
+
+Rebuild only the normalized OEWS county-year input with:
+
+```sh
+Rscript --vanilla code/c01_clean/12_oews_county_year.R
 ```
 
 The artifact must be nonempty and unique by `county_fips` and `year`.
