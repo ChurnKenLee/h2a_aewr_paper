@@ -46,7 +46,7 @@ def _(pl):
         "disclosure_code": pl.String,
         "annual_avg_estabs": pl.Float32,
         "annual_avg_emplvl": pl.Float32,
-        "total_annual_wages": pl.Float32,
+        "total_annual_wages": pl.Int64,
     }
     qcew_cols_list = list(qcew_dtype_dict.keys())
     return qcew_cols_list, qcew_dtype_dict

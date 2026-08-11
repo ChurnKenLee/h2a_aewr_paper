@@ -38,6 +38,14 @@ Source-specific names such as `state_ansi`, `county_ansi`, `GeoFIPS`, and
 `GEOID10` may appear only while reading raw data; they are not persistent
 artifact fields.
 
+The annual QCEW producer publishes `county_fips`, not the source field
+`area_fips`. It prefers an already-canonical 2010 code when old and new QCEW
+codes coexist in a transition year, maps later Oglala Lakota and Kusilvak
+records to their 2010 predecessors, and combines the Chugach and Copper River
+records into 2010-vintage Valdez-Cordova. Undefined `xx999` areas and source
+geographies that cannot be allocated to 2010 counties are excluded rather
+than treated as counties or repaired by consumers.
+
 R scripts that normalize identifiers source `code/c00_shared/geography.R`;
 Python producers import `h2a.geography`. The C01 merge, shared-panel build,
 and design-specific panel builders check that their supported artifacts are

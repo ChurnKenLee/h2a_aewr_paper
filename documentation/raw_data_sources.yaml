@@ -105,7 +105,7 @@ id: oews
 id: qcew
   name: Quarterly Census of Employment and Wages
   coverage:
-    years: "2005-2017"
+    years: "2000-2024"
   access:
     url: "https://www.bls.gov/cew/downloadable-data-files.htm"
     access_date: ""

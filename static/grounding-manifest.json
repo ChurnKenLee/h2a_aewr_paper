@@ -383,7 +383,7 @@
     {
       "description": "Canonical geographic identifiers shared by R and Python producers.",
       "path": "content/contracts/geographic-codes.md",
-      "prose_sha256": "df0e513b6e5f1a19be66e7b7f0bbaaee1b33ecd09b371a1c5b243893f5172d96",
+      "prose_sha256": "10c9e483a930e0111d3f1ed7499166952b592e7952278ef9de382c2c80bc9066",
       "route": "/contracts/geographic-codes/",
       "scopes": [
         "code/c00_shared",
