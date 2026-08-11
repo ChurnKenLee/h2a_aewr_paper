@@ -231,7 +231,7 @@ All baseline inputs use only 2008–2010 information.
 | Animal-income share | `share_farm_animal_cashandinc` | level |
 | Hired-labor cost share | `share_farm_laborexp_prodexp` | level |
 | Low wage | `wage_p25` | log |
-| Cropland intensity | `cropland_acr` | \(\log(1+\text{acres}/\max(\text{farm employment},1))\) |
+| Cropland intensity | `census_cropland_2007` | \(\log(1+\text{2007 acres}/\max(\text{farm employment},1))\) |
 | Predicted H-2A intensity | `h2a_predicted_share_2011` | inverse hyperbolic sine |
 
 Predicted H-2A intensity is the selected cutoff's static county propensity,
@@ -398,7 +398,6 @@ The master equation is estimated separately for:
 | --- | --- | --- |
 | `applications` | Applications per 1,000 workers in 2011 farm employment | All eligible county-years |
 | `employers` | Raw balanced-linkage H-2A employer count | All |
-| `requested_positions` | Requested positions per 1,000 baseline farm workers | All |
 | `certified_positions` | Certified positions per 1,000 baseline farm workers | All |
 | `certified_hours` | Certified hours per baseline farm worker | All |
 | `any_application` | Indicator for any application | All; linear probability model |

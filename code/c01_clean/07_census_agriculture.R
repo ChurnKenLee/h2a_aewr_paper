@@ -14,16 +14,14 @@ census_of_agriculture <- read_parquet(path_int(
   "qs_census_selected_obs.parquet"
 ))
 
-census_of_agriculture_trim <- suppressWarnings(
-  census_of_agriculture %>%
-    filter(
-      commodity_desc %in% c("FARM OPERATIONS", "AG LAND"),
-      short_desc == "AG LAND, CROPLAND - ACRES",
-      !is.na(county_fips)
-    ) %>%
-    arrange(county_fips, year) %>%
-    transmute(year, county_fips, value, label = "cropland_acr")
-)
+census_of_agriculture_trim <- census_of_agriculture %>%
+  filter(
+    commodity_desc %in% c("FARM OPERATIONS", "AG LAND"),
+    short_desc == "AG LAND, CROPLAND - ACRES",
+    !is.na(county_fips)
+  ) %>%
+  arrange(county_fips, year) %>%
+  transmute(year, county_fips, value, label = "census_cropland")
 
 census_of_agriculture_cropland <- census_of_agriculture_trim %>%
   pivot_wider(names_from = "label", values_from = "value")
@@ -34,7 +32,7 @@ census_of_agriculture_cropland %>%
 
 census_of_agriculture_cropland_base <- census_of_agriculture_cropland %>%
   filter(year == 2007) %>%
-  rename(cropland_acr_2007 = cropland_acr) %>%
+  rename(census_cropland_2007 = census_cropland) %>%
   select(-year)
 
 census_of_agriculture_cropland_base %>%

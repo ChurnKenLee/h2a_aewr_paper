@@ -57,12 +57,6 @@ county_panel <- read_parquet(path_int("county_year_merged.parquet")) %>%
         cert_hours_with_hourly_wage_and_aewr_start_year,
       NA_real_
     ),
-    across(
-      c(cropland_acr, cropland_acr_2007),
-      \(value) replace_na(value, 0)
-    ),
-    aewr_state_ag_ppi = aewr_ppi - prevailing_ag_min_wage_ppi,
-    aewr_state_ag_ppi_l1 = aewr_ppi_l1 - prevailing_ag_min_wage_ppi_l1,
     aewr_cz_p25 = aewr_ppi - wage_p25,
     aewr_cz_p25_l1 = aewr_ppi_l1 - wage_p25_l1,
     emp_pop_ratio = if_else(
@@ -87,10 +81,22 @@ county_panel <- read_parquet(path_int("county_year_merged.parquet")) %>%
       farm_prodexp_ppi / farm_cashandinc_ppi,
       NA_real_
     ),
-    share_farm_crop_cashandinc = farm_cashcrops / farm_cashandinc,
-    share_farm_animal_cashandinc = farm_cashanimal / farm_cashandinc,
-    share_farm_govt_cashandinc = farm_govpayments / farm_cashandinc,
-    any_cropland_2007 = cropland_acr_2007 > 0
+    share_farm_crop_cashandinc = if_else(
+      is.finite(farm_cashandinc) & farm_cashandinc > 0,
+      farm_cashcrops / farm_cashandinc,
+      NA_real_
+    ),
+    share_farm_animal_cashandinc = if_else(
+      is.finite(farm_cashandinc) & farm_cashandinc > 0,
+      farm_cashanimal / farm_cashandinc,
+      NA_real_
+    ),
+    share_farm_govt_cashandinc = if_else(
+      is.finite(farm_cashandinc) & farm_cashandinc > 0,
+      farm_govpayments / farm_cashandinc,
+      NA_real_
+    ),
+    any_cropland_2007 = census_cropland_2007 > 0
   ) %>%
   filter(!is.na(aewr), !is.na(aewr_region_id)) %>%
   arrange(county_fips, year) %>%
@@ -247,7 +253,8 @@ if (
       abs(
         prediction_contract$bea_farm_emp_2011 -
           prediction_contract$emp_farm_2011
-      ) > 1e-8,
+      ) >
+        1e-8,
       na.rm = TRUE
     ) ||
     any(

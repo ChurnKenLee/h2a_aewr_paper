@@ -100,7 +100,9 @@ def _(pl):
             .with_columns(
                 pl.col("GeoFIPS").str.strip_chars().str.strip_chars('"').str.zfill(5),
                 pl.col("year").cast(pl.Int32),
-                pl.col(value_name).str.replace_all(",", "").cast(pl.Float64, strict=False),
+                pl.col(value_name)
+                .str.replace_all(",", "")
+                .cast(pl.Float64, strict=False),
             )
             .select("GeoFIPS", "year", value_name)
         )
@@ -109,7 +111,7 @@ def _(pl):
 
 
 @app.cell
-def _(INTERMEDIATE, caemp, caemp_year_cols, employment_long, pl):
+def _(INTERMEDIATE, RAW, caemp, caemp_year_cols, employment_long, pl):
     from h2a.geography import (
         assert_geo_columns,
         harmonize_county_fips_2010,
@@ -117,20 +119,45 @@ def _(INTERMEDIATE, caemp, caemp_year_cols, employment_long, pl):
 
     bea_farm = employment_long(caemp, caemp_year_cols, "70", "bea_farm_emp")
     bea_nonfarm = employment_long(caemp, caemp_year_cols, "80", "bea_nonfarm_emp")
+    bea_county_crosswalk = (
+        pl.read_csv(
+            RAW / "geographic_crosswalks" / "phil" / "bea_fips_xwalk.csv",
+            schema_overrides={"realfips": pl.String, "beafips": pl.String},
+        )
+        .filter(pl.col("county") == 1)
+        .select(
+            pl.col("beafips").str.zfill(5).alias("bea_county_fips"),
+            pl.col("realfips").str.zfill(5).alias("real_county_fips"),
+        )
+    )
     bea_farm_nonfarm = (
         bea_farm.join(bea_nonfarm, on=["GeoFIPS", "year"], how="left")
+        .join(
+            bea_county_crosswalk,
+            left_on="GeoFIPS",
+            right_on="bea_county_fips",
+            how="left",
+            validate="m:1",
+        )
         .with_columns(
-            pl.col("GeoFIPS")
+            pl.coalesce("real_county_fips", "GeoFIPS")
             .map_elements(
                 harmonize_county_fips_2010,
                 return_dtype=pl.String,
             )
             .alias("county_fips")
         )
-        .drop("GeoFIPS")
+        .drop("GeoFIPS", "real_county_fips")
     )
 
     assert_geo_columns(bea_farm_nonfarm, ["county_fips"])
+    if bea_farm_nonfarm.filter(pl.col("county_fips").str.starts_with("519")).height:
+        raise ValueError("BEA combined Virginia areas must map to canonical counties.")
+    if (
+        bea_farm_nonfarm.select("county_fips", "year").unique().height
+        != bea_farm_nonfarm.height
+    ):
+        raise ValueError("Crosswalked BEA employment must be unique by county-year.")
     bea_farm_nonfarm.write_parquet(INTERMEDIATE / "bea_farm_nonfarm_emp.parquet")
     return (bea_farm_nonfarm,)
 

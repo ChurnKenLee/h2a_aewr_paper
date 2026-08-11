@@ -89,6 +89,7 @@ def _(jax):
     # Check CUDA working
     print(jax.devices())
     print(jax.default_backend())
+    return
 
 
 @app.cell(hide_code=True)
@@ -96,6 +97,7 @@ def _(mo):
     mo.md(r"""
     # Load and preprocess data for JAX
     """)
+    return
 
 
 @app.cell
@@ -144,18 +146,14 @@ def _(assert_geo_columns, binary_path, cutoff_year, pl):
         binary_path / "county_h2a_prediction_climate_basis_annual.parquet"
     )
     assert_geo_columns(climate, ["county_fips"])
-    climate = climate.select(
-        "year", "county_fips", pl.col("^normal_cb_.*$")
-    ).filter(
+    climate = climate.select("year", "county_fips", pl.col("^normal_cb_.*$")).filter(
         pl.col("year") >= 2008,
         pl.col("year") <= cutoff_year,
     )
     if climate.select("county_fips", "year").unique().height != climate.height:
         raise ValueError("Climate inputs must be unique by county_fips and year.")
     if not all(
-        climate.select(
-            pl.all().exclude("county_fips", "year").is_finite().all()
-        ).row(0)
+        climate.select(pl.all().exclude("county_fips", "year").is_finite().all()).row(0)
     ):
         raise ValueError("Climate-normal inputs must be finite.")
     normal_columns = [
@@ -477,6 +475,7 @@ def _(mo):
     mo.md(r"""
     # PPML objective function
     """)
+    return
 
 
 @app.cell
@@ -683,6 +682,7 @@ def _(mo):
     mo.md(r"""
     # JAX custom autodiff
     """)
+    return
 
 
 @app.cell
@@ -1247,6 +1247,7 @@ def _(mo):
     mo.md(r"""
     # ALO-CV using lineax to take advantage of JAX autodiff
     """)
+    return
 
 
 @app.cell
@@ -1580,6 +1581,7 @@ def _(mo):
     mo.md(r"""
     # Bilevel meta-optimization to select optimal hyperparameters that minimize ALO-CV score
     """)
+    return
 
 
 @app.cell
@@ -2071,6 +2073,7 @@ def _(mo):
     mo.md(r"""
     Create functions for robust restarting and refinement
     """)
+    return
 
 
 @app.cell
@@ -2271,6 +2274,7 @@ def _(get_hparam_templates, jax, load_meta_checkpoint, save_meta_checkpoint):
 
         return restart_checkpoint_path
 
+    return
 
 
 @app.cell
@@ -2392,6 +2396,7 @@ def _(mo):
     mo.md(r"""
     # Perform bilevel optimization to find optimal L1 and L2 rates
     """)
+    return
 
 
 @app.cell
@@ -2536,6 +2541,7 @@ def _(
 def _(start_time, time):
     end_time = time.perf_counter()
     print(f"Execution time: {end_time - start_time:.6f} seconds")
+    return
 
 
 @app.cell(hide_code=True)
@@ -2543,6 +2549,7 @@ def _(mo):
     mo.md(r"""
     Check best iter with stricter parameters
     """)
+    return
 
 
 @app.cell
@@ -2774,6 +2781,7 @@ def _(mo):
     mo.md(r"""
     # Obtain predictions
     """)
+    return
 
 
 @app.cell
@@ -2782,6 +2790,7 @@ def _(jnp, trained_params):
     for _order, _w in sorted(trained_params["weights"].items()):
         _active_weights = jnp.sum(jnp.abs(_w) > 1e-3)
         print(f"  Order {_order} total weights active: {_active_weights} / {_w.size}")
+    return
 
 
 @app.cell
@@ -3017,6 +3026,7 @@ def _(
         "maximum prediction difference: "
         f"{np.max(np.abs(_saved_model_prediction - _in_memory_prediction)):.3g}"
     )
+    return
 
 
 if __name__ == "__main__":

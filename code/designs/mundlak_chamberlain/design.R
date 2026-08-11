@@ -121,7 +121,7 @@ MC_BASELINE_VARIABLES <- c(
   animal_income_share = "share_farm_animal_cashandinc",
   hired_labor_cost_share = "share_farm_laborexp_prodexp",
   low_wage = "wage_p25",
-  cropland = "cropland_acr",
+  cropland = "census_cropland_2007",
   predicted_h2a_intensity = "h2a_predicted_share_2011"
 )
 
@@ -170,7 +170,6 @@ MC_OUTCOMES <- data.frame(
   outcome_id = c(
     "applications",
     "employers",
-    "requested_positions",
     "certified_positions",
     "certified_hours",
     "any_application",
@@ -180,7 +179,6 @@ MC_OUTCOMES <- data.frame(
   outcome_column = c(
     "mc_y_applications_per_1000",
     "mc_y_employers",
-    "mc_y_requested_positions_per_1000",
     "mc_y_certified_positions_per_1000",
     "mc_y_certified_hours_per_worker",
     "mc_y_any_application",
@@ -190,17 +188,15 @@ MC_OUTCOMES <- data.frame(
   outcome_label = c(
     "H-2A applications per 1,000 baseline farm workers",
     "H-2A employers (balanced linkage)",
-    "H-2A requested positions per 1,000 baseline farm workers",
     "H-2A certified positions per 1,000 baseline farm workers",
     "H-2A certified hours per baseline farm worker",
     "Any H-2A application",
     "Certified positions per application",
     "Certified hours per certified position"
   ),
-  family = rep("gaussian", 8L),
-  offset_column = rep(NA_character_, 8L),
+  family = rep("gaussian", 7L),
+  offset_column = rep(NA_character_, 7L),
   sample_rule = c(
-    "all",
     "all",
     "all",
     "all",
@@ -212,14 +208,13 @@ MC_OUTCOMES <- data.frame(
   effect_unit = c(
     "applications_per_1000",
     "employers",
-    "requested_positions_per_1000",
     "certified_positions_per_1000",
     "certified_hours_per_worker",
     "probability",
     "positions_per_application",
     "hours_per_position"
   ),
-  primary_total = c(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE),
+  primary_total = c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE),
   stringsAsFactors = FALSE
 )
 

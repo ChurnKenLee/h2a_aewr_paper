@@ -21,10 +21,17 @@ unique keys.
 The project uses 2010 county geography. The shared normalizers map the current
 Oglala Lakota County, South Dakota code `46102` to its 2010-vintage Shannon
 County code `46113`.
+BEA combined Virginia reporting areas (`519xx`) require a separate
+source-specific concordance: county-level BEA producers map each combined area
+to the principal 2010 county identified by
+`data/raw/geographic_crosswalks/phil/bea_fips_xwalk.csv`. They do not treat a
+BEA combined-area code as a county FIPS or allocate its value to independent
+cities.
 Source-specific names such as `state_ansi`, `county_ansi`, `GeoFIPS`, and
 `GEOID10` may appear only while reading raw data; they are not persistent
 artifact fields.
 
 R scripts that normalize identifiers source `code/c00_shared/geography.R`;
-Python producers import `h2a.geography`. `scripts/run_tests.sh` checks the
-final supported panel keys.
+Python producers import `h2a.geography`. The C01 merge, shared-panel build,
+and design-specific panel builders check that their supported artifacts are
+nonempty and unique on their declared keys.

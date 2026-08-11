@@ -21,8 +21,7 @@ fips_codes <- read_csv(
 ppi_data <- read_parquet(path_int("ppi_2012.parquet"))
 
 aewr_data <- read_parquet(
-  path_int("aewr.parquet"),
-  stringsAsFactors = FALSE
+  path_int("aewr.parquet")
 ) %>%
   left_join(ppi_data, by = "year", relationship = "many-to-one") %>%
   mutate(

@@ -47,7 +47,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `06_04_croplandcros_cdl_calculate_synthetic_price_and_yield.py` | Review mappings and construct synthetic crop series | NASS-CDL crosswalk and synthetic price/yield files |
 | `06_05_croplandcros_cdl_crop_type.py` | Classify CDL crops for analysis | `cdl_crop_type.parquet` |
 | `07_state_minimum_wages.py` | Assemble state-year minimum wages | `state_year_min_wage.parquet` |
-| `08_bea_farm_nonfarm_emp.py` | Extract county BEA farm employment and income sources | Trimmed BEA files and farm employment |
+| `08_bea_farm_nonfarm_emp.py` | Extract farm employment and map BEA combined areas to canonical counties | Trimmed BEA files and farm employment |
 | `09_01_h2a_prediction_pull_noaa.py` | Build annual county climate predictors | Climate basis Parquet |
 | `09_02_h2a_prediction_pull_gnatsgo.py` | Build county soil predictors | gNATSGO soil-cell Parquet |
 | `10_mymarketnews_get_reports.py` | Download USDA market reports | Manifest, headers, and report partitions |
