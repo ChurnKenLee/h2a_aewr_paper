@@ -4,6 +4,7 @@
 # joins, and round trips through Python. County identifiers use the project's
 # 2010 geography throughout the analysis pipeline.
 
+# docs-ground:start geographic-code-contract-r
 clean_geo_code <- function(x) {
   x <- trimws(as.character(x))
   x <- gsub('"', "", x, fixed = TRUE)
@@ -170,3 +171,4 @@ assert_geo_columns <- function(data, required, allow_na = character()) {
 
   invisible(data)
 }
+# docs-ground:end geographic-code-contract-r

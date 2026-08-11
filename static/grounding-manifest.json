@@ -1,0 +1,779 @@
+{
+  "agent_instructions": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "7ab36410a220c5126a1f3dec87903f619b1408ddea118c8a65bbad2ebd25ed90",
+      "text": "# H-2A Paper repository instructions\n\n## Project scope\n\nThis repository is a reproducible empirical-economics paper combining R,\nPython/Marimo, shell pipeline runners, and LaTeX.\n\n- Run commands from the repository root.\n- Before editing, inspect `git status --short` and preserve existing work.\n- Prefer focused changes; do not perform unrelated cleanup or formatting.\n- Read the root `README.md`, the nearest branch `README.md`, and any design\n  document linked from it before changing pipeline or estimation behavior.\n\n## Agent grounding\n\n- Before planning a repository change, run\n  `python scripts/agent_docs.py snapshot --scope <target-path>`. Read every\n  `AGENTS.md`, README, canonical page, and high-risk assumption named by the\n  snapshot.\n- Run `python scripts/agent_docs.py verify` before relying on\n  `static/grounding-manifest.json`. Generated context is authoritative only\n  when verification passes.\n- A nested `AGENTS.md` narrows these repository-wide rules for its directory;\n  it never relaxes data safety, research integrity, or validation requirements.\n- When sources disagree, use this authority order: executable code, runners,\n  locks, and machine checks; verified generated context; canonical pages under\n  `content/` and the nearest README; the root README; then historical notes and\n  retained outputs.\n\n## Pipeline architecture\n\nRespect the documented dependency graph:\n\n`a01_sources` -> `b01_derived` -> `c01_clean` -> `c02_build` -> design branches\n\n- Each persistent artifact has one owning producer. Fix schemas and\n  transformations at that producer rather than adding downstream repairs.\n- Treat `data/raw` and hand-maintained crosswalks as inputs. Modify them only\n  when the task explicitly concerns source data or a crosswalk.\n- Write exchange artifacts to `data/intermediate`, analysis-ready panels to\n  `data/processed`, and retained manuscript products to `outputs`.\n- Keep `c01_clean` and `c02_build` design-neutral. Treatment definitions, post\n  indicators, fixed-effect factors, target clusters, and instruments belong\n  under the relevant `code/designs/` branch.\n- Keep reusable R helpers in `code/c00_shared` and reusable Python helpers in\n  `src/h2a`. Keep design-specific constants and numerical methods with their\n  design.\n- Use `code/paths.R` and `src/h2a/paths.py`; do not introduce hard-coded\n  absolute paths.\n\n## Data and research integrity\n\n- Do not silently change an outcome, treatment, sample restriction, timing\n  convention, weight, fixed effect, clustering level, instrument, normalization,\n  seed, or resource guard.\n- When the requested task changes an empirical specification, state the change\n  explicitly and update the nearest README or design document.\n- Changing `H2A_PREDICTION_CUTOFF_YEAR` or\n  `H2A_PREDICTION_MODEL_SPEC` requires rebuilding the prediction artifact and\n  all downstream panels.\n- Preserve nonempty and unique artifact keys. County-year panels must be unique\n  by `county_fips` and `year`.\n- Geographic identifiers are strings governed by\n  `content/contracts/geographic-codes.md`. Use\n  `code/c00_shared/geography.R` or `h2a.geography`; never coerce geographic\n  identifiers to numeric storage.\n- Do not hand-edit generated tables, figures, or PDFs to change results. Modify\n  the producing code and regenerate the artifact.\n- Do not add manuscript claims, numerical results, or citations that cannot be\n  traced to generated outputs or an identified source.\n\n## Environment and dependencies\n\n- Use the existing direnv/devenv environment.\n- Run Python through `uv run --no-sync`. When needed in a restricted\n  environment, set `UV_CACHE_DIR=/tmp/h2a-uv-cache`.\n- Run R entry points with `Rscript --vanilla`.\n- Do not install packages globally.\n- Update `pyproject.toml` and `uv.lock` together for requested Python dependency\n  changes. Update `renv.lock` for requested R dependency changes.\n- Secrets belong only in `.env`. Never print, commit, or copy credential values.\n- Edit Marimo source `.py` files, not `__marimo__` session/cache files or\n  generated flat exports.\n\n## Documentation\n\n- Keep repository and branch READMEs focused on commands, execution order,\n  inputs, outputs, and local ownership. Put cross-cutting contracts and\n  empirical-design explanations under `content/`.\n- Zola pages use `grounding` shortcodes to depend on named\n  `docs-ground:start`/`docs-ground:end` source regions. When an anchored region\n  changes, review the linked page and update its recorded SHA-256 digest.\n- Review drift with `python scripts/agent_docs.py accept-drift --document\n  <content-page> --anchor <anchor>`. The `--write` form refuses to accept a new\n  digest unless that page's prose or context also changed.\n- Do not refresh grounding digests automatically or edit\n  `static/grounding-manifest.json` and `static/llms.txt` directly. Run\n  `python scripts/agent_docs.py generate` after reviewed documentation changes.\n- Update `agent/assumptions.toml` when a high-risk invariant, owner, source,\n  affected scope, or review trigger changes. Its text checks are guardrails,\n  not proof of empirical validity.\n\n## Execution safety\n\n- Start with the narrowest relevant script or branch runner.\n- Use `DRY_RUN=1` to inspect pipeline order before a broad run.\n- Do not run a real `scripts/run_all.sh`, source acquisition runner, optional\n  source refresh, or credentialed API step unless the task explicitly requires\n  it.\n- Do not set `MC_SPEC_STAGE=exhaustive` unless explicitly requested; the normal\n  Mundlak–Chamberlain pipeline uses its bounded declared queue.\n- Preserve existing intermediate artifacts unless regeneration is required by\n  the task.\n\n## Validation\n\nMatch validation to the changed files and report exactly what ran.\n\n- Pipeline orchestration:\n  `DRY_RUN=1 ./scripts/run_all.sh`\n- Shell changes:\n  `bash -n scripts/*.sh`\n- R syntax:\n  `Rscript --vanilla -e 'for (f in list.files(\"code\", pattern = \"\\\\.R$\", recursive = TRUE, full.names = TRUE)) parse(file = f)'`\n- Ordinary Python modules:\n  `UV_CACHE_DIR=/tmp/h2a-uv-cache uv run --no-sync ruff check <changed-files>`\n- Marimo applications: export the changed application to a temporary file\n  under `/tmp` before executing it.\n- Analysis changes: run the smallest affected branch runner when its required\n  local inputs exist.\n- Manuscript changes: rebuild from the source under `draft/` when a suitable\n  TeX tool is available and check for missing citations, references, tables,\n  and figures.\n- Documentation changes: `zola check --skip-external-links` and `zola build`\n- Agent context and grounding: `python scripts/agent_docs.py verify` and\n  `python scripts/test_agent_docs.py`\n- GitHub workflow changes: `actionlint`\n\nThe repository has pre-existing repo-wide Ruff findings, especially in Marimo\napplications. Do not apply repo-wide automatic fixes; distinguish new failures\nfrom existing ones.\n\n## Code Review Rules\n\n- Flag geographic identifiers stored as numbers or bypassing the shared\n  normalizers.\n- Flag downstream schema repairs that should occur in the owning producer.\n- Flag design-specific treatment or instrument construction added to the shared\n  panel.\n- Flag new sample definitions based on post-treatment outcomes unless the\n  design documentation explicitly justifies them.\n- Flag silent changes to inference, specification, units, or preferred-column\n  definitions.\n- Flag manual edits to generated empirical results or exposure of credentials.\n"
+    },
+    {
+      "path": "code/AGENTS.md",
+      "sha256": "ae3d6b5127ed468ba2b356c6d16b76910a5a185fcca89e81010b1453d83e3874",
+      "text": "# Code-wide instructions\n\n- Start with the stage README and the canonical Zola pages selected by\n  `python scripts/agent_docs.py snapshot --scope <target-path>`.\n- Confirm the owning producer and downstream consumers before changing a\n  persistent artifact. Repair schemas at their owner, not at consumers.\n- Persistent county identifiers use the canonical string representation.\n  Source-specific identifiers may exist only while reading raw inputs.\n- R entry points source `code/paths.R`; Python entry points resolve the\n  repository root explicitly. Do not introduce working-directory-dependent\n  paths.\n- Fail on missing required columns, empty outputs, duplicate declared keys,\n  incompatible model metadata, or geographic drift.\n- Never import design-specific treatments, instruments, samples, or estimators\n  into the source, derived, shared-helper, cleaning, or shared-build stages.\n- For a changed script, validate syntax, inspect every input and output path,\n  run the narrowest artifact check available, and dry-run its owning runner.\n"
+    },
+    {
+      "path": "code/a01_sources/AGENTS.md",
+      "sha256": "7e0afb78ff27d39e7a704506d39d49a6ef02e8a1f7da43a99de2e37bbbaba11a",
+      "text": "# Source-stage instructions\n\n- Each producer owns one external source family or one explicit\n  geocoding/linkage pass. Preserve raw audit fields before publishing canonical\n  fields.\n- Network calls can consume money or quotas and can return revised schemas.\n  Inspect caches first; do not refresh a source family merely to test code.\n- Keep downloads resumable and deterministic. Document provider, coverage,\n  access method, credentials, cache, and output in this stage's README.\n- H-2A location processing intentionally runs `02_01`, `02_02`, `02_03`, then\n  `02_01` again before employer matching. The second pass is not a duplicate.\n- Scripts `10` through `12` are optional refreshes and stay outside\n  `run_all.sh` unless explicitly invoked.\n- Prefer fixtures or cached partitions. Before a live request, identify the\n  endpoint, expected request count, retry policy, and overwrite behavior.\n"
+    },
+    {
+      "path": "code/b01_derived/AGENTS.md",
+      "sha256": "8402c72f27a6a0c94936c522c061a9d26e969c03635a1b90837196bdfc0f1f49",
+      "text": "# Derived-stage instructions\n\n- Derived artifacts are reusable inputs, not design-specific results. Keep\n  outcome construction and predictors independent of identification strategy.\n- Preserve producer order within ACS, wage, price-index, and H-2A prediction\n  families.\n- The supported county price/output index is the NASS/CDL chained-Fisher\n  implementation. Older Nielsen/FAF proposal documents are historical.\n- H-2A PPML models and scores carry compatible cutoff and model-spec metadata.\n  Never combine static and dynamic models or infer metadata from filenames.\n- Preserve training/scoring separation: fitting creates cutoff-stamped models;\n  scoring emits one static score per county and cutoff.\n- Model-code changes require numerical and downstream panel-impact checks;\n  successful parsing and serialization are not sufficient evidence.\n"
+    },
+    {
+      "path": "code/c00_shared/AGENTS.md",
+      "sha256": "c11ccfd950007e25f5f70d3458ec9b10f1416620a97473f9aff042b9378d9640",
+      "text": "# Shared-helper instructions\n\n- This directory is design-neutral. It may normalize shared geographic or\n  source definitions but cannot encode treatments, post periods, target\n  clusters, instruments, estimators, or design samples.\n- Helper changes have a wide blast radius. Search callers in `c01_clean`,\n  `c02_build`, `descriptives`, and every design branch, then validate direct\n  behavior and persistent schemas.\n- Preserve the 2010 county-vintage mapping and string-identifier contract\n  unless the canonical geographic contract is explicitly revised.\n"
+    },
+    {
+      "path": "code/c01_clean/AGENTS.md",
+      "sha256": "bb8e141f6871ea484cf7ab2488e031ea541c0ae1f3156fe327cb749734106264",
+      "text": "# Cleaning and merge instructions\n\n- Scripts `01` through `12` normalize individual source families. Script `13`\n  owns `data/intermediate/county_year_merged.parquet`.\n- Normalize a schema in its owning source-family producer. Do not add aliases\n  or repairs downstream merely to accommodate stale local Parquets.\n- The merged artifact must be nonempty and unique by `county_fips, year`.\n  Diagnose duplication at the contributing producer.\n- `run_shared_panel.sh` uses filename order. Renaming or inserting a script is\n  an execution-order change requiring runner and documentation review.\n"
+    },
+    {
+      "path": "code/c02_build/AGENTS.md",
+      "sha256": "9f5bc57eb6e610e808366a6368e5de8f4e74349ea92456fd41e69c49dc5bf25e",
+      "text": "# Shared-panel instructions\n\n- `01_build_county_panel.R` owns\n  `data/processed/county_year_panel.parquet` and remains design-neutral.\n- Reusable outcomes, controls, consecutive-year lags, baseline exposures, wage\n  gaps, cropland eligibility, border-CZ status, and stable identifiers belong\n  here.\n- Treatments, post indicators, event time, fixed-effect factors, target\n  clusters, excluded instruments, design weights, and design samples belong\n  downstream.\n- The selected H-2A propensity is a static one-row-per-county score joined by\n  the explicit global cutoff and repeated across years. Do not make it rolling.\n- Schema changes require review of descriptives and every supported design.\n"
+    },
+    {
+      "path": "code/designs/AGENTS.md",
+      "sha256": "171ac0aa07ea616c12859e5cc827774b955a4d92a65aa562ebf93565fe3e924e",
+      "text": "# Empirical-design instructions\n\n- Each design owns its estimand, treatment construction, sample, fixed effects,\n  inference, diagnostics, and outputs. Do not share design objects implicitly.\n- Before changing a design, enumerate treatment timing, sample years,\n  normalization, controls, fixed effects, clusters or reference law, weights,\n  support restrictions, and affected outputs.\n- Treat numerical equivalence as testable. Compare identical samples with a\n  tolerance tied to the estimand rather than visually comparing tables.\n- Preserve diagnostics that challenge the preferred interpretation. Placebo\n  failures, weak first stages, rank ceilings, support violations, and\n  out-of-range predictions are findings, not cleanup targets.\n- Update the canonical design page whenever a substantive choice changes.\n- Keep `content/contracts/causal-outcomes-and-model-inputs.md` aligned with\n  executable outcome registries, transformations, denominators, sample rules,\n  and required estimation fields.\n"
+    },
+    {
+      "path": "code/designs/did/AGENTS.md",
+      "sha256": "5d8cf392521c28c05497227c17b8c7d9f12cb78141ca23f4e33f027b68210cec",
+      "text": "# Difference-in-differences instructions\n\n- This branch consumes the shared panel and owns its design panel, retained\n  tables, and coefficient plot.\n- Preserve the continuous baseline treatment, post-2011 timing, direct county\n  and year fixed effects, and CZ-by-AEWR-region clustered inference unless the\n  requested change explicitly revises the estimand.\n- Regression families retain four columns: full and no-border samples, each\n  without and with controls, using common samples where documented.\n- Event-study reference and 2011-slope handling are substantive. Do not change\n  coefficient indexing or reference periods as formatting work.\n- Dry-run the branch runner, parse every changed R file, and compare regenerated\n  estimates when data are available.\n"
+    },
+    {
+      "path": "code/designs/mundlak_chamberlain/AGENTS.md",
+      "sha256": "69346fd0ffa66f164e4bf522ef31ed4709c499ee3531d7a79c640c605ab32117",
+      "text": "# Mundlak–Chamberlain instructions\n\n- Version 3 is the supported runner path. Older estimator files are retained\n  benchmark and compatibility code unless explicitly targeted.\n- Preserve the declared registry, finite-design region-path reassignment,\n  common full-rank basis, named causal dictionary, analytic gradients, and\n  resource guards.\n- The exhaustive registry is not the default queue. Do not trigger it without\n  an explicit resource decision.\n- County replication does not remove assignment-level CCV rank limits. Never\n  substitute ordinary clustered covariance while retaining the CCV label.\n- Keep focal doses separate from nuisance history coordinates; automatic\n  collinearity dropping cannot choose the causal basis.\n- Keep support tables, lead placebos, out-of-range diagnostics, model warnings,\n  and selected-primary logic visible even when results are unfavorable.\n"
+    },
+    {
+      "path": "code/designs/panel_iv/AGENTS.md",
+      "sha256": "41bc328739234ab6befb0625e70d67eb21d3e5cfd0426e48dd89e2a6ebd13e61",
+      "text": "# Panel-IV instructions\n\n- This branch consumes the shared panel directly; it cannot use DiD treatment\n  classifications or the DiD panel.\n- Preserve target/donor construction, wage-only and wage-plus-seasonal\n  instruments, prior-period timing, entropy calibration, and common samples.\n- The static-propensity interaction is a control in both stages, never an\n  excluded instrument.\n- Column 4 remains the preferred controlled wage-plus-seasonal specification.\n  Do not relabel preferences based on favorable estimates or first stages.\n- First-stage strength, cluster counts, target/donor diagnostics, and\n  identical-sample comparisons travel with estimate changes.\n- Preserve restartable caches, atomic Parquet writes, deterministic ordering,\n  supported-year guards, and memory-aware behavior in Python recovery steps.\n"
+    },
+    {
+      "path": "content/AGENTS.md",
+      "sha256": "484511c1e90a4d73a11227df1471fdef906048ec191a54a3887d01106667eaae",
+      "text": "# Canonical documentation instructions\n\n- These Zola pages are written primarily to ground coding agents, while\n  remaining readable to researchers. State authority, assumptions, caveats,\n  inputs, outputs, and operational consequences explicitly.\n- Put commands and directory-local ownership in READMEs. Put cross-cutting\n  contracts and research-design semantics here.\n- Place each `grounding` shortcode next to the claim supported by its narrow,\n  named source region. Literal examples are illustrative, not authoritative.\n- Never accept source drift by changing only a digest. Update the page, inspect\n  the old/new excerpt with `agent_docs.py accept-drift`, then use `--write`.\n- Keep high-risk, scope-aware invariants in `agent/assumptions.toml`; explain\n  their substantive meaning and limitations in the relevant canonical page.\n- Do not edit `static/grounding-manifest.json` or `static/llms.txt` directly.\n  They are generated projections for LLM consumption.\n- Use Zola `@/` links for internal pages. Leave\n  `python scripts/agent_docs.py verify`, `python scripts/test_agent_docs.py`,\n  `zola check --skip-external-links`, and `zola build` green.\n"
+    },
+    {
+      "path": "documentation/AGENTS.md",
+      "sha256": "b94c321668baf47c2eada6954f39ac7a223735eca04d43cadf5605f147474f41",
+      "text": "# Historical-document instructions\n\n- The Word documents here are dated design proposals, not current\n  implementation contracts. Preserve them as archival records rather than\n  updating them to resemble current behavior.\n- The current geographic contract lives in\n  `content/contracts/geographic-codes.md`; current empirical designs live under\n  `content/designs/`.\n- `raw_data_sources.yaml` remains the machine-readable source catalog. Keep its\n  identifiers unique and document provider, coverage, access method,\n  credentials where relevant, and caveats.\n- When implementation supersedes a historical proposal, make that status\n  explicit in canonical Zola documentation so an agent does not revive it.\n"
+    },
+    {
+      "path": "draft/AGENTS.md",
+      "sha256": "664a0d9e8ee8eccd661253943e405a3de45dcd6bcaaf8b25e8d7c84c5a36e01b",
+      "text": "# Manuscript instructions\n\n- The manuscript presents selected results; it is not executable design truth.\n  Confirm numbers and claims against owning code and retained outputs.\n- Do not hand-edit included generated tables or figures. Regenerate them from\n  the owning branch.\n- Distinguish baseline DiD results from exploratory outcomes and the separate\n  panel-IV and Mundlak–Chamberlain programs.\n- Causal caveats, support limits, first-stage diagnostics, and placebo evidence\n  are substantive and cannot be removed merely for narrative smoothness.\n- A changed description of sample, treatment, inference, or result requires a\n  corresponding executable and canonical-design review.\n"
+    },
+    {
+      "path": "outputs/AGENTS.md",
+      "sha256": "e1c58000c15e30e7db2ae680c5630db4a462c72d1eb2c297488bb1e3397ffc5e",
+      "text": "# Retained-output instructions\n\n- These are generated manuscript products with owning scripts. Do not repair\n  values, labels, notes, or formatting directly.\n- Before replacing an output, record input versions, runner, environment locks,\n  model or specification identifiers, and validation evidence.\n- Preserve diagnostic, null, and negative results. Do not delete outputs merely\n  because they complicate the preferred interpretation.\n- Large or transient products belong in ignored paths; commit only intentionally\n  retained outputs.\n"
+    },
+    {
+      "path": "scripts/AGENTS.md",
+      "sha256": "fd65c7764561dd3ce516f40e75f7e72f5b67d9f54036dc036a52bbf3172ce779",
+      "text": "# Runner and agent-documentation instructions\n\n- Runner order is a public contract. Every `run_step` target must exist, be\n  documented, and own its attributed artifact.\n- Preserve `set -euo pipefail`, repository-root execution, deterministic locale\n  and time behavior, isolated temporary directories, and cleanup traps.\n- Keep `DRY_RUN=1` free of R/Python imports, network calls, credentials, and\n  data reads.\n- Marimo export and ordinary Python execution are separate paths. Test both\n  when changing `pipeline_helpers.sh`.\n- `agent_docs.py` must independently extract every Zola grounding region,\n  enforce reviewed digests, expose scoped context, and require a prose change\n  before accepting source drift.\n- Generated agent context is a static/freshness check, not evidence that an\n  empirical stage completed.\n"
+    }
+  ],
+  "assumptions": [
+    {
+      "checks": [
+        {
+          "contains": "When sources disagree, use this authority order",
+          "path": "AGENTS.md"
+        }
+      ],
+      "id": "AUTH-001",
+      "owner": "repository",
+      "review_when": "The source-of-truth or documentation workflow changes.",
+      "risk": "critical",
+      "scopes": [
+        "AGENTS.md",
+        "content",
+        "documentation",
+        "draft",
+        "outputs"
+      ],
+      "source": "AGENTS.md",
+      "statement": "Executable code, runners, locks, and machine checks outrank prose when sources disagree."
+    },
+    {
+      "checks": [
+        {
+          "contains": "Documentation prose changed since review",
+          "path": "scripts/agent_docs.py"
+        },
+        {
+          "contains": "Never accept source drift by changing only a digest.",
+          "path": "content/AGENTS.md"
+        }
+      ],
+      "id": "GROUND-001",
+      "owner": "agent documentation",
+      "review_when": "Grounding extraction, verification, generation, or drift acceptance changes.",
+      "risk": "critical",
+      "scopes": [
+        "AGENTS.md",
+        "content",
+        "scripts/agent_docs.py",
+        "templates",
+        "static"
+      ],
+      "source": "scripts/agent_docs.py",
+      "statement": "A source-region digest can be accepted only after the linked documentation context changes."
+    },
+    {
+      "checks": [
+        {
+          "contains": "All fields are strings.",
+          "path": "content/contracts/geographic-codes.md"
+        },
+        {
+          "contains": "x[x == \"46102\"] <- \"46113\"",
+          "path": "code/c00_shared/geography.R"
+        },
+        {
+          "contains": "return \"46113\" if county == \"46102\" else county",
+          "path": "src/h2a/geography.py"
+        }
+      ],
+      "id": "GEO-001",
+      "owner": "shared pipeline",
+      "review_when": "A producer, crosswalk, geographic vintage, or persistent join key changes.",
+      "risk": "critical",
+      "scopes": [
+        "code/a01_sources",
+        "code/b01_derived",
+        "code/c00_shared",
+        "code/c01_clean",
+        "code/c02_build",
+        "src/h2a"
+      ],
+      "source": "content/contracts/geographic-codes.md",
+      "statement": "Persistent geographic identifiers are strings and county FIPS uses the 2010 vintage, including 46102 to 46113 harmonization."
+    },
+    {
+      "checks": [
+        {
+          "contains": "H2A_PREDICTION_CUTOFF_YEAR <- 2011L",
+          "path": "code/paths.R"
+        },
+        {
+          "contains": "H2A_PREDICTION_MODEL_SPEC <- \"climate_norm_static_v1\"",
+          "path": "code/paths.R"
+        }
+      ],
+      "id": "PRED-001",
+      "owner": "prediction and shared panel",
+      "review_when": "Prediction fitting, scoring, selection metadata, or the shared-panel join changes.",
+      "risk": "critical",
+      "scopes": [
+        "code/paths.R",
+        "code/b01_derived",
+        "code/c02_build",
+        "code/designs"
+      ],
+      "source": "code/paths.R",
+      "statement": "The supported H-2A prediction is the static climate_norm_static_v1 model trained through 2011."
+    },
+    {
+      "checks": [
+        {
+          "path": "content/contracts/shared-panel.md",
+          "regex": "It\\s+does\\s+not create any design treatment"
+        }
+      ],
+      "id": "PANEL-001",
+      "owner": "shared panel",
+      "review_when": "The C01/C02 schema or any design input changes.",
+      "risk": "critical",
+      "scopes": [
+        "code/c00_shared",
+        "code/c01_clean",
+        "code/c02_build",
+        "code/descriptives",
+        "code/designs"
+      ],
+      "source": "content/contracts/shared-panel.md",
+      "statement": "The shared panel is design-neutral and excludes treatments, post indicators, design fixed effects, target clusters, and instruments."
+    },
+    {
+      "checks": [
+        {
+          "contains": "The canonical union contains thirteen causal outcomes.",
+          "path": "content/contracts/causal-outcomes-and-model-inputs.md"
+        },
+        {
+          "contains": "outcomes <- tribble(",
+          "path": "code/designs/panel_iv/07_estimate_panel_iv.R"
+        },
+        {
+          "contains": "MC_OUTCOMES <- data.frame(",
+          "path": "code/designs/mundlak_chamberlain/design.R"
+        },
+        {
+          "contains": "did_model(sample_full, \"h2a_cert_share_farm_workers_2011_start_year\")",
+          "path": "code/designs/did/02_main_results.R"
+        }
+      ],
+      "id": "OUTCOME-001",
+      "owner": "empirical designs",
+      "review_when": "An outcome, transformation, denominator, sample rule, treatment, control, moderator, instrument, or estimator changes.",
+      "risk": "critical",
+      "scopes": [
+        "code/c02_build",
+        "code/designs",
+        "scripts/run_did.sh",
+        "scripts/run_panel_iv.sh",
+        "scripts/run_mundlak_chamberlain.sh"
+      ],
+      "source": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "statement": "The supported causal-outcome union contains thirteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule."
+    },
+    {
+      "checks": [
+        {
+          "contains": "i(year, aewr_cz_p25_l1, ref = 2011)",
+          "path": "code/designs/did/helpers.R"
+        },
+        {
+          "contains": "CZ-by-AEWR-region interaction",
+          "path": "content/designs/difference-in-differences.md"
+        }
+      ],
+      "id": "DID-001",
+      "owner": "difference in differences",
+      "review_when": "DiD treatment, timing, sample, fixed effects, event indexing, or inference changes.",
+      "risk": "critical",
+      "scopes": [
+        "code/designs/did",
+        "scripts/run_did.sh"
+      ],
+      "source": "content/designs/difference-in-differences.md",
+      "statement": "The supported event study uses 2011 as its reference and clusters inference by CZ-by-AEWR-region."
+    },
+    {
+      "checks": [
+        {
+          "path": "content/designs/panel-iv.md",
+          "regex": "controlled wage-plus-seasonal specification in column 4 is\\s+preferred"
+        },
+        {
+          "contains": "DISSIMILARITY_IV_INFERENCE_CLUSTER <- \"aewr_iv_cluster_id\"",
+          "path": "code/designs/panel_iv/design.R"
+        }
+      ],
+      "id": "IV-001",
+      "owner": "panel IV",
+      "review_when": "Instrument construction, controls, samples, preferred column, or inference changes.",
+      "risk": "critical",
+      "scopes": [
+        "code/designs/panel_iv",
+        "scripts/run_panel_iv.sh"
+      ],
+      "source": "content/designs/panel-iv.md",
+      "statement": "The preferred panel-IV specification is controlled column 4 with the wage-plus-seasonal instrument and aewr_iv_cluster_id inference clusters."
+    },
+    {
+      "checks": [
+        {
+          "contains": "MC_SPEC_DEFAULT_STAGE <- \"compact\"",
+          "path": "code/designs/mundlak_chamberlain/design.R"
+        },
+        {
+          "contains": "MC_CCV_REFERENCE_STATES <- 17L",
+          "path": "code/designs/mundlak_chamberlain/design.R"
+        },
+        {
+          "contains": "MC_CCV_METHOD <- \"finite_design_covariance_ccv\"",
+          "path": "code/designs/mundlak_chamberlain/design.R"
+        }
+      ],
+      "id": "MC-001",
+      "owner": "Mundlak-Chamberlain",
+      "review_when": "The registry, execution queue, reassignment design, covariance, or resource guards change.",
+      "risk": "critical",
+      "scopes": [
+        "code/designs/mundlak_chamberlain",
+        "scripts/run_mundlak_chamberlain.sh"
+      ],
+      "source": "code/designs/mundlak_chamberlain/design.R",
+      "statement": "The supported MC default is the bounded compact queue and inference uses the 17-state finite-design CCV reference law."
+    }
+  ],
+  "documents": [
+    {
+      "description": "",
+      "path": "content/_index.md",
+      "prose_sha256": "005260b974880104d1215f66872bf5cfc8eb279ee1e61f2755611fc8bfe38353",
+      "route": "/",
+      "scopes": [],
+      "title": "H-2A Paper Documentation"
+    },
+    {
+      "description": "",
+      "path": "content/architecture/_index.md",
+      "prose_sha256": "6e72617d204be6e1ddcb9a9857c11dba0b7fec0df4a6cdf5dd10dc6ab00eab3b",
+      "route": "/architecture/",
+      "scopes": [],
+      "title": "Architecture"
+    },
+    {
+      "description": "Which pipeline stage owns each persistent artifact.",
+      "path": "content/architecture/artifact-ownership.md",
+      "prose_sha256": "e47c0a66f57ca7de3027694a5bde09348921a9b004e1e33ad75d70b1883c8fdf",
+      "route": "/architecture/artifact-ownership/",
+      "scopes": [
+        "code",
+        "scripts"
+      ],
+      "title": "Artifact ownership"
+    },
+    {
+      "description": "Supported execution order and branch structure.",
+      "path": "content/architecture/pipeline.md",
+      "prose_sha256": "a61cd631f1efeb591c34183eabf4bf271767713c1dafb2fed2d5f38d5c93ef03",
+      "route": "/architecture/pipeline/",
+      "scopes": [
+        "code",
+        "scripts"
+      ],
+      "title": "Pipeline architecture"
+    },
+    {
+      "description": "Exact producer chain, joins, derived fields, validation, and rebuild boundary for county_year_panel.parquet.",
+      "path": "content/architecture/shared-panel-generation.md",
+      "prose_sha256": "35bce49aed4078fbb8bbcaeab0c55826533c7425964f37e2ded01f87e0e767bd",
+      "route": "/architecture/shared-panel-generation/",
+      "scopes": [
+        "scripts/run_shared_panel.sh",
+        "code/c01_clean",
+        "code/c02_build"
+      ],
+      "title": "Generating the shared county-year panel"
+    },
+    {
+      "description": "",
+      "path": "content/contracts/_index.md",
+      "prose_sha256": "a5604d92e26cf37377eb74f025123158583ee1cbeffe14cfe58cf93d7e87a20f",
+      "route": "/contracts/",
+      "scopes": [],
+      "title": "Data and code contracts"
+    },
+    {
+      "description": "Canonical cross-design outcome inventory and the treatments, controls, moderators, denominators, samples, and inference fields required to estimate them.",
+      "path": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "prose_sha256": "2ad846583b43affd87a5f775e6f9b04dc5ea9489e66b45ee4720157f365999e3",
+      "route": "/contracts/causal-outcomes-and-model-inputs/",
+      "scopes": [
+        "code/c02_build",
+        "code/designs",
+        "scripts/run_did.sh",
+        "scripts/run_panel_iv.sh",
+        "scripts/run_mundlak_chamberlain.sh"
+      ],
+      "title": "Causal outcomes and model inputs"
+    },
+    {
+      "description": "Canonical geographic identifiers shared by R and Python producers.",
+      "path": "content/contracts/geographic-codes.md",
+      "prose_sha256": "df0e513b6e5f1a19be66e7b7f0bbaaee1b33ecd09b371a1c5b243893f5172d96",
+      "route": "/contracts/geographic-codes/",
+      "scopes": [
+        "code/c00_shared",
+        "code/c01_clean",
+        "code/c02_build",
+        "src/h2a"
+      ],
+      "title": "Geographic code contract"
+    },
+    {
+      "description": "How to add, review, and refresh checked code references.",
+      "path": "content/contracts/grounding.md",
+      "prose_sha256": "3ea7a380c34dfc2c0589c704b3dba08aeda2e6cec3779081bb6fb091784b5f58",
+      "route": "/contracts/grounding/",
+      "scopes": [
+        "AGENTS.md",
+        "content",
+        "scripts/agent_docs.py",
+        "templates"
+      ],
+      "title": "Maintaining grounded documentation"
+    },
+    {
+      "description": "Canonical prediction cutoff, model specification, and panel semantics.",
+      "path": "content/contracts/prediction-model.md",
+      "prose_sha256": "e7ed6f63d56cbd51b12286421b335c42e05bb5b9db2a7cf26c22662a5f7c21bd",
+      "route": "/contracts/prediction-model/",
+      "scopes": [
+        "code/paths.R",
+        "code/b01_derived",
+        "code/c02_build"
+      ],
+      "title": "H-2A prediction contract"
+    },
+    {
+      "description": "Design-neutral ownership, prediction semantics, and artifact invariants.",
+      "path": "content/contracts/shared-panel.md",
+      "prose_sha256": "0ff22d150694be26bec5dd69da4cd53611a54d1f9b07472a8016487a366e0f71",
+      "route": "/contracts/shared-panel/",
+      "scopes": [
+        "code/c01_clean",
+        "code/c02_build",
+        "code/descriptives",
+        "code/designs"
+      ],
+      "title": "Shared county-year panel"
+    },
+    {
+      "description": "",
+      "path": "content/designs/_index.md",
+      "prose_sha256": "1912e0d6e82198fa29db1a0a04adbe8db84395448741105d64677e9e7c1b9e69",
+      "route": "/designs/",
+      "scopes": [],
+      "title": "Empirical designs"
+    },
+    {
+      "description": "Treatment construction, estimation samples, fixed effects, and event-study specification.",
+      "path": "content/designs/difference-in-differences.md",
+      "prose_sha256": "993a9782cfa85ec7c3a58d8a91311b5094f8a76fc624ed7689b5514bb9713ce4",
+      "route": "/designs/difference-in-differences/",
+      "scopes": [
+        "code/designs/did",
+        "scripts/run_did.sh"
+      ],
+      "title": "Difference-in-differences"
+    },
+    {
+      "description": "Identification, specification program, estimands, inference, and diagnostics.",
+      "path": "content/designs/mundlak-chamberlain.md",
+      "prose_sha256": "148a3e92c0c0f85ca36a448a6489fa28514266419a761efe96c3e99d2d0a3071",
+      "route": "/designs/mundlak-chamberlain/",
+      "scopes": [
+        "code/designs/mundlak_chamberlain",
+        "scripts/run_mundlak_chamberlain.sh"
+      ],
+      "title": "Mundlak–Chamberlain dose response"
+    },
+    {
+      "description": "Instrument construction, preferred specifications, inference, and retained outputs.",
+      "path": "content/designs/panel-iv.md",
+      "prose_sha256": "8bcbafc68c5394ddb7856dacce3976c23abcd4f34754727641396a14e9b7ce39",
+      "route": "/designs/panel-iv/",
+      "scopes": [
+        "code/designs/panel_iv",
+        "scripts/run_panel_iv.sh"
+      ],
+      "title": "Panel IV"
+    },
+    {
+      "description": "",
+      "path": "content/reference/_index.md",
+      "prose_sha256": "571a043cbbd42579a2113ac77834a1782fb28a952b955e3499265586d163ef21",
+      "route": "/reference/",
+      "scopes": [],
+      "title": "Agent reference"
+    },
+    {
+      "description": "Scoped discovery, reviewed drift acceptance, and machine-readable context.",
+      "path": "content/reference/agent-workflow.md",
+      "prose_sha256": "c79afd8d820f8ec2f5497f4204177a101cdc5a237b447875d25ac6fa8a92a848",
+      "route": "/reference/agent-workflow/",
+      "scopes": [
+        "AGENTS.md",
+        "content",
+        "scripts/agent_docs.py",
+        "static"
+      ],
+      "title": "Coding-agent workflow"
+    },
+    {
+      "description": "Machine-checked, scope-aware invariants that coding agents must surface before changes.",
+      "path": "content/reference/assumptions.md",
+      "prose_sha256": "ae4926ddc1395324ca556f75aaf35e3bf6b587cd7d95fbe864c3fc49ffe7cf28",
+      "route": "/reference/assumptions/",
+      "scopes": [
+        "agent/assumptions.toml",
+        "AGENTS.md",
+        "code",
+        "scripts"
+      ],
+      "title": "Declared assumptions"
+    },
+    {
+      "description": "How an agent resolves conflicting claims and reports validation.",
+      "path": "content/reference/authority.md",
+      "prose_sha256": "e6f1a32045d20a39e333fadb0ae8ca3e47bef9a151a6af02f7d08b977bfca840",
+      "route": "/reference/authority/",
+      "scopes": [
+        "AGENTS.md",
+        "content",
+        "draft",
+        "outputs"
+      ],
+      "title": "Authority and evidence"
+    }
+  ],
+  "generated_note": "Generated by scripts/agent_docs.py; edit sources, documentation, or AGENTS.md instead.",
+  "grounding": [
+    {
+      "anchor": "pipeline-order",
+      "document": "content/architecture/artifact-ownership.md",
+      "document_title": "Artifact ownership",
+      "excerpt": "\"$SCRIPT_DIR/run_sources.sh\"\n\"$SCRIPT_DIR/run_derived.sh\"\n\"$SCRIPT_DIR/run_shared_panel.sh\"\n\"$SCRIPT_DIR/run_descriptives.sh\"\n\"$SCRIPT_DIR/run_did.sh\"\n\"$SCRIPT_DIR/run_panel_iv.sh\"\n\"$SCRIPT_DIR/run_mundlak_chamberlain.sh\"",
+      "id": "content/architecture/artifact-ownership.md::scripts/run_all.sh#pipeline-order",
+      "sha256": "6ce943803a89bf2ce24018b67f7d970cdafdaa846a5ecf3eed14c0c64d8ecccf",
+      "source": "scripts/run_all.sh"
+    },
+    {
+      "anchor": "pipeline-order",
+      "document": "content/architecture/pipeline.md",
+      "document_title": "Pipeline architecture",
+      "excerpt": "\"$SCRIPT_DIR/run_sources.sh\"\n\"$SCRIPT_DIR/run_derived.sh\"\n\"$SCRIPT_DIR/run_shared_panel.sh\"\n\"$SCRIPT_DIR/run_descriptives.sh\"\n\"$SCRIPT_DIR/run_did.sh\"\n\"$SCRIPT_DIR/run_panel_iv.sh\"\n\"$SCRIPT_DIR/run_mundlak_chamberlain.sh\"",
+      "id": "content/architecture/pipeline.md::scripts/run_all.sh#pipeline-order",
+      "sha256": "6ce943803a89bf2ce24018b67f7d970cdafdaa846a5ecf3eed14c0c64d8ecccf",
+      "source": "scripts/run_all.sh"
+    },
+    {
+      "anchor": "shared-panel-runner",
+      "document": "content/architecture/shared-panel-generation.md",
+      "document_title": "Generating the shared county-year panel",
+      "excerpt": "for script in code/c01_clean/*.R; do\n  run_step \"$script\"\ndone\n\nfor script in code/c02_build/*.R; do\n  run_step \"$script\"\ndone",
+      "id": "content/architecture/shared-panel-generation.md::scripts/run_shared_panel.sh#shared-panel-runner",
+      "sha256": "0b5a5366cd9efbf9742c0b33b6735817f552506eba9c914fca37f7858689f560",
+      "source": "scripts/run_shared_panel.sh"
+    },
+    {
+      "anchor": "county-year-merge",
+      "document": "content/architecture/shared-panel-generation.md",
+      "document_title": "Generating the shared county-year panel",
+      "excerpt": "read_year_panel <- function(filename) {\n  read_parquet(path_int(filename)) %>%\n    mutate(year = as.integer(year))\n}\n\naewr_regions <- read_csv(\n  path_raw(\"geographic_crosswalks\", \"phil\", \"aewr_regions.csv\"),\n  show_col_types = FALSE\n) %>%\n  rename(aewr_region_id = aewr_region_num) %>%\n  mutate(aewr_region_id = aewr_region_id(aewr_region_id))\n\nfips_codes <- read_csv(\n  path_raw(\"geographic_crosswalks\", \"phil\", \"fips_codes.csv\"),\n  show_col_types = FALSE\n) %>%\n  transmute(\n    state_fips = state_fips(fips),\n    across(-fips)\n  )\n\nstate_minimum_wages <- read_parquet(\n  path_int(\"state_real_minwages.parquet\")\n) %>%\n  mutate(year = as.integer(year)) %>%\n  arrange(state_fips, year) %>%\n  group_by(state_fips) %>%\n  mutate(\n    across(\n      -year,\n      lag,\n      .names = \"{.col}_l1\"\n    )\n  ) %>%\n  ungroup()\n\nppi <- read_parquet(path_int(\"ppi_2012.parquet\"))\nwage_quantiles <- read_parquet(\n  path_int(\"acs_czone_wage_quantiles.parquet\")\n) %>%\n  rename(year = YEAR) %>%\n  filter(year >= 2005) %>%\n  left_join(ppi, by = \"year\", relationship = \"many-to-one\") %>%\n  mutate(\n    across(\n      c(wage_p10, wage_p25, wage_p50, wage_p75, wage_p90),\n      \\(value) value / ppi_2012\n    )\n  ) %>%\n  select(-ppi_2012) %>%\n  arrange(county_fips, year) %>%\n  group_by(county_fips) %>%\n  mutate(\n    across(\n      starts_with(\"wage_p\"),\n      lag,\n      .names = \"{.col}_l1\"\n    )\n  ) %>%\n  ungroup()\n\ncounty_panel <- read_parquet(path_int(\"county_df_year.parquet\")) %>%\n  mutate(state_fips = state_from_county_fips(county_fips)) %>%\n  left_join(fips_codes, by = \"state_fips\", relationship = \"many-to-one\") %>%\n  inner_join(\n    aewr_regions,\n    by = \"state_abbrev\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"aewr_data_year.parquet\"),\n    by = c(\"year\", \"state_fips\", \"state_abbrev\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_parquet(path_int(\"cz_file_2010_small.parquet\")),\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"bea_caemp25n_data_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"bea_cainc45_data_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"h2a_data_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"census_pop_ests_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"census_ag_cropland_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"nass_fisher_price_index.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_parquet(path_int(\"h2a_predict.parquet\")),\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_parquet(path_int(\"census_ag_cropland_2007_year.parquet\")),\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    state_minimum_wages,\n    by = c(\"state_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    wage_quantiles,\n    by = c(\"county_fips\", \"year\", \"cz_id\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  mutate(fisher_index_ppi = fisher_index / ppi_2012)\n\nif (\n  nrow(county_panel) == 0L ||\n    anyDuplicated(county_panel[c(\"county_fips\", \"year\")]) > 0L\n) {\n  stop(\"county_year_merged must have unique county-year keys.\", call. = FALSE)\n}\n\nwrite_parquet(\n  county_panel,\n  path_int(\"county_year_merged.parquet\")\n)",
+      "id": "content/architecture/shared-panel-generation.md::code/c01_clean/13_merge_county_panel.R#county-year-merge",
+      "sha256": "972f599deffedb5dfd467f7d965bd0a0fcecb713dd3383a545c8690c467f247a",
+      "source": "code/c01_clean/13_merge_county_panel.R"
+    },
+    {
+      "anchor": "shared-panel-construction",
+      "document": "content/architecture/shared-panel-generation.md",
+      "document_title": "Generating the shared county-year panel",
+      "excerpt": "h2a_zero_columns <- c(\n  \"nbr_workers_requested_all_years\",\n  \"nbr_workers_certified_all_years\",\n  \"man_hours_requested_all_years\",\n  \"man_hours_certified_all_years\",\n  \"nbr_applications_all_years\",\n  \"nbr_workers_requested_start_year\",\n  \"nbr_workers_certified_start_year\",\n  \"man_hours_requested_start_year\",\n  \"man_hours_certified_start_year\",\n  \"cert_hours_with_hourly_wage_start_year\",\n  \"cert_hours_with_hourly_wage_and_aewr_start_year\",\n  \"cert_hours_at_aewr_start_year\",\n  \"nominal_offered_wage_bill_certified_start_year\",\n  \"nbr_applications_start_year\",\n  \"nbr_employers_conservative_start_year\",\n  \"nbr_employers_balanced_start_year\",\n  \"nbr_employers_high_recall_start_year\",\n  \"nbr_applications_certified_start_year\",\n  \"nbr_applications_partial_start_year\",\n  \"nbr_applications_denied_start_year\",\n  \"nbr_applications_withdrawn_start_year\",\n  \"nbr_workers_requested_fiscal_year\",\n  \"nbr_workers_certified_fiscal_year\",\n  \"man_hours_requested_fiscal_year\",\n  \"man_hours_certified_fiscal_year\",\n  \"nbr_applications_fiscal_year\"\n)\n\ncounty_panel <- read_parquet(path_int(\"county_year_merged.parquet\")) %>%\n  mutate(\n    across(all_of(h2a_zero_columns), \\(value) replace_na(value, 0)),\n    nbr_applications_emergency_start_year = case_when(\n      year < 2021L ~ NA_real_,\n      nbr_applications_start_year == 0 ~ 0,\n      TRUE ~ nbr_applications_emergency_start_year\n    ),\n    share_cert_hours_with_hourly_wage_start_year = if_else(\n      man_hours_certified_start_year > 0,\n      cert_hours_with_hourly_wage_start_year /\n        man_hours_certified_start_year,\n      NA_real_\n    ),\n    share_cert_hours_at_aewr_start_year = if_else(\n      cert_hours_with_hourly_wage_and_aewr_start_year > 0,\n      cert_hours_at_aewr_start_year /\n        cert_hours_with_hourly_wage_and_aewr_start_year,\n      NA_real_\n    ),\n    aewr_cz_p25 = aewr_ppi - wage_p25,\n    aewr_cz_p25_l1 = aewr_ppi_l1 - wage_p25_l1,\n    emp_pop_ratio = if_else(\n      is.finite(pop_census) & pop_census > 0,\n      emp_tot / pop_census,\n      NA_real_\n    ),\n    farm_emp_share = if_else(\n      is.finite(emp_tot) & emp_tot > 0,\n      emp_farm / emp_tot,\n      NA_real_\n    ),\n    ln_aewr_ppi = if_else(aewr_ppi > 0, log(aewr_ppi), NA_real_),\n    ln_pop_census = if_else(pop_census > 0, log(pop_census), NA_real_),\n    share_farm_laborexp_prodexp = if_else(\n      is.finite(farm_prodexp) & farm_prodexp > 0,\n      farm_laborexpense / farm_prodexp,\n      NA_real_\n    ),\n    share_farm_prodexp_cashandinc = if_else(\n      is.finite(farm_cashandinc_ppi) & farm_cashandinc_ppi > 0,\n      farm_prodexp_ppi / farm_cashandinc_ppi,\n      NA_real_\n    ),\n    share_farm_crop_cashandinc = if_else(\n      is.finite(farm_cashandinc) & farm_cashandinc > 0,\n      farm_cashcrops / farm_cashandinc,\n      NA_real_\n    ),\n    share_farm_animal_cashandinc = if_else(\n      is.finite(farm_cashandinc) & farm_cashandinc > 0,\n      farm_cashanimal / farm_cashandinc,\n      NA_real_\n    ),\n    share_farm_govt_cashandinc = if_else(\n      is.finite(farm_cashandinc) & farm_cashandinc > 0,\n      farm_govpayments / farm_cashandinc,\n      NA_real_\n    ),\n    any_cropland_2007 = census_cropland_2007 > 0\n  ) %>%\n  filter(!is.na(aewr), !is.na(aewr_region_id)) %>%\n  arrange(county_fips, year) %>%\n  group_by(county_fips) %>%\n  mutate(\n    ln_pop_census_l1 = if_else(\n      lag(year) == year - 1L,\n      lag(ln_pop_census),\n      NA_real_\n    ),\n    farm_emp_share_l1 = if_else(\n      lag(year) == year - 1L,\n      lag(farm_emp_share),\n      NA_real_\n    ),\n    emp_pop_ratio_l1 = if_else(\n      lag(year) == year - 1L,\n      lag(emp_pop_ratio),\n      NA_real_\n    )\n  ) %>%\n  ungroup()\n\nbaseline_farm_employment <- county_panel %>%\n  filter(year == 2011L) %>%\n  select(county_fips, emp_farm_2011 = emp_farm)\n\nborder_commuting_zones <- county_panel %>%\n  distinct(cz_id, aewr_region_id) %>%\n  count(cz_id, name = \"aewr_region_count\") %>%\n  transmute(cz_id, border_cz = aewr_region_count > 1L)\n\ncounty_panel <- county_panel %>%\n  left_join(\n    baseline_farm_employment,\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    border_commuting_zones,\n    by = \"cz_id\",\n    relationship = \"many-to-one\"\n  ) %>%\n  mutate(\n    h2a_req_share_farm_workers_start_year = if_else(\n      is.finite(emp_farm) & emp_farm > 0,\n      nbr_workers_requested_start_year / emp_farm,\n      NA_real_\n    ),\n    h2a_cert_share_farm_workers_start_year = if_else(\n      is.finite(emp_farm) & emp_farm > 0,\n      nbr_workers_certified_start_year / emp_farm,\n      NA_real_\n    ),\n    h2a_req_share_farm_workers_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      nbr_workers_requested_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_cert_share_farm_workers_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      nbr_workers_certified_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_cert_hours_per_farm_worker_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      man_hours_certified_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_applications_per_farm_worker_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      nbr_applications_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_cert_positions_per_application_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_workers_certified_start_year / nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_cert_hours_per_position_start_year = if_else(\n      is.finite(nbr_workers_certified_start_year) &\n        nbr_workers_certified_start_year > 0,\n      man_hours_certified_start_year / nbr_workers_certified_start_year,\n      NA_real_\n    ),\n    # Certified applications include partial certifications.\n    h2a_application_certification_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_certified_start_year /\n        nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_application_partial_certification_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_partial_start_year /\n        nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_application_denial_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_denied_start_year / nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_application_withdrawal_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_withdrawn_start_year /\n        nbr_applications_start_year,\n      NA_real_\n    )\n  )",
+      "id": "content/architecture/shared-panel-generation.md::code/c02_build/01_build_county_panel.R#shared-panel-construction",
+      "sha256": "2b7bc73b507e5b8c67b4964eb693412066519ae003469531e4b6ef2972d9e2df",
+      "source": "code/c02_build/01_build_county_panel.R"
+    },
+    {
+      "anchor": "shared-panel-contract",
+      "document": "content/architecture/shared-panel-generation.md",
+      "document_title": "Generating the shared county-year panel",
+      "excerpt": "prediction_contract <- county_panel %>%\n  filter(!is.na(h2a_prediction_cutoff_year)) %>%\n  select(\n    county_fips,\n    h2a_prediction_cutoff_year,\n    h2a_prediction_model_spec,\n    predicted_h2a_count,\n    bea_farm_emp_2011,\n    h2a_predicted_share_2011,\n    emp_farm_2011\n  ) %>%\n  distinct()\n\nif (\n  nrow(prediction_contract) == 0L ||\n    anyDuplicated(prediction_contract$county_fips) > 0L ||\n    any(\n      prediction_contract$h2a_prediction_cutoff_year !=\n        H2A_PREDICTION_CUTOFF_YEAR\n    ) ||\n    !identical(\n      unique(prediction_contract$h2a_prediction_model_spec),\n      H2A_PREDICTION_MODEL_SPEC\n    ) ||\n    any(\n      !is.finite(prediction_contract$predicted_h2a_count) |\n        prediction_contract$predicted_h2a_count < 0\n    ) ||\n    any(\n      !is.finite(prediction_contract$emp_farm_2011) |\n        prediction_contract$emp_farm_2011 <= 0\n    ) ||\n    any(\n      !is.finite(prediction_contract$bea_farm_emp_2011) |\n        prediction_contract$bea_farm_emp_2011 <= 0\n    ) ||\n    any(\n      abs(\n        prediction_contract$bea_farm_emp_2011 -\n          prediction_contract$emp_farm_2011\n      ) >\n        1e-8,\n      na.rm = TRUE\n    ) ||\n    any(\n      !is.finite(prediction_contract$h2a_predicted_share_2011) |\n        prediction_contract$h2a_predicted_share_2011 < 0\n    ) ||\n    !isTRUE(all.equal(\n      prediction_contract$h2a_predicted_share_2011,\n      prediction_contract$predicted_h2a_count /\n        prediction_contract$bea_farm_emp_2011,\n      tolerance = 2e-6,\n      check.attributes = FALSE\n    ))\n) {\n  stop(\n    \"The shared panel must use one valid canonical static prediction per county.\",\n    call. = FALSE\n  )\n}\n\nif (\n  nrow(county_panel) == 0L ||\n    anyDuplicated(county_panel[c(\"county_fips\", \"year\")]) > 0L\n) {\n  stop(\"county_year_panel must have unique county-year keys.\", call. = FALSE)\n}",
+      "id": "content/architecture/shared-panel-generation.md::code/c02_build/01_build_county_panel.R#shared-panel-contract",
+      "sha256": "ffb30f884e3403e1fd5c2b88d13d20c21eace1d1e1df0957fe7ac8c24b55aada",
+      "source": "code/c02_build/01_build_county_panel.R"
+    },
+    {
+      "anchor": "shared-panel-output",
+      "document": "content/architecture/shared-panel-generation.md",
+      "document_title": "Generating the shared county-year panel",
+      "excerpt": "write_parquet(\n  county_panel,\n  path_processed(\"county_year_panel.parquet\")\n)",
+      "id": "content/architecture/shared-panel-generation.md::code/c02_build/01_build_county_panel.R#shared-panel-output",
+      "sha256": "3529d63a7ff3a82e529475253c3bcf46166d3b9161f6e470269a74ef7131cdaf",
+      "source": "code/c02_build/01_build_county_panel.R"
+    },
+    {
+      "anchor": "shared-panel-construction",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "h2a_zero_columns <- c(\n  \"nbr_workers_requested_all_years\",\n  \"nbr_workers_certified_all_years\",\n  \"man_hours_requested_all_years\",\n  \"man_hours_certified_all_years\",\n  \"nbr_applications_all_years\",\n  \"nbr_workers_requested_start_year\",\n  \"nbr_workers_certified_start_year\",\n  \"man_hours_requested_start_year\",\n  \"man_hours_certified_start_year\",\n  \"cert_hours_with_hourly_wage_start_year\",\n  \"cert_hours_with_hourly_wage_and_aewr_start_year\",\n  \"cert_hours_at_aewr_start_year\",\n  \"nominal_offered_wage_bill_certified_start_year\",\n  \"nbr_applications_start_year\",\n  \"nbr_employers_conservative_start_year\",\n  \"nbr_employers_balanced_start_year\",\n  \"nbr_employers_high_recall_start_year\",\n  \"nbr_applications_certified_start_year\",\n  \"nbr_applications_partial_start_year\",\n  \"nbr_applications_denied_start_year\",\n  \"nbr_applications_withdrawn_start_year\",\n  \"nbr_workers_requested_fiscal_year\",\n  \"nbr_workers_certified_fiscal_year\",\n  \"man_hours_requested_fiscal_year\",\n  \"man_hours_certified_fiscal_year\",\n  \"nbr_applications_fiscal_year\"\n)\n\ncounty_panel <- read_parquet(path_int(\"county_year_merged.parquet\")) %>%\n  mutate(\n    across(all_of(h2a_zero_columns), \\(value) replace_na(value, 0)),\n    nbr_applications_emergency_start_year = case_when(\n      year < 2021L ~ NA_real_,\n      nbr_applications_start_year == 0 ~ 0,\n      TRUE ~ nbr_applications_emergency_start_year\n    ),\n    share_cert_hours_with_hourly_wage_start_year = if_else(\n      man_hours_certified_start_year > 0,\n      cert_hours_with_hourly_wage_start_year /\n        man_hours_certified_start_year,\n      NA_real_\n    ),\n    share_cert_hours_at_aewr_start_year = if_else(\n      cert_hours_with_hourly_wage_and_aewr_start_year > 0,\n      cert_hours_at_aewr_start_year /\n        cert_hours_with_hourly_wage_and_aewr_start_year,\n      NA_real_\n    ),\n    aewr_cz_p25 = aewr_ppi - wage_p25,\n    aewr_cz_p25_l1 = aewr_ppi_l1 - wage_p25_l1,\n    emp_pop_ratio = if_else(\n      is.finite(pop_census) & pop_census > 0,\n      emp_tot / pop_census,\n      NA_real_\n    ),\n    farm_emp_share = if_else(\n      is.finite(emp_tot) & emp_tot > 0,\n      emp_farm / emp_tot,\n      NA_real_\n    ),\n    ln_aewr_ppi = if_else(aewr_ppi > 0, log(aewr_ppi), NA_real_),\n    ln_pop_census = if_else(pop_census > 0, log(pop_census), NA_real_),\n    share_farm_laborexp_prodexp = if_else(\n      is.finite(farm_prodexp) & farm_prodexp > 0,\n      farm_laborexpense / farm_prodexp,\n      NA_real_\n    ),\n    share_farm_prodexp_cashandinc = if_else(\n      is.finite(farm_cashandinc_ppi) & farm_cashandinc_ppi > 0,\n      farm_prodexp_ppi / farm_cashandinc_ppi,\n      NA_real_\n    ),\n    share_farm_crop_cashandinc = if_else(\n      is.finite(farm_cashandinc) & farm_cashandinc > 0,\n      farm_cashcrops / farm_cashandinc,\n      NA_real_\n    ),\n    share_farm_animal_cashandinc = if_else(\n      is.finite(farm_cashandinc) & farm_cashandinc > 0,\n      farm_cashanimal / farm_cashandinc,\n      NA_real_\n    ),\n    share_farm_govt_cashandinc = if_else(\n      is.finite(farm_cashandinc) & farm_cashandinc > 0,\n      farm_govpayments / farm_cashandinc,\n      NA_real_\n    ),\n    any_cropland_2007 = census_cropland_2007 > 0\n  ) %>%\n  filter(!is.na(aewr), !is.na(aewr_region_id)) %>%\n  arrange(county_fips, year) %>%\n  group_by(county_fips) %>%\n  mutate(\n    ln_pop_census_l1 = if_else(\n      lag(year) == year - 1L,\n      lag(ln_pop_census),\n      NA_real_\n    ),\n    farm_emp_share_l1 = if_else(\n      lag(year) == year - 1L,\n      lag(farm_emp_share),\n      NA_real_\n    ),\n    emp_pop_ratio_l1 = if_else(\n      lag(year) == year - 1L,\n      lag(emp_pop_ratio),\n      NA_real_\n    )\n  ) %>%\n  ungroup()\n\nbaseline_farm_employment <- county_panel %>%\n  filter(year == 2011L) %>%\n  select(county_fips, emp_farm_2011 = emp_farm)\n\nborder_commuting_zones <- county_panel %>%\n  distinct(cz_id, aewr_region_id) %>%\n  count(cz_id, name = \"aewr_region_count\") %>%\n  transmute(cz_id, border_cz = aewr_region_count > 1L)\n\ncounty_panel <- county_panel %>%\n  left_join(\n    baseline_farm_employment,\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    border_commuting_zones,\n    by = \"cz_id\",\n    relationship = \"many-to-one\"\n  ) %>%\n  mutate(\n    h2a_req_share_farm_workers_start_year = if_else(\n      is.finite(emp_farm) & emp_farm > 0,\n      nbr_workers_requested_start_year / emp_farm,\n      NA_real_\n    ),\n    h2a_cert_share_farm_workers_start_year = if_else(\n      is.finite(emp_farm) & emp_farm > 0,\n      nbr_workers_certified_start_year / emp_farm,\n      NA_real_\n    ),\n    h2a_req_share_farm_workers_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      nbr_workers_requested_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_cert_share_farm_workers_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      nbr_workers_certified_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_cert_hours_per_farm_worker_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      man_hours_certified_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_applications_per_farm_worker_2011_start_year = if_else(\n      is.finite(emp_farm_2011) & emp_farm_2011 > 0,\n      nbr_applications_start_year / emp_farm_2011,\n      NA_real_\n    ),\n    h2a_cert_positions_per_application_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_workers_certified_start_year / nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_cert_hours_per_position_start_year = if_else(\n      is.finite(nbr_workers_certified_start_year) &\n        nbr_workers_certified_start_year > 0,\n      man_hours_certified_start_year / nbr_workers_certified_start_year,\n      NA_real_\n    ),\n    # Certified applications include partial certifications.\n    h2a_application_certification_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_certified_start_year /\n        nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_application_partial_certification_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_partial_start_year /\n        nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_application_denial_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_denied_start_year / nbr_applications_start_year,\n      NA_real_\n    ),\n    h2a_application_withdrawal_rate_start_year = if_else(\n      is.finite(nbr_applications_start_year) &\n        nbr_applications_start_year > 0,\n      nbr_applications_withdrawn_start_year /\n        nbr_applications_start_year,\n      NA_real_\n    )\n  )",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/c02_build/01_build_county_panel.R#shared-panel-construction",
+      "sha256": "2b7bc73b507e5b8c67b4964eb693412066519ae003469531e4b6ef2972d9e2df",
+      "source": "code/c02_build/01_build_county_panel.R"
+    },
+    {
+      "anchor": "county-year-merge",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "read_year_panel <- function(filename) {\n  read_parquet(path_int(filename)) %>%\n    mutate(year = as.integer(year))\n}\n\naewr_regions <- read_csv(\n  path_raw(\"geographic_crosswalks\", \"phil\", \"aewr_regions.csv\"),\n  show_col_types = FALSE\n) %>%\n  rename(aewr_region_id = aewr_region_num) %>%\n  mutate(aewr_region_id = aewr_region_id(aewr_region_id))\n\nfips_codes <- read_csv(\n  path_raw(\"geographic_crosswalks\", \"phil\", \"fips_codes.csv\"),\n  show_col_types = FALSE\n) %>%\n  transmute(\n    state_fips = state_fips(fips),\n    across(-fips)\n  )\n\nstate_minimum_wages <- read_parquet(\n  path_int(\"state_real_minwages.parquet\")\n) %>%\n  mutate(year = as.integer(year)) %>%\n  arrange(state_fips, year) %>%\n  group_by(state_fips) %>%\n  mutate(\n    across(\n      -year,\n      lag,\n      .names = \"{.col}_l1\"\n    )\n  ) %>%\n  ungroup()\n\nppi <- read_parquet(path_int(\"ppi_2012.parquet\"))\nwage_quantiles <- read_parquet(\n  path_int(\"acs_czone_wage_quantiles.parquet\")\n) %>%\n  rename(year = YEAR) %>%\n  filter(year >= 2005) %>%\n  left_join(ppi, by = \"year\", relationship = \"many-to-one\") %>%\n  mutate(\n    across(\n      c(wage_p10, wage_p25, wage_p50, wage_p75, wage_p90),\n      \\(value) value / ppi_2012\n    )\n  ) %>%\n  select(-ppi_2012) %>%\n  arrange(county_fips, year) %>%\n  group_by(county_fips) %>%\n  mutate(\n    across(\n      starts_with(\"wage_p\"),\n      lag,\n      .names = \"{.col}_l1\"\n    )\n  ) %>%\n  ungroup()\n\ncounty_panel <- read_parquet(path_int(\"county_df_year.parquet\")) %>%\n  mutate(state_fips = state_from_county_fips(county_fips)) %>%\n  left_join(fips_codes, by = \"state_fips\", relationship = \"many-to-one\") %>%\n  inner_join(\n    aewr_regions,\n    by = \"state_abbrev\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"aewr_data_year.parquet\"),\n    by = c(\"year\", \"state_fips\", \"state_abbrev\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_parquet(path_int(\"cz_file_2010_small.parquet\")),\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"bea_caemp25n_data_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"bea_cainc45_data_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"h2a_data_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"census_pop_ests_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"census_ag_cropland_year.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_year_panel(\"nass_fisher_price_index.parquet\"),\n    by = c(\"county_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_parquet(path_int(\"h2a_predict.parquet\")),\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    read_parquet(path_int(\"census_ag_cropland_2007_year.parquet\")),\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    state_minimum_wages,\n    by = c(\"state_fips\", \"year\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  left_join(\n    wage_quantiles,\n    by = c(\"county_fips\", \"year\", \"cz_id\"),\n    relationship = \"many-to-one\"\n  ) %>%\n  mutate(fisher_index_ppi = fisher_index / ppi_2012)\n\nif (\n  nrow(county_panel) == 0L ||\n    anyDuplicated(county_panel[c(\"county_fips\", \"year\")]) > 0L\n) {\n  stop(\"county_year_merged must have unique county-year keys.\", call. = FALSE)\n}\n\nwrite_parquet(\n  county_panel,\n  path_int(\"county_year_merged.parquet\")\n)",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/c01_clean/13_merge_county_panel.R#county-year-merge",
+      "sha256": "972f599deffedb5dfd467f7d965bd0a0fcecb713dd3383a545c8690c467f247a",
+      "source": "code/c01_clean/13_merge_county_panel.R"
+    },
+    {
+      "anchor": "did-primary-outcome",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "models <- list(\n  did_model(sample_full, \"h2a_cert_share_farm_workers_2011_start_year\"),\n  did_model(\n    sample_full,\n    \"h2a_cert_share_farm_workers_2011_start_year\",\n    controls = TRUE\n  ),\n  did_model(\n    sample_no_border,\n    \"h2a_cert_share_farm_workers_2011_start_year\"\n  ),\n  did_model(\n    sample_no_border,\n    \"h2a_cert_share_farm_workers_2011_start_year\",\n    controls = TRUE\n  )\n)",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/did/02_main_results.R#did-primary-outcome",
+      "sha256": "96bbc956b09e9017a67f9fdae375579f17371c9f01d88598e30e9c7a6a846ab5",
+      "source": "code/designs/did/02_main_results.R"
+    },
+    {
+      "anchor": "did-fisher-price-outcome",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "models <- list(\n  did_model(sample_full, \"fisher_index_ppi\"),\n  did_model(sample_full, \"fisher_index_ppi\", controls = TRUE),\n  did_model(sample_no_border, \"fisher_index_ppi\"),\n  did_model(\n    sample_no_border,\n    \"fisher_index_ppi\",\n    controls = TRUE\n  )\n)",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/did/05_fisher_price.R#did-fisher-price-outcome",
+      "sha256": "7187abfdf20e081257ccef4ce429c815c1c981d692a28ede90188631efb87c80",
+      "source": "code/designs/did/05_fisher_price.R"
+    },
+    {
+      "anchor": "did-labor-share-outcome",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "models <- list(\n  did_model(sample_full, \"share_farm_laborexp_prodexp\"),\n  did_model(\n    sample_full,\n    \"share_farm_laborexp_prodexp\",\n    controls = TRUE\n  ),\n  did_model(\n    sample_no_border,\n    \"share_farm_laborexp_prodexp\"\n  ),\n  did_model(\n    sample_no_border,\n    \"share_farm_laborexp_prodexp\",\n    controls = TRUE\n  )\n)",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/did/06_labor_share.R#did-labor-share-outcome",
+      "sha256": "b2467ca3ab9f44066b4e3727e7444cc94c8b84056d3cc822ad14b5bbfea56650",
+      "source": "code/designs/did/06_labor_share.R"
+    },
+    {
+      "anchor": "did-treatment-inputs",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "true_share_cutoff <- 0.01\npredicted_share_cutoff <- 0.01\n\ncounty_panel <- read_parquet(\n  path_processed(\"county_year_panel.parquet\")\n)\n\ntreatment_groups <- county_panel %>%\n  # The PPML propensity is static; 2008 selects the observed H-2A baseline\n  # used with it to define time-invariant treatment groups.\n  filter(year == 2008L) %>%\n  transmute(\n    county_fips,\n    county_treatment_group_classification = case_when(\n      h2a_predicted_share_2011 > predicted_share_cutoff &\n        h2a_cert_share_farm_workers_2011_start_year >\n          true_share_cutoff ~ \"always takers\",\n      h2a_predicted_share_2011 > predicted_share_cutoff &\n        h2a_cert_share_farm_workers_2011_start_year <\n          true_share_cutoff ~ \"adopters\",\n      h2a_predicted_share_2011 < predicted_share_cutoff &\n        h2a_cert_share_farm_workers_2011_start_year >\n          true_share_cutoff ~ \"defiers\",\n      h2a_predicted_share_2011 < predicted_share_cutoff &\n        h2a_cert_share_farm_workers_2011_start_year <\n          true_share_cutoff ~ \"never takers\"\n    ),\n    county_simple_treatment_groups = if_else(\n      county_treatment_group_classification == \"always takers\",\n      \"always takers\",\n      \"exposed adopters\",\n      missing = NA_character_\n    )\n  )\n\ndid_panel <- county_panel %>%\n  left_join(\n    treatment_groups,\n    by = \"county_fips\",\n    relationship = \"many-to-one\"\n  ) %>%\n  mutate(post = year > 2011L)",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/did/01_build_did_panel.R#did-treatment-inputs",
+      "sha256": "107031bcdcda7d02bfff630c95b423659522a4ecdee0637374ecb585dce55bb7",
+      "source": "code/designs/did/01_build_did_panel.R"
+    },
+    {
+      "anchor": "did-estimation-contract",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "did_sample <- function(panel) {\n  panel %>%\n    dplyr::filter(\n      any_cropland_2007,\n      county_simple_treatment_groups != \"always takers\"\n    )\n}\n\ndid_cluster_formula <- ~ cz_id^aewr_region_id\n\ndid_model <- function(data, outcome, controls = FALSE) {\n  control_terms <- if (controls) {\n    \" + ln_pop_census + emp_pop_ratio\"\n  } else {\n    \"\"\n  }\n  formula <- stats::as.formula(paste0(\n    outcome,\n    \" ~ aewr_cz_p25_l1 * post\",\n    control_terms,\n    \" | county_fips + year\"\n  ))\n  fixest::feols(\n    formula,\n    data = data,\n    vcov = did_cluster_formula,\n    notes = FALSE\n  )\n}\n\ndid_event_model <- function(data, controls = FALSE) {\n  control_terms <- if (controls) {\n    \" + ln_pop_census + emp_pop_ratio\"\n  } else {\n    \"\"\n  }\n  formula <- stats::as.formula(paste0(\n    \"h2a_cert_share_farm_workers_2011_start_year ~ \",\n    \"aewr_cz_p25_l1 + \",\n    \"i(year, aewr_cz_p25_l1, ref = 2011)\",\n    control_terms,\n    \" | county_fips + year\"\n  ))\n  fixest::feols(\n    formula,\n    data = data,\n    vcov = did_cluster_formula,\n    notes = FALSE\n  )\n}",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/did/helpers.R#did-estimation-contract",
+      "sha256": "abc47e8490b0857dc03f19e055b214c3a94a4ec866568d0741614007118fdebd",
+      "source": "code/designs/did/helpers.R"
+    },
+    {
+      "anchor": "panel-iv-outcome-and-input-registry",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "panel <- read_parquet(\n  path_processed(\"panel_iv_county_year.parquet\")\n) %>%\n  mutate(\n    year = as.integer(year),\n    farm_cashandinc_ppi_per_farm_worker = if_else(\n      is.finite(farm_cashandinc_ppi) &\n        is.finite(emp_farm) &\n        emp_farm > 0,\n      1000 * farm_cashandinc_ppi / emp_farm,\n      NA_real_\n    ),\n    h2a_employers_per_farm_worker_2011_start_year = if_else(\n      is.finite(nbr_employers_balanced_start_year) &\n        is.finite(emp_farm_2011) &\n        emp_farm_2011 > 0,\n      nbr_employers_balanced_start_year / emp_farm_2011,\n      NA_real_\n    )\n  )\n\nendogenous <- \"aewr_ppi\"\nfixed_effects <- \"county_fips + year\"\ncluster_vcov <- ~aewr_iv_cluster_id\ncontrol_terms <- paste(\n  DISSIMILARITY_IV_CONTROL_TERMS,\n  collapse = \" + \"\n)\n\noutcomes <- tribble(\n  ~outcome                                                             , ~outcome_label , ~table_stub ,\n  \"h2a_cert_share_farm_workers_2011_start_year\"                        ,\n  \"H-2A certified workers / 2011 farm employment\"                      ,\n  \"h2a_normalized\"                                                     ,\n  \"h2a_cert_hours_per_farm_worker_2011_start_year\"                     ,\n  \"H-2A certified hours / 2011 farm employment\"                        ,\n  \"h2a_certified_hours\"                                                ,\n  \"h2a_applications_per_farm_worker_2011_start_year\"                   ,\n  \"H-2A applications / 2011 farm employment\"                           ,\n  \"h2a_applications\"                                                   ,\n  \"h2a_employers_per_farm_worker_2011_start_year\"                      ,\n  \"H-2A employers / 2011 farm employment (balanced linkage)\"          ,\n  \"h2a_employers\"                                                      ,\n  \"h2a_cert_positions_per_application_start_year\"                      ,\n  \"H-2A certified positions / application\"                             ,\n  \"h2a_positions_per_application\"                                      ,\n  \"h2a_cert_hours_per_position_start_year\"                             ,\n  \"H-2A certified hours / certified position\"                          ,\n  \"h2a_hours_per_position\"                                             ,\n  \"fisher_index_ppi\"                                                   ,\n  \"Real Fisher crop price index\"                                       ,\n  \"prices\"                                                             ,\n  \"emp_farm\"                                                           ,\n  \"Farm employment\"                                                    ,\n  \"farm_employment\"                                                    ,\n  \"share_farm_prodexp_cashandinc\"                                      ,\n  \"Farm production expenses / cash receipts and other income\"          ,\n  \"production_expense_share\"                                           ,\n  \"farm_cashandinc_ppi_per_farm_worker\"                                ,\n  \"Farm cash receipts and other income per farm worker (2012 dollars)\" ,\n  \"farm_income\"                                                        ,\n  \"share_farm_laborexp_prodexp\"                                        ,\n  \"Hired-labor share of farm production expenses\"                      ,\n  \"farm_labor_share\"                                                   ,\n  \"fisher_quantity_index\"                                              ,\n  \"Fisher crop output-quantity index (2011 = 100)\"                     ,\n  \"output_quantities\"\n)\n\nh2a_adjustment_outcomes <- c(\n  \"h2a_cert_hours_per_farm_worker_2011_start_year\",\n  \"h2a_applications_per_farm_worker_2011_start_year\",\n  \"h2a_cert_positions_per_application_start_year\",\n  \"h2a_cert_hours_per_position_start_year\"\n)\n\nrequired_columns <- unique(c(\n  \"county_fips\",\n  \"year\",\n  \"aewr_region_id\",\n  \"aewr_iv_cluster_id\",\n  \"h2a_prediction_cutoff_year\",\n  \"h2a_prediction_model_spec\",\n  \"h2a_predicted_share_2011\",\n  \"h2a_ppml_static_propensity_z\",\n  \"year_centered\",\n  endogenous,\n  \"z_wage_only_real\",\n  \"z_wage_seasonal_real\",\n  DISSIMILARITY_IV_CONTROL_COLUMNS,\n  outcomes$outcome\n))\nmissing_columns <- setdiff(required_columns, names(panel))\nif (length(missing_columns) > 0L) {\n  stop(\n    \"County IV panel is missing: \",\n    paste(missing_columns, collapse = \", \"),\n    call. = FALSE\n  )\n}",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/panel_iv/07_estimate_panel_iv.R#panel-iv-outcome-and-input-registry",
+      "sha256": "08334d9cb7d1517baef359f577c13a84deb7a3e6824926eb453242ca288f5cc3",
+      "source": "code/designs/panel_iv/07_estimate_panel_iv.R"
+    },
+    {
+      "anchor": "panel-iv-design-contract",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "DISSIMILARITY_IV_K_VALUES <- 5L\nDISSIMILARITY_IV_PRIMARY_K <- 5L\nDISSIMILARITY_IV_PRIMARY_DONOR_COUNT <- 2L\n\nDISSIMILARITY_IV_FEATURE_START_YEAR <- 2008L\nDISSIMILARITY_IV_FEATURE_END_YEAR <- 2011L\nDISSIMILARITY_IV_POLICY_START_YEAR <- 2011L\nDISSIMILARITY_IV_POLICY_END_YEAR <- 2022L\n\nDISSIMILARITY_IV_INSTRUMENT_FAMILY <- \"dissimilarity_cluster\"\nDISSIMILARITY_IV_AGGREGATION_SPEC <- \"unique_oews_area\"\nDISSIMILARITY_IV_FRAME_WEIGHT_SPEC <-\n  \"census_hired_workers_qcew_updated\"\nDISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC <-\n  \"fls_realized_geography_dirichlet_entropy\"\nDISSIMILARITY_IV_WAGE_ONLY_WEIGHT_SPECIFICATION <-\n  \"fls_geo_wage_only_soft_rho010\"\nDISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION <-\n  \"fls_geo_wage_seasonal_soft_rho010\"\nDISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT <-\n  \"calibrated_center\"\nDISSIMILARITY_IV_WAGE_ONLY_MOMENT_SPEC <-\n  \"fls_field_livestock_wage_only\"\nDISSIMILARITY_IV_PRIMARY_MOMENT_SPEC <-\n  \"fls_field_livestock_wage_plus_quarterly_worker_shares\"\nDISSIMILARITY_IV_PRIMARY_RHO <- 0.10\nDISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER <- 10\nDISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL <- paste0(\n  \"k\",\n  DISSIMILARITY_IV_PRIMARY_K,\n  \"_d\",\n  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,\n  \"_wage_only_soft_rho010_center\"\n)\nDISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL <- paste0(\n  \"k\",\n  DISSIMILARITY_IV_PRIMARY_K,\n  \"_d\",\n  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,\n  \"_wage_seasonal_soft_rho010_center\"\n)\nDISSIMILARITY_IV_BASELINE_FRAME_PROXY <-\n  \"census_ag_direct_hired_workers\"\nDISSIMILARITY_IV_ANNUAL_UPDATE_SPEC <-\n  \"qcew_qwi_bea_two_sided_state_raked\"\nDISSIMILARITY_IV_GEOGRAPHIC_ALLOCATION_SPEC <-\n  \"oews_township_share_within_county\"\nDISSIMILARITY_IV_CLUSTER_SIZE_RULE <- \"none\"\nDISSIMILARITY_IV_INFERENCE_CLUSTER <- \"aewr_iv_cluster_id\"\n\n# All selected donor clusters must contribute a wage in a given year. Donor\n# unit counts are diagnostics only; no minimum cluster-size rule is imposed.\nDISSIMILARITY_IV_MIN_OBSERVED_DONOR_CLUSTERS <-\n  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT\n\nDISSIMILARITY_IV_BIG_SIX_OCC_CODES <- c(\n  \"45-2041\",\n  \"45-2091\",\n  \"45-2092\",\n  \"45-2093\",\n  \"53-7064\",\n  \"45-2099\",\n  \"79011\",\n  \"79021\",\n  \"79856\",\n  \"79858\",\n  \"98902\"\n)\n\nDISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS <- c(\n  \"ln_pop_census_l1\",\n  \"farm_emp_share_l1\",\n  \"emp_pop_ratio_l1\",\n  \"wage_p10_l1\"\n)\n\n# The time-invariant PPML level is absorbed by county fixed effects. The\n# controlled publication specifications instead allow counties with different\n# baseline propensities to follow different linear trends.\nDISSIMILARITY_IV_PROPENSITY_COLUMN <- \"h2a_ppml_static_propensity_z\"\nDISSIMILARITY_IV_PROPENSITY_TREND_TERM <- paste0(\n  DISSIMILARITY_IV_PROPENSITY_COLUMN,\n  \":year_centered\"\n)\n\nDISSIMILARITY_IV_CONTROL_COLUMNS <- c(\n  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,\n  DISSIMILARITY_IV_PROPENSITY_COLUMN,\n  \"year_centered\"\n)\n\nDISSIMILARITY_IV_CONTROL_TERMS <- c(\n  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,\n  DISSIMILARITY_IV_PROPENSITY_TREND_TERM\n)\n\nmake_dissimilarity_cluster_id <- function(aewr_region_id, target_cluster) {\n  ifelse(\n    is.na(aewr_region_id) | is.na(target_cluster),\n    NA_character_,\n    paste0(\n      sprintf(\"%02d\", as.integer(aewr_region_id)),\n      \"_\",\n      sprintf(\"%02d\", as.integer(target_cluster))\n    )\n  )\n}\n\nmake_panel_iv_target_unit_id <- function(cz_id, aewr_region_id) {\n  ifelse(\n    is.na(cz_id) | is.na(aewr_region_id),\n    NA_character_,\n    paste0(cz_id, \"_\", aewr_region_id)\n  )\n}",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/panel_iv/design.R#panel-iv-design-contract",
+      "sha256": "c4b4dc58eb8f69d52e674403bbca8668e5b0720f6618d8664af4a7d14a88c650",
+      "source": "code/designs/panel_iv/design.R"
+    },
+    {
+      "anchor": "mundlak-design-contract",
+      "document": "content/contracts/causal-outcomes-and-model-inputs.md",
+      "document_title": "Causal outcomes and model inputs",
+      "excerpt": "MC_BASELINE_YEARS <- 2008:2010\nMC_TREATMENT_HISTORY_YEARS <- 2011:2022\nMC_ANALYSIS_YEARS <- 2013:2022\nMC_REFERENCE_YEAR <- 2013L\nMC_LEGACY_DESIGN_VERSION <- \"2.3.0\"\nMC_DESIGN_VERSION <- \"3.0.0\"\n\n# Version 3 is a specification program.  The constants above remain the\n# calendar of the frozen version-2.3 compatibility record and the target\n# calendar for the version-3 primary model.  All grid models read their\n# calendar and causal dictionary from an explicit specification record.\nMC_SPEC_PROGRAM_VERSION <- \"3.0.0\"\nMC_SPEC_HISTORY_YEARS <- 2011:2022\nMC_SPEC_ANALYSIS_END <- 2022L\nMC_SPEC_PREPERIOD_LENGTHS <- 2:4\nMC_SPEC_ANALYSIS_START_DELAYS <- 0:2\nMC_SPEC_POLYNOMIAL_DEGREES <- 1:3\nMC_SPEC_RICHNESS_TIERS <- 0:3\nMC_SPEC_REGION_BUDGET <- 16L\n# The per-year ledger is not the whole rank calculation once region and year\n# effects are included jointly.  Six additional region-time coordinates are\n# held out before the all-state basis audit; this reproduces the slack in the\n# identified version-2.3 block without privileging a reference year.\nMC_SPEC_GLOBAL_REGION_RESERVE <- 6L\nMC_SPEC_FULL_SAMPLE_PARAMETER_ROW_MAX <- 0.25\nMC_SPEC_RESTRICTED_SAMPLE_PARAMETER_ROW_MAX <- 0.15\nMC_SPEC_DF_ADJUSTMENT <- \"N_over_N_minus_K\"\n# Resource defaults are intentionally conservative.  One outcome process may\n# still use several fixest threads, so two forked workers can otherwise occupy\n# every logical CPU while duplicating multi-gigabyte design matrices.\nMC_SPEC_DEFAULT_STAGE <- \"compact\"\nMC_SPEC_DEFAULT_WORKERS <- 1L\nMC_SPEC_DEFAULT_FIXEST_THREADS <- 4L\nMC_SPEC_MAX_DENSE_MATRIX_GIB <- 1.25\nMC_SPEC_MAX_ESTIMATED_PEAK_GIB <- 6\nMC_SPEC_DENSE_PEAK_COPIES <- 4\nMC_SPEC_GRAM_PEAK_COPIES <- 3\nMC_SPEC_GRADIENT_TOLERANCE <- 1e-9\n\nMC_SPEC_RICHNESS_LABELS <- c(\n  \"bite_only\",\n  \"county_market_means\",\n  \"county_market_trajectories\",\n  \"bite_three_way_and_county_quadratic\"\n)\n\n# The CCV reference design below has one state for each of the 17 AEWR-region\n# treatment paths.  We use t_(17 - 1) critical values because the independent\n# policy-path count, rather than the county-year row count, governs inference.\nMC_CCV_REFERENCE_STATES <- 17L\nMC_CCV_DF <- MC_CCV_REFERENCE_STATES - 1L\nMC_CLUSTER_DF <- MC_CCV_DF\nMC_CCV_METHOD <- \"finite_design_covariance_ccv\"\nMC_CCV_REFERENCE_DESIGN <- \"balanced_cyclic_aewr_path_assignment\"\nMC_PRIMARY_MODEL_ID <- \"chamberlain_rich\"\n\n# A change is measured in log percentage points: 100 * Delta log(AEWR).\nMC_COUNTERFACTUAL_DOSES <- c(1, 5, 10)\nMC_LAG_ORDERS <- 0:2\n\n# The master specification uses a quadratic dose response in every\n# horizon-year cell.  With only 17 AEWR assignment regions, a cubic in every\n# cell cannot coexist with the full leave-focal-out treatment-history vector:\n# it would put more region-level columns than treatment cells into each year.\n# Cubic terms remain in the panel for transparent sensitivity analysis.\nMC_MASTER_POLYNOMIAL_DEGREES <- 1:2\nMC_LITERAL_POLYNOMIAL_DEGREES <- 1:3\n\n# Z_i is the standardized 2008-2010 mean local AEWR bite.  It is measured\n# before the 2011-2022 treatment history and directly represents how binding\n# the federal wage floor is for a county's local low-wage labor market.\nMC_Z_VARIABLE <- \"aewr_bite\"\nMC_Z_COLUMN <- \"mc_z\"\nMC_Z_LABEL <- \"Baseline AEWR bite (standard deviations)\"\nMC_DYNAMIC_HORIZONS <- c(\n  contemporaneous = \"mc_dose_current\",\n  one_year = \"mc_dose_lag1\",\n  two_year = \"mc_dose_lag2\"\n)\n\nMC_TREATMENT_BASIS_TERMS <- c(\n  unname(MC_DYNAMIC_HORIZONS),\n  \"mc_dose_current_sq\",\n  \"mc_dose_current_cu\",\n  \"mc_dose_lag1_sq\",\n  \"mc_dose_lag1_cu\",\n  \"mc_dose_lag2_sq\",\n  \"mc_dose_lag2_cu\",\n  \"mc_dose_current_x_lag1\",\n  \"mc_dose_current_x_lag2\",\n  \"mc_dose_lag1_x_lag2\",\n  \"mc_dose_current_x_lag1_x_lag2\"\n)\n\n# The state x CZ x AEWR-region cell creates a strict hierarchy:\n# AEWR region > state > local market cell > county.\nMC_HIERARCHY_LEVELS <- c(\"county\", \"market\", \"state\", \"region\")\n\n# Names are stable design names; values are columns in the shared panel.\nMC_BASELINE_VARIABLES <- c(\n  h2a_cert_intensity =\n    \"h2a_cert_share_farm_workers_2011_start_year\",\n  h2a_application_intensity =\n    \"h2a_applications_per_farm_worker_2011_start_year\",\n  aewr_bite = \"aewr_cz_p25\",\n  log_population = \"ln_pop_census\",\n  farm_employment_share = \"farm_emp_share\",\n  employment_population_ratio = \"emp_pop_ratio\",\n  crop_income_share = \"share_farm_crop_cashandinc\",\n  animal_income_share = \"share_farm_animal_cashandinc\",\n  hired_labor_cost_share = \"share_farm_laborexp_prodexp\",\n  low_wage = \"wage_p25\",\n  cropland = \"census_cropland_2007\",\n  predicted_h2a_intensity = \"h2a_predicted_share_2011\"\n)\n\n# Chamberlain histories retain the separate 2008, 2009, and 2010 values for\n# variables most directly related to selection into H-2A use, the local\n# binding margin, farm structure, and untreated outcome paths.\nMC_CHAMBERLAIN_VARIABLES <- c(\n  \"h2a_cert_intensity\",\n  \"h2a_application_intensity\",\n  \"aewr_bite\",\n  \"log_population\",\n  \"farm_employment_share\",\n  \"employment_population_ratio\",\n  \"crop_income_share\",\n  \"hired_labor_cost_share\",\n  \"low_wage\",\n  \"predicted_h2a_intensity\"\n)\n\n# These variables receive unrestricted calendar-year interactions in the\n# untreated mean.  The list deliberately includes every principal moderator\n# of the AEWR response.\nMC_UNTREATED_TREND_VARIABLES <- c(\n  \"h2a_cert_intensity\",\n  \"h2a_application_intensity\",\n  \"aewr_bite\",\n  \"log_population\",\n  \"farm_employment_share\",\n  \"crop_income_share\",\n  \"hired_labor_cost_share\",\n  \"low_wage\",\n  \"predicted_h2a_intensity\"\n)\n\n# Lagged treatment effects are allowed to vary with the most important\n# predetermined selection and binding variables.  The contemporaneous slope\n# receives the complete moderator set constructed by the build script.\nMC_DYNAMIC_SLOPE_VARIABLES <- c(\n  \"h2a_cert_intensity\",\n  \"aewr_bite\",\n  \"farm_employment_share\",\n  \"crop_income_share\"\n)\n\nMC_OUTCOMES <- data.frame(\n  outcome_id = c(\n    \"applications\",\n    \"employers\",\n    \"certified_positions\",\n    \"certified_hours\",\n    \"any_application\",\n    \"positions_per_application\",\n    \"hours_per_position\"\n  ),\n  outcome_column = c(\n    \"mc_y_applications_per_1000\",\n    \"mc_y_employers\",\n    \"mc_y_certified_positions_per_1000\",\n    \"mc_y_certified_hours_per_worker\",\n    \"mc_y_any_application\",\n    \"mc_y_positions_per_application\",\n    \"mc_y_hours_per_position\"\n  ),\n  outcome_label = c(\n    \"H-2A applications per 1,000 baseline farm workers\",\n    \"H-2A employers (balanced linkage)\",\n    \"H-2A certified positions per 1,000 baseline farm workers\",\n    \"H-2A certified hours per baseline farm worker\",\n    \"Any H-2A application\",\n    \"Certified positions per application\",\n    \"Certified hours per certified position\"\n  ),\n  family = rep(\"gaussian\", 7L),\n  offset_column = rep(NA_character_, 7L),\n  sample_rule = c(\n    \"all\",\n    \"all\",\n    \"all\",\n    \"all\",\n    \"all\",\n    \"positive_applications\",\n    \"positive_certified_positions\"\n  ),\n  effect_unit = c(\n    \"applications_per_1000\",\n    \"employers\",\n    \"certified_positions_per_1000\",\n    \"certified_hours_per_worker\",\n    \"probability\",\n    \"positions_per_application\",\n    \"hours_per_position\"\n  ),\n  primary_total = c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE),\n  stringsAsFactors = FALSE\n)\n\nMC_VOLUME_OUTCOME_IDS <- MC_OUTCOMES$outcome_id[MC_OUTCOMES$primary_total]\nMC_FARM_EMPLOYMENT_SCALED_OUTCOME_IDS <- setdiff(\n  MC_VOLUME_OUTCOME_IDS,\n  \"employers\"\n)\n\nMC_MODEL_IDS <- c(\n  \"twfe_benchmark\",\n  \"mundlak_multilevel\",\n  \"chamberlain_rich\",\n  \"chamberlain_lead_test\"\n)\n\nmc_make_market_id <- function(aewr_region_id, state_fips, cz_id) {\n  ifelse(\n    is.na(aewr_region_id) | is.na(state_fips) | is.na(cz_id),\n    NA_character_,\n    paste(\n      sprintf(\"%02d\", as.integer(aewr_region_id)),\n      sprintf(\"%02d\", as.integer(state_fips)),\n      as.character(cz_id),\n      sep = \"_\"\n    )\n  )\n}",
+      "id": "content/contracts/causal-outcomes-and-model-inputs.md::code/designs/mundlak_chamberlain/design.R#mundlak-design-contract",
+      "sha256": "c70937a1d9f59124bb62ddbc5b6c80e313545b905310cff064791c1851db6e93",
+      "source": "code/designs/mundlak_chamberlain/design.R"
+    },
+    {
+      "anchor": "geographic-code-contract-r",
+      "document": "content/contracts/geographic-codes.md",
+      "document_title": "Geographic code contract",
+      "excerpt": "clean_geo_code <- function(x) {\n  x <- trimws(as.character(x))\n  x <- gsub('\"', \"\", x, fixed = TRUE)\n  x <- sub(\"\\\\.0+$\", \"\", x)\n  x[x == \"\"] <- NA_character_\n  x\n}\n\nnormalize_fixed_width_code <- function(x, width, label) {\n  x <- clean_geo_code(x)\n  invalid <- !is.na(x) & (!grepl(\"^[0-9]+$\", x) | nchar(x) > width)\n\n  if (any(invalid)) {\n    examples <- paste(utils::head(unique(x[invalid]), 5L), collapse = \", \")\n    stop(\n      label,\n      \" must contain at most \",\n      width,\n      \" digits; invalid values: \",\n      examples,\n      call. = FALSE\n    )\n  }\n\n  padding <- pmax(width - nchar(x), 0L)\n  padded <- paste0(\n    vapply(padding, function(n) strrep(\"0\", n), character(1)),\n    x\n  )\n  padded[is.na(x)] <- NA_character_\n  padded\n}\n\nnormalize_unpadded_code <- function(x, label) {\n  x <- clean_geo_code(x)\n  invalid <- !is.na(x) & !grepl(\"^[0-9]+$\", x)\n\n  if (any(invalid)) {\n    examples <- paste(utils::head(unique(x[invalid]), 5L), collapse = \", \")\n    stop(label, \" must contain digits only; invalid values: \", examples,\n      call. = FALSE\n    )\n  }\n\n  x <- sub(\"^0+(?=[0-9])\", \"\", x, perl = TRUE)\n  x\n}\n\nstate_fips <- function(x) {\n  normalize_fixed_width_code(x, 2L, \"state_fips\")\n}\n\ncounty_code <- function(x) {\n  normalize_fixed_width_code(x, 3L, \"county_code\")\n}\n\ncounty_fips <- function(x) {\n  normalize_fixed_width_code(x, 5L, \"county_fips\")\n}\n\ncombine_county_fips <- function(state, county) {\n  paste0(state_fips(state), county_code(county))\n}\n\nstate_from_county_fips <- function(county) {\n  substr(harmonize_county_fips_2010(county), 1L, 2L)\n}\n\ncounty_code_from_county_fips <- function(county) {\n  substr(harmonize_county_fips_2010(county), 3L, 5L)\n}\n\nharmonize_county_fips_2010 <- function(x) {\n  x <- county_fips(x)\n  x[x == \"46102\"] <- \"46113\"\n  x\n}\n\ncz_id <- function(x) {\n  normalize_unpadded_code(x, \"cz_id\")\n}\n\naewr_region_id <- function(x) {\n  x <- normalize_unpadded_code(x, \"aewr_region_id\")\n  invalid <- !is.na(x) & !x %in% as.character(seq_len(17L))\n\n  if (any(invalid)) {\n    examples <- paste(utils::head(unique(x[invalid]), 5L), collapse = \", \")\n    stop(\n      \"aewr_region_id must be between 1 and 17; invalid values: \",\n      examples,\n      call. = FALSE\n    )\n  }\n\n  x\n}\n\noews_area_code <- function(x) {\n  x <- clean_geo_code(x)\n  invalid <- !is.na(x) & !grepl(\"^[0-9]+$\", x)\n\n  if (any(invalid)) {\n    examples <- paste(utils::head(unique(x[invalid]), 5L), collapse = \", \")\n    stop(\n      \"oews_area_code must contain digits only; invalid values: \",\n      examples,\n      call. = FALSE\n    )\n  }\n\n  x\n}\n\ngeo_code_is_valid <- function(x, name) {\n  if (!is.character(x)) {\n    return(rep(FALSE, length(x)))\n  }\n\n  switch(\n    name,\n    state_fips = is.na(x) | grepl(\"^[0-9]{2}$\", x),\n    county_code = is.na(x) | grepl(\"^[0-9]{3}$\", x),\n    county_fips = is.na(x) | (grepl(\"^[0-9]{5}$\", x) & x != \"46102\"),\n    neighbor_county_fips = is.na(x) |\n      (grepl(\"^[0-9]{5}$\", x) & x != \"46102\"),\n    cz_id = is.na(x) | grepl(\"^(0|[1-9][0-9]*)$\", x),\n    aewr_region_id = is.na(x) | x %in% as.character(seq_len(17L)),\n    oews_area_code = is.na(x) | grepl(\"^[0-9]+$\", x),\n    stop(\"Unknown geographic identifier: \", name, call. = FALSE)\n  )\n}\n\nassert_geo_columns <- function(data, required, allow_na = character()) {\n  missing_columns <- setdiff(required, names(data))\n  if (length(missing_columns) > 0L) {\n    stop(\n      \"Missing required geographic columns: \",\n      paste(missing_columns, collapse = \", \"),\n      call. = FALSE\n    )\n  }\n\n  for (name in required) {\n    value <- data[[name]]\n\n    if (!is.character(value)) {\n      stop(name, \" must be a character vector.\", call. = FALSE)\n    }\n\n    invalid <- !geo_code_is_valid(value, name)\n    if (any(invalid)) {\n      examples <- paste(\n        utils::head(unique(value[invalid]), 5L),\n        collapse = \", \"\n      )\n      stop(name, \" contains malformed values: \", examples, call. = FALSE)\n    }\n\n    if (!name %in% allow_na && anyNA(value)) {\n      stop(name, \" contains missing values.\", call. = FALSE)\n    }\n  }\n\n  invisible(data)\n}",
+      "id": "content/contracts/geographic-codes.md::code/c00_shared/geography.R#geographic-code-contract-r",
+      "sha256": "79622391dad204af12c046ee90147524c89a51b5e00ce3610b7e09cdae6a7050",
+      "source": "code/c00_shared/geography.R"
+    },
+    {
+      "anchor": "geographic-code-contract-python",
+      "document": "content/contracts/geographic-codes.md",
+      "document_title": "Geographic code contract",
+      "excerpt": "_FIXED_WIDTH = {\n    \"state_fips\": 2,\n    \"county_code\": 3,\n    \"county_fips\": 5,\n    \"neighbor_county_fips\": 5,\n}\n_UNPADDED = {\"cz_id\", \"aewr_region_id\"}\n_VARIABLE_WIDTH = {\"oews_area_code\"}\n\n\ndef clean_geo_code(value: Any) -> str | None:\n    \"\"\"Clean one source value without changing its substantive digits.\"\"\"\n    if value is None:\n        return None\n    text = str(value).strip().replace('\"', \"\")\n    if text.endswith(\".0\") and text[:-2].isdigit():\n        text = text[:-2]\n    return text or None\n\n\ndef normalize_geo_code(value: Any, name: str) -> str | None:\n    \"\"\"Return one canonical identifier or raise for a malformed value.\"\"\"\n    text = clean_geo_code(value)\n    if text is None:\n        return None\n    if not text.isdigit():\n        raise ValueError(f\"{name} must contain digits only: {value!r}\")\n\n    if name in _FIXED_WIDTH:\n        width = _FIXED_WIDTH[name]\n        if len(text) > width:\n            raise ValueError(f\"{name} must contain at most {width} digits: {value!r}\")\n        text = text.zfill(width)\n    elif name in _UNPADDED:\n        text = text.lstrip(\"0\") or \"0\"\n    elif name in _VARIABLE_WIDTH:\n        pass\n    else:\n        raise ValueError(f\"Unknown geographic identifier: {name}\")\n\n    if name == \"aewr_region_id\" and text not in {str(i) for i in range(1, 18)}:\n        raise ValueError(f\"aewr_region_id must be between 1 and 17: {value!r}\")\n    return text\n\n\ndef harmonize_county_fips_2010(value: Any) -> str | None:\n    \"\"\"Normalize a county identifier to the project's 2010 county vintage.\"\"\"\n    county = normalize_geo_code(value, \"county_fips\")\n    return \"46113\" if county == \"46102\" else county\n\n\ndef state_from_county_fips(value: Any) -> str | None:\n    \"\"\"Return the canonical state component of a county FIPS.\"\"\"\n    county = harmonize_county_fips_2010(value)\n    return None if county is None else county[:2]\n\n\ndef county_code_from_county_fips(value: Any) -> str | None:\n    \"\"\"Return the canonical three-digit component of a county FIPS.\"\"\"\n    county = harmonize_county_fips_2010(value)\n    return None if county is None else county[2:]\n\n\ndef normalize_county_fips_list(value: Any) -> str:\n    \"\"\"Normalize a comma-delimited set of candidate counties.\"\"\"\n    text = clean_geo_code(value)\n    if text is None:\n        return \"\"\n    counties = [\n        harmonize_county_fips_2010(part)\n        for part in text.split(\",\")\n        if part.strip()\n    ]\n    return \",\".join(county for county in counties if county is not None)\n\n\ndef geo_expr(source: str, name: str, *, vintage_2010: bool = False) -> pl.Expr:\n    \"\"\"Build a Polars expression that normalizes a geographic column.\"\"\"\n    normalizer = (\n        harmonize_county_fips_2010\n        if vintage_2010\n        else lambda value: normalize_geo_code(value, name)\n    )\n    return (\n        pl.col(source)\n        .map_elements(normalizer, return_dtype=pl.String)\n        .alias(name)\n    )\n\n\ndef assert_geo_columns(\n    frame: pl.DataFrame,\n    required: Iterable[str],\n    *,\n    allow_null: Iterable[str] = (),\n) -> None:\n    \"\"\"Fail when an artifact does not satisfy the canonical geo contract.\"\"\"\n    required = tuple(required)\n    allow_null = set(allow_null)\n    missing = [name for name in required if name not in frame.columns]\n    if missing:\n        raise ValueError(f\"Missing required geographic columns: {', '.join(missing)}\")\n\n    for name in required:\n        if frame.schema[name] != pl.String:\n            raise TypeError(f\"{name} must use Polars String, got {frame.schema[name]}\")\n        values = frame.get_column(name)\n        if name not in allow_null and values.null_count() > 0:\n            raise ValueError(f\"{name} contains missing values\")\n        for value in values.drop_nulls().unique().to_list():\n            normalized = (\n                harmonize_county_fips_2010(value)\n                if name in {\"county_fips\", \"neighbor_county_fips\"}\n                else normalize_geo_code(value, name)\n            )\n            if normalized != value:\n                raise ValueError(f\"{name} contains noncanonical value {value!r}\")",
+      "id": "content/contracts/geographic-codes.md::src/h2a/geography.py#geographic-code-contract-python",
+      "sha256": "764ab9a606d6b512dcff7a57ec64cb3ce7f651b443eef3619f5532c0924c7ee4",
+      "source": "src/h2a/geography.py"
+    },
+    {
+      "anchor": "prediction-selection",
+      "document": "content/contracts/prediction-model.md",
+      "document_title": "H-2A prediction contract",
+      "excerpt": "H2A_PREDICTION_CUTOFF_YEAR <- 2011L\nH2A_PREDICTION_MODEL_SPEC <- \"climate_norm_static_v1\"",
+      "id": "content/contracts/prediction-model.md::code/paths.R#prediction-selection",
+      "sha256": "2a1d5d5019ebb0bd1f18d6a1342d81b6b5050741cbf10f0ce0061c17ed963192",
+      "source": "code/paths.R"
+    },
+    {
+      "anchor": "shared-panel-contract",
+      "document": "content/contracts/prediction-model.md",
+      "document_title": "H-2A prediction contract",
+      "excerpt": "prediction_contract <- county_panel %>%\n  filter(!is.na(h2a_prediction_cutoff_year)) %>%\n  select(\n    county_fips,\n    h2a_prediction_cutoff_year,\n    h2a_prediction_model_spec,\n    predicted_h2a_count,\n    bea_farm_emp_2011,\n    h2a_predicted_share_2011,\n    emp_farm_2011\n  ) %>%\n  distinct()\n\nif (\n  nrow(prediction_contract) == 0L ||\n    anyDuplicated(prediction_contract$county_fips) > 0L ||\n    any(\n      prediction_contract$h2a_prediction_cutoff_year !=\n        H2A_PREDICTION_CUTOFF_YEAR\n    ) ||\n    !identical(\n      unique(prediction_contract$h2a_prediction_model_spec),\n      H2A_PREDICTION_MODEL_SPEC\n    ) ||\n    any(\n      !is.finite(prediction_contract$predicted_h2a_count) |\n        prediction_contract$predicted_h2a_count < 0\n    ) ||\n    any(\n      !is.finite(prediction_contract$emp_farm_2011) |\n        prediction_contract$emp_farm_2011 <= 0\n    ) ||\n    any(\n      !is.finite(prediction_contract$bea_farm_emp_2011) |\n        prediction_contract$bea_farm_emp_2011 <= 0\n    ) ||\n    any(\n      abs(\n        prediction_contract$bea_farm_emp_2011 -\n          prediction_contract$emp_farm_2011\n      ) >\n        1e-8,\n      na.rm = TRUE\n    ) ||\n    any(\n      !is.finite(prediction_contract$h2a_predicted_share_2011) |\n        prediction_contract$h2a_predicted_share_2011 < 0\n    ) ||\n    !isTRUE(all.equal(\n      prediction_contract$h2a_predicted_share_2011,\n      prediction_contract$predicted_h2a_count /\n        prediction_contract$bea_farm_emp_2011,\n      tolerance = 2e-6,\n      check.attributes = FALSE\n    ))\n) {\n  stop(\n    \"The shared panel must use one valid canonical static prediction per county.\",\n    call. = FALSE\n  )\n}\n\nif (\n  nrow(county_panel) == 0L ||\n    anyDuplicated(county_panel[c(\"county_fips\", \"year\")]) > 0L\n) {\n  stop(\"county_year_panel must have unique county-year keys.\", call. = FALSE)\n}",
+      "id": "content/contracts/prediction-model.md::code/c02_build/01_build_county_panel.R#shared-panel-contract",
+      "sha256": "ffb30f884e3403e1fd5c2b88d13d20c21eace1d1e1df0957fe7ac8c24b55aada",
+      "source": "code/c02_build/01_build_county_panel.R"
+    },
+    {
+      "anchor": "shared-panel-contract",
+      "document": "content/contracts/shared-panel.md",
+      "document_title": "Shared county-year panel",
+      "excerpt": "prediction_contract <- county_panel %>%\n  filter(!is.na(h2a_prediction_cutoff_year)) %>%\n  select(\n    county_fips,\n    h2a_prediction_cutoff_year,\n    h2a_prediction_model_spec,\n    predicted_h2a_count,\n    bea_farm_emp_2011,\n    h2a_predicted_share_2011,\n    emp_farm_2011\n  ) %>%\n  distinct()\n\nif (\n  nrow(prediction_contract) == 0L ||\n    anyDuplicated(prediction_contract$county_fips) > 0L ||\n    any(\n      prediction_contract$h2a_prediction_cutoff_year !=\n        H2A_PREDICTION_CUTOFF_YEAR\n    ) ||\n    !identical(\n      unique(prediction_contract$h2a_prediction_model_spec),\n      H2A_PREDICTION_MODEL_SPEC\n    ) ||\n    any(\n      !is.finite(prediction_contract$predicted_h2a_count) |\n        prediction_contract$predicted_h2a_count < 0\n    ) ||\n    any(\n      !is.finite(prediction_contract$emp_farm_2011) |\n        prediction_contract$emp_farm_2011 <= 0\n    ) ||\n    any(\n      !is.finite(prediction_contract$bea_farm_emp_2011) |\n        prediction_contract$bea_farm_emp_2011 <= 0\n    ) ||\n    any(\n      abs(\n        prediction_contract$bea_farm_emp_2011 -\n          prediction_contract$emp_farm_2011\n      ) >\n        1e-8,\n      na.rm = TRUE\n    ) ||\n    any(\n      !is.finite(prediction_contract$h2a_predicted_share_2011) |\n        prediction_contract$h2a_predicted_share_2011 < 0\n    ) ||\n    !isTRUE(all.equal(\n      prediction_contract$h2a_predicted_share_2011,\n      prediction_contract$predicted_h2a_count /\n        prediction_contract$bea_farm_emp_2011,\n      tolerance = 2e-6,\n      check.attributes = FALSE\n    ))\n) {\n  stop(\n    \"The shared panel must use one valid canonical static prediction per county.\",\n    call. = FALSE\n  )\n}\n\nif (\n  nrow(county_panel) == 0L ||\n    anyDuplicated(county_panel[c(\"county_fips\", \"year\")]) > 0L\n) {\n  stop(\"county_year_panel must have unique county-year keys.\", call. = FALSE)\n}",
+      "id": "content/contracts/shared-panel.md::code/c02_build/01_build_county_panel.R#shared-panel-contract",
+      "sha256": "ffb30f884e3403e1fd5c2b88d13d20c21eace1d1e1df0957fe7ac8c24b55aada",
+      "source": "code/c02_build/01_build_county_panel.R"
+    },
+    {
+      "anchor": "did-estimation-contract",
+      "document": "content/designs/difference-in-differences.md",
+      "document_title": "Difference-in-differences",
+      "excerpt": "did_sample <- function(panel) {\n  panel %>%\n    dplyr::filter(\n      any_cropland_2007,\n      county_simple_treatment_groups != \"always takers\"\n    )\n}\n\ndid_cluster_formula <- ~ cz_id^aewr_region_id\n\ndid_model <- function(data, outcome, controls = FALSE) {\n  control_terms <- if (controls) {\n    \" + ln_pop_census + emp_pop_ratio\"\n  } else {\n    \"\"\n  }\n  formula <- stats::as.formula(paste0(\n    outcome,\n    \" ~ aewr_cz_p25_l1 * post\",\n    control_terms,\n    \" | county_fips + year\"\n  ))\n  fixest::feols(\n    formula,\n    data = data,\n    vcov = did_cluster_formula,\n    notes = FALSE\n  )\n}\n\ndid_event_model <- function(data, controls = FALSE) {\n  control_terms <- if (controls) {\n    \" + ln_pop_census + emp_pop_ratio\"\n  } else {\n    \"\"\n  }\n  formula <- stats::as.formula(paste0(\n    \"h2a_cert_share_farm_workers_2011_start_year ~ \",\n    \"aewr_cz_p25_l1 + \",\n    \"i(year, aewr_cz_p25_l1, ref = 2011)\",\n    control_terms,\n    \" | county_fips + year\"\n  ))\n  fixest::feols(\n    formula,\n    data = data,\n    vcov = did_cluster_formula,\n    notes = FALSE\n  )\n}",
+      "id": "content/designs/difference-in-differences.md::code/designs/did/helpers.R#did-estimation-contract",
+      "sha256": "abc47e8490b0857dc03f19e055b214c3a94a4ec866568d0741614007118fdebd",
+      "source": "code/designs/did/helpers.R"
+    },
+    {
+      "anchor": "mundlak-design-contract",
+      "document": "content/designs/mundlak-chamberlain.md",
+      "document_title": "Mundlak–Chamberlain dose response",
+      "excerpt": "MC_BASELINE_YEARS <- 2008:2010\nMC_TREATMENT_HISTORY_YEARS <- 2011:2022\nMC_ANALYSIS_YEARS <- 2013:2022\nMC_REFERENCE_YEAR <- 2013L\nMC_LEGACY_DESIGN_VERSION <- \"2.3.0\"\nMC_DESIGN_VERSION <- \"3.0.0\"\n\n# Version 3 is a specification program.  The constants above remain the\n# calendar of the frozen version-2.3 compatibility record and the target\n# calendar for the version-3 primary model.  All grid models read their\n# calendar and causal dictionary from an explicit specification record.\nMC_SPEC_PROGRAM_VERSION <- \"3.0.0\"\nMC_SPEC_HISTORY_YEARS <- 2011:2022\nMC_SPEC_ANALYSIS_END <- 2022L\nMC_SPEC_PREPERIOD_LENGTHS <- 2:4\nMC_SPEC_ANALYSIS_START_DELAYS <- 0:2\nMC_SPEC_POLYNOMIAL_DEGREES <- 1:3\nMC_SPEC_RICHNESS_TIERS <- 0:3\nMC_SPEC_REGION_BUDGET <- 16L\n# The per-year ledger is not the whole rank calculation once region and year\n# effects are included jointly.  Six additional region-time coordinates are\n# held out before the all-state basis audit; this reproduces the slack in the\n# identified version-2.3 block without privileging a reference year.\nMC_SPEC_GLOBAL_REGION_RESERVE <- 6L\nMC_SPEC_FULL_SAMPLE_PARAMETER_ROW_MAX <- 0.25\nMC_SPEC_RESTRICTED_SAMPLE_PARAMETER_ROW_MAX <- 0.15\nMC_SPEC_DF_ADJUSTMENT <- \"N_over_N_minus_K\"\n# Resource defaults are intentionally conservative.  One outcome process may\n# still use several fixest threads, so two forked workers can otherwise occupy\n# every logical CPU while duplicating multi-gigabyte design matrices.\nMC_SPEC_DEFAULT_STAGE <- \"compact\"\nMC_SPEC_DEFAULT_WORKERS <- 1L\nMC_SPEC_DEFAULT_FIXEST_THREADS <- 4L\nMC_SPEC_MAX_DENSE_MATRIX_GIB <- 1.25\nMC_SPEC_MAX_ESTIMATED_PEAK_GIB <- 6\nMC_SPEC_DENSE_PEAK_COPIES <- 4\nMC_SPEC_GRAM_PEAK_COPIES <- 3\nMC_SPEC_GRADIENT_TOLERANCE <- 1e-9\n\nMC_SPEC_RICHNESS_LABELS <- c(\n  \"bite_only\",\n  \"county_market_means\",\n  \"county_market_trajectories\",\n  \"bite_three_way_and_county_quadratic\"\n)\n\n# The CCV reference design below has one state for each of the 17 AEWR-region\n# treatment paths.  We use t_(17 - 1) critical values because the independent\n# policy-path count, rather than the county-year row count, governs inference.\nMC_CCV_REFERENCE_STATES <- 17L\nMC_CCV_DF <- MC_CCV_REFERENCE_STATES - 1L\nMC_CLUSTER_DF <- MC_CCV_DF\nMC_CCV_METHOD <- \"finite_design_covariance_ccv\"\nMC_CCV_REFERENCE_DESIGN <- \"balanced_cyclic_aewr_path_assignment\"\nMC_PRIMARY_MODEL_ID <- \"chamberlain_rich\"\n\n# A change is measured in log percentage points: 100 * Delta log(AEWR).\nMC_COUNTERFACTUAL_DOSES <- c(1, 5, 10)\nMC_LAG_ORDERS <- 0:2\n\n# The master specification uses a quadratic dose response in every\n# horizon-year cell.  With only 17 AEWR assignment regions, a cubic in every\n# cell cannot coexist with the full leave-focal-out treatment-history vector:\n# it would put more region-level columns than treatment cells into each year.\n# Cubic terms remain in the panel for transparent sensitivity analysis.\nMC_MASTER_POLYNOMIAL_DEGREES <- 1:2\nMC_LITERAL_POLYNOMIAL_DEGREES <- 1:3\n\n# Z_i is the standardized 2008-2010 mean local AEWR bite.  It is measured\n# before the 2011-2022 treatment history and directly represents how binding\n# the federal wage floor is for a county's local low-wage labor market.\nMC_Z_VARIABLE <- \"aewr_bite\"\nMC_Z_COLUMN <- \"mc_z\"\nMC_Z_LABEL <- \"Baseline AEWR bite (standard deviations)\"\nMC_DYNAMIC_HORIZONS <- c(\n  contemporaneous = \"mc_dose_current\",\n  one_year = \"mc_dose_lag1\",\n  two_year = \"mc_dose_lag2\"\n)\n\nMC_TREATMENT_BASIS_TERMS <- c(\n  unname(MC_DYNAMIC_HORIZONS),\n  \"mc_dose_current_sq\",\n  \"mc_dose_current_cu\",\n  \"mc_dose_lag1_sq\",\n  \"mc_dose_lag1_cu\",\n  \"mc_dose_lag2_sq\",\n  \"mc_dose_lag2_cu\",\n  \"mc_dose_current_x_lag1\",\n  \"mc_dose_current_x_lag2\",\n  \"mc_dose_lag1_x_lag2\",\n  \"mc_dose_current_x_lag1_x_lag2\"\n)\n\n# The state x CZ x AEWR-region cell creates a strict hierarchy:\n# AEWR region > state > local market cell > county.\nMC_HIERARCHY_LEVELS <- c(\"county\", \"market\", \"state\", \"region\")\n\n# Names are stable design names; values are columns in the shared panel.\nMC_BASELINE_VARIABLES <- c(\n  h2a_cert_intensity =\n    \"h2a_cert_share_farm_workers_2011_start_year\",\n  h2a_application_intensity =\n    \"h2a_applications_per_farm_worker_2011_start_year\",\n  aewr_bite = \"aewr_cz_p25\",\n  log_population = \"ln_pop_census\",\n  farm_employment_share = \"farm_emp_share\",\n  employment_population_ratio = \"emp_pop_ratio\",\n  crop_income_share = \"share_farm_crop_cashandinc\",\n  animal_income_share = \"share_farm_animal_cashandinc\",\n  hired_labor_cost_share = \"share_farm_laborexp_prodexp\",\n  low_wage = \"wage_p25\",\n  cropland = \"census_cropland_2007\",\n  predicted_h2a_intensity = \"h2a_predicted_share_2011\"\n)\n\n# Chamberlain histories retain the separate 2008, 2009, and 2010 values for\n# variables most directly related to selection into H-2A use, the local\n# binding margin, farm structure, and untreated outcome paths.\nMC_CHAMBERLAIN_VARIABLES <- c(\n  \"h2a_cert_intensity\",\n  \"h2a_application_intensity\",\n  \"aewr_bite\",\n  \"log_population\",\n  \"farm_employment_share\",\n  \"employment_population_ratio\",\n  \"crop_income_share\",\n  \"hired_labor_cost_share\",\n  \"low_wage\",\n  \"predicted_h2a_intensity\"\n)\n\n# These variables receive unrestricted calendar-year interactions in the\n# untreated mean.  The list deliberately includes every principal moderator\n# of the AEWR response.\nMC_UNTREATED_TREND_VARIABLES <- c(\n  \"h2a_cert_intensity\",\n  \"h2a_application_intensity\",\n  \"aewr_bite\",\n  \"log_population\",\n  \"farm_employment_share\",\n  \"crop_income_share\",\n  \"hired_labor_cost_share\",\n  \"low_wage\",\n  \"predicted_h2a_intensity\"\n)\n\n# Lagged treatment effects are allowed to vary with the most important\n# predetermined selection and binding variables.  The contemporaneous slope\n# receives the complete moderator set constructed by the build script.\nMC_DYNAMIC_SLOPE_VARIABLES <- c(\n  \"h2a_cert_intensity\",\n  \"aewr_bite\",\n  \"farm_employment_share\",\n  \"crop_income_share\"\n)\n\nMC_OUTCOMES <- data.frame(\n  outcome_id = c(\n    \"applications\",\n    \"employers\",\n    \"certified_positions\",\n    \"certified_hours\",\n    \"any_application\",\n    \"positions_per_application\",\n    \"hours_per_position\"\n  ),\n  outcome_column = c(\n    \"mc_y_applications_per_1000\",\n    \"mc_y_employers\",\n    \"mc_y_certified_positions_per_1000\",\n    \"mc_y_certified_hours_per_worker\",\n    \"mc_y_any_application\",\n    \"mc_y_positions_per_application\",\n    \"mc_y_hours_per_position\"\n  ),\n  outcome_label = c(\n    \"H-2A applications per 1,000 baseline farm workers\",\n    \"H-2A employers (balanced linkage)\",\n    \"H-2A certified positions per 1,000 baseline farm workers\",\n    \"H-2A certified hours per baseline farm worker\",\n    \"Any H-2A application\",\n    \"Certified positions per application\",\n    \"Certified hours per certified position\"\n  ),\n  family = rep(\"gaussian\", 7L),\n  offset_column = rep(NA_character_, 7L),\n  sample_rule = c(\n    \"all\",\n    \"all\",\n    \"all\",\n    \"all\",\n    \"all\",\n    \"positive_applications\",\n    \"positive_certified_positions\"\n  ),\n  effect_unit = c(\n    \"applications_per_1000\",\n    \"employers\",\n    \"certified_positions_per_1000\",\n    \"certified_hours_per_worker\",\n    \"probability\",\n    \"positions_per_application\",\n    \"hours_per_position\"\n  ),\n  primary_total = c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE),\n  stringsAsFactors = FALSE\n)\n\nMC_VOLUME_OUTCOME_IDS <- MC_OUTCOMES$outcome_id[MC_OUTCOMES$primary_total]\nMC_FARM_EMPLOYMENT_SCALED_OUTCOME_IDS <- setdiff(\n  MC_VOLUME_OUTCOME_IDS,\n  \"employers\"\n)\n\nMC_MODEL_IDS <- c(\n  \"twfe_benchmark\",\n  \"mundlak_multilevel\",\n  \"chamberlain_rich\",\n  \"chamberlain_lead_test\"\n)\n\nmc_make_market_id <- function(aewr_region_id, state_fips, cz_id) {\n  ifelse(\n    is.na(aewr_region_id) | is.na(state_fips) | is.na(cz_id),\n    NA_character_,\n    paste(\n      sprintf(\"%02d\", as.integer(aewr_region_id)),\n      sprintf(\"%02d\", as.integer(state_fips)),\n      as.character(cz_id),\n      sep = \"_\"\n    )\n  )\n}",
+      "id": "content/designs/mundlak-chamberlain.md::code/designs/mundlak_chamberlain/design.R#mundlak-design-contract",
+      "sha256": "c70937a1d9f59124bb62ddbc5b6c80e313545b905310cff064791c1851db6e93",
+      "source": "code/designs/mundlak_chamberlain/design.R"
+    },
+    {
+      "anchor": "panel-iv-design-contract",
+      "document": "content/designs/panel-iv.md",
+      "document_title": "Panel IV",
+      "excerpt": "DISSIMILARITY_IV_K_VALUES <- 5L\nDISSIMILARITY_IV_PRIMARY_K <- 5L\nDISSIMILARITY_IV_PRIMARY_DONOR_COUNT <- 2L\n\nDISSIMILARITY_IV_FEATURE_START_YEAR <- 2008L\nDISSIMILARITY_IV_FEATURE_END_YEAR <- 2011L\nDISSIMILARITY_IV_POLICY_START_YEAR <- 2011L\nDISSIMILARITY_IV_POLICY_END_YEAR <- 2022L\n\nDISSIMILARITY_IV_INSTRUMENT_FAMILY <- \"dissimilarity_cluster\"\nDISSIMILARITY_IV_AGGREGATION_SPEC <- \"unique_oews_area\"\nDISSIMILARITY_IV_FRAME_WEIGHT_SPEC <-\n  \"census_hired_workers_qcew_updated\"\nDISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC <-\n  \"fls_realized_geography_dirichlet_entropy\"\nDISSIMILARITY_IV_WAGE_ONLY_WEIGHT_SPECIFICATION <-\n  \"fls_geo_wage_only_soft_rho010\"\nDISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION <-\n  \"fls_geo_wage_seasonal_soft_rho010\"\nDISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT <-\n  \"calibrated_center\"\nDISSIMILARITY_IV_WAGE_ONLY_MOMENT_SPEC <-\n  \"fls_field_livestock_wage_only\"\nDISSIMILARITY_IV_PRIMARY_MOMENT_SPEC <-\n  \"fls_field_livestock_wage_plus_quarterly_worker_shares\"\nDISSIMILARITY_IV_PRIMARY_RHO <- 0.10\nDISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER <- 10\nDISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL <- paste0(\n  \"k\",\n  DISSIMILARITY_IV_PRIMARY_K,\n  \"_d\",\n  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,\n  \"_wage_only_soft_rho010_center\"\n)\nDISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL <- paste0(\n  \"k\",\n  DISSIMILARITY_IV_PRIMARY_K,\n  \"_d\",\n  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,\n  \"_wage_seasonal_soft_rho010_center\"\n)\nDISSIMILARITY_IV_BASELINE_FRAME_PROXY <-\n  \"census_ag_direct_hired_workers\"\nDISSIMILARITY_IV_ANNUAL_UPDATE_SPEC <-\n  \"qcew_qwi_bea_two_sided_state_raked\"\nDISSIMILARITY_IV_GEOGRAPHIC_ALLOCATION_SPEC <-\n  \"oews_township_share_within_county\"\nDISSIMILARITY_IV_CLUSTER_SIZE_RULE <- \"none\"\nDISSIMILARITY_IV_INFERENCE_CLUSTER <- \"aewr_iv_cluster_id\"\n\n# All selected donor clusters must contribute a wage in a given year. Donor\n# unit counts are diagnostics only; no minimum cluster-size rule is imposed.\nDISSIMILARITY_IV_MIN_OBSERVED_DONOR_CLUSTERS <-\n  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT\n\nDISSIMILARITY_IV_BIG_SIX_OCC_CODES <- c(\n  \"45-2041\",\n  \"45-2091\",\n  \"45-2092\",\n  \"45-2093\",\n  \"53-7064\",\n  \"45-2099\",\n  \"79011\",\n  \"79021\",\n  \"79856\",\n  \"79858\",\n  \"98902\"\n)\n\nDISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS <- c(\n  \"ln_pop_census_l1\",\n  \"farm_emp_share_l1\",\n  \"emp_pop_ratio_l1\",\n  \"wage_p10_l1\"\n)\n\n# The time-invariant PPML level is absorbed by county fixed effects. The\n# controlled publication specifications instead allow counties with different\n# baseline propensities to follow different linear trends.\nDISSIMILARITY_IV_PROPENSITY_COLUMN <- \"h2a_ppml_static_propensity_z\"\nDISSIMILARITY_IV_PROPENSITY_TREND_TERM <- paste0(\n  DISSIMILARITY_IV_PROPENSITY_COLUMN,\n  \":year_centered\"\n)\n\nDISSIMILARITY_IV_CONTROL_COLUMNS <- c(\n  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,\n  DISSIMILARITY_IV_PROPENSITY_COLUMN,\n  \"year_centered\"\n)\n\nDISSIMILARITY_IV_CONTROL_TERMS <- c(\n  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,\n  DISSIMILARITY_IV_PROPENSITY_TREND_TERM\n)\n\nmake_dissimilarity_cluster_id <- function(aewr_region_id, target_cluster) {\n  ifelse(\n    is.na(aewr_region_id) | is.na(target_cluster),\n    NA_character_,\n    paste0(\n      sprintf(\"%02d\", as.integer(aewr_region_id)),\n      \"_\",\n      sprintf(\"%02d\", as.integer(target_cluster))\n    )\n  )\n}\n\nmake_panel_iv_target_unit_id <- function(cz_id, aewr_region_id) {\n  ifelse(\n    is.na(cz_id) | is.na(aewr_region_id),\n    NA_character_,\n    paste0(cz_id, \"_\", aewr_region_id)\n  )\n}",
+      "id": "content/designs/panel-iv.md::code/designs/panel_iv/design.R#panel-iv-design-contract",
+      "sha256": "c4b4dc58eb8f69d52e674403bbca8668e5b0720f6618d8664af4a7d14a88c650",
+      "source": "code/designs/panel_iv/design.R"
+    },
+    {
+      "anchor": "agent-context-snapshot",
+      "document": "content/reference/agent-workflow.md",
+      "document_title": "Coding-agent workflow",
+      "excerpt": "def snapshot_data(scope: str) -> tuple[dict, list[str]]:\n    safe_repository_path(scope)\n    documents, references, assumptions, errors = verify_repository()\n    relevant_documents = []\n    for document in documents:\n        source_match = any(\n            reference.document == document.path and paths_overlap(scope, reference.source)\n            for reference in references\n        )\n        scope_match = any(paths_overlap(scope, declared_scope) for declared_scope in document.scopes)\n        if document.path == \"content/_index.md\" or source_match or scope_match:\n            relevant_documents.append(document)\n    data = {\n        \"scope\": scope,\n        \"git\": git_context(),\n        \"verified\": not errors,\n        \"errors\": errors,\n        \"active_agents\": [path.relative_to(ROOT).as_posix() for path in active_agent_files(scope)],\n        \"readmes\": [path.relative_to(ROOT).as_posix() for path in nearest_readmes(scope)],\n        \"documents\": [\n            {\n                \"path\": document.path,\n                \"title\": document.title,\n                \"route\": document.route,\n            }\n            for document in relevant_documents\n        ],\n        \"assumptions\": [\n            {\n                \"id\": assumption[\"id\"],\n                \"risk\": assumption[\"risk\"],\n                \"owner\": assumption[\"owner\"],\n                \"statement\": assumption[\"statement\"],\n                \"source\": assumption[\"source\"],\n                \"review_when\": assumption[\"review_when\"],\n            }\n            for assumption in assumptions\n            if any(paths_overlap(scope, declared_scope) for declared_scope in assumption[\"scopes\"])\n        ],\n        \"grounding\": [\n            {\n                \"document\": reference.document,\n                \"source\": reference.source,\n                \"anchor\": reference.anchor,\n                \"sha256\": reference.current_sha256,\n            }\n            for reference in references\n            if paths_overlap(scope, reference.source)\n        ],\n    }\n    return data, errors\n\n\ndef command_snapshot(args: argparse.Namespace) -> int:\n    try:\n        data, errors = snapshot_data(args.scope)\n    except ValueError as error:\n        print(f\"ERROR: {error}\", file=sys.stderr)\n        return 1\n    if args.format == \"json\":\n        print(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True))\n        return 1 if errors else 0\n\n    print(f\"# Agent context: {data['scope']}\\n\")\n    git = data[\"git\"]\n    if git.get(\"available\"):\n        print(f\"- Commit: `{git['commit']}`\")\n        print(f\"- Branch: `{git['branch']}`\")\n        print(f\"- Dirty worktree: `{git['dirty']}`\")\n    else:\n        print(f\"- Git context unavailable: {git.get('warning', 'unknown error')}\")\n    print(f\"- Grounding verified: `{data['verified']}`\")\n\n    print(\"\\n## Active instructions\\n\")\n    for path in data[\"active_agents\"]:\n        print(f\"- `{path}`\")\n    print(\"\\n## Operational context\\n\")\n    for path in data[\"readmes\"]:\n        print(f\"- `{path}`\")\n    print(\"\\n## Canonical documentation\\n\")\n    for document in data[\"documents\"]:\n        print(f\"- `{document['path']}` — {document['title']}\")\n    if data[\"assumptions\"]:\n        print(\"\\n## Relevant declared assumptions\\n\")\n        for assumption in data[\"assumptions\"]:\n            print(f\"- `{assumption['id']}` ({assumption['risk']}): {assumption['statement']}\")\n    if data[\"grounding\"]:\n        print(\"\\n## Directly grounded source regions\\n\")\n        for reference in data[\"grounding\"]:\n            print(f\"- `{reference['source']}#{reference['anchor']}` -> `{reference['document']}`\")\n    if errors:\n        print(\"\\n## Grounding errors\\n\")\n        for error in errors:\n            print(f\"- {error}\")\n    return 1 if errors else 0",
+      "id": "content/reference/agent-workflow.md::scripts/agent_docs.py#agent-context-snapshot",
+      "sha256": "a3e844a66bf429ed4b6523c59fe512b3f110a0250151e23bb76fc5375f0a0524",
+      "source": "scripts/agent_docs.py"
+    },
+    {
+      "anchor": "agent-docs-verification",
+      "document": "content/reference/agent-workflow.md",
+      "document_title": "Coding-agent workflow",
+      "excerpt": "def command_generate(_args: argparse.Namespace) -> int:\n    documents, references, errors = parse_documents()\n    assumptions, assumption_errors = validate_assumptions()\n    errors.extend(assumption_errors)\n    if errors:\n        for error in errors:\n            print(f\"ERROR: {error}\", file=sys.stderr)\n        print(\"Refusing to generate context while source grounding is invalid.\", file=sys.stderr)\n        return 1\n    outputs = expected_outputs(documents, references, assumptions)\n    write_outputs(outputs)\n    print(f\"Generated {len(outputs)} agent-context artifacts with {len(references)} grounded references.\")\n    return 0\n\n\ndef command_verify(_args: argparse.Namespace) -> int:\n    documents, references, assumptions, errors = verify_repository()\n    if errors:\n        for error in errors:\n            print(f\"ERROR: {error}\", file=sys.stderr)\n        return 1\n    print(\n        f\"Agent documentation verified: {len(documents)} pages, \"\n        f\"{len(references)} grounded references, {len(assumptions)} assumptions, \"\n        f\"{len(discover_agent_files())} AGENTS files.\"\n    )\n    return 0",
+      "id": "content/reference/agent-workflow.md::scripts/agent_docs.py#agent-docs-verification",
+      "sha256": "d39d838d53eff3dc8245bb8bbf8dc01e47702df8b7abecc276cdc054397bd00d",
+      "source": "scripts/agent_docs.py"
+    },
+    {
+      "anchor": "agent-drift-review",
+      "document": "content/reference/agent-workflow.md",
+      "document_title": "Coding-agent workflow",
+      "excerpt": "def command_accept_drift(args: argparse.Namespace) -> int:\n    document_path = Path(args.document).as_posix()\n    documents, references, _errors = parse_documents()\n    matches = [\n        reference\n        for reference in references\n        if reference.document == document_path and reference.anchor == args.anchor\n    ]\n    if len(matches) != 1:\n        print(\n            f\"ERROR: expected one grounding reference in {document_path} with anchor {args.anchor}; \"\n            f\"found {len(matches)}\",\n            file=sys.stderr,\n        )\n        return 1\n    reference = matches[0]\n    if reference.current_sha256 == reference.expected_sha256:\n        print(f\"No source drift for {reference.source}#{reference.anchor}.\")\n        return 0\n\n    try:\n        previous = load_previous_manifest()\n    except ValueError as error:\n        print(f\"ERROR: {error}\", file=sys.stderr)\n        return 1\n    previous_references = {item[\"id\"]: item for item in previous.get(\"grounding\", [])}\n    previous_documents = {item[\"path\"]: item for item in previous.get(\"documents\", [])}\n    old_reference = previous_references.get(reference.id)\n    old_document = previous_documents.get(reference.document)\n    if old_reference is None or old_document is None:\n        print(f\"ERROR: no previously reviewed context exists for {reference.id}\", file=sys.stderr)\n        return 1\n\n    diff = difflib.unified_diff(\n        old_reference[\"excerpt\"].splitlines(),\n        reference.excerpt.splitlines(),\n        fromfile=f\"reviewed/{reference.source}#{reference.anchor}\",\n        tofile=f\"current/{reference.source}#{reference.anchor}\",\n        lineterm=\"\",\n    )\n    print(\"\\n\".join(diff) or \"The selected excerpt text is unchanged; inspect marker placement.\")\n\n    current_document = next(document for document in documents if document.path == reference.document)\n    prose_changed = current_document.prose_sha256 != old_document.get(\"prose_sha256\")\n    print(f\"\\nDocumentation prose changed since review: {prose_changed}\")\n    print(f\"Current source SHA-256: {reference.current_sha256}\")\n    if not args.write:\n        print(\n            \"Review the source diff and update the documentation prose. Then rerun this command with --write.\"\n        )\n        return 0\n    if not prose_changed:\n        print(\n            \"ERROR: refusing to accept source drift because the documentation prose and context are unchanged. \"\n            \"Update the page's explanation before accepting the new digest.\",\n            file=sys.stderr,\n        )\n        return 1\n\n    document_file = safe_repository_path(reference.document)\n    text = document_file.read_text(encoding=\"utf-8\")\n    call = text[reference.call_start : reference.call_end]\n    updated_call = SHA_ATTRIBUTE_RE.sub(\n        rf\"\\g<prefix>{reference.current_sha256}\\g<suffix>\",\n        call,\n        count=1,\n    )\n    updated_text = text[: reference.call_start] + updated_call + text[reference.call_end :]\n    document_file.write_text(updated_text, encoding=\"utf-8\")\n    print(f\"Accepted reviewed digest in {reference.document}.\")\n\n    refreshed_documents, refreshed_references, refreshed_errors = parse_documents()\n    if refreshed_errors:\n        for error in refreshed_errors:\n            print(f\"ERROR: {error}\", file=sys.stderr)\n        print(\"Other grounding drift remains; accept each affected page before regenerating context.\", file=sys.stderr)\n        return 1\n    assumptions, assumption_errors = validate_assumptions()\n    if assumption_errors:\n        for error in assumption_errors:\n            print(f\"ERROR: {error}\", file=sys.stderr)\n        return 1\n    write_outputs(expected_outputs(refreshed_documents, refreshed_references, assumptions))\n    print(\"Regenerated machine-readable agent context.\")\n    return 0",
+      "id": "content/reference/agent-workflow.md::scripts/agent_docs.py#agent-drift-review",
+      "sha256": "b72791c27ccab838bc10d39c8ab4c45be09c4709d80db8ebb8b53ac993b72293",
+      "source": "scripts/agent_docs.py"
+    }
+  ],
+  "schema_version": 1
+}

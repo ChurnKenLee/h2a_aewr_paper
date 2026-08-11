@@ -1,0 +1,37 @@
+{% set start_marker = "# docs-ground:start " ~ anchor %}
+{% set end_marker = "# docs-ground:end " ~ anchor %}
+{% set source = load_data(path=path, format="plain") %}
+{% set start_parts = source | split(pat=start_marker) %}
+{% set end_parts = source | split(pat=end_marker) %}
+
+{% if start_parts | length != 2 %}
+  {% set message = "Expected exactly one start marker for " ~ path ~ "#" ~ anchor %}
+  {{ throw(message=message) }}
+{% endif %}
+
+{% if end_parts | length != 2 %}
+  {% set message = "Expected exactly one end marker for " ~ path ~ "#" ~ anchor %}
+  {{ throw(message=message) }}
+{% endif %}
+
+{% set after_start = start_parts | nth(n=1) %}
+{% set region_parts = after_start | split(pat=end_marker) %}
+
+{% if region_parts | length != 2 %}
+  {% set message = "End marker occurs before start marker for " ~ path ~ "#" ~ anchor %}
+  {{ throw(message=message) }}
+{% endif %}
+
+{% set snippet = region_parts | nth(n=0) | trim %}
+{% set actual = get_hash(literal=snippet, sha_type=256, base64=false) %}
+
+{% if actual != sha256 %}
+  {% set message = "Stale documentation for " ~ path ~ "#" ~ anchor ~ ". Expected SHA-256 " ~ sha256 ~ ", current SHA-256 " ~ actual %}
+  {{ throw(message=message) }}
+{% endif %}
+
+{% set source_url = config.extra.repository_url ~ "/blob/" ~ config.extra.repository_ref ~ "/" ~ path %}
+<aside class="grounding">
+  Grounded in <a href="{{ source_url }}"><code>{{ path }}</code></a>,
+  region <code>{{ anchor }}</code>.
+</aside>

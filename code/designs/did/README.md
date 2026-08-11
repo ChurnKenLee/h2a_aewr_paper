@@ -1,27 +1,32 @@
 # Difference-in-differences branch
 
-The DiD branch consumes `data/processed/county_year_panel.parquet`. Script `01`
-adds the baseline H-2A treatment classification and post-2011 indicator and
-writes `data/processed/did_county_year_panel.parquet`.
+This branch consumes `data/processed/county_year_panel.parquet`, constructs the
+DiD treatment panel, and produces the retained DiD tables and coefficient plot.
 
-Scripts `02` through `06` retain exactly four columns for every regression
-family: full/no-border samples, each without/with controls. County and year
-fixed effects use `county_fips` and `year` directly; inference clusters by the
-CZ-by-AEWR-region interaction. The event study uses
-`i(year, aewr_cz_p25_l1, ref = 2011)` plus the 2011 slope, so coefficients keep
-their original 2011-reference interpretation.
+## Run
 
-Retained outputs:
-
-- `table_1_main_results.tex`
-- `table_2_event_study.tex`
-- `table_sumstats_dd_variables.tex`
-- `table_fisher_price_dd.tex`
-- `table_laborshare_dd.tex`
-- `coefplot_dd_controls.png`
-
-Run:
+From the repository root:
 
 ```sh
 ./scripts/run_did.sh
 ```
+
+## Stages
+
+| Script | Responsibility |
+| --- | --- |
+| `01_build_did_panel.R` | Add the baseline treatment classification and post-2011 indicator |
+| `02_main_results.R` | Estimate the main four-column results |
+| `03_event_study.R` | Estimate and plot the event-study specification |
+| `04_summary_statistics.R` | Produce the DiD summary table |
+| `05_fisher_price.R` | Estimate the Fisher-price outcome |
+| `06_labor_share.R` | Estimate the labor-share outcome |
+
+The branch writes `data/processed/did_county_year_panel.parquet` and retained
+products under `outputs/tables` and `outputs/figures`.
+
+## Design documentation
+
+The treatment definition, samples, fixed effects, clustering, and event-study
+interpretation are documented in the grounded
+[DiD design](../../../content/designs/difference-in-differences.md).

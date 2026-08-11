@@ -50,12 +50,7 @@ the remaining family and substep numbers are unchanged.
 - `07` requires `01` plus the A08 BEA and A09 climate/soil artifacts.
 - `08` consumes the cutoff-specific model Parquets from `07` plus the same BEA,
   climate, and soil artifacts.
-- Every cutoff model trains on county-year outcomes from 2008 through the
-  requested `H2A_CUTOFF_YEAR`, but its predictors and 2011 farm-employment
-  exposure are time-invariant. Each fitted model therefore produces one static
-  county propensity. The scorer discovers all compatible cutoffs and never
-  treats them as rolling annual scores.
-- Checkpoints and model Parquets must carry
-  `model_spec = climate_norm_static_v1`; stale dynamic and mixed-spec artifacts
-  are rejected.
+- The cutoff, model-specification, scoring, and downstream panel invariants are
+  documented in the grounded
+  [H-2A prediction contract](../../content/contracts/prediction-model.md).
 - `03_01` requires `IPUMS_API_KEY`. Other B scripts use local artifacts only.

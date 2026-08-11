@@ -9,3 +9,7 @@ This directory contains only design-neutral helpers sourced by C-side scripts.
 
 Design-specific constants and numerical methods live with their owner under
 `code/designs/`.
+
+Canonical representations, normalization rules, and cross-language grounding
+are documented in the
+[geographic code contract](../../content/contracts/geographic-codes.md).

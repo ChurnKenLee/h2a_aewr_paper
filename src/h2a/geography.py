@@ -7,6 +7,7 @@ from typing import Any
 
 import polars as pl
 
+# docs-ground:start geographic-code-contract-python
 _FIXED_WIDTH = {
     "state_fips": 2,
     "county_code": 3,
@@ -124,3 +125,4 @@ def assert_geo_columns(
             )
             if normalized != value:
                 raise ValueError(f"{name} contains noncanonical value {value!r}")
+# docs-ground:end geographic-code-contract-python

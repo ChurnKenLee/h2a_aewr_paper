@@ -6,6 +6,7 @@
 # published quarterly FLS worker-share targets.  Worker-duration moments and a
 # separate Census-frame instrument are not publication specifications.
 
+# docs-ground:start panel-iv-design-contract
 DISSIMILARITY_IV_K_VALUES <- 5L
 DISSIMILARITY_IV_PRIMARY_K <- 5L
 DISSIMILARITY_IV_PRIMARY_DONOR_COUNT <- 2L
@@ -121,3 +122,4 @@ make_panel_iv_target_unit_id <- function(cz_id, aewr_region_id) {
     paste0(cz_id, "_", aewr_region_id)
   )
 }
+# docs-ground:end panel-iv-design-contract

@@ -6,6 +6,7 @@ source(here::here("code", "paths.R"))
 library(arrow)
 library(dplyr)
 
+# docs-ground:start did-treatment-inputs
 true_share_cutoff <- 0.01
 predicted_share_cutoff <- 0.01
 
@@ -48,6 +49,7 @@ did_panel <- county_panel %>%
     relationship = "many-to-one"
   ) %>%
   mutate(post = year > 2011L)
+# docs-ground:end did-treatment-inputs
 
 prediction_contract <- did_panel %>%
   filter(!is.na(h2a_predicted_share_2011)) %>%

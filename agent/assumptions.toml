@@ -1,0 +1,142 @@
+schema_version = 1
+
+[[assumptions]]
+id = "AUTH-001"
+risk = "critical"
+owner = "repository"
+statement = "Executable code, runners, locks, and machine checks outrank prose when sources disagree."
+source = "AGENTS.md"
+review_when = "The source-of-truth or documentation workflow changes."
+scopes = ["AGENTS.md", "content", "documentation", "draft", "outputs"]
+[[assumptions.checks]]
+path = "AGENTS.md"
+contains = "When sources disagree, use this authority order"
+
+[[assumptions]]
+id = "GROUND-001"
+risk = "critical"
+owner = "agent documentation"
+statement = "A source-region digest can be accepted only after the linked documentation context changes."
+source = "scripts/agent_docs.py"
+review_when = "Grounding extraction, verification, generation, or drift acceptance changes."
+scopes = ["AGENTS.md", "content", "scripts/agent_docs.py", "templates", "static"]
+[[assumptions.checks]]
+path = "scripts/agent_docs.py"
+contains = "Documentation prose changed since review"
+[[assumptions.checks]]
+path = "content/AGENTS.md"
+contains = "Never accept source drift by changing only a digest."
+
+[[assumptions]]
+id = "GEO-001"
+risk = "critical"
+owner = "shared pipeline"
+statement = "Persistent geographic identifiers are strings and county FIPS uses the 2010 vintage, including 46102 to 46113 harmonization."
+source = "content/contracts/geographic-codes.md"
+review_when = "A producer, crosswalk, geographic vintage, or persistent join key changes."
+scopes = ["code/a01_sources", "code/b01_derived", "code/c00_shared", "code/c01_clean", "code/c02_build", "src/h2a"]
+[[assumptions.checks]]
+path = "content/contracts/geographic-codes.md"
+contains = "All fields are strings."
+[[assumptions.checks]]
+path = "code/c00_shared/geography.R"
+contains = 'x[x == "46102"] <- "46113"'
+[[assumptions.checks]]
+path = "src/h2a/geography.py"
+contains = 'return "46113" if county == "46102" else county'
+
+[[assumptions]]
+id = "PRED-001"
+risk = "critical"
+owner = "prediction and shared panel"
+statement = "The supported H-2A prediction is the static climate_norm_static_v1 model trained through 2011."
+source = "code/paths.R"
+review_when = "Prediction fitting, scoring, selection metadata, or the shared-panel join changes."
+scopes = ["code/paths.R", "code/b01_derived", "code/c02_build", "code/designs"]
+[[assumptions.checks]]
+path = "code/paths.R"
+contains = "H2A_PREDICTION_CUTOFF_YEAR <- 2011L"
+[[assumptions.checks]]
+path = "code/paths.R"
+contains = 'H2A_PREDICTION_MODEL_SPEC <- "climate_norm_static_v1"'
+
+[[assumptions]]
+id = "PANEL-001"
+risk = "critical"
+owner = "shared panel"
+statement = "The shared panel is design-neutral and excludes treatments, post indicators, design fixed effects, target clusters, and instruments."
+source = "content/contracts/shared-panel.md"
+review_when = "The C01/C02 schema or any design input changes."
+scopes = ["code/c00_shared", "code/c01_clean", "code/c02_build", "code/descriptives", "code/designs"]
+[[assumptions.checks]]
+path = "content/contracts/shared-panel.md"
+regex = 'It\s+does\s+not create any design treatment'
+
+[[assumptions]]
+id = "OUTCOME-001"
+risk = "critical"
+owner = "empirical designs"
+statement = "The supported causal-outcome union contains thirteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule."
+source = "content/contracts/causal-outcomes-and-model-inputs.md"
+review_when = "An outcome, transformation, denominator, sample rule, treatment, control, moderator, instrument, or estimator changes."
+scopes = ["code/c02_build", "code/designs", "scripts/run_did.sh", "scripts/run_panel_iv.sh", "scripts/run_mundlak_chamberlain.sh"]
+[[assumptions.checks]]
+path = "content/contracts/causal-outcomes-and-model-inputs.md"
+contains = "The canonical union contains thirteen causal outcomes."
+[[assumptions.checks]]
+path = "code/designs/panel_iv/07_estimate_panel_iv.R"
+contains = "outcomes <- tribble("
+[[assumptions.checks]]
+path = "code/designs/mundlak_chamberlain/design.R"
+contains = "MC_OUTCOMES <- data.frame("
+[[assumptions.checks]]
+path = "code/designs/did/02_main_results.R"
+contains = 'did_model(sample_full, "h2a_cert_share_farm_workers_2011_start_year")'
+
+[[assumptions]]
+id = "DID-001"
+risk = "critical"
+owner = "difference in differences"
+statement = "The supported event study uses 2011 as its reference and clusters inference by CZ-by-AEWR-region."
+source = "content/designs/difference-in-differences.md"
+review_when = "DiD treatment, timing, sample, fixed effects, event indexing, or inference changes."
+scopes = ["code/designs/did", "scripts/run_did.sh"]
+[[assumptions.checks]]
+path = "code/designs/did/helpers.R"
+contains = "i(year, aewr_cz_p25_l1, ref = 2011)"
+[[assumptions.checks]]
+path = "content/designs/difference-in-differences.md"
+contains = "CZ-by-AEWR-region interaction"
+
+[[assumptions]]
+id = "IV-001"
+risk = "critical"
+owner = "panel IV"
+statement = "The preferred panel-IV specification is controlled column 4 with the wage-plus-seasonal instrument and aewr_iv_cluster_id inference clusters."
+source = "content/designs/panel-iv.md"
+review_when = "Instrument construction, controls, samples, preferred column, or inference changes."
+scopes = ["code/designs/panel_iv", "scripts/run_panel_iv.sh"]
+[[assumptions.checks]]
+path = "content/designs/panel-iv.md"
+regex = 'controlled wage-plus-seasonal specification in column 4 is\s+preferred'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/design.R"
+contains = 'DISSIMILARITY_IV_INFERENCE_CLUSTER <- "aewr_iv_cluster_id"'
+
+[[assumptions]]
+id = "MC-001"
+risk = "critical"
+owner = "Mundlak-Chamberlain"
+statement = "The supported MC default is the bounded compact queue and inference uses the 17-state finite-design CCV reference law."
+source = "code/designs/mundlak_chamberlain/design.R"
+review_when = "The registry, execution queue, reassignment design, covariance, or resource guards change."
+scopes = ["code/designs/mundlak_chamberlain", "scripts/run_mundlak_chamberlain.sh"]
+[[assumptions.checks]]
+path = "code/designs/mundlak_chamberlain/design.R"
+contains = 'MC_SPEC_DEFAULT_STAGE <- "compact"'
+[[assumptions.checks]]
+path = "code/designs/mundlak_chamberlain/design.R"
+contains = "MC_CCV_REFERENCE_STATES <- 17L"
+[[assumptions.checks]]
+path = "code/designs/mundlak_chamberlain/design.R"
+contains = 'MC_CCV_METHOD <- "finite_design_covariance_ccv"'

@@ -8,6 +8,7 @@ library(arrow)
 library(dplyr)
 library(tidyr)
 
+# docs-ground:start shared-panel-construction
 h2a_zero_columns <- c(
   "nbr_workers_requested_all_years",
   "nbr_workers_certified_all_years",
@@ -212,7 +213,9 @@ county_panel <- county_panel %>%
       NA_real_
     )
   )
+# docs-ground:end shared-panel-construction
 
+# docs-ground:start shared-panel-contract
 prediction_contract <- county_panel %>%
   filter(!is.na(h2a_prediction_cutoff_year)) %>%
   select(
@@ -281,8 +284,11 @@ if (
 ) {
   stop("county_year_panel must have unique county-year keys.", call. = FALSE)
 }
+# docs-ground:end shared-panel-contract
 
+# docs-ground:start shared-panel-output
 write_parquet(
   county_panel,
   path_processed("county_year_panel.parquet")
 )
+# docs-ground:end shared-panel-output

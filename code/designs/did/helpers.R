@@ -1,3 +1,4 @@
+# docs-ground:start did-estimation-contract
 did_sample <- function(panel) {
   panel %>%
     dplyr::filter(
@@ -48,6 +49,7 @@ did_event_model <- function(data, controls = FALSE) {
     notes = FALSE
   )
 }
+# docs-ground:end did-estimation-contract
 
 did_table_headers <- c(
   "No Controls",

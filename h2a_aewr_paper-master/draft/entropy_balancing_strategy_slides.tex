@@ -1,0 +1,263 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usetheme{default}
+\usecolortheme{dove}
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+\definecolor{accent}{RGB}{70,55,145}
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{frametitle}{fg=accent}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+\newcommand{\FLS}{\mathrm{FLS}}
+
+\title{Recovering FLS Sampling-Composition Shocks}
+\subtitle{Entropy calibration using OEWS areas}
+\author{H-2A Project}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Idea}
+  \begin{itemize}
+    \item The FLS reports one wage for each AEWR region and year.
+    \item Realized respondents may be distributed unevenly within the region.
+    \item This composition can move the FLS wage.
+    \item Recover the smallest geographic reweighting that reproduces it.
+  \end{itemize}
+
+  \begin{block}{Interpretation}
+    An implied sampling-composition shock, not the confidential FLS weights.
+  \end{block}
+\end{frame}
+
+\begin{frame}{Objects}
+  For region $r$, year $t$, and OEWS area $a$:
+
+  \begin{itemize}
+    \item $w_{art}$: OEWS wage for the AEWR occupations.
+    \item $p_{art}$: prior weight from county farm employment.
+    \item $\bar w^{\FLS}_{rt}$: regional FLS wage.
+    \item $q_{art}$: calibrated weight.
+  \end{itemize}
+
+  OEWS areas are the wage-information units. Counties remain the units used to
+  construct commuting zones and dissimilarity clusters.
+\end{frame}
+
+\begin{frame}{Wage calibration}
+  \[
+    \min_q \sum_a q_{art}\log\left(\frac{q_{art}}{p_{art}}\right)
+  \]
+  subject to
+  \[
+    \sum_a q_{art}=1,
+    \qquad
+    \sum_a q_{art}w_{art}=\bar w^{\FLS}_{rt},
+    \qquad
+    q_{art}\geq0.
+  \]
+
+  The solution exponentially tilts the prior:
+  \[
+    q_{art}\propto p_{art}\exp(\lambda_{rt}w_{art}).
+  \]
+
+  One wage moment does not identify literal sampling weights. KL divergence
+  selects the closest implied distribution.
+\end{frame}
+
+\begin{frame}{Regularization path}
+  Let
+  \[
+    \bar w^0_{rt}=\sum_a p_{art}w_{art}.
+  \]
+
+  Balance to
+  \[
+    \bar w^\gamma_{rt}
+      =(1-\gamma)\bar w^0_{rt}+\gamma\bar w^{\FLS}_{rt},
+    \qquad
+    \gamma\in\{0,.25,.5,.75,1\}.
+  \]
+
+  \begin{itemize}
+    \item $\gamma=0$: employment prior.
+    \item $\gamma=1$: exact FLS match when feasible.
+    \item Intermediate values show sensitivity to the composition assumption.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Dissimilarity IV}
+  For target unit $k$, let $D(k)$ be its dissimilar donor cluster:
+  \[
+    Z^\gamma_{kt}
+      =\frac{\sum_{a\in D(k)}q^\gamma_{ar,t-1}w_{ar,t-1}}
+      {\sum_{a\in D(k)}q^\gamma_{ar,t-1}}.
+  \]
+
+  \begin{itemize}
+    \item Drop an entire OEWS area if it touches the target cluster.
+    \item Renormalize the remaining donor mass.
+    \item Estimate levels with unit and year FE, or changes with year FE.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Why add moments?}
+  One wage restriction can be satisfied by many geographic weight vectors.
+
+  Additional moments can:
+  \begin{itemize}
+    \item reduce dependence on the prior;
+    \item connect weights to known FLS sampling dimensions;
+    \item distinguish composition from a common wage shock;
+    \item provide overidentifying checks.
+  \end{itemize}
+
+  \begin{alertblock}{Requirement}
+    Each moment needs both a regional FLS target and an area-level analogue.
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{Feasible public moments}
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    FLS target & Area analogue & Treatment \\
+    \midrule
+    150+ day worker share
+      & Census of Agriculture Table 7
+      & Soft balance \\
+    Quarterly worker shares
+      & QCEW monthly employment
+      & Soft balance \\
+    Field and livestock wages
+      & OEWS occupation wages
+      & Sensitivity \\
+    Hours per worker
+      & ACS PUMS usual hours
+      & Validation \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.8em}
+  The first two moments most directly describe worker composition over the
+  year.
+\end{frame}
+
+\begin{frame}{Worker-duration moment}
+  FLS target:
+  \[
+    d^{\FLS}_{rt}
+      =\frac{\sum_s N^{150+}_{rts}}{\sum_s N^{\mathrm{all}}_{rts}},
+    \qquad s\in\{Jan,Apr,Jul,Oct\}.
+  \]
+
+  Area analogue:
+  \begin{enumerate}
+    \item Download county worker counts from Census of Agriculture Table 7.
+    \item Use 2007, 2012, 2017, and 2022.
+    \item Aggregate counts to OEWS areas.
+    \item Interpolate area shares between census years.
+  \end{enumerate}
+
+  Use a soft constraint: the Census counts annual workers, while the FLS uses
+  reference weeks.
+\end{frame}
+
+\begin{frame}{Seasonal-employment moment}
+  FLS target:
+  \[
+    s^{\FLS}_{rtm}
+      =\frac{N^{\FLS}_{rtm}}
+      {\sum_hN^{\FLS}_{rth}}.
+  \]
+
+  Area analogue:
+  \begin{enumerate}
+    \item Download quarterly QCEW files.
+    \item Keep January, April, July, and October employment.
+    \item Use private NAICS 111 and 112; exclude agricultural services.
+    \item Aggregate counties to OEWS areas and form within-year shares.
+  \end{enumerate}
+
+  Balance three quarterly shares. Use a soft penalty because QCEW omits many
+  workers on small farms.
+\end{frame}
+
+\begin{frame}{Other candidates}
+  \textbf{Field and livestock wages}
+  \begin{itemize}
+    \item FLS regional targets already exist in \texttt{fls\_region.parquet}.
+    \item OEWS cores are SOC 45-2092 and 45-2093.
+    \item Other AEWR occupations span both farm types, so the crosswalk is
+      imperfect. Use only as a sensitivity check.
+  \end{itemize}
+
+  \textbf{Hours per worker}
+  \begin{itemize}
+    \item Use ACS PUMS \texttt{UHRSWORK} for wage workers in NAICS 111/112.
+    \item PUMA geography and residence-based measurement make this a validation
+      moment, not an exact constraint.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Prior variables are not balancing moments}
+  Useful predictors without public regional FLS targets include:
+
+  \begin{itemize}
+    \item peak-worker size bins;
+    \item gross-sales class;
+    \item cropland acres and crop mix;
+    \item livestock inventories and farm type.
+  \end{itemize}
+
+  Use them to improve $p_{art}$ or for national validation. Do not impose a
+  balance restriction without a corresponding realized regional FLS target.
+\end{frame}
+
+\begin{frame}{Soft multi-moment calibration}
+  For area variables $x_{ja}$ and FLS targets $\bar x_j^{\FLS}$:
+  \[
+    \min_q
+      \sum_a q_a\log(q_a/p_a)
+      +\sum_j\frac{\rho_j}{2}
+      \left(
+        \frac{\sum_aq_ax_{ja}-\bar x_j^{\FLS}}{s_j}
+      \right)^2.
+  \]
+
+  \begin{itemize}
+    \item $s_j$ standardizes the moments.
+    \item $\rho_j$ controls how strongly each target is imposed.
+    \item Report imbalance, KL divergence, effective area count, and maximum
+      weight.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Recommended sequence}
+  \begin{enumerate}
+    \item Combined wage only: current benchmark.
+    \item Add the 150-day worker share.
+    \item Add quarterly worker shares.
+    \item Test separate wage proxies.
+    \item Use hours as validation.
+  \end{enumerate}
+
+  Compare weights, support, and first-stage strength after each block.
+
+  \vspace{0.8em}
+  \small
+  Sources: \href{https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_Labor/}{FLS},
+  \href{https://www.nass.usda.gov/Publications/AgCensus/2022/}{Census of Agriculture},
+  \href{https://www.bls.gov/cew/}{QCEW}, and
+  \href{https://www.census.gov/programs-surveys/acs/microdata.html}{ACS PUMS}.
+\end{frame}
+
+\end{document}

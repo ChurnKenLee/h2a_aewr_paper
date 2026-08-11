@@ -82,3 +82,6 @@ renv/staging/
 
 # Lean build output
 .lake/
+
+# Zola build
+/public/

@@ -1,0 +1,72 @@
+# H-2A Paper agent documentation
+
+> Grounded technical context for coding agents working on the empirical pipeline.
+
+Start with the repository `AGENTS.md`, then run `python scripts/agent_docs.py snapshot --scope <target-path>`.
+The machine-readable instruction and reviewed-source bundle is [`/grounding-manifest.json`](/grounding-manifest.json).
+
+## Canonical pages
+
+- [H-2A Paper Documentation](/)
+- [Architecture](/architecture/)
+- [Artifact ownership](/architecture/artifact-ownership/) — Which pipeline stage owns each persistent artifact.
+  - Grounded in `scripts/run_all.sh#pipeline-order`
+- [Pipeline architecture](/architecture/pipeline/) — Supported execution order and branch structure.
+  - Grounded in `scripts/run_all.sh#pipeline-order`
+- [Generating the shared county-year panel](/architecture/shared-panel-generation/) — Exact producer chain, joins, derived fields, validation, and rebuild boundary for county_year_panel.parquet.
+  - Grounded in `scripts/run_shared_panel.sh#shared-panel-runner`
+  - Grounded in `code/c01_clean/13_merge_county_panel.R#county-year-merge`
+  - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-construction`
+  - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-contract`
+  - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-output`
+- [Data and code contracts](/contracts/)
+- [Causal outcomes and model inputs](/contracts/causal-outcomes-and-model-inputs/) — Canonical cross-design outcome inventory and the treatments, controls, moderators, denominators, samples, and inference fields required to estimate them.
+  - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-construction`
+  - Grounded in `code/c01_clean/13_merge_county_panel.R#county-year-merge`
+  - Grounded in `code/designs/did/02_main_results.R#did-primary-outcome`
+  - Grounded in `code/designs/did/05_fisher_price.R#did-fisher-price-outcome`
+  - Grounded in `code/designs/did/06_labor_share.R#did-labor-share-outcome`
+  - Grounded in `code/designs/did/01_build_did_panel.R#did-treatment-inputs`
+  - Grounded in `code/designs/did/helpers.R#did-estimation-contract`
+  - Grounded in `code/designs/panel_iv/07_estimate_panel_iv.R#panel-iv-outcome-and-input-registry`
+  - Grounded in `code/designs/panel_iv/design.R#panel-iv-design-contract`
+  - Grounded in `code/designs/mundlak_chamberlain/design.R#mundlak-design-contract`
+- [Geographic code contract](/contracts/geographic-codes/) — Canonical geographic identifiers shared by R and Python producers.
+  - Grounded in `code/c00_shared/geography.R#geographic-code-contract-r`
+  - Grounded in `src/h2a/geography.py#geographic-code-contract-python`
+- [Maintaining grounded documentation](/contracts/grounding/) — How to add, review, and refresh checked code references.
+- [H-2A prediction contract](/contracts/prediction-model/) — Canonical prediction cutoff, model specification, and panel semantics.
+  - Grounded in `code/paths.R#prediction-selection`
+  - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-contract`
+- [Shared county-year panel](/contracts/shared-panel/) — Design-neutral ownership, prediction semantics, and artifact invariants.
+  - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-contract`
+- [Empirical designs](/designs/)
+- [Difference-in-differences](/designs/difference-in-differences/) — Treatment construction, estimation samples, fixed effects, and event-study specification.
+  - Grounded in `code/designs/did/helpers.R#did-estimation-contract`
+- [Mundlak–Chamberlain dose response](/designs/mundlak-chamberlain/) — Identification, specification program, estimands, inference, and diagnostics.
+  - Grounded in `code/designs/mundlak_chamberlain/design.R#mundlak-design-contract`
+- [Panel IV](/designs/panel-iv/) — Instrument construction, preferred specifications, inference, and retained outputs.
+  - Grounded in `code/designs/panel_iv/design.R#panel-iv-design-contract`
+- [Agent reference](/reference/)
+- [Coding-agent workflow](/reference/agent-workflow/) — Scoped discovery, reviewed drift acceptance, and machine-readable context.
+  - Grounded in `scripts/agent_docs.py#agent-context-snapshot`
+  - Grounded in `scripts/agent_docs.py#agent-docs-verification`
+  - Grounded in `scripts/agent_docs.py#agent-drift-review`
+- [Declared assumptions](/reference/assumptions/) — Machine-checked, scope-aware invariants that coding agents must surface before changes.
+- [Authority and evidence](/reference/authority/) — How an agent resolves conflicting claims and reports validation.
+
+## Declared high-risk assumptions
+
+- `AUTH-001` (critical, repository) — Executable code, runners, locks, and machine checks outrank prose when sources disagree.
+- `GROUND-001` (critical, agent documentation) — A source-region digest can be accepted only after the linked documentation context changes.
+- `GEO-001` (critical, shared pipeline) — Persistent geographic identifiers are strings and county FIPS uses the 2010 vintage, including 46102 to 46113 harmonization.
+- `PRED-001` (critical, prediction and shared panel) — The supported H-2A prediction is the static climate_norm_static_v1 model trained through 2011.
+- `PANEL-001` (critical, shared panel) — The shared panel is design-neutral and excludes treatments, post indicators, design fixed effects, target clusters, and instruments.
+- `OUTCOME-001` (critical, empirical designs) — The supported causal-outcome union contains thirteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule.
+- `DID-001` (critical, difference in differences) — The supported event study uses 2011 as its reference and clusters inference by CZ-by-AEWR-region.
+- `IV-001` (critical, panel IV) — The preferred panel-IV specification is controlled column 4 with the wage-plus-seasonal instrument and aewr_iv_cluster_id inference clusters.
+- `MC-001` (critical, Mundlak-Chamberlain) — The supported MC default is the bounded compact queue and inference uses the 17-state finite-design CCV reference law.
+
+## Grounding rule
+
+A matching SHA-256 means the named source region has not changed since the linked page was reviewed. It does not independently prove the prose or empirical claim.

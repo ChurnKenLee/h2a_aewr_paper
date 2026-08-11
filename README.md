@@ -31,8 +31,8 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Shared build | [`code/c02_build`](code/c02_build/) | `data/processed/county_year_panel.parquet` |
 | Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
 | DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
-| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | `data/processed/panel_iv_county_year.parquet`, four first stages, seven four-column 2SLS tables, summary statistics, and diagnostics |
-| Multilevel Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | 28-model dose-response ladder, finite-design continuous-treatment CCV inference, gt tables, coefficient graphs, and diagnostics |
+| Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | Panel-IV artifacts, retained tables, and diagnostics |
+| Multilevel Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | Audited dose-response specification program, retained tables, figures, and diagnostics |
 | Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
 
 The shared panel owns normalized source measures, reusable outcomes and
@@ -70,6 +70,31 @@ expected outputs.
 - `data/processed` contains analysis-ready panels.
 - `outputs/figures` and `outputs/tables` contain retained manuscript products.
 - Geographic identifiers follow
-  [`documentation/geographic_code_contract.md`](documentation/geographic_code_contract.md).
+  [`content/contracts/geographic-codes.md`](content/contracts/geographic-codes.md).
 - Old local Parquets may remain on disk, but only the artifacts documented
   above are supported.
+
+## Grounded agent documentation
+
+Cross-cutting contracts and empirical-design explanations live under
+[`content`](content/). They are optimized as working context for coding agents
+and remain ordinary readable Markdown for researchers. Before changing a
+scope, inspect its active instructions and canonical pages:
+
+```sh
+python scripts/agent_docs.py snapshot --scope code/designs/panel_iv
+```
+
+The pages are rendered with Zola and checked against named source regions.
+Inside the Devenv shell, use:
+
+```sh
+agent-docs-check
+agent-docs-serve
+```
+
+Directory READMEs remain operational entry points. The Zola pages are the
+canonical references for pipeline architecture, artifact semantics, and
+research-design claims. `static/llms.txt` and
+`static/grounding-manifest.json` are generated LLM entry points; do not edit
+them directly.

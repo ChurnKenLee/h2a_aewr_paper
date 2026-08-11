@@ -15,6 +15,7 @@ sample_full <- read_parquet(
 sample_no_border <- sample_full %>%
   filter(!border_cz)
 
+# docs-ground:start did-labor-share-outcome
 models <- list(
   did_model(sample_full, "share_farm_laborexp_prodexp"),
   did_model(
@@ -32,6 +33,7 @@ models <- list(
     controls = TRUE
   )
 )
+# docs-ground:end did-labor-share-outcome
 
 etable(
   models,

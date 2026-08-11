@@ -15,6 +15,7 @@ sample_full <- read_parquet(
 sample_no_border <- sample_full %>%
   filter(!border_cz)
 
+# docs-ground:start did-fisher-price-outcome
 models <- list(
   did_model(sample_full, "fisher_index_ppi"),
   did_model(sample_full, "fisher_index_ppi", controls = TRUE),
@@ -25,6 +26,7 @@ models <- list(
     controls = TRUE
   )
 )
+# docs-ground:end did-fisher-price-outcome
 
 etable(
   models,

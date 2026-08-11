@@ -22,8 +22,10 @@ path_logs <- function(...) here::here("outputs", "logs", ...)
 # Canonical H-2A prediction used by every shared and design-specific panel.
 # Changing the training window is a source-controlled specification change and
 # requires rebuilding the prediction artifact and all downstream panels.
+# docs-ground:start prediction-selection
 H2A_PREDICTION_CUTOFF_YEAR <- 2011L
 H2A_PREDICTION_MODEL_SPEC <- "climate_norm_static_v1"
+# docs-ground:end prediction-selection
 
 env_file <- here::here(".env")
 if (file.exists(env_file)) {

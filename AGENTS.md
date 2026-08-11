@@ -11,6 +11,22 @@ Python/Marimo, shell pipeline runners, and LaTeX.
 - Read the root `README.md`, the nearest branch `README.md`, and any design
   document linked from it before changing pipeline or estimation behavior.
 
+## Agent grounding
+
+- Before planning a repository change, run
+  `python scripts/agent_docs.py snapshot --scope <target-path>`. Read every
+  `AGENTS.md`, README, canonical page, and high-risk assumption named by the
+  snapshot.
+- Run `python scripts/agent_docs.py verify` before relying on
+  `static/grounding-manifest.json`. Generated context is authoritative only
+  when verification passes.
+- A nested `AGENTS.md` narrows these repository-wide rules for its directory;
+  it never relaxes data safety, research integrity, or validation requirements.
+- When sources disagree, use this authority order: executable code, runners,
+  locks, and machine checks; verified generated context; canonical pages under
+  `content/` and the nearest README; the root README; then historical notes and
+  retained outputs.
+
 ## Pipeline architecture
 
 Respect the documented dependency graph:
@@ -45,7 +61,7 @@ Respect the documented dependency graph:
 - Preserve nonempty and unique artifact keys. County-year panels must be unique
   by `county_fips` and `year`.
 - Geographic identifiers are strings governed by
-  `documentation/geographic_code_contract.md`. Use
+  `content/contracts/geographic-codes.md`. Use
   `code/c00_shared/geography.R` or `h2a.geography`; never coerce geographic
   identifiers to numeric storage.
 - Do not hand-edit generated tables, figures, or PDFs to change results. Modify
@@ -65,6 +81,24 @@ Respect the documented dependency graph:
 - Secrets belong only in `.env`. Never print, commit, or copy credential values.
 - Edit Marimo source `.py` files, not `__marimo__` session/cache files or
   generated flat exports.
+
+## Documentation
+
+- Keep repository and branch READMEs focused on commands, execution order,
+  inputs, outputs, and local ownership. Put cross-cutting contracts and
+  empirical-design explanations under `content/`.
+- Zola pages use `grounding` shortcodes to depend on named
+  `docs-ground:start`/`docs-ground:end` source regions. When an anchored region
+  changes, review the linked page and update its recorded SHA-256 digest.
+- Review drift with `python scripts/agent_docs.py accept-drift --document
+  <content-page> --anchor <anchor>`. The `--write` form refuses to accept a new
+  digest unless that page's prose or context also changed.
+- Do not refresh grounding digests automatically or edit
+  `static/grounding-manifest.json` and `static/llms.txt` directly. Run
+  `python scripts/agent_docs.py generate` after reviewed documentation changes.
+- Update `agent/assumptions.toml` when a high-risk invariant, owner, source,
+  affected scope, or review trigger changes. Its text checks are guardrails,
+  not proof of empirical validity.
 
 ## Execution safety
 
@@ -97,6 +131,10 @@ Match validation to the changed files and report exactly what ran.
 - Manuscript changes: rebuild from the source under `draft/` when a suitable
   TeX tool is available and check for missing citations, references, tables,
   and figures.
+- Documentation changes: `zola check --skip-external-links` and `zola build`
+- Agent context and grounding: `python scripts/agent_docs.py verify` and
+  `python scripts/test_agent_docs.py`
+- GitHub workflow changes: `actionlint`
 
 The repository has pre-existing repo-wide Ruff findings, especially in Marimo
 applications. Do not apply repo-wide automatic fixes; distinguish new failures

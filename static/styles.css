@@ -1,0 +1,103 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+  --accent: #276749;
+  --surface: color-mix(in srgb, Canvas 94%, CanvasText 6%);
+  --border: color-mix(in srgb, CanvasText 22%, transparent);
+}
+
+body {
+  margin: 0;
+  color: CanvasText;
+  background: Canvas;
+}
+
+.site-header {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  padding: 1rem max(1rem, calc((100vw - 70rem) / 2));
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.site-title {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+main {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 5rem;
+}
+
+article {
+  max-width: 52rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+pre,
+code {
+  font-family: ui-monospace, monospace;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+}
+
+table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.grounding {
+  margin: 1rem 0 1.5rem;
+  padding: 0.8rem 1rem;
+  border-left: 0.3rem solid var(--accent);
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.page-list li {
+  margin-bottom: 0.8rem;
+}
+
+.page-list span {
+  display: block;
+}
+
+.breadcrumb {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 40rem) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+}

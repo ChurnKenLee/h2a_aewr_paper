@@ -9,6 +9,7 @@
 # path.  Identification rests on the resulting conditional parallel-trends
 # restriction, not on random assignment of AEWR changes.
 
+# docs-ground:start mundlak-design-contract
 MC_BASELINE_YEARS <- 2008:2010
 MC_TREATMENT_HISTORY_YEARS <- 2011:2022
 MC_ANALYSIS_YEARS <- 2013:2022
@@ -243,3 +244,4 @@ mc_make_market_id <- function(aewr_region_id, state_fips, cz_id) {
     )
   )
 }
+# docs-ground:end mundlak-design-contract

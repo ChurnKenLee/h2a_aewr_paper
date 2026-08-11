@@ -16,4 +16,12 @@ in
   ++ lib.optionals project.cudaDev [ ./nix/modules/cuda-dev.nix ]
   ++ lib.optionals (project.r == "renv") [ ./nix/modules/r-positron-renv.nix ]
   ++ lib.optionals (project.r == "nix") [ ./nix/modules/r-positron-nix.nix ];
+
+  enterTest = ''
+    python scripts/agent_docs.py verify
+    python scripts/test_agent_docs.py
+    actionlint
+    zola check --skip-external-links
+    zola build
+  '';
 }

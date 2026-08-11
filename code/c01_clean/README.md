@@ -23,3 +23,8 @@ Rscript code/c01_clean/13_merge_county_panel.R
 ```
 
 The artifact must be nonempty and unique by `county_fips` and `year`.
+
+The downstream ownership boundary and supported invariants are documented in
+the grounded [shared-panel contract](../../content/contracts/shared-panel.md).
+The complete producer chain and join map are documented in
+[Generating the shared county-year panel](../../content/architecture/shared-panel-generation.md).

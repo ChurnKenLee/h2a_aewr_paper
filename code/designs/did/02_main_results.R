@@ -15,6 +15,7 @@ sample_full <- read_parquet(
 sample_no_border <- sample_full %>%
   filter(!border_cz)
 
+# docs-ground:start did-primary-outcome
 models <- list(
   did_model(sample_full, "h2a_cert_share_farm_workers_2011_start_year"),
   did_model(
@@ -32,6 +33,7 @@ models <- list(
     controls = TRUE
   )
 )
+# docs-ground:end did-primary-outcome
 
 etable(
   models,

@@ -1,0 +1,44 @@
+# Never sync Git or local machine state
+- /.git/
+- /.devenv/
+- /.direnv/
+- /.Rproj.user/
+- /.venv/
+- /renv/library/
+- /renv/staging/
+
+# OS system files
+- desktop.ini
+- Thumbs.db
+- .DS_Store
+
+# uv and marimo cache
+- .venv/**
+- __marimo__/**
+- __pycache__/**
+
+# lake lean4 cache
+- .lake/**
+
+# Other caches
+- .ruff_cache/
+
+# Big raw data files
+- data/raw/acs/**
+- data/raw/county_shapefile/**
+- data/raw/crop_weight_conversions/**
+- data/raw/croplandcros_cdl/**
+- data/raw/epinoaa_nclimgrid/**
+- data/raw/gnatsgo/**
+- data/raw/h2a/**
+- data/raw/mymarketnews_reports/**
+- data/raw/nawspad/**
+- data/raw/oews/**
+- data/raw/qcew/**
+- data/raw/quickstats/**
+- data/raw/risk_management_agency/**
+- data/raw/trac/**
+- data/raw/whd_enforcement/**
+
+# Large intermediate cache
+- data/intermediate/cache/**

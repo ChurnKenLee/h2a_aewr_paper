@@ -1,0 +1,26 @@
+\begin{table}[htbp]
+\centering
+\caption{Identical-Sample Static PPML Differential-Trend Diagnostic}
+\label{tab:iv_static_propensity_trend_diagnostic}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\hline\hline
+Outcome & Four controls & + Static trend & $\Delta$ coefficient & $\Delta$ clustered SE & Within $R^2$ & Excluded-instrument F & $N$ & Counties \\
+\hline
+H-2A certified workers / 2011 farm employment & -0.048 (0.044) & -0.056 (0.045) & -0.008 & 0.001 & 0.001 $\rightarrow$ 0.002 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+H-2A certified hours / 2011 farm employment & -21.162 (28.166) & -28.634 (30.615) & -7.472 & 2.449 & 0.001 $\rightarrow$ 0.003 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+H-2A applications / 2011 farm employment & 0.000 (0.001) & 0.000 (0.001) & 0.000 & -0.000 & 0.004 $\rightarrow$ 0.016 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+H-2A employers / 2011 farm employment (balanced linkage) & 0.000 (0.002) & 0.001 (0.002) & 0.001 & -0.000 & 0.003 $\rightarrow$ 0.008 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+H-2A certified positions / application & -0.011 (3.204) & -1.798 (3.241) & -1.787 & 0.038 & 0.000 $\rightarrow$ 0.016 & 9.41 $\rightarrow$ 9.47 & 20988 & 2536 \\
+H-2A certified hours / certified position & -48.598 (50.288) & -39.626 (51.758) & 8.972 & 1.470 & 0.001 $\rightarrow$ 0.003 & 9.30 $\rightarrow$ 9.35 & 20697 & 2521 \\
+Real Fisher crop price index & -4.917 (6.401) & -4.851 (6.467) & 0.066 & 0.067 & 0.020 $\rightarrow$ 0.021 & 10.74 $\rightarrow$ 10.86 & 33165 & 2824 \\
+Farm employment & -12.061 (10.531) & -11.835 (10.588) & 0.225 & 0.057 & 0.012 $\rightarrow$ 0.012 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+Farm production expenses / cash receipts and other income & 0.018 (0.036) & 0.019 (0.037) & 0.001 & 0.001 & 0.005 $\rightarrow$ 0.005 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+Farm cash receipts and other income per farm worker (2012 dollars) & 30004.544 (10122.687) & 29985.347 (10121.824) & -19.197 & -0.864 & 0.023 $\rightarrow$ 0.024 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+Hired-labor share of farm production expenses & 0.004 (0.003) & 0.004 (0.003) & -0.000 & 0.000 & 0.001 $\rightarrow$ 0.005 & 10.73 $\rightarrow$ 10.85 & 33221 & 2825 \\
+Fisher crop output-quantity index (2011 = 100) & -639.801 (587.459) & -656.524 (600.869) & -16.723 & 13.410 & 0.000 $\rightarrow$ 0.000 & 10.74 $\rightarrow$ 10.86 & 33165 & 2824 \\
+\hline\hline
+\end{tabular}%
+}
+\begin{minipage}{0.98\textwidth}\footnotesize Notes: Each pair uses the same outcome-specific county-year observations, county and year fixed effects, the preferred wage-plus-seasonal instrument, and AEWR-subregion clustered standard errors. The static-trend column adds standardized static PPML propensity interacted with year minus 2011. The PPML model is trained through 2011. Changes are static-trend minus four-control; no precision improvement is imposed.\end{minipage}
+\end{table}

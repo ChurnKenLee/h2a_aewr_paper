@@ -1,4 +1,11 @@
-# Geographic code contract
++++
+title = "Geographic code contract"
+description = "Canonical geographic identifiers shared by R and Python producers."
+
+[extra]
+scopes = ["code/c00_shared", "code/c01_clean", "code/c02_build", "src/h2a"]
++++
+
 
 Pipeline artifacts use one name and one character representation for each
 geographic identifier:
@@ -35,3 +42,7 @@ R scripts that normalize identifiers source `code/c00_shared/geography.R`;
 Python producers import `h2a.geography`. The C01 merge, shared-panel build,
 and design-specific panel builders check that their supported artifacts are
 nonempty and unique on their declared keys.
+
+{{ grounding(path="code/c00_shared/geography.R", anchor="geographic-code-contract-r", sha256="79622391dad204af12c046ee90147524c89a51b5e00ce3610b7e09cdae6a7050") }}
+
+{{ grounding(path="src/h2a/geography.py", anchor="geographic-code-contract-python", sha256="764ab9a606d6b512dcff7a57ec64cb3ce7f651b443eef3619f5532c0924c7ee4") }}

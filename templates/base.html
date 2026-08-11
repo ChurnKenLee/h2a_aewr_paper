@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ config.description }}">
+    <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+    <link rel="stylesheet" href="{{ get_url(path='styles.css') }}">
+    <link rel="alternate" type="text/plain" title="LLM documentation index" href="{{ get_url(path='llms.txt') }}">
+    <link rel="alternate" type="application/json" title="Grounded agent context" href="{{ get_url(path='grounding-manifest.json') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="/">{{ config.title }}</a>
+      <nav aria-label="Documentation sections">
+        <a href="{{ get_url(path='@/architecture/_index.md') }}">Architecture</a>
+        <a href="{{ get_url(path='@/contracts/_index.md') }}">Contracts</a>
+        <a href="{{ get_url(path='@/designs/_index.md') }}">Designs</a>
+        <a href="{{ get_url(path='@/reference/_index.md') }}">Agent reference</a>
+      </nav>
+    </header>
+    <main>
+      {% block content %}{% endblock content %}
+    </main>
+  </body>
+</html>

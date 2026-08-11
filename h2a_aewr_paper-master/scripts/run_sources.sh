@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+source "$(dirname "$0")/pipeline_helpers.sh"
+
+run_step code/a01_sources/00_crosswalk_harmonization.py
+run_step code/a01_sources/01_aewr_extract_tables.py
+run_step code/a01_sources/02_01_h2a_match_locations.py
+run_step code/a01_sources/02_02_h2a_clean_unmatched_locations_using_gemini.py
+run_step code/a01_sources/02_03_h2a_use_places_api_to_get_county.py
+run_step code/a01_sources/02_01_h2a_match_locations.py
+run_step code/a01_sources/02_04_h2a_match_employers.py
+run_step code/a01_sources/03_01_nass_extract_quickstats.py
+run_step code/a01_sources/03_02_nass_select_quickstats_obs.py
+run_step code/a01_sources/03_03_nass_census_worker_duration.py
+run_step code/a01_sources/04_01_qcew_create_binaries.py
+run_step code/a01_sources/04_02_qcew_quarterly_employment.py --force
+run_step code/a01_sources/04_03_qwi_quarterly_employment.py
+run_step code/a01_sources/05_01_oews_geographic_crosswalk.py
+run_step code/a01_sources/05_02_oews_binaries.py
+run_step code/a01_sources/06_01_croplandcros_cdl_aggregate_using_exactextract.py
+run_step code/a01_sources/06_02_croplandcros_cdl_extract_crop_name.py
+run_step code/a01_sources/06_03_croplandcros_cdl_nass_quickstats_crop_crosswalk.py
+run_step code/a01_sources/06_04_croplandcros_cdl_calculate_synthetic_price_and_yield.py
+run_step code/a01_sources/06_05_croplandcros_cdl_crop_type.py
+run_step code/a01_sources/07_state_minimum_wages.py
+run_step code/a01_sources/08_bea_farm_nonfarm_emp.py
+run_step code/a01_sources/09_01_h2a_prediction_pull_noaa.py
+run_step code/a01_sources/09_02_h2a_prediction_pull_gnatsgo.py
+run_step code/a01_sources/13_farm_labor_survey.py

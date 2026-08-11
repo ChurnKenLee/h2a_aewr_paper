@@ -1,0 +1,88 @@
+# Local folders
+# Data
+data/
+*.dta
+*.csv
+!outputs/tables/iv_dissimilarity_model_estimates.csv
+!outputs/tables/iv_dissimilarity_ar_intervals.csv
+*.xlsx
+*.xls
+*.sav
+*.sas7bdat
+*.parquet
+*.zip
+*.gz
+
+# TeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+
+# Large intermediate crosswalks
+code/json/
+
+# Pictures
+/outputs/figures/*
+
+# PDFs
+papers/imm_lit/*
+papers/h2a_lit/*
+
+# LaTeX auxiliary files
+draft/*
+!draft/*.tex
+!draft/*.pdf
+!draft/*.bib
+
+# Rebuildable local environments
+.direnv/
+.devenv/
+.venv/
+
+# Secrets (commit a sanitized .env.example when useful)
+.env
+.env.*
+!.env.example
+
+# Python build and editor artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Marimo execution state
+**/__marimo__/
+
+# R session state
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# renv keeps its project metadata and lockfile under version control. Its
+# libraries and staging directories are generated locally.
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/sandbox/
+renv/staging/
+
+# Positron state
+.positron/
+
+# Lean build output
+.lake/
+
+# Zola build output
+/agent-docs/public/
+/agent-docs/static/giallo-*.css

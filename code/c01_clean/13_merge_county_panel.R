@@ -8,6 +8,7 @@ library(arrow)
 library(dplyr)
 library(readr)
 
+# docs-ground:start county-year-merge
 read_year_panel <- function(filename) {
   read_parquet(path_int(filename)) %>%
     mutate(year = as.integer(year))
@@ -150,3 +151,4 @@ write_parquet(
   county_panel,
   path_int("county_year_merged.parquet")
 )
+# docs-ground:end county-year-merge

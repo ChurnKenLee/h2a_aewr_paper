@@ -23,6 +23,7 @@ obsolete_outputs <- c(
 )
 unlink(obsolete_outputs[file.exists(obsolete_outputs)])
 
+# docs-ground:start panel-iv-outcome-and-input-registry
 panel <- read_parquet(
   path_processed("panel_iv_county_year.parquet")
 ) %>%
@@ -123,6 +124,7 @@ if (length(missing_columns) > 0L) {
     call. = FALSE
   )
 }
+# docs-ground:end panel-iv-outcome-and-input-registry
 
 prediction_cutoffs <- sort(unique(
   panel$h2a_prediction_cutoff_year[
