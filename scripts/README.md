@@ -3,6 +3,12 @@
 All runners execute from the repository root. Set `DRY_RUN=1` to print their
 steps without running them.
 
+R steps run with `Rscript --vanilla`. The shared runner helper selects the
+project-local `renv` library matching the active R major/minor version and
+platform, so stale libraries from an earlier R version are ignored. If no
+matching library exists after an R upgrade, run `r-renv-restore` inside the
+Devenv shell before rerunning the pipeline.
+
 | Runner | Responsibility |
 | --- | --- |
 | `run_sources.sh` | Required A-stage source acquisition and normalization |
