@@ -32,16 +32,17 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
 | DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
 | Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | Panel-IV artifacts, retained tables, and diagnostics |
-| Multilevel Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | Audited dose-response specification program, retained tables, figures, and diagnostics |
+| Wooldridge–Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | DuckDB/Polars linear-history OLS registry, constructed estimands, and analytic inference diagnostics |
 | Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
 
 The shared panel owns normalized source measures, reusable outcomes and
 controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps, the
-BEA employment and farm wage-bill totals, the nominal OEWS Big-Six hourly-wage
-proxy and its support fields, cropland eligibility, border-CZ status, and
-stable geographic identifiers. It does not own treatment classifications,
-post indicators, fixed-effect factors, year dummies, target-cluster
-assignments, or instruments.
+BEA employment and farm wage-bill totals, separate QCEW NAICS 111/112 and
+all-sector employment/wage-bill totals with disclosure flags, nominal OEWS
+Big-Six hourly- and annual-wage proxies and their support fields, cropland
+eligibility, border-CZ status, and stable geographic identifiers. It does not
+own treatment classifications, post indicators, fixed-effect factors, year
+dummies, target-cluster assignments, or instruments.
 
 ## Commands
 

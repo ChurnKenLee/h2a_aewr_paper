@@ -13,6 +13,9 @@ Rscript --vanilla code/c02_build/01_build_county_panel.R
 ```
 
 The output must be nonempty and unique by `county_fips` and `year`.
+The QCEW crop, animal, and all-sector source totals and disclosure flags pass
+through unchanged. The producer validates disclosed/non-disclosed semantics
+but does not construct design-specific wages, instruments, or timing shifts.
 
 ## Panel contract
 

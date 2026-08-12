@@ -1,4 +1,4 @@
-# Purpose: Construct a design-neutral OEWS Big-Six hourly-wage proxy by county-year.
+# Purpose: Construct design-neutral OEWS Big-Six hourly- and annual-wage proxies by county-year.
 # Inputs: oews_county_area_year_occupation.parquet and oews_area_definitions.parquet.
 # Output: oews_county_year.parquet.
 
@@ -47,8 +47,10 @@ require_columns(
     "occ_code",
     "oews_tot_emp",
     "oews_mean_hourly_wage",
+    "oews_mean_annual_wage",
     "oews_employment_published",
-    "oews_hourly_wage_published"
+    "oews_hourly_wage_published",
+    "oews_annual_wage_published"
   ),
   "County-mapped OEWS occupation data"
 )
@@ -63,8 +65,10 @@ oews_area_occupation <- oews_long %>%
     occ_code = str_trim(as.character(occ_code)),
     oews_tot_emp = as.numeric(oews_tot_emp),
     oews_mean_hourly_wage = as.numeric(oews_mean_hourly_wage),
+    oews_mean_annual_wage = as.numeric(oews_mean_annual_wage),
     oews_employment_published = as.logical(oews_employment_published),
-    oews_hourly_wage_published = as.logical(oews_hourly_wage_published)
+    oews_hourly_wage_published = as.logical(oews_hourly_wage_published),
+    oews_annual_wage_published = as.logical(oews_annual_wage_published)
   ) %>%
   filter(occ_code %in% oews_big_six_occupation_codes) %>%
   distinct()
@@ -76,7 +80,8 @@ if (
       "year",
       "occ_code",
       "oews_employment_published",
-      "oews_hourly_wage_published"
+      "oews_hourly_wage_published",
+      "oews_annual_wage_published"
     )]) ||
     anyDuplicated(
       oews_area_occupation[c("oews_area_code", "year", "occ_code")]
@@ -96,6 +101,12 @@ oews_area_wages <- oews_area_occupation %>%
       oews_tot_emp > 0 &
       is.finite(oews_mean_hourly_wage) &
       oews_mean_hourly_wage > 0,
+    usable_annual_wage = oews_employment_published &
+      oews_annual_wage_published &
+      is.finite(oews_tot_emp) &
+      oews_tot_emp > 0 &
+      is.finite(oews_mean_annual_wage) &
+      oews_mean_annual_wage > 0,
     wage_covered_employment = if_else(
       usable_wage,
       oews_tot_emp,
@@ -105,13 +116,26 @@ oews_area_wages <- oews_area_occupation %>%
       usable_wage,
       oews_tot_emp * oews_mean_hourly_wage,
       0
+    ),
+    annual_wage_covered_employment = if_else(
+      usable_annual_wage,
+      oews_tot_emp,
+      0
+    ),
+    annual_wage_bill = if_else(
+      usable_annual_wage,
+      oews_tot_emp * oews_mean_annual_wage,
+      0
     )
   ) %>%
   group_by(oews_area_code, year) %>%
   summarise(
     oews_wage_covered_occupation_count = sum(usable_wage),
+    oews_annual_wage_covered_occupation_count = sum(usable_annual_wage),
     wage_covered_employment = sum(wage_covered_employment),
     hourly_wage_bill = sum(hourly_wage_bill),
+    annual_wage_covered_employment = sum(annual_wage_covered_employment),
+    annual_wage_bill = sum(annual_wage_bill),
     .groups = "drop"
   ) %>%
   mutate(
@@ -119,13 +143,20 @@ oews_area_wages <- oews_area_occupation %>%
       wage_covered_employment > 0,
       hourly_wage_bill / wage_covered_employment,
       NA_real_
+    ),
+    oews_area_big_six_mean_annual_wage = if_else(
+      annual_wage_covered_employment > 0,
+      annual_wage_bill / annual_wage_covered_employment,
+      NA_real_
     )
   ) %>%
   select(
     oews_area_code,
     year,
     oews_area_big_six_mean_hourly_wage,
-    oews_wage_covered_occupation_count
+    oews_area_big_six_mean_annual_wage,
+    oews_wage_covered_occupation_count,
+    oews_annual_wage_covered_occupation_count
   )
 
 oews_definitions <- read_parquet(
@@ -237,7 +268,10 @@ oews_county_year <- oews_county_area_shares %>%
   ) %>%
   mutate(
     area_wage_observed = is.finite(oews_area_big_six_mean_hourly_wage) &
-      oews_area_big_six_mean_hourly_wage > 0
+      oews_area_big_six_mean_hourly_wage > 0,
+    area_annual_wage_observed =
+      is.finite(oews_area_big_six_mean_annual_wage) &
+        oews_area_big_six_mean_annual_wage > 0
   ) %>%
   group_by(county_fips, year) %>%
   summarise(
@@ -252,20 +286,41 @@ oews_county_year <- oews_county_area_shares %>%
       county_oews_area_share * oews_area_big_six_mean_hourly_wage,
       0
     )),
+    oews_annual_wage_observed_mapping_share = sum(if_else(
+      area_annual_wage_observed,
+      county_oews_area_share,
+      0
+    )),
+    township_weighted_annual_wage = sum(if_else(
+      area_annual_wage_observed,
+      county_oews_area_share * oews_area_big_six_mean_annual_wage,
+      0
+    )),
     oews_wage_covered_occupation_count = sum(
       coalesce(oews_wage_covered_occupation_count, 0L)
+    ),
+    oews_annual_wage_covered_occupation_count = sum(
+      coalesce(oews_annual_wage_covered_occupation_count, 0L)
     ),
     .groups = "drop"
   ) %>%
   mutate(
     oews_wage_observed = oews_wage_observed_mapping_share > 0,
+    oews_annual_wage_observed =
+      oews_annual_wage_observed_mapping_share > 0,
     oews_big_six_mean_hourly_wage = if_else(
       oews_wage_observed,
       township_weighted_wage / oews_wage_observed_mapping_share,
       NA_real_
+    ),
+    oews_big_six_mean_annual_wage = if_else(
+      oews_annual_wage_observed,
+      township_weighted_annual_wage /
+        oews_annual_wage_observed_mapping_share,
+      NA_real_
     )
   ) %>%
-  select(-township_weighted_wage) %>%
+  select(-township_weighted_wage, -township_weighted_annual_wage) %>%
   left_join(
     oews_primary_areas,
     by = c("county_fips", "year"),
@@ -276,22 +331,30 @@ oews_county_year <- oews_county_area_shares %>%
     year,
     oews_area_code,
     oews_big_six_mean_hourly_wage,
+    oews_big_six_mean_annual_wage,
     oews_wage_observed,
+    oews_annual_wage_observed,
     oews_wage_covered_occupation_count,
+    oews_annual_wage_covered_occupation_count,
     oews_mapped_area_count,
     oews_primary_area_share,
-    oews_wage_observed_mapping_share
+    oews_wage_observed_mapping_share,
+    oews_annual_wage_observed_mapping_share
   ) %>%
   arrange(county_fips, year)
 
 oews_descriptions <- c(
   oews_area_code = "Primary OEWS reporting area for the county-year, selected by largest mapped-township share with an area-code tie-break",
   oews_big_six_mean_hourly_wage = "Nominal OEWS Big-Six mean hourly wage: employment-weighted within reporting area and mapped-township-share-weighted across county areas with observed wages",
+  oews_big_six_mean_annual_wage = "Nominal OEWS Big-Six mean annual wage: employment-weighted within reporting area and mapped-township-share-weighted across county areas with observed wages",
   oews_wage_observed = "Whether at least one mapped OEWS reporting area has a usable Big-Six hourly wage",
+  oews_annual_wage_observed = "Whether at least one mapped OEWS reporting area has a usable Big-Six annual wage",
   oews_wage_covered_occupation_count = "Number of mapped OEWS area-occupation cells with positive published employment and hourly wages",
+  oews_annual_wage_covered_occupation_count = "Number of mapped OEWS area-occupation cells with positive published employment and annual wages",
   oews_mapped_area_count = "Number of OEWS reporting areas mapped to the county-year",
   oews_primary_area_share = "Share of mapped county townships assigned to the primary OEWS reporting area",
-  oews_wage_observed_mapping_share = "Share of mapped county townships assigned to OEWS areas with usable Big-Six hourly wages"
+  oews_wage_observed_mapping_share = "Share of mapped county townships assigned to OEWS areas with usable Big-Six hourly wages",
+  oews_annual_wage_observed_mapping_share = "Share of mapped county townships assigned to OEWS areas with usable Big-Six annual wages"
 )
 
 for (column in names(oews_descriptions)) {
@@ -322,17 +385,32 @@ invalid_wage_contract <-
       is.finite(oews_county_year$oews_big_six_mean_hourly_wage) &
         oews_county_year$oews_big_six_mean_hourly_wage > 0
     )
+invalid_annual_wage_contract <-
+  oews_county_year$oews_annual_wage_observed !=
+    (
+      is.finite(oews_county_year$oews_big_six_mean_annual_wage) &
+        oews_county_year$oews_big_six_mean_annual_wage > 0
+    )
 invalid_support_contract <-
   oews_county_year$oews_mapped_area_count < 1L |
     oews_county_year$oews_wage_covered_occupation_count < 0L |
+    oews_county_year$oews_annual_wage_covered_occupation_count < 0L |
     oews_county_year$oews_wage_observed !=
       (oews_county_year$oews_wage_covered_occupation_count > 0L) |
+    oews_county_year$oews_annual_wage_observed !=
+      (oews_county_year$oews_annual_wage_covered_occupation_count > 0L) |
     oews_county_year$oews_primary_area_share <= 0 |
     oews_county_year$oews_primary_area_share > 1 |
     oews_county_year$oews_wage_observed_mapping_share < 0 |
-    oews_county_year$oews_wage_observed_mapping_share > 1 + 1e-12
+    oews_county_year$oews_wage_observed_mapping_share > 1 + 1e-12 |
+    oews_county_year$oews_annual_wage_observed_mapping_share < 0 |
+    oews_county_year$oews_annual_wage_observed_mapping_share > 1 + 1e-12
 
-if (any(invalid_wage_contract | invalid_support_contract)) {
+if (any(
+  invalid_wage_contract |
+    invalid_annual_wage_contract |
+    invalid_support_contract
+)) {
   stop("OEWS county-year wage or support fields are invalid.", call. = FALSE)
 }
 

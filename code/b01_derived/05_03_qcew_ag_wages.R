@@ -11,7 +11,7 @@ library(stringr)
 library(tidyr)
 
 qcew_outcomes <- c("annual_avg_emplvl", "total_annual_wages")
-qcew_crop_ownership_codes <- c("1", "2", "3", "5")
+qcew_detailed_ownership_codes <- c("1", "2", "3", "5")
 
 # These source areas cannot be assigned to the project's 2010 county vintage
 # without allocation. The obsolete Alaska and Virginia records precede or
@@ -52,16 +52,17 @@ qcew_cells <- open_dataset(path_int("qcew.parquet")) %>%
       own_code == "0" &
       industry_code == "10") |
       (agglvl_code == "75" &
-        own_code %in% qcew_crop_ownership_codes &
-        industry_code == "111")
+        own_code %in% qcew_detailed_ownership_codes &
+        industry_code %in% c("111", "112"))
   ) %>%
   collect() %>%
   mutate(
     year = as.integer(year),
-    qcew_series = if_else(
-      industry_code == "10",
-      "all_sectors",
-      "crop_sector"
+    qcew_series = case_when(
+      industry_code == "10" ~ "all_sectors",
+      industry_code == "111" ~ "crop_sector",
+      industry_code == "112" ~ "animal_sector",
+      TRUE ~ NA_character_
     ),
     county_fips = case_when(
       area_fips == "02158" ~ "02270",
@@ -137,9 +138,12 @@ county_year <- qcew_county_year_long %>%
 qcew_descriptions <- c(
   qcew_crop_sector_annual_avg_emplvl = "QCEW all-ownership NAICS 111 crop production average annual employment",
   qcew_crop_sector_total_annual_wages = "QCEW all-ownership NAICS 111 crop production nominal annual wage bill",
+  qcew_animal_sector_annual_avg_emplvl = "QCEW all-ownership NAICS 112 animal production and aquaculture average annual employment",
+  qcew_animal_sector_total_annual_wages = "QCEW all-ownership NAICS 112 animal production and aquaculture nominal annual wage bill",
   qcew_all_sectors_annual_avg_emplvl = "QCEW all-ownership, all-sector average annual employment",
   qcew_all_sectors_total_annual_wages = "QCEW all-ownership, all-sector nominal annual wage bill",
   qcew_crop_sector_disclosed = "Whether every reported QCEW crop ownership cell is disclosed",
+  qcew_animal_sector_disclosed = "Whether every reported QCEW animal ownership cell is disclosed",
   qcew_all_sectors_disclosed = "Whether the QCEW all-ownership, all-sector cell is disclosed"
 )
 
@@ -176,6 +180,8 @@ if (
 qcew_measure_columns <- c(
   "qcew_crop_sector_annual_avg_emplvl",
   "qcew_crop_sector_total_annual_wages",
+  "qcew_animal_sector_annual_avg_emplvl",
+  "qcew_animal_sector_total_annual_wages",
   "qcew_all_sectors_annual_avg_emplvl",
   "qcew_all_sectors_total_annual_wages"
 )
@@ -184,7 +190,11 @@ if (any(unlist(county_year[qcew_measure_columns]) < 0, na.rm = TRUE)) {
   stop("QCEW employment and wage measures must be nonnegative.", call. = FALSE)
 }
 
-for (series in c("qcew_crop_sector", "qcew_all_sectors")) {
+for (series in c(
+  "qcew_crop_sector",
+  "qcew_animal_sector",
+  "qcew_all_sectors"
+)) {
   disclosed <- county_year[[paste0(series, "_disclosed")]]
   employment <- county_year[[paste0(series, "_annual_avg_emplvl")]]
   wages <- county_year[[paste0(series, "_total_annual_wages")]]

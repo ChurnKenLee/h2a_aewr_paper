@@ -32,3 +32,25 @@ positive_weighted_mean <- function(value, weight) {
   }
   stats::weighted.mean(value[keep], weight[keep])
 }
+
+select_panel_iv_donor_wage <- function(
+  oews_hourly_wage,
+  oews_wage_observed
+) {
+  oews_valid <-
+    !is.na(oews_wage_observed) & oews_wage_observed &
+      is.finite(oews_hourly_wage) & oews_hourly_wage > 0
+  data.frame(
+    donor_nominal_hourly_wage = ifelse(
+      oews_valid,
+      oews_hourly_wage,
+      NA_real_
+    ),
+    donor_wage_source = ifelse(
+      oews_valid,
+      DISSIMILARITY_IV_DONOR_WAGE_SOURCE,
+      "unavailable"
+    ),
+    stringsAsFactors = FALSE
+  )
+}

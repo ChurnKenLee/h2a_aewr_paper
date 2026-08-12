@@ -76,19 +76,19 @@ wage_only_instrument <- instrument_long %>%
     wage_only_instrument_available = instrument_available
   )
 
-wage_seasonal_instrument <- instrument_long %>%
+wage_seasonal_composition_instrument <- instrument_long %>%
   filter(
     instrument_spec_label == DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
   ) %>%
   transmute(
     across(all_of(instrument_keys)),
-    z_wage_seasonal_real = z_dissimilarity_real,
-    wage_seasonal_instrument_available = instrument_available
+    z_wage_seasonal_composition_real = z_dissimilarity_real,
+    wage_seasonal_composition_instrument_available = instrument_available
   )
 
 instrument_pair <- wage_only_instrument %>%
   inner_join(
-    wage_seasonal_instrument,
+    wage_seasonal_composition_instrument,
     by = instrument_keys,
     relationship = "one-to-one"
   )

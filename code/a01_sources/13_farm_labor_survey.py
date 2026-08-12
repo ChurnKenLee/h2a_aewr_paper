@@ -1,6 +1,7 @@
 # Purpose: Parse Farm Labor Survey wage and worker tables into regional panels.
 # Inputs: FLS archives and the optional AEWR-region crosswalk in data/raw/fls.
-# Outputs: fls_region, fls_state, quarterly-worker, and auxiliary-moment Parquet files.
+# Outputs: fls_region, fls_state, paired quarterly worker/wage, and auxiliary
+# moment Parquet files.
 
 import marimo
 
@@ -10,13 +11,15 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    from zipfile import ZipFile
     import csv
     import io
-    from h2a.paths import RAW, INTERMEDIATE
-    import polars as pl
     import re
+    from zipfile import ZipFile
+
+    import polars as pl
     import us
+
+    from h2a.paths import INTERMEDIATE, RAW
 
     return INTERMEDIATE, RAW, ZipFile, csv, io, pl, re, us
 
@@ -317,6 +320,40 @@ def _(csv, io, re, region_lookup):
             and not re.search(r"wage rates?", title, re.IGNORECASE)
         )
 
+    def is_quarterly_wage_region_table(titles):
+        title = clean_quarterly(" ".join(titles))
+        return (
+            re.search(r"\bregions?\b", title, re.IGNORECASE)
+            and re.search(r"\bunited states\b", title, re.IGNORECASE)
+            and re.search(r"\bwage rates?\b", title, re.IGNORECASE)
+            and re.search(r"type of worker", title, re.IGNORECASE)
+            and re.search(
+                r"\b(January|April|July|October)\b",
+                title,
+                re.IGNORECASE,
+            )
+            and not re.search(r"annual average", title, re.IGNORECASE)
+            and not re.search(
+                r"type of farm|economic class of farm",
+                title,
+                re.IGNORECASE,
+            )
+        )
+
+    def quarterly_wage_type(cells):
+        text = clean_quarterly(" ".join(cells)).casefold().replace("&", "and")
+        if "all hired" in text:
+            return "all_hired"
+        if "field and livestock" in text or (
+            "field" in text and "livestock" in text and "combined" in text
+        ):
+            return "field_livestock"
+        if "livestock" in text and "field" not in text:
+            return "livestock"
+        if "field" in text and "livestock" not in text:
+            return "field"
+        return None
+
     def parse_quarterly_worker_table(text, source_zip, source_csv):
         rows = list(csv.reader(io.StringIO(text)))
         titles = [
@@ -388,7 +425,101 @@ def _(csv, io, re, region_lookup):
 
         return records
 
-    return parse_quarterly_worker_table, reference_quarters
+    def parse_quarterly_wage_table(text, source_zip, source_csv):
+        rows = list(csv.reader(io.StringIO(text)))
+        titles = [
+            clean_quarterly(row[2])
+            for row in rows
+            if len(row) > 2 and row[1].casefold() == "t"
+        ]
+        if not is_quarterly_wage_region_table(titles):
+            return []
+
+        table_title = " | ".join(titles)
+        period_match = re.search(
+            r"\b(January|April|July|October)\b[^|]{0,60}?"
+            r"\b((?:19|20)\d{2})\b",
+            table_title,
+            re.IGNORECASE,
+        )
+        release_match = re.search(
+            r"\bReleased\s+([A-Z][a-z]+)\s+(\d{1,2}),\s+"
+            r"((?:19|20)\d{2})\b",
+            table_title,
+        )
+        if period_match is None or release_match is None:
+            return []
+
+        quarter = period_match.group(1).casefold()
+        year = int(period_match.group(2))
+        release_month = release_months.get(release_match.group(1))
+        if quarter not in reference_quarters or release_month is None:
+            return []
+
+        header_rows = [
+            row[2:] for row in rows if len(row) > 1 and row[1].casefold() == "h"
+        ]
+        max_header_width = max((len(row) for row in header_rows), default=0)
+        column_metadata = []
+        for idx in range(1, max_header_width):
+            cells = [
+                clean_quarterly(row[idx]) if idx < len(row) else ""
+                for row in header_rows
+            ]
+            kind = quarterly_wage_type(cells)
+            header_text = " ".join(cells).casefold()
+            # Beginning in 2019 the regional tables place gross and base wage
+            # columns side by side.  The FLS calibration uses the published
+            # gross hourly series; the base-wage cells for the historical
+            # transition quarters are explicitly unavailable.
+            if kind and "base wage" not in header_text:
+                column_metadata.append((idx, kind))
+
+        if {kind for _, kind in column_metadata} != {
+            "field",
+            "livestock",
+            "field_livestock",
+            "all_hired",
+        }:
+            return []
+
+        records = []
+        for row in rows:
+            if len(row) < 7 or row[1].casefold() != "d":
+                continue
+            geography = clean_quarterly(
+                re.sub(r"\s+\d+/\s*$", "", clean_quarterly(row[2]))
+            )
+            if not geography or geography.startswith("("):
+                continue
+            geography_match = region_lookup.get(geography.casefold())
+            if geography_match is None:
+                continue
+
+            record = {
+                "year": year,
+                "quarter": quarter,
+                "aewr_region_id": geography_match[0],
+                "region_name": geography_match[1],
+                "release_year": int(release_match.group(3)),
+                "release_month": release_month,
+                "release_day": int(release_match.group(2)),
+                "source_zip": source_zip,
+                "source_csv": source_csv,
+                "table_title": table_title,
+            }
+            for idx, kind in column_metadata:
+                record[f"fls_{kind}_hourly_wage"] = parse_quarterly_number(
+                    row[idx + 2] if idx + 2 < len(row) else ""
+                )
+            records.append(record)
+        return records
+
+    return (
+        parse_quarterly_wage_table,
+        parse_quarterly_worker_table,
+        reference_quarters,
+    )
 
 
 @app.cell
@@ -396,6 +527,7 @@ def _(
     ZipFile,
     parse_annual_region_table,
     parse_annual_state_table,
+    parse_quarterly_wage_table,
     parse_quarterly_worker_table,
     pl,
     zip_paths,
@@ -403,6 +535,7 @@ def _(
     region_records = []
     state_records = []
     quarterly_worker_records = []
+    quarterly_wage_records = []
     for zip_path in zip_paths:
         with ZipFile(zip_path) as z:
             for name in z.namelist():
@@ -424,6 +557,9 @@ def _(
                 quarterly_worker_records.extend(
                     parse_quarterly_worker_table(text, zip_path.name, name)
                 )
+                quarterly_wage_records.extend(
+                    parse_quarterly_wage_table(text, zip_path.name, name)
+                )
 
     annual_wages_long = (
         pl.DataFrame(region_records) if region_records else pl.DataFrame()
@@ -432,6 +568,11 @@ def _(
     quarterly_workers_long = (
         pl.DataFrame(quarterly_worker_records)
         if quarterly_worker_records
+        else pl.DataFrame()
+    )
+    quarterly_wages_long = (
+        pl.DataFrame(quarterly_wage_records)
+        if quarterly_wage_records
         else pl.DataFrame()
     )
 
@@ -530,46 +671,196 @@ def _(
         ],
         ["estimate_year", "state_fips"],
     )
-    return out, quarterly_workers_long, state_out
+    return out, quarterly_wages_long, quarterly_workers_long, state_out
 
 
 @app.cell
-def _(out, pl, quarterly_workers_long, reference_quarters):
-    # Prefer the source used for that year's annual FLS estimates. Older
-    # November releases do not repeat January and April, so fall back to the
-    # latest same-year release for those observations. This keeps revisions
-    # auditable while avoiding later publications silently replacing a target.
-    annual_sources = out.select(
-        pl.col("estimate_year").alias("year"),
-        pl.col("source_zip").alias("annual_source_zip"),
-    ).unique()
+def _(
+    out,
+    pl,
+    quarterly_wages_long,
+    quarterly_workers_long,
+    reference_quarters,
+):
+    # Worker counts and wage rates are two tables for the same survey week.
+    # Pair them within a release before choosing a vintage. Prefer the release
+    # that supplies the selected annual report; if that report omits an earlier
+    # survey week, use the latest paired release no later than the annual one.
+    annual_sources = (
+        pl.concat(
+            [
+                out.select(
+                    pl.col("revised_year").alias("year"),
+                    pl.col("estimate_year").alias("annual_estimate_year"),
+                    pl.col("source_zip").alias("annual_source_zip"),
+                    pl.lit(1).alias("annual_vintage_priority"),
+                ),
+                out.select(
+                    pl.col("preliminary_year").alias("year"),
+                    pl.col("estimate_year").alias("annual_estimate_year"),
+                    pl.col("source_zip").alias("annual_source_zip"),
+                    pl.lit(0).alias("annual_vintage_priority"),
+                ),
+            ],
+            how="vertical",
+        )
+        .filter(pl.col("year").is_not_null())
+        .sort("year", "annual_vintage_priority", "annual_estimate_year")
+        .unique(subset="year", keep="last", maintain_order=True)
+        .drop("annual_vintage_priority")
+    )
 
-    fls_region_quarterly_workers = (
-        quarterly_workers_long.join(annual_sources, on="year", how="inner")
+    pair_keys = [
+        "year",
+        "quarter",
+        "aewr_region_id",
+        "release_year",
+        "release_month",
+        "release_day",
+        "source_zip",
+    ]
+    workers_for_pair = quarterly_workers_long.rename(
+        {
+            "source_csv": "worker_source_csv",
+            "table_title": "worker_table_title",
+        }
+    )
+    wages_for_pair = quarterly_wages_long.drop("region_name").rename(
+        {
+            "source_csv": "wage_source_csv",
+            "table_title": "wage_table_title",
+        }
+    )
+    paired_releases = workers_for_pair.join(
+        wages_for_pair,
+        on=pair_keys,
+        how="inner",
+        validate="1:1",
+    )
+
+    release_catalog = paired_releases.select(
+        "source_zip",
+        "release_year",
+        "release_month",
+        "release_day",
+    ).unique()
+    annual_sources = annual_sources.join(
+        release_catalog.rename(
+            {
+                "source_zip": "annual_source_zip",
+                "release_year": "annual_release_year",
+                "release_month": "annual_release_month",
+                "release_day": "annual_release_day",
+            }
+        ),
+        on="annual_source_zip",
+        how="left",
+        validate="m:1",
+    )
+    selected_pairs = (
+        paired_releases.join(annual_sources, on="year", how="inner", validate="m:1")
         .with_columns(
+            pl.date("release_year", "release_month", "release_day").alias(
+                "release_date"
+            ),
+            pl.date(
+                "annual_release_year",
+                "annual_release_month",
+                "annual_release_day",
+            ).alias("annual_release_date"),
             pl.when(pl.col("source_zip") == pl.col("annual_source_zip"))
-            .then(pl.lit(2))
-            .when(pl.col("release_year") == pl.col("year"))
             .then(pl.lit(1))
             .otherwise(pl.lit(0))
-            .alias("source_priority")
+            .alias("annual_release_match")
         )
+        .filter(pl.col("release_date") <= pl.col("annual_release_date"))
         .sort(
             "year",
             "quarter",
             "aewr_region_id",
-            "source_priority",
-            "release_year",
-            "release_month",
-            "release_day",
+            "annual_release_match",
+            "release_date",
         )
         .unique(
             subset=["year", "quarter", "aewr_region_id"],
             keep="last",
             maintain_order=True,
         )
-        .drop("annual_source_zip", "source_priority")
+        .with_columns(
+            pl.when(pl.col("annual_release_match") == 1)
+            .then(pl.lit("selected_annual_release"))
+            .otherwise(pl.lit("latest_paired_before_annual_release"))
+            .alias("release_selection_method")
+        )
+        .with_columns(
+            pl.all_horizontal(
+                pl.col("fls_hired_workers").is_not_null(),
+                pl.col("fls_hired_workers_150_days_or_more").is_not_null(),
+                pl.col("fls_hired_workers_149_days_or_less").is_not_null(),
+                pl.col("fls_gross_hours_worked").is_not_null(),
+            ).alias("fls_worker_values_available"),
+            pl.all_horizontal(
+                pl.col("fls_field_hourly_wage").is_not_null(),
+                pl.col("fls_livestock_hourly_wage").is_not_null(),
+                pl.col("fls_field_livestock_hourly_wage").is_not_null(),
+                pl.col("fls_all_hired_hourly_wage").is_not_null(),
+            ).alias("fls_wage_values_available"),
+        )
+        .with_columns(
+            (
+                pl.col("fls_worker_values_available")
+                & pl.col("fls_wage_values_available")
+            ).alias("fls_pair_values_available"),
+            pl.when(
+                pl.col("worker_table_title")
+                .str.to_lowercase()
+                .str.contains("survey was not conducted")
+            )
+            .then(pl.lit("survey_not_conducted"))
+            .when(
+                pl.col("fls_worker_values_available")
+                & pl.col("fls_wage_values_available")
+            )
+            .then(pl.lit("published_values"))
+            .otherwise(pl.lit("published_values_incomplete"))
+            .alias("fls_pair_value_status"),
+        )
         .sort("year", "quarter", "aewr_region_id")
+    )
+
+    shared_release_columns = [
+        "year",
+        "quarter",
+        "aewr_region_id",
+        "region_name",
+        "release_year",
+        "release_month",
+        "release_day",
+        "source_zip",
+        "worker_source_csv",
+        "worker_table_title",
+        "wage_source_csv",
+        "wage_table_title",
+        "annual_source_zip",
+        "release_selection_method",
+        "fls_worker_values_available",
+        "fls_wage_values_available",
+        "fls_pair_values_available",
+        "fls_pair_value_status",
+    ]
+    fls_region_quarterly_workers = selected_pairs.select(
+        *shared_release_columns,
+        "fls_hired_workers",
+        "fls_hired_workers_150_days_or_more",
+        "fls_hired_workers_149_days_or_less",
+        "fls_gross_hours_worked",
+    )
+    fls_region_quarterly_wages = selected_pairs.select(
+        *shared_release_columns,
+        "fls_field_hourly_wage",
+        "fls_livestock_hourly_wage",
+        "fls_field_livestock_hourly_wage",
+        "fls_all_hired_hourly_wage",
     )
 
     quarter_columns = []
@@ -664,6 +955,7 @@ def _(out, pl, quarterly_workers_long, reference_quarters):
     )
     return (
         fls_region_auxiliary_moments,
+        fls_region_quarterly_wages,
         fls_region_quarterly_workers,
         out_with_auxiliary,
     )
@@ -673,8 +965,10 @@ def _(out, pl, quarterly_workers_long, reference_quarters):
 def _(
     INTERMEDIATE,
     fls_region_auxiliary_moments,
+    fls_region_quarterly_wages,
     fls_region_quarterly_workers,
     out_with_auxiliary,
+    pl,
     state_out,
 ):
     from h2a.geography import assert_geo_columns
@@ -684,16 +978,56 @@ def _(
     assert_geo_columns(out_with_auxiliary, ["aewr_region_id"])
     assert_geo_columns(state_out, ["state_fips"])
     assert_geo_columns(fls_region_quarterly_workers, ["aewr_region_id"])
+    assert_geo_columns(fls_region_quarterly_wages, ["aewr_region_id"])
     assert_geo_columns(fls_region_auxiliary_moments, ["aewr_region_id"])
+    supported_keys = {
+        (str(region), year, quarter)
+        for region in range(1, 18)
+        for year in range(2010, 2022)
+        for quarter in ("january", "april", "july", "october")
+    }
+    worker_keys = set(
+        fls_region_quarterly_workers.select(
+            "aewr_region_id", "year", "quarter"
+        ).iter_rows()
+    )
+    wage_keys = set(
+        fls_region_quarterly_wages.select(
+            "aewr_region_id", "year", "quarter"
+        ).iter_rows()
+    )
+    if not supported_keys.issubset(worker_keys & wage_keys):
+        missing = sorted(supported_keys.difference(worker_keys & wage_keys))
+        raise ValueError(
+            "FLS worker/wage release pairs are incomplete for 2010-2021: "
+            + ", ".join(f"{region}-{year}-{quarter}" for region, year, quarter in missing[:10])
+        )
+    supported_pairs = fls_region_quarterly_workers.filter(
+        pl.col("year").is_between(2010, 2021)
+    )
+    known_nonconducted = supported_pairs.filter(
+        ~pl.col("fls_pair_values_available")
+    )
+    valid_nonconducted = known_nonconducted.filter(
+        (pl.col("year") == 2011)
+        & (pl.col("quarter") == "april")
+        & (pl.col("fls_pair_value_status") == "survey_not_conducted")
+    )
+    if known_nonconducted.height != 17 or valid_nonconducted.height != 17:
+        raise ValueError(
+            "Unexpected missing FLS worker/wage values in the supported period."
+        )
     out_with_auxiliary.write_parquet(INTERMEDIATE / "fls_region.parquet")
     state_out.write_parquet(INTERMEDIATE / "fls_state.parquet")
     fls_region_quarterly_workers.write_parquet(
         INTERMEDIATE / "fls_region_quarterly_workers.parquet"
     )
+    fls_region_quarterly_wages.write_parquet(
+        INTERMEDIATE / "fls_region_quarterly_wages.parquet"
+    )
     fls_region_auxiliary_moments.write_parquet(
         INTERMEDIATE / "fls_region_auxiliary_moments.parquet"
     )
-    return
 
 
 if __name__ == "__main__":

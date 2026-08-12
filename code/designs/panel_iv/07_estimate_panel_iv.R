@@ -1,5 +1,5 @@
-# Purpose: Estimate the publication first stages, 2SLS outcomes, and summary
-# statistics on the full county-year panel.
+# Purpose: Estimate the publication first stages, 2SLS outcomes, summary
+# statistics, and email-ready transposed results on the county-year panel.
 # Input: data/processed/panel_iv_county_year.parquet.
 
 here::i_am("code/paths.R")
@@ -112,7 +112,7 @@ required_columns <- unique(c(
   "year_centered",
   endogenous,
   "z_wage_only_real",
-  "z_wage_seasonal_real",
+  "z_wage_seasonal_composition_real",
   DISSIMILARITY_IV_CONTROL_COLUMNS,
   outcomes$outcome
 ))
@@ -239,7 +239,7 @@ first_stage_data <- finite_complete(
   c(
     endogenous,
     "z_wage_only_real",
-    "z_wage_seasonal_real",
+    "z_wage_seasonal_composition_real",
     DISSIMILARITY_IV_CONTROL_COLUMNS
   ),
   c("county_fips", "year", "aewr_iv_cluster_id")
@@ -253,20 +253,20 @@ first_stage_specs <- tribble(
   FALSE                     ,
   "Basic"                   ,
   2L                        ,
-  "z_wage_seasonal_real"    ,
-  "Wage + seasonal"         ,
+  "z_wage_seasonal_composition_real",
+  "Wage + seasonal/composition",
   FALSE                     ,
-  "Basic + alt. targets"    ,
+  "Basic + seasonal/composition",
   3L                        ,
   "z_wage_only_real"        ,
   "Wage only"               ,
   TRUE                      ,
   "Controls"                ,
   4L                        ,
-  "z_wage_seasonal_real"    ,
-  "Wage + seasonal"         ,
+  "z_wage_seasonal_composition_real",
+  "Wage + seasonal/composition",
   TRUE                      ,
-  "Controls + alt. targets"
+  "Controls + seasonal/composition"
 )
 
 first_stage_models <- vector("list", nrow(first_stage_specs))
@@ -348,7 +348,7 @@ write_csv(
 etable(
   first_stage_models,
   tex = TRUE,
-  title = "First Stage: Real AEWR on Donor-Wage Instruments",
+  title = "First Stage: Real AEWR on OEWS-Area Donor-Wage Instruments",
   label = "tab:iv_preferred_first_stage",
   headers = list("Specification" = first_stage_specs$header),
   keep_raw = "^z$",
@@ -366,7 +366,7 @@ etable(
     "_^Excluded-instrument F" = format_number(
       first_stage_results$first_stage_f
     ),
-    "_Alternative seasonal targets" = c("No", "Yes", "No", "Yes"),
+    "_Seasonal and composition moments" = c("No", "Yes", "No", "Yes"),
     "_Controls" = if_else(first_stage_specs$controls, "Yes", "No"),
     "_Static propensity differential trend" = if_else(
       first_stage_specs$controls,
@@ -397,6 +397,11 @@ etable(
       "Column 4 is preferred. The excluded-instrument F is the squared",
       "AEWR-region-by-subregion clustered t statistic."
     ),
+    paste(
+      "Both instruments aggregate the county-mapped OEWS-area Big-Six",
+      "hourly-wage proxy using the calibrated county weights; QCEW supplies",
+      "county employment, seasonal, and field/livestock features."
+    ),
     paste0(
       "Controlled columns include the standardized static PPML propensity ",
       "interacted with year minus 2011; ",
@@ -420,20 +425,20 @@ second_stage_specs <- tribble(
   FALSE                     ,
   "Wage only"               ,
   2L                        ,
-  "z_wage_seasonal_real"    ,
-  "Wage + seasonal"         ,
+  "z_wage_seasonal_composition_real",
+  "Wage + seasonal/composition",
   FALSE                     ,
-  "Alt. targets"            ,
+  "Seasonal/composition"    ,
   3L                        ,
   "z_wage_only_real"        ,
   "Wage only"               ,
   TRUE                      ,
   "Wage only + controls"    ,
   4L                        ,
-  "z_wage_seasonal_real"    ,
-  "Wage + seasonal"         ,
+  "z_wage_seasonal_composition_real",
+  "Wage + seasonal/composition",
   TRUE                      ,
-  "Alt. targets + controls"
+  "Seasonal/composition + controls"
 )
 
 iv_result_rows <- list()
@@ -450,7 +455,7 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       outcome_name,
       endogenous,
       "z_wage_only_real",
-      "z_wage_seasonal_real",
+      "z_wage_seasonal_composition_real",
       DISSIMILARITY_IV_CONTROL_COLUMNS
     ),
     c("county_fips", "year", "aewr_iv_cluster_id")
@@ -541,7 +546,7 @@ for (outcome_index in seq_len(nrow(outcomes))) {
   # Identical-sample diagnostic: compare the four committed controls with the
   # same controls plus the static PPML propensity differential trend.
   diagnostic_data <- estimation_data %>%
-    mutate(z = z_wage_seasonal_real)
+    mutate(z = z_wage_seasonal_composition_real)
   baseline_control_terms <- paste(
     DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,
     collapse = " + "
@@ -726,8 +731,8 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       "_^First-stage excluded-instrument F" = format_number(
         first_stage_f
       ),
-      "_Alternative seasonal targets" = if_else(
-        second_stage_specs$instrument == "z_wage_seasonal_real",
+      "_Seasonal and composition moments" = if_else(
+        second_stage_specs$instrument == "z_wage_seasonal_composition_real",
         "Yes",
         "No"
       ),
@@ -757,7 +762,12 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     notes = c(
       paste(
         "Columns 1 and 3 use the wage-only instrument; columns 2 and 4",
-        "use the wage-plus-seasonal instrument."
+        "use the wage-plus-seasonal-and-composition instrument."
+      ),
+      paste(
+        "Both instruments use the county-mapped OEWS-area Big-Six hourly",
+        "wage proxy as the donor wage level; QCEW supplies county",
+        "employment, seasonal, and field/livestock features."
       ),
       paste0(
         "All columns use the controlled specification's complete-case ",
@@ -841,7 +851,8 @@ diagnostic_table_tex <- c(
   paste0(
     "\\begin{minipage}{0.98\\textwidth}\\footnotesize Notes: ",
     "Each pair uses the same outcome-specific county-year observations, ",
-    "county and year fixed effects, the preferred wage-plus-seasonal ",
+    "county and year fixed effects, the preferred wage-plus-seasonal-and-",
+    "composition ",
     "instrument, and AEWR-subregion clustered standard errors. The static-trend ",
     "column adds standardized static PPML propensity interacted with year ",
     "minus 2011. The PPML model is trained through ",
@@ -953,8 +964,13 @@ etable(
   ),
   notes = c(
     paste(
-      "All columns use the preferred wage-plus-seasonal instrument and",
+      "All columns use the preferred wage-plus-seasonal-and-composition",
+      "instrument and",
       "the four lagged controls plus the static propensity differential trend."
+    ),
+    paste(
+      "The donor wage level is the county-mapped OEWS-area Big-Six hourly",
+      "wage proxy; QCEW supplies county employment and calibration features."
     ),
     paste(
       "Certified hours and applications are normalized by 2011 farm",
@@ -988,12 +1004,422 @@ write_csv(
   path_tables("iv_preferred_second_stage_samples.csv")
 )
 
+# Email-ready transposed results -------------------------------------------
+
+email_outcomes <- tribble(
+  ~outcome, ~csv_label, ~pdf_label, ~outcome_group,
+  "h2a_cert_share_farm_workers_2011_start_year",
+  "Certified workers / 2011 farm employment",
+  "Certified\nworkers /\n2011 farm emp.",
+  "H-2A outcomes",
+  "h2a_cert_hours_per_farm_worker_2011_start_year",
+  "Certified hours / 2011 farm employment",
+  "Certified\nhours /\n2011 farm emp.",
+  "H-2A outcomes",
+  "h2a_applications_per_farm_worker_2011_start_year",
+  "Applications / 2011 farm employment",
+  "Applications /\n2011 farm\nemployment",
+  "H-2A outcomes",
+  "h2a_employers_per_farm_worker_2011_start_year",
+  "Employers / 2011 farm employment",
+  "Employers /\n2011 farm\nemployment",
+  "H-2A outcomes",
+  "h2a_cert_positions_per_application_start_year",
+  "Certified positions / application",
+  "Certified\npositions /\napplication",
+  "H-2A outcomes",
+  "h2a_cert_hours_per_position_start_year",
+  "Certified hours / position",
+  "Certified\nhours /\nposition",
+  "H-2A outcomes",
+  "fisher_index_ppi",
+  "Real Fisher crop price index",
+  "Real crop\nprice\nindex",
+  "Farm outcomes",
+  "emp_farm",
+  "Farm employment",
+  "Farm\nemployment",
+  "Farm outcomes",
+  "share_farm_prodexp_cashandinc",
+  "Production expenses / farm cash income",
+  "Production\nexpense\nshare",
+  "Farm outcomes",
+  "farm_cashandinc_ppi_per_farm_worker",
+  "Real farm cash income / farm worker",
+  "Real farm\nincome /\nworker",
+  "Farm outcomes",
+  "share_farm_laborexp_prodexp",
+  "Hired-labor share of production expenses",
+  "Hired-labor\nexpense\nshare",
+  "Farm outcomes",
+  "fisher_quantity_index",
+  "Fisher crop output-quantity index",
+  "Crop output\nquantity\nindex",
+  "Farm outcomes"
+)
+
+email_specs <- second_stage_specs %>%
+  mutate(
+    file_stub = c(
+      "spec1_wage_only",
+      "spec2_seasonal_composition",
+      "spec3_wage_only_controls",
+      "spec4_preferred"
+    ),
+    display_title = c(
+      "Wage only",
+      "Seasonal/composition",
+      "Wage only + controls",
+      "Seasonal/composition + controls (preferred)"
+    )
+  )
+
+email_statistics <- c(
+  "AEWR coefficient",
+  "Clustered standard error",
+  "p-value",
+  "First-stage excluded-instrument F",
+  "Observations",
+  "Counties",
+  "Inference clusters"
+)
+
+if (
+  nrow(email_outcomes) != nrow(outcomes) ||
+    !setequal(email_outcomes$outcome, outcomes$outcome) ||
+    anyDuplicated(email_outcomes$csv_label) > 0L
+) {
+  stop("Email-ready IV outcomes do not match the estimation registry.",
+    call. = FALSE)
+}
+
+make_email_csv <- function(specification_column) {
+  selected <- iv_results %>%
+    filter(column == specification_column) %>%
+    right_join(email_outcomes, by = "outcome", relationship = "one-to-one") %>%
+    arrange(match(outcome, email_outcomes$outcome))
+  if (nrow(selected) != nrow(email_outcomes) || any(is.na(selected$estimate))) {
+    stop("Email-ready IV table is missing an outcome estimate.", call. = FALSE)
+  }
+  result <- tibble(statistic = email_statistics)
+  for (index in seq_len(nrow(selected))) {
+    result[[selected$csv_label[[index]]]] <- c(
+      selected$estimate[[index]],
+      selected$standard_error[[index]],
+      selected$p_value[[index]],
+      selected$first_stage_f[[index]],
+      selected$observations[[index]],
+      selected$counties[[index]],
+      selected$inference_clusters[[index]]
+    )
+  }
+  result
+}
+
+format_email_effect <- function(value) {
+  absolute <- abs(value)
+  if (absolute >= 1000) {
+    return(formatC(value, format = "f", digits = 0, big.mark = ","))
+  }
+  if (absolute >= 100) {
+    return(formatC(value, format = "f", digits = 1, big.mark = ","))
+  }
+  if (absolute >= 10) {
+    return(formatC(value, format = "f", digits = 2))
+  }
+  if (absolute >= 1) {
+    return(formatC(value, format = "f", digits = 3))
+  }
+  if (absolute >= 0.001) {
+    return(formatC(value, format = "f", digits = 4))
+  }
+  formatC(value, format = "e", digits = 2)
+}
+
+format_email_p <- function(value) {
+  if (value < 0.001) {
+    return("<0.001")
+  }
+  formatC(value, format = "f", digits = 3)
+}
+
+significance_stars <- function(value) {
+  if (value < 0.01) {
+    return("***")
+  }
+  if (value < 0.05) {
+    return("**")
+  }
+  if (value < 0.10) {
+    return("*")
+  }
+  ""
+}
+
+format_email_table <- function(data) {
+  values <- as.matrix(data[-1])
+  formatted <- matrix(
+    "",
+    nrow = nrow(values),
+    ncol = ncol(values),
+    dimnames = dimnames(values)
+  )
+  for (column_index in seq_len(ncol(values))) {
+    formatted[1, column_index] <- paste0(
+      format_email_effect(values[1, column_index]),
+      significance_stars(values[3, column_index])
+    )
+    formatted[2, column_index] <- paste0(
+      "(",
+      format_email_effect(values[2, column_index]),
+      ")"
+    )
+    formatted[3, column_index] <- format_email_p(values[3, column_index])
+    formatted[4, column_index] <- formatC(
+      values[4, column_index],
+      format = "f",
+      digits = 2
+    )
+    formatted[5, column_index] <- formatC(
+      values[5, column_index],
+      format = "f",
+      digits = 0,
+      big.mark = ","
+    )
+    formatted[6, column_index] <- formatC(
+      values[6, column_index],
+      format = "f",
+      digits = 0,
+      big.mark = ","
+    )
+    formatted[7, column_index] <- formatC(
+      values[7, column_index],
+      format = "f",
+      digits = 0,
+      big.mark = ","
+    )
+  }
+  formatted
+}
+
+draw_email_table <- function(data, specification, page_number) {
+  grid::grid.newpage()
+  formatted <- format_email_table(data)
+  page_left <- 0.025
+  page_right <- 0.985
+  statistic_width <- 0.135
+  data_width <- (page_right - page_left - statistic_width) /
+    nrow(email_outcomes)
+  data_left <- page_left + statistic_width
+  column_centers <- data_left +
+    (seq_len(nrow(email_outcomes)) - 0.5) * data_width
+
+  grid::grid.text(
+    paste0(
+      "Panel IV Results - Specification ",
+      specification$column,
+      ": ",
+      specification$display_title
+    ),
+    x = page_left,
+    y = 0.965,
+    just = "left",
+    gp = grid::gpar(fontsize = 17, fontface = "bold", col = "#17365D")
+  )
+  grid::grid.text(
+    paste(
+      "Treatment: real AEWR (2012 dollars). County and year fixed effects;",
+      "standard errors clustered by AEWR-region x target subregion."
+    ),
+    x = page_left,
+    y = 0.925,
+    just = "left",
+    gp = grid::gpar(fontsize = 9.5, col = "#333333")
+  )
+  grid::grid.text(
+    paste(
+      "Donor wage level: county-mapped OEWS-area Big-Six hourly-wage proxy;",
+      "QCEW supplies county employment and calibration features; source year t-1."
+    ),
+    x = page_left,
+    y = 0.898,
+    just = "left",
+    gp = grid::gpar(fontsize = 8.5, col = "#555555")
+  )
+
+  group_y <- 0.835
+  group_height <- 0.043
+  group_ranges <- email_outcomes %>%
+    mutate(column_number = row_number()) %>%
+    group_by(outcome_group) %>%
+    summarise(
+      first_column = min(column_number),
+      last_column = max(column_number),
+      .groups = "drop"
+    )
+  group_colors <- c(
+    "H-2A outcomes" = "#D9EAF7",
+    "Farm outcomes" = "#E4F1E8"
+  )
+  for (group_index in seq_len(nrow(group_ranges))) {
+    group <- group_ranges[group_index, ]
+    group_x <- data_left + (group$first_column - 1) * data_width
+    group_width <- (group$last_column - group$first_column + 1) * data_width
+    grid::grid.rect(
+      x = group_x + group_width / 2,
+      y = group_y,
+      width = group_width,
+      height = group_height,
+      gp = grid::gpar(
+        fill = group_colors[[group$outcome_group]],
+        col = "white",
+        lwd = 1
+      )
+    )
+    grid::grid.text(
+      group$outcome_group,
+      x = group_x + group_width / 2,
+      y = group_y,
+      gp = grid::gpar(fontsize = 9, fontface = "bold", col = "#17365D")
+    )
+  }
+
+  header_top <- group_y - group_height / 2
+  header_bottom <- 0.675
+  grid::grid.rect(
+    x = page_left + statistic_width / 2,
+    y = (header_top + header_bottom) / 2,
+    width = statistic_width,
+    height = header_top - header_bottom,
+    gp = grid::gpar(fill = "#F2F2F2", col = "white")
+  )
+  grid::grid.text(
+    "Statistic",
+    x = page_left + 0.006,
+    y = (header_top + header_bottom) / 2,
+    just = "left",
+    gp = grid::gpar(fontsize = 9, fontface = "bold")
+  )
+  for (column_index in seq_len(nrow(email_outcomes))) {
+    fill_color <- if (
+      email_outcomes$outcome_group[[column_index]] == "H-2A outcomes"
+    ) {
+      "#EEF6FB"
+    } else {
+      "#F1F8F3"
+    }
+    grid::grid.rect(
+      x = column_centers[[column_index]],
+      y = (header_top + header_bottom) / 2,
+      width = data_width,
+      height = header_top - header_bottom,
+      gp = grid::gpar(fill = fill_color, col = "white")
+    )
+    grid::grid.text(
+      email_outcomes$pdf_label[[column_index]],
+      x = column_centers[[column_index]],
+      y = (header_top + header_bottom) / 2,
+      gp = grid::gpar(fontsize = 7.5, fontface = "bold", lineheight = 0.9)
+    )
+  }
+
+  row_height <- 0.068
+  row_top <- header_bottom
+  for (row_index in seq_along(email_statistics)) {
+    row_center <- row_top - (row_index - 0.5) * row_height
+    row_fill <- if (row_index %% 2L == 0L) "#F8F8F8" else "white"
+    grid::grid.rect(
+      x = (page_left + page_right) / 2,
+      y = row_center,
+      width = page_right - page_left,
+      height = row_height,
+      gp = grid::gpar(fill = row_fill, col = "#E3E3E3", lwd = 0.6)
+    )
+    grid::grid.text(
+      email_statistics[[row_index]],
+      x = page_left + 0.006,
+      y = row_center,
+      just = "left",
+      gp = grid::gpar(
+        fontsize = 8.2,
+        fontface = if (row_index == 1L) "bold" else "plain"
+      )
+    )
+    for (column_index in seq_len(ncol(formatted))) {
+      grid::grid.text(
+        formatted[row_index, column_index],
+        x = column_centers[[column_index]],
+        y = row_center,
+        gp = grid::gpar(
+          fontsize = 8.1,
+          fontface = if (row_index == 1L) "bold" else "plain"
+        )
+      )
+    }
+  }
+
+  grid::grid.text(
+    paste(
+      "Notes: Coefficients report the effect of a one-dollar increase in real",
+      "AEWR. Clustered standard errors are in parentheses; * p<0.10,",
+      "** p<0.05, *** p<0.01. The first-stage F is the squared clustered",
+      "t statistic for the excluded instrument."
+    ),
+    x = page_left,
+    y = 0.135,
+    just = "left",
+    gp = grid::gpar(fontsize = 7.8, col = "#444444")
+  )
+  grid::grid.text(
+    paste0("Page ", page_number, " of ", nrow(email_specs)),
+    x = page_right,
+    y = 0.055,
+    just = "right",
+    gp = grid::gpar(fontsize = 7.5, col = "#777777")
+  )
+}
+
+email_tables <- vector("list", nrow(email_specs))
+for (specification_index in seq_len(nrow(email_specs))) {
+  specification <- email_specs[specification_index, ]
+  email_tables[[specification_index]] <- make_email_csv(
+    specification$column[[1]]
+  )
+  write_csv(
+    email_tables[[specification_index]],
+    path_tables(paste0(
+      "panel_iv_email_results_",
+      specification$file_stub[[1]],
+      ".csv"
+    ))
+  )
+}
+
+grDevices::pdf(
+  path_tables("panel_iv_email_results.pdf"),
+  width = 17,
+  height = 11,
+  onefile = TRUE,
+  paper = "special",
+  family = "sans"
+)
+for (specification_index in seq_len(nrow(email_specs))) {
+  draw_email_table(
+    email_tables[[specification_index]],
+    email_specs[specification_index, ],
+    specification_index
+  )
+}
+grDevices::dev.off()
+
 # Summary statistics --------------------------------------------------------
 
 summary_variable_labels <- c(
   aewr_ppi = "Real AEWR (2012 dollars)",
-  z_wage_only_real = "Wage-only donor OEWS instrument",
-  z_wage_seasonal_real = "Preferred wage-plus-seasonal donor OEWS instrument",
+  z_wage_only_real = "Wage-only OEWS-area hourly-wage instrument",
+  z_wage_seasonal_composition_real = paste(
+    "Preferred OEWS-area hourly-wage plus seasonal/composition instrument"
+  ),
   ln_pop_census_l1 = "Lagged log population",
   farm_emp_share_l1 = "Lagged farm-employment share",
   emp_pop_ratio_l1 = "Lagged employment/population",
@@ -1085,3 +1511,16 @@ writeLines(
   summary_tex,
   path_tables("table_iv_preferred_summary_statistics.tex")
 )
+
+# fixest aligns TeX cells with trailing blanks. Normalize retained source text
+# after every table has been written so diffs and downstream TeX checks remain
+# deterministic without changing any table content.
+panel_iv_tex_paths <- list.files(
+  path_tables(),
+  pattern = "^table_iv_.*\\.tex$",
+  full.names = TRUE
+)
+for (tex_path in panel_iv_tex_paths) {
+  tex_lines <- readLines(tex_path, warn = FALSE)
+  writeLines(sub("[[:blank:]]+$", "", tex_lines), tex_path)
+}

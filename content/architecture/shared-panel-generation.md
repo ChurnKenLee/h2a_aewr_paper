@@ -51,7 +51,8 @@ artifacts:
 | `h2a_predict.parquet` | county | One canonical static H-2A propensity record |
 | `census_ag_cropland_2007_year.parquet` | county | Fixed 2007 cropland baseline |
 | `state_real_minwages.parquet` | state, year | Nominal and real minimum-wage measures, plus lags created before the join |
-| `oews_county_year.parquet` | county, year | Nominal OEWS Big-Six mean hourly-wage proxy, primary reporting area, and coverage support |
+| `oews_county_year.parquet` | county, year | Nominal OEWS Big-Six mean hourly- and annual-wage proxies, primary reporting area, and coverage support |
+| `qcew_county_year.parquet` | county, year | Separate all-ownership NAICS 111, NAICS 112, and all-sector annual employment, wage bills, and disclosure flags |
 | `acs_czone_wage_quantiles.parquet` | county, year, CZ | Real local wage quantiles and their lags |
 
 The merge reads `ppi_2012.parquet` to deflate the ACS wage quantiles. The same
@@ -72,21 +73,28 @@ for mapped counties. It uses source employment to weight usable Big-Six
 occupation wages within reporting areas. When a county-year maps to multiple
 reporting areas, it averages observed area wages using each area's share of
 mapped county townships and renormalizes the shares over areas with observed
-wages. The primary `oews_area_code` is the area with the largest
+wages. Hourly and annual wage proxies are pooled separately under the same
+mapping rules. The primary `oews_area_code` is the area with the largest
 mapped-township share, with reporting-area code as the deterministic
 tie-break. Missing wages remain missing, and reporting-area employment is not
 published as county employment.
 
+`qcew_county_year.parquet` retains source totals rather than average wages.
+NAICS 111 and 112 each use all reported ownership components and carry
+independent disclosure flags; suppressed employment and wage bills remain
+null. The all-sector totals remain separate and are not used to repair either
+agricultural industry.
+
 Except for the AEWR-region dimension, which is an inner join by state
 abbreviation, source panels are left-joined onto the county-year backbone.
 Missing source coverage therefore remains missing rather than deleting the
-backbone row. Each join declares its expected cardinality. The BEA and OEWS
-joins are one-to-one on `county_fips, year`; repeated state-, CZ-, or other
-county-level values use many-to-one joins. Duplicate source keys therefore
-fail during the join. The completed intermediate artifact must also be
-nonempty and unique by `county_fips, year`.
+backbone row. Each join declares its expected cardinality. The BEA, OEWS, and
+QCEW joins are one-to-one on `county_fips, year`; repeated state-, CZ-, or
+other county-level values use many-to-one joins. Duplicate source keys
+therefore fail during the join. The completed intermediate artifact must also
+be nonempty and unique by `county_fips, year`.
 
-{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="93f0e3fa0c2df5126f30580f66c680491575dd56ca1f23f4ed36cc09e299d797") }}
+{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="faad687f82c863b634a4a2c847db984773bf48b1f0fe052ec349ecbc3469970a") }}
 
 The result of this stage is:
 
@@ -120,9 +128,11 @@ following transformations:
    positive denominator. The three employer-linkage counts remain separate
    source measures.
 
-The nominal OEWS wage proxy and its geographic and publication-support fields
-pass through this stage without policy-year realignment, zero filling, or
-further aggregation.
+The nominal OEWS hourly- and annual-wage proxies and their geographic and
+publication-support fields pass through this stage without policy-year
+realignment, zero filling, or further aggregation. The QCEW crop, animal, and
+all-sector source totals and disclosure flags likewise pass through without
+an upstream average-wage construction.
 
 The BEA wage-and-salary job count, farm wage bill, and farm wage supplements
 also pass through without constructing hired-job counts, per-job wages, or
@@ -147,7 +157,10 @@ This validation is applied to the distinct rows with nonmissing prediction
 metadata. The current producer does not separately require prediction coverage
 for every county-year retained in the panel.
 
-The final data must be nonempty and unique by `county_fips, year`.
+The final data must be nonempty and unique by `county_fips, year`. The producer
+also verifies that each observed QCEW disclosure flag agrees with its source
+values: disclosed employment and wages are finite and nonnegative, while
+suppressed values remain null.
 
 {{ grounding(path="code/c02_build/01_build_county_panel.R", anchor="shared-panel-contract", sha256="ffb30f884e3403e1fd5c2b88d13d20c21eace1d1e1df0957fe7ac8c24b55aada") }}
 
@@ -166,6 +179,7 @@ Rscript --vanilla code/c02_build/01_build_county_panel.R
 ```
 
 If a normalized source, join key, geographic mapping, prediction artifact, or
-C01 schema changed, rerun the complete shared branch instead. Changes to the
-final shared-panel schema require downstream review of descriptives, DiD,
-panel IV, and Mundlak–Chamberlain consumers.
+C01 schema changed, rerun the complete shared branch instead. A QCEW schema
+change requires rebuilding `05_03_qcew_ag_wages.R`, the final C01 merge, and
+C02 in that order. Changes to the final shared-panel schema require downstream
+review of descriptives, DiD, panel IV, and Mundlak–Chamberlain consumers.

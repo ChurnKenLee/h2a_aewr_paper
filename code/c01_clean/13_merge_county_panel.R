@@ -139,6 +139,11 @@ county_panel <- read_parquet(path_int("county_df_year.parquet")) %>%
     relationship = "one-to-one"
   ) %>%
   left_join(
+    read_year_panel("qcew_county_year.parquet"),
+    by = c("county_fips", "year"),
+    relationship = "one-to-one"
+  ) %>%
+  left_join(
     wage_quantiles,
     by = c("county_fips", "year", "cz_id"),
     relationship = "many-to-one"
@@ -152,6 +157,30 @@ assert_geo_columns(
 )
 if (all(is.na(county_panel$oews_area_code))) {
   stop("The shared merge has no county-year OEWS coverage.", call. = FALSE)
+}
+
+qcew_required_columns <- c(
+  "qcew_crop_sector_annual_avg_emplvl",
+  "qcew_crop_sector_total_annual_wages",
+  "qcew_crop_sector_disclosed",
+  "qcew_animal_sector_annual_avg_emplvl",
+  "qcew_animal_sector_total_annual_wages",
+  "qcew_animal_sector_disclosed",
+  "qcew_all_sectors_annual_avg_emplvl",
+  "qcew_all_sectors_total_annual_wages",
+  "qcew_all_sectors_disclosed"
+)
+missing_qcew_columns <- setdiff(qcew_required_columns, names(county_panel))
+if (length(missing_qcew_columns) > 0L) {
+  stop(
+    "The shared merge is missing QCEW source fields: ",
+    paste(missing_qcew_columns, collapse = ", "),
+    call. = FALSE
+  )
+}
+if (all(is.na(county_panel$qcew_crop_sector_disclosed)) ||
+  all(is.na(county_panel$qcew_animal_sector_disclosed))) {
+  stop("The shared merge has no QCEW 111/112 coverage.", call. = FALSE)
 }
 
 if (

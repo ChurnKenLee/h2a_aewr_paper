@@ -2,9 +2,10 @@
 #
 # The publication design compares two soft-entropy instruments constructed
 # from the same Census hired-worker frame prior.  The first targets only the
-# annual FLS combined field-and-livestock wage.  The preferred instrument adds
-# published quarterly FLS worker-share targets.  Worker-duration moments and a
-# separate Census-frame instrument are not publication specifications.
+# annual FLS combined field-and-livestock/OEWS hourly-wage moment. The
+# preferred instrument adds QCEW seasonal and field/livestock-composition
+# moments. Worker-duration moments and a separate Census-frame instrument are
+# not publication specifications.
 
 # docs-ground:start panel-iv-design-contract
 DISSIMILARITY_IV_K_VALUES <- 5L
@@ -17,21 +18,27 @@ DISSIMILARITY_IV_POLICY_START_YEAR <- 2011L
 DISSIMILARITY_IV_POLICY_END_YEAR <- 2022L
 
 DISSIMILARITY_IV_INSTRUMENT_FAMILY <- "dissimilarity_cluster"
-DISSIMILARITY_IV_AGGREGATION_SPEC <- "unique_oews_area"
+DISSIMILARITY_IV_AGGREGATION_SPEC <- "county"
 DISSIMILARITY_IV_FRAME_WEIGHT_SPEC <-
-  "census_hired_workers_qcew_updated"
+  "census_hired_workers_qcew_annual_updated_v2"
 DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC <-
-  "fls_realized_geography_dirichlet_entropy"
+  "fls_pseudo_county_entropy_v2"
 DISSIMILARITY_IV_WAGE_ONLY_WEIGHT_SPECIFICATION <-
-  "fls_geo_wage_only_soft_rho010"
+  "fls_county_wage_only_soft_rho010_v2"
 DISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION <-
-  "fls_geo_wage_seasonal_soft_rho010"
+  "fls_county_wage_seasonal_composition_soft_rho010_v2"
 DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT <-
   "calibrated_center"
 DISSIMILARITY_IV_WAGE_ONLY_MOMENT_SPEC <-
   "fls_field_livestock_wage_only"
 DISSIMILARITY_IV_PRIMARY_MOMENT_SPEC <-
-  "fls_field_livestock_wage_plus_quarterly_worker_shares"
+  "fls_oews_wage_plus_qcew_seasonal_and_composition"
+DISSIMILARITY_IV_DONOR_WAGE_SPEC <-
+  "county_mapped_oews_area_big_six_hourly_v1"
+DISSIMILARITY_IV_DONOR_WAGE_SOURCE <-
+  "oews_area_big_six_hourly"
+DISSIMILARITY_IV_DONOR_WAGE_GEOGRAPHY <-
+  "oews_reporting_area_mapped_to_county"
 DISSIMILARITY_IV_PRIMARY_RHO <- 0.10
 DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER <- 10
 DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL <- paste0(
@@ -39,21 +46,21 @@ DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL <- paste0(
   DISSIMILARITY_IV_PRIMARY_K,
   "_d",
   DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,
-  "_wage_only_soft_rho010_center"
+  "_oews_hourly_wage_only_soft_rho010_center"
 )
 DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL <- paste0(
   "k",
   DISSIMILARITY_IV_PRIMARY_K,
   "_d",
   DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,
-  "_wage_seasonal_soft_rho010_center"
+  "_oews_hourly_wage_seasonal_composition_soft_rho010_center"
 )
 DISSIMILARITY_IV_BASELINE_FRAME_PROXY <-
   "census_ag_direct_hired_workers"
 DISSIMILARITY_IV_ANNUAL_UPDATE_SPEC <-
-  "qcew_qwi_bea_two_sided_state_raked"
+  "qcew_annual_qwi_bea_two_sided_state_raked_v2"
 DISSIMILARITY_IV_GEOGRAPHIC_ALLOCATION_SPEC <-
-  "oews_township_share_within_county"
+  "none_county_keyed"
 DISSIMILARITY_IV_CLUSTER_SIZE_RULE <- "none"
 DISSIMILARITY_IV_INFERENCE_CLUSTER <- "aewr_iv_cluster_id"
 

@@ -15,23 +15,20 @@ def _():
 
 @app.cell
 def _():
-    import polars as pl
-    from h2a.geography import assert_geo_columns
-    from h2a.paths import INTERMEDIATE, PROCESSED
-
-
-
     import math
     from collections import defaultdict
     from collections.abc import Iterable
     from itertools import pairwise
     from typing import Any
 
+    import polars as pl
 
+    from h2a.geography import assert_geo_columns
+    from h2a.paths import INTERMEDIATE, PROCESSED
     BENCHMARK_YEARS = (2007, 2012, 2017, 2022)
     FRAME_YEARS = tuple(range(BENCHMARK_YEARS[0], BENCHMARK_YEARS[-1] + 1))
-    WEIGHT_SPEC = "census_hired_workers_qcew_updated"
-    ANNUAL_UPDATE_SPEC = "qcew_qwi_bea_two_sided_state_raked"
+    WEIGHT_SPEC = "census_hired_workers_qcew_annual_updated_v2"
+    ANNUAL_UPDATE_SPEC = "qcew_annual_qwi_bea_two_sided_state_raked_v2"
     EXTREME_LOG1P_GROWTH_THRESHOLD = math.log(2)
 
     _COUNTY_KEYS = ["county_fips"]
@@ -187,13 +184,66 @@ def _():
 
 
     def build_strict_qcew_annual(qcew: pl.DataFrame) -> pl.DataFrame:
-        """Build strict private NAICS 111+112 QCEW annual employment."""
-        return _strict_quarterly_annual_measure(
-            qcew,
-            value_column="qcew_reference_month_emplvl",
-            prefix="qcew",
-            disclosed_column="qcew_employment_disclosed",
+        """Build annual all-ownership NAICS 111+112 QCEW employment."""
+        required = [
+            "county_fips",
+            "year",
+            "qcew_crop_sector_annual_avg_emplvl",
+            "qcew_crop_sector_disclosed",
+            "qcew_animal_sector_annual_avg_emplvl",
+            "qcew_animal_sector_disclosed",
+        ]
+        _require_columns(qcew, required, "shared-panel annual QCEW")
+        source = qcew.select(required).with_columns(
+            pl.col("year").cast(pl.Int32).alias("source_year")
         )
+        _require_unique(source, _ANNUAL_KEYS, "shared-panel annual QCEW")
+
+        crop_valid = (
+            pl.col("qcew_crop_sector_disclosed").fill_null(False)
+            & pl.col("qcew_crop_sector_annual_avg_emplvl").is_not_null()
+            & pl.col("qcew_crop_sector_annual_avg_emplvl").is_finite()
+            & (pl.col("qcew_crop_sector_annual_avg_emplvl") >= 0)
+        )
+        animal_valid = (
+            pl.col("qcew_animal_sector_disclosed").fill_null(False)
+            & pl.col("qcew_animal_sector_annual_avg_emplvl").is_not_null()
+            & pl.col("qcew_animal_sector_annual_avg_emplvl").is_finite()
+            & (pl.col("qcew_animal_sector_annual_avg_emplvl") >= 0)
+        )
+        annual = (
+            source.with_columns(
+                (
+                    pl.col("qcew_crop_sector_disclosed").is_not_null().cast(pl.Int8)
+                    + pl.col("qcew_animal_sector_disclosed")
+                    .is_not_null()
+                    .cast(pl.Int8)
+                ).alias("qcew_observed_cells"),
+                (crop_valid.cast(pl.Int8) + animal_valid.cast(pl.Int8)).alias(
+                    "qcew_valid_cells"
+                ),
+                (crop_valid & animal_valid).alias("qcew_strict_complete"),
+            )
+            .with_columns(
+                pl.when(pl.col("qcew_strict_complete"))
+                .then(
+                    pl.col("qcew_crop_sector_annual_avg_emplvl")
+                    + pl.col("qcew_animal_sector_annual_avg_emplvl")
+                )
+                .otherwise(None)
+                .alias("qcew_ag_employment")
+            )
+            .select(
+                *_ANNUAL_KEYS,
+                "qcew_observed_cells",
+                "qcew_valid_cells",
+                "qcew_strict_complete",
+                "qcew_ag_employment",
+            )
+            .sort(*_ANNUAL_KEYS)
+        )
+        _require_unique(annual, _ANNUAL_KEYS, "annual QCEW 111+112 employment")
+        return annual
 
 
     def build_strict_qwi_annual(qwi: pl.DataFrame) -> pl.DataFrame:
@@ -257,12 +307,18 @@ def _():
                 signal[row["county_fips"]] = True
         for row in qcew.select(
             "county_fips",
-            "qcew_employment_disclosed",
-            "qcew_reference_month_emplvl",
+            "qcew_crop_sector_disclosed",
+            "qcew_crop_sector_annual_avg_emplvl",
+            "qcew_animal_sector_disclosed",
+            "qcew_animal_sector_annual_avg_emplvl",
         ).iter_rows(named=True):
-            if row["qcew_employment_disclosed"] and _finite_positive(
-                row["qcew_reference_month_emplvl"]
-            ):
+            crop_positive = row["qcew_crop_sector_disclosed"] and _finite_positive(
+                row["qcew_crop_sector_annual_avg_emplvl"]
+            )
+            animal_positive = row["qcew_animal_sector_disclosed"] and _finite_positive(
+                row["qcew_animal_sector_annual_avg_emplvl"]
+            )
+            if crop_positive or animal_positive:
                 signal[row["county_fips"]] = True
         for row in qwi.select(
             "county_fips", "qwi_beginning_quarter_employment"
@@ -511,7 +567,7 @@ def _():
         )
         census_state = census_state.filter(
             pl.col("state_fips").is_in(
-                counties.get_column("state_fips").unique()
+                counties.get_column("state_fips").unique().to_list()
             ),
             pl.col("year").cast(pl.Int32).is_in(benchmark_years),
         ).with_columns(pl.col("year").cast(pl.Int32))
@@ -1054,7 +1110,14 @@ def _(
     )
     census_state = read_state_census_benchmarks()
     census_farms = read_county_census_farms()
-    qcew = pl.read_parquet(INTERMEDIATE / "qcew_county_ag_quarterly_employment.parquet")
+    qcew = county_panel.select(
+        "county_fips",
+        "year",
+        "qcew_crop_sector_annual_avg_emplvl",
+        "qcew_crop_sector_disclosed",
+        "qcew_animal_sector_annual_avg_emplvl",
+        "qcew_animal_sector_disclosed",
+    )
     qwi = pl.read_parquet(INTERMEDIATE / "qwi_county_ag_quarterly_employment.parquet")
     bea = pl.read_parquet(INTERMEDIATE / "bea_caemp25n_data_year.parquet")
 
@@ -1107,7 +1170,6 @@ def _(
     print(summary)
     print(f"Wrote {frame.height:,} rows to {OUTPUT_PATH}")
     print(f"Wrote {diagnostics.height:,} flagged rows to {DIAGNOSTIC_PATH}")
-    return
 
 
 if __name__ == "__main__":

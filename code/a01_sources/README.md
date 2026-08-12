@@ -37,7 +37,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `03_02_nass_select_quickstats_obs.py` | Select and harmonize downstream NASS observations | Selected census and survey Parquet files |
 | `03_03_nass_census_worker_duration.py` | Derive county hired-worker duration shares and hired-labor payroll | `census_ag_hired_worker_duration_county.parquet` |
 | `04_01_qcew_create_binaries.py` | Combine annual QCEW archives | `qcew.parquet` |
-| `04_02_qcew_quarterly_employment.py` | Extract quarterly calibration moments | `qcew_county_ag_quarterly_employment.parquet` |
+| `04_02_qcew_quarterly_employment.py` | Aggregate all-ownership NAICS 111/112 reference-month employment by county, year, quarter, and industry | `qcew_county_ag_quarterly_employment.parquet` |
 | `04_03_qwi_quarterly_employment.py` | Download private NAICS 111/112 beginning-quarter, stable, and any-quarter QWI employment | `qwi_county_ag_quarterly_employment.parquet` |
 | `05_01_oews_geographic_crosswalk.py` | Harmonize OEWS reporting areas to counties | `oews_area_definitions.parquet` |
 | `05_02_oews_binaries.py` | Combine historical OEWS releases | `oews.parquet` |
@@ -53,7 +53,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `10_mymarketnews_get_reports.py` | Download USDA market reports | Manifest, headers, and report partitions |
 | `11_risk_management_agency_summary_of_business_binaries.py` | Convert RMA Summary of Business archives | Coverage and type-practice-unit Parquet files |
 | `12_risk_management_agency_actuarial_data_master_binaries.py` | Inspect ADM price records and layouts | No persistent artifact yet |
-| `13_farm_labor_survey.py` | Parse FLS wage and worker tables | Regional, state, quarterly, and auxiliary FLS files |
+| `13_farm_labor_survey.py` | Parse annual FLS wages and pair quarterly regional worker/wage tables from the same release | `fls_region.parquet`, `fls_region_quarterly_workers.parquet`, `fls_region_quarterly_wages.parquet`, and auxiliary files |
 
 ## Ordering and credentials
 
@@ -63,6 +63,19 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
   and retains their raw employer fields as crosswalk join keys.
 - Within the NASS family, run `03_01` before `03_02`, and `03_02` before
   `03_03`.
+- Quarterly QCEW uses ownership components 1, 2, 3, and 5 for both NAICS 111
+  and 112. A county-industry-quarter is disclosed only when every reported
+  ownership component is disclosed; suppressed totals remain null. The key is
+  `county_fips, year, qtr, industry_code`, with disclosure component counts and
+  `qcew_reference_month_emplvl` retained as source diagnostics.
+- FLS quarterly worker and wage rows are selected as a release pair. The
+  selected annual-report release is preferred; otherwise the latest paired
+  release no later than it is used. The supported 2010--2021 keys are complete.
+  USDA did not conduct the April 2011 survey, so those 17 region rows carry an
+  explicit `survey_not_conducted` value status rather than fabricated values.
+  The wage artifact retains `fls_field_hourly_wage`,
+  `fls_livestock_hourly_wage`, `fls_field_livestock_hourly_wage`, and
+  `fls_all_hired_hourly_wage` plus paired release and source-table metadata.
 - Within the CDL family, run `06_01` through `06_05` in numeric order.
 - Rebuild each county-bearing producer after changing the geographic contract;
   downstream scripts do not rename or repair stale artifact schemas.

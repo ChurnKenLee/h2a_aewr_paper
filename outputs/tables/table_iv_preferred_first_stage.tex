@@ -1,42 +1,43 @@
 
 \begin{table}[htbp]
-   \caption{\label{tab:iv_preferred_first_stage} First Stage: Real AEWR on Donor-Wage Instruments}
+   \caption{\label{tab:iv_preferred_first_stage} First Stage: Real AEWR on OEWS-Area Donor-Wage Instruments}
    \centering
    \begin{tabular}{lcccc}
       \tabularnewline \midrule \midrule
       Dependent Variable: & \multicolumn{4}{c}{aewr\_ppi}\\
-      Specification                        & Basic          & Basic + alt. targets & Controls       & Controls + alt. targets \\   
-      Model:                               & (1)            & (2)                  & (3)            & (4)\\  
+      Specification                        & Basic          & Basic + seasonal/composition & Controls       & Controls + seasonal/composition \\
+      Model:                               & (1)            & (2)                          & (3)            & (4)\\
       \midrule
       \emph{Variables}\\
-      Instrument $Z$                       & 0.2113$^{***}$ & 0.0997$^{***}$       & 0.1966$^{***}$ & 0.0924$^{***}$\\   
-                                           & (0.0370)       & (0.0311)             & (0.0333)       & (0.0281)\\   
+      Instrument $Z$                       & 0.1952$^{***}$ & 0.1795$^{***}$               & 0.1793$^{***}$ & 0.1640$^{***}$\\
+                                           & (0.0407)       & (0.0286)                     & (0.0359)       & (0.0242)\\
       \midrule
       \emph{Fixed-effects}\\
-      county\_fips                         & Yes            & Yes                  & Yes            & Yes\\  
-      year                                 & Yes            & Yes                  & Yes            & Yes\\  
+      county\_fips                         & Yes            & Yes                          & Yes            & Yes\\
+      year                                 & Yes            & Yes                          & Yes            & Yes\\
       \midrule
       \emph{Fit statistics}\\
-      Excluded-instrument F                & 32.60          & 10.27                & 34.79          & 10.85\\  
-      Observations                         & 33,221         & 33,221               & 33,221         & 33,221\\  
-      R$^2$                                & 0.97906        & 0.97775              & 0.98012        & 0.97902\\  
-      Alternative seasonal targets         & No             & Yes                  & No             & Yes\\  
-      Controls                             & No             & No                   & Yes            & Yes\\  
-      Static propensity differential trend & No             & No                   & Yes            & Yes\\  
-      Prediction training cutoff           & 2011           & 2011                 & 2011           & 2011\\  
-      County fixed effects                 & Yes            & Yes                  & Yes            & Yes\\  
-      Year fixed effects                   & Yes            & Yes                  & Yes            & Yes\\  
-      AEWR-subregion clustered SEs         & Yes            & Yes                  & Yes            & Yes\\  
-      Number of SE clusters                & 80             & 80                   & 80             & 80\\  
-      Common sample                        & Yes            & Yes                  & Yes            & Yes\\  
+      Excluded-instrument F                & 23.02          & 39.42                        & 24.91          & 46.00\\
+      Observations                         & 33,497         & 33,497                       & 33,497         & 33,497\\
+      R$^2$                                & 0.97883        & 0.97909                      & 0.97983        & 0.98002\\
+      Seasonal and composition moments     & No             & Yes                          & No             & Yes\\
+      Controls                             & No             & No                           & Yes            & Yes\\
+      Static propensity differential trend & No             & No                           & Yes            & Yes\\
+      Prediction training cutoff           & 2011           & 2011                         & 2011           & 2011\\
+      County fixed effects                 & Yes            & Yes                          & Yes            & Yes\\
+      Year fixed effects                   & Yes            & Yes                          & Yes            & Yes\\
+      AEWR-subregion clustered SEs         & Yes            & Yes                          & Yes            & Yes\\
+      Number of SE clusters                & 80             & 80                           & 80             & 80\\
+      Common sample                        & Yes            & Yes                          & Yes            & Yes\\
       \midrule \midrule
       \multicolumn{5}{l}{\emph{Clustered (aewr\_iv\_cluster\_id) standard-errors in parentheses}}\\
       \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
    \end{tabular}
-   
-   \par \raggedright 
+
+   \par \raggedright
    All columns use the same complete-case county-year sample from 2011 through 2022.\\
    Column 4 is preferred. The excluded-instrument F is the squared AEWR-region-by-subregion clustered t statistic.\\
+   Both instruments aggregate the county-mapped OEWS-area Big-Six hourly-wage proxy using the calibrated county weights; QCEW supplies county employment, seasonal, and field/livestock features.\\
    Controlled columns include the standardized static PPML propensity interacted with year minus 2011; the selected PPML training cutoff is 2011.
 \end{table}
 

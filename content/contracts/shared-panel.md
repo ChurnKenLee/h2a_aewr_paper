@@ -42,13 +42,19 @@ construct hired farm jobs, average annual farm wages, or average annual farm
 compensation. Designs that use those statistics own their denominator and
 sample rules.
 
-The shared panel also carries a nominal OEWS Big-Six mean hourly-wage proxy.
-The C01 producer employment-weights occupations within reporting areas and
-uses mapped-township shares when a county-year spans multiple areas. It retains
-the primary `oews_area_code`, mapped-area count, observed mapping share, and
-wage-covered area-occupation count. OEWS source years are not shifted to AEWR
-policy years, missing wages are not replaced with zero, and reporting-area
-employment is not represented as county employment.
+The shared panel also carries nominal OEWS Big-Six mean hourly- and annual-wage
+proxies. The C01 producer employment-weights each wage concept within reporting
+areas and uses mapped-township shares when a county-year spans multiple areas.
+It retains the primary `oews_area_code`, mapped-area count, observed mapping
+shares, and wage-covered area-occupation counts. OEWS source years are not
+shifted to AEWR policy years, missing wages are not replaced with zero, and
+reporting-area employment is not represented as county employment.
+
+Separate all-ownership QCEW NAICS 111, NAICS 112, and all-sector annual
+employment and nominal wage bills also pass through with disclosure flags.
+Suppressed totals stay null. The shared layer does not divide wage bills by
+employment or combine crop and animal agriculture; downstream designs own any
+denominator, disclosure, timing, and sample rules.
 
 Manual command:
 

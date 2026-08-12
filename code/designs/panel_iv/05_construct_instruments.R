@@ -1,15 +1,9 @@
-# Purpose: Construct the wage-only and wage-plus-seasonal panel-IV instruments.
-# Inputs: fixed clusters/donor map, Census frame analog, recovered entropy
-# centers, OEWS geography, and PPI.
+# Purpose: Construct county-weighted Panel-IV OEWS hourly-wage instruments.
+# Inputs: fixed clusters, pseudo-FLS county entropy weights, shared county
+# source fields, the Census/QCEW/QWI/BEA employment frame, and PPI.
 # Outputs:
-#   data/intermediate/panel_iv_area_frame.parquet
+#   data/intermediate/panel_iv_county_donor_frame.parquet
 #   data/intermediate/panel_iv_instrument_cluster_year.parquet
-# Run after: 02_cluster_target_units.R, 03_build_fls_frame.py,
-# 04_recover_fls_geography.py, and the shared county panel.
-#
-# The two specifications share the same Census frame prior and soft wage
-# target.  The preferred specification adds quarterly FLS worker shares.
-# First-stage estimates and outcomes cannot select either specification.
 
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
@@ -21,54 +15,13 @@ library(dplyr)
 library(stringr)
 library(tidyr)
 
-first_nonmissing <- function(value) {
-  value <- value[!is.na(value) & value != ""]
-  if (length(value) == 0L) {
-    return(NA_character_)
-  }
-  value[[1]]
-}
-
-county_panel <- read_parquet(
-  path_processed("county_year_panel.parquet")
-) %>%
-  mutate(
-    panel_iv_target_unit_id = make_panel_iv_target_unit_id(
-      cz_id,
-      aewr_region_id
-    )
-  )
-iv_clusters <- read_parquet(path_int("panel_iv_target_clusters.parquet"))
-iv_donor_clusters <- read_parquet(path_int("panel_iv_donor_clusters.parquet"))
-oews_source <- read_parquet(path_int("oews.parquet"))
-frame_employment <- read_parquet(path_int(
-  "panel_iv_fls_frame.parquet"
-))
-realized_weight_summary <- read_parquet(path_int(
-  "panel_iv_fls_geography_weight_summary.parquet"
-))
-realized_county_area_prior <- read_parquet(path_int(
-  "panel_iv_fls_geography_county_area_prior.parquet"
-))
-ppi <- read_parquet(path_int("ppi_2012.parquet"))
-
-
 source_years <- seq.int(
   DISSIMILARITY_IV_POLICY_START_YEAR - 1L,
   DISSIMILARITY_IV_POLICY_END_YEAR - 1L
 )
 
-frame_employment <- frame_employment %>%
-  filter(
-    source_year %in% source_years,
-    weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
-    annual_update_spec == DISSIMILARITY_IV_ANNUAL_UPDATE_SPEC,
-    is.na(weight_draw_id)
-  )
-
 publication_specs <- tibble::tribble(
-  ~weight_specification, ~moment_spec, ~is_primary,
-  ~instrument_spec_label,
+  ~weight_specification, ~moment_spec, ~is_primary, ~instrument_spec_label,
   DISSIMILARITY_IV_WAGE_ONLY_WEIGHT_SPECIFICATION,
   DISSIMILARITY_IV_WAGE_ONLY_MOMENT_SPEC,
   FALSE,
@@ -79,11 +32,63 @@ publication_specs <- tibble::tribble(
   DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
 )
 
-publication_realized_weights <- realized_weight_summary %>%
+county_panel <- read_parquet(
+  path_processed("county_year_panel.parquet")
+) %>%
+  mutate(
+    year = as.integer(year),
+    panel_iv_target_unit_id = make_panel_iv_target_unit_id(
+      cz_id,
+      aewr_region_id
+    )
+  )
+
+required_wage_columns <- c(
+  "oews_big_six_mean_hourly_wage",
+  "oews_wage_observed",
+  "oews_wage_covered_occupation_count",
+  "oews_mapped_area_count",
+  "oews_primary_area_share",
+  "oews_wage_observed_mapping_share"
+)
+missing_wage_columns <- setdiff(required_wage_columns, names(county_panel))
+if (length(missing_wage_columns) > 0L) {
+  stop(
+    "The shared panel is missing donor-wage fields: ",
+    paste(missing_wage_columns, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+iv_clusters <- read_parquet(path_int("panel_iv_target_clusters.parquet"))
+iv_donor_clusters <- read_parquet(path_int("panel_iv_donor_clusters.parquet"))
+frame_employment <- read_parquet(path_int("panel_iv_fls_frame.parquet")) %>%
+  filter(
+    source_year %in% source_years,
+    weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
+    annual_update_spec == DISSIMILARITY_IV_ANNUAL_UPDATE_SPEC,
+    is.na(weight_draw_id)
+  ) %>%
+  select(
+    county_fips,
+    source_year,
+    frame_employment_mass,
+    state_rake_factor,
+    annual_update_source,
+    annual_growth_source,
+    qcew_strict_complete,
+    qwi_annual_fallback_used,
+    bea_annual_fallback_used,
+    quality_flags
+  )
+
+recovered_weights <- read_parquet(path_int(
+  "panel_iv_fls_county_weight_summary.parquet"
+)) %>%
   filter(
     source_year %in% source_years,
     weight_spec == DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC,
-    wage_target_used,
+    baseline_weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
     near(rho, DISSIMILARITY_IV_PRIMARY_RHO),
     near(
       kappa_multiplier,
@@ -104,44 +109,36 @@ publication_realized_weights <- realized_weight_summary %>%
     relationship = "many-to-one"
   ) %>%
   transmute(
+    county_fips,
     aewr_region_id,
     source_year = as.integer(source_year),
-    oews_area_code,
     weight_specification = specification,
     moment_spec,
     is_primary,
     instrument_spec_label,
-    calibrated_center_weight
+    frame_prior_weight,
+    calibrated_center_weight,
+    active_moment_count,
+    inactive_moment_count,
+    calibrated_effective_county_count,
+    maximum_calibrated_county_weight
   )
 
-realized_county_area_weights <- realized_county_area_prior %>%
-  filter(
-    source_year %in% source_years,
-    baseline_weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC
-  ) %>%
-  inner_join(
-    publication_realized_weights,
-    by = c(
-      "aewr_region_id",
-      "source_year",
-      "oews_area_code"
-    ),
-    relationship = "many-to-many"
-  ) %>%
-  transmute(
-    county_fips,
-    aewr_region_id,
-    source_year = as.integer(source_year),
-    oews_area_code,
-    weight_specification,
-    moment_spec,
-    is_primary,
-    instrument_spec_label,
-    recovered_baseline_county_area_mass = baseline_county_area_mass,
-    baseline_county_conditional_within_area,
-    entropy_county_area_weight = calibrated_center_weight *
-      baseline_county_conditional_within_area
+weight_sums <- recovered_weights %>%
+  group_by(aewr_region_id, source_year, weight_specification) %>%
+  summarise(
+    prior_sum = sum(frame_prior_weight),
+    calibrated_sum = sum(calibrated_center_weight),
+    .groups = "drop"
   )
+if (
+  nrow(weight_sums) != 17L * length(source_years) * 2L ||
+    any(abs(weight_sums$prior_sum - 1) > 1e-10) ||
+    any(abs(weight_sums$calibrated_sum - 1) > 1e-10)
+) {
+  stop("Recovered county weights must sum to one by region-year-specification.",
+    call. = FALSE)
+}
 
 primary_clusters <- iv_clusters %>%
   filter(iv_k == DISSIMILARITY_IV_PRIMARY_K) %>%
@@ -149,500 +146,174 @@ primary_clusters <- iv_clusters %>%
     panel_iv_target_unit_id,
     aewr_region_id,
     iv_k,
-    target_cluster = iv_cluster
-  ) %>%
-  distinct()
+    donor_cluster = iv_cluster
+  )
 
-
-primary_donor_map <- iv_donor_clusters %>%
-  filter(
-    iv_k == DISSIMILARITY_IV_PRIMARY_K,
-    donor_cluster_count == DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
-  ) %>%
-  select(
-    aewr_region_id,
-    iv_k,
-    target_cluster,
-    donor_cluster,
-    donor_rank,
-    donor_cluster_distance,
-    donor_cluster_count
-  ) %>%
-  distinct()
-
-county_units <- county_panel %>%
-  distinct(
-    county_fips,
-    state_fips,
-    state_abbrev,
-    cz_id,
-    aewr_region_id,
-    panel_iv_target_unit_id
-  ) %>%
+county_clusters <- county_panel %>%
+  distinct(county_fips, aewr_region_id, panel_iv_target_unit_id) %>%
   inner_join(
     primary_clusters,
     by = c("panel_iv_target_unit_id", "aewr_region_id"),
     relationship = "many-to-one"
   )
 
-
-# OEWS employment is used only to combine covered occupations within an OEWS
-# area wage. It never determines mass across counties or areas.
-oews_area_wages <- oews_source %>%
+primary_donor_map <- iv_donor_clusters %>%
   filter(
-    year %in% source_years,
-    occ_code %in% DISSIMILARITY_IV_BIG_SIX_OCC_CODES
-  ) %>%
-  transmute(
-    oews_area_code = oews_area_code(area),
-    oews_area_name_data = area_name,
-    source_year = as.integer(year),
-    oews_tot_emp = suppressWarnings(as.numeric(tot_emp)),
-    oews_mean_hourly_wage = suppressWarnings(as.numeric(h_mean))
-  ) %>%
-  mutate(
-    usable_wage = is.finite(oews_tot_emp) &
-      oews_tot_emp > 0 &
-      is.finite(oews_mean_hourly_wage) &
-      oews_mean_hourly_wage > 0,
-    oews_occupation_wage_weight = if_else(
-      usable_wage,
-      oews_tot_emp,
-      0
-    ),
-    oews_hourly_wage_bill = if_else(
-      usable_wage,
-      oews_tot_emp * oews_mean_hourly_wage,
-      0
-    )
-  ) %>%
-  group_by(oews_area_code, source_year) %>%
-  summarise(
-    oews_area_name_data = first_nonmissing(oews_area_name_data),
-    oews_area_wage_covered_employment = sum(
-      oews_occupation_wage_weight,
-      na.rm = TRUE
-    ),
-    oews_area_hourly_wage_bill = sum(
-      oews_hourly_wage_bill,
-      na.rm = TRUE
-    ),
-    oews_occupation_count = sum(usable_wage),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    oews_area_mean_hourly_wage = if_else(
-      oews_area_wage_covered_employment > 0,
-      oews_area_hourly_wage_bill /
-        oews_area_wage_covered_employment,
-      NA_real_
-    )
+    iv_k == DISSIMILARITY_IV_PRIMARY_K,
+    donor_cluster_count == DISSIMILARITY_IV_PRIMARY_DONOR_COUNT
   )
 
-# Reuse the audited county-to-area allocation from the recovery step.  This
-# carries the explicit nearest-vintage fallback used for the 2010 Orange
-# County, New York OEWS definition gap.
-county_area_allocation <- realized_county_area_prior %>%
-  filter(
-    source_year %in% source_years,
-    baseline_weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC
-  ) %>%
+ppi <- read_parquet(path_int("ppi_2012.parquet")) %>%
+  transmute(
+    source_year = as.integer(year),
+    source_year_ppi_2012 = as.numeric(ppi_2012)
+  )
+
+county_source <- county_panel %>%
+  filter(year %in% source_years) %>%
   transmute(
     county_fips,
     aewr_region_id,
-    source_year,
+    source_year = year,
     oews_area_code,
-    oews_area_name_crosswalk = oews_area_name,
-    oews_area_mapped_townships,
-    county_mapped_townships,
-    county_oews_area_share,
-    oews_area_allocated_frame_employment = baseline_county_area_mass,
-    mapping_source_year,
-    mapping_vintage_fallback
+    across(all_of(required_wage_columns))
   ) %>%
   left_join(
-    frame_employment %>%
-      select(
-        county_fips,
-        source_year,
-        frame_employment_mass,
-        state_rake_factor,
-        annual_update_source,
-        annual_growth_source,
-        quality_flags
-      ),
+    frame_employment,
     by = c("county_fips", "source_year"),
+    relationship = "one-to-one"
+  ) %>%
+  left_join(ppi, by = "source_year", relationship = "many-to-one")
+
+wage_selection <- select_panel_iv_donor_wage(
+  county_source$oews_big_six_mean_hourly_wage,
+  county_source$oews_wage_observed
+)
+
+county_source <- bind_cols(county_source, wage_selection) %>%
+  mutate(
+    donor_real_hourly_wage = if_else(
+      is.finite(donor_nominal_hourly_wage) &
+        donor_nominal_hourly_wage > 0 &
+        is.finite(source_year_ppi_2012) &
+        source_year_ppi_2012 > 0,
+      donor_nominal_hourly_wage / source_year_ppi_2012,
+      NA_real_
+    ),
+    donor_wage_available = is.finite(donor_real_hourly_wage) &
+      donor_real_hourly_wage > 0,
+    donor_wage_spec = DISSIMILARITY_IV_DONOR_WAGE_SPEC,
+    donor_wage_geography = DISSIMILARITY_IV_DONOR_WAGE_GEOGRAPHY
+  ) %>%
+  inner_join(
+    county_clusters,
+    by = c("county_fips", "aewr_region_id"),
     relationship = "many-to-one"
   )
 
-if (
-  anyDuplicated(
-    county_area_allocation[
-      c("county_fips", "source_year", "oews_area_code")
-    ]
-  ) > 0L
-) {
-  stop("County-area allocation keys must be unique.", call. = FALSE)
-}
-
-if (
-  any(
-    !is.finite(county_area_allocation$oews_area_allocated_frame_employment) |
-      county_area_allocation$oews_area_allocated_frame_employment < 0
-  )
-) {
-  stop("County-area frame mass must be finite and nonnegative.", call. = FALSE)
-}
-
-county_area_wages <- county_units %>%
-  inner_join(
-    county_area_allocation,
-    by = c("county_fips", "aewr_region_id"),
-    relationship = "one-to-many"
-  ) %>%
-  left_join(
-    oews_area_wages,
-    by = c("oews_area_code", "source_year")
-  ) %>%
-  mutate(
-    oews_area_name = coalesce(
-      oews_area_name_data,
-      oews_area_name_crosswalk
-    )
-  )
-
-target_cluster_areas <- county_area_wages %>%
+target_area_codes <- county_source %>%
+  filter(!is.na(oews_area_code)) %>%
   transmute(
     aewr_region_id,
     source_year,
-    target_cluster,
-    oews_area_code
+    target_cluster = donor_cluster,
+    oews_area_code,
+    target_area_overlap = TRUE
   ) %>%
   distinct()
 
-# Join every donor county-area record to each target for which its cluster is
-# selected. Donor membership is fixed by baseline features; only wage
-# availability can vary over time.
-donor_area_candidates <- county_area_wages %>%
-  rename(donor_cluster = target_cluster) %>%
+candidate_counties <- county_source %>%
   inner_join(
     primary_donor_map,
+    by = c("aewr_region_id", "iv_k", "donor_cluster"),
+    relationship = "many-to-many"
+  ) %>%
+  left_join(
+    target_area_codes,
     by = c(
       "aewr_region_id",
-      "iv_k",
-      "donor_cluster"
+      "source_year",
+      "target_cluster",
+      "oews_area_code"
     ),
-    relationship = "many-to-many"
-  )
+    relationship = "many-to-one"
+  ) %>%
+  mutate(target_area_overlap = coalesce(target_area_overlap, FALSE))
 
-candidate_support <- donor_area_candidates %>%
+candidate_support <- candidate_counties %>%
   group_by(aewr_region_id, target_cluster, source_year) %>%
   summarise(
     candidate_donor_clusters = n_distinct(donor_cluster),
     candidate_donor_units = n_distinct(panel_iv_target_unit_id),
     candidate_donor_counties = n_distinct(county_fips),
-    candidate_donor_areas = n_distinct(oews_area_code),
-    candidate_wage_areas = n_distinct(
-      oews_area_code[is.finite(oews_area_mean_hourly_wage)]
+    target_overlap_counties_excluded = n_distinct(
+      county_fips[target_area_overlap]
     ),
-    candidate_frame_areas = n_distinct(
-      oews_area_code[
-        is.finite(oews_area_allocated_frame_employment) &
-          oews_area_allocated_frame_employment > 0
-      ]
+    target_overlap_areas_excluded = n_distinct(
+      oews_area_code[target_area_overlap & !is.na(oews_area_code)]
     ),
     .groups = "drop"
   )
 
-# If an OEWS area touches the target cluster, exclude that entire area from
-# the corresponding donor set. Retain the county/unit mappings as support
-# diagnostics, but never attach a county's full frame mass to each area.
-eligible_donor_area_mappings <- donor_area_candidates %>%
-  anti_join(
-    target_cluster_areas,
-    by = c(
-      "aewr_region_id",
-      "source_year",
-      "target_cluster",
-      "oews_area_code"
-    )
-  )
-
-excluded_overlap_support <- donor_area_candidates %>%
-  semi_join(
-    target_cluster_areas,
-    by = c(
-      "aewr_region_id",
-      "source_year",
-      "target_cluster",
-      "oews_area_code"
-    )
-  ) %>%
-  group_by(aewr_region_id, target_cluster, source_year) %>%
-  summarise(
-    oews_overlap_areas_excluded = n_distinct(oews_area_code),
-    .groups = "drop"
-  )
-
-eligible_observed_mappings <- eligible_donor_area_mappings %>%
-  filter(
-    is.finite(oews_area_mean_hourly_wage),
-    oews_area_mean_hourly_wage > 0,
-    is.finite(oews_area_allocated_frame_employment),
-    oews_area_allocated_frame_employment > 0
-  )
-
-eligible_support <- eligible_observed_mappings %>%
-  group_by(aewr_region_id, target_cluster, source_year) %>%
-  summarise(
-    eligible_donor_clusters = n_distinct(donor_cluster),
-    eligible_donor_units = n_distinct(panel_iv_target_unit_id),
-    eligible_donor_counties = n_distinct(county_fips),
-    eligible_donor_areas = n_distinct(oews_area_code),
-    .groups = "drop"
-  )
-
-# An OEWS area can map to many counties, donor units, and even both selected
-# donor clusters. Collapse those mappings first. The entropy-center mass is
-# expanded to counties with the fixed within-area frame shares before donor
-# selection, then re-aggregated here.
-area_support <- eligible_donor_area_mappings %>%
-  group_by(
-    aewr_region_id,
-    target_cluster,
-    source_year,
-    iv_k,
-    oews_area_code
-  ) %>%
-  summarise(
-    oews_area_name = first_nonmissing(oews_area_name),
-    oews_area_mean_hourly_wage = first(
-      oews_area_mean_hourly_wage
-    ),
-    area_selected_frame_employment = sum(
-      oews_area_allocated_frame_employment,
-      na.rm = TRUE
-    ),
-    selected_county_area_share_sum = sum(county_oews_area_share),
-    selected_mapped_townships = sum(oews_area_mapped_townships),
-    oews_area_wage_covered_employment = first(
-      oews_area_wage_covered_employment
-    ),
-    oews_occupation_count = first(oews_occupation_count),
-    minimum_source_state_rake_factor = min(state_rake_factor),
-    maximum_source_state_rake_factor = max(state_rake_factor),
-    source_annual_update_methods = paste(
-      sort(unique(annual_update_source)),
-      collapse = "|"
-    ),
-    source_annual_growth_methods = paste(
-      sort(unique(annual_growth_source)),
-      collapse = "|"
-    ),
-    mapped_donor_clusters = n_distinct(donor_cluster),
-    mapped_donor_cluster_ids = paste(
-      paste0("c", sort(unique(donor_cluster))),
-      collapse = "|"
-    ),
-    mapped_donor_units = n_distinct(panel_iv_target_unit_id),
-    mapped_donor_counties = n_distinct(county_fips),
-    mapping_rows = n(),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    frame_employment_observed = is.finite(area_selected_frame_employment) &
-      area_selected_frame_employment > 0,
-    oews_wage_observed = is.finite(oews_area_mean_hourly_wage) &
-      oews_area_mean_hourly_wage > 0
-  ) %>%
-  group_by(aewr_region_id, target_cluster, source_year) %>%
-  mutate(
-    baseline_frame_employment = sum(
-      if_else(
-        frame_employment_observed,
-        area_selected_frame_employment,
-        0
-      ),
-      na.rm = TRUE
-    ),
-    instrument_frame_employment = sum(
-      if_else(
-        oews_wage_observed,
-        area_selected_frame_employment,
-        0
-      ),
-      na.rm = TRUE
-    ),
-    missing_wage_frame_share = if_else(
-      baseline_frame_employment > 0,
-      1 -
-        instrument_frame_employment /
-          baseline_frame_employment,
-      NA_real_
-    )
-  ) %>%
-  ungroup()
-
-selected_entropy_area_weights <- eligible_donor_area_mappings %>%
-  select(
-    county_fips,
-    aewr_region_id,
-    target_cluster,
-    source_year,
-    iv_k,
-    oews_area_code
-  ) %>%
+county_donor_frame <- candidate_counties %>%
   inner_join(
-    realized_county_area_weights,
-    by = c(
-      "county_fips",
-      "aewr_region_id",
-      "source_year",
-      "oews_area_code"
-    ),
+    recovered_weights,
+    by = c("county_fips", "aewr_region_id", "source_year"),
     relationship = "many-to-many"
   ) %>%
+  mutate(
+    calibrated_weight_valid = is.finite(calibrated_center_weight) &
+      calibrated_center_weight > 0,
+    donor_eligible = calibrated_weight_valid &
+      !target_area_overlap &
+      donor_wage_available
+  ) %>%
   group_by(
     aewr_region_id,
     target_cluster,
     source_year,
-    iv_k,
-    oews_area_code,
     weight_specification,
     moment_spec,
     is_primary,
     instrument_spec_label
   ) %>%
-  summarise(
-    area_selected_entropy_weight = sum(
-      entropy_county_area_weight,
+  mutate(
+    candidate_calibrated_weight_mass = sum(
+      if_else(calibrated_weight_valid, calibrated_center_weight, 0),
       na.rm = TRUE
     ),
-    .groups = "drop"
-  )
-
-make_area_weight_spec <- function(
-  data,
-  selected_weight_column,
-  weight_spec,
-  baseline_weight_spec,
-  weight_component,
-  weight_specification,
-  moment_spec,
-  wage_target_used,
-  rho,
-  kappa_multiplier,
-  is_primary,
-  instrument_spec_label
-) {
-  data %>%
-    mutate(
-      selected_weight_mass = .data[[selected_weight_column]],
-      weight_mass_observed = is.finite(selected_weight_mass) &
-        selected_weight_mass > 0,
-      weight_wage_observed = weight_mass_observed & oews_wage_observed
-    ) %>%
-    group_by(aewr_region_id, target_cluster, source_year) %>%
-    mutate(
-      eligible_weight_mass = sum(
-        if_else(weight_mass_observed, selected_weight_mass, 0),
-        na.rm = TRUE
+    nonoverlap_calibrated_weight_mass = sum(
+      if_else(
+        calibrated_weight_valid & !target_area_overlap,
+        calibrated_center_weight,
+        0
       ),
-      observed_wage_weight_mass = sum(
-        if_else(weight_wage_observed, selected_weight_mass, 0),
-        na.rm = TRUE
-      ),
-      missing_wage_weight_share = if_else(
-        eligible_weight_mass > 0,
-        1 - observed_wage_weight_mass / eligible_weight_mass,
-        NA_real_
-      ),
-      area_weight = if_else(
-        weight_mass_observed & eligible_weight_mass > 0,
-        selected_weight_mass / eligible_weight_mass,
-        NA_real_
-      ),
-      instrument_weight = if_else(
-        weight_wage_observed & observed_wage_weight_mass > 0,
-        selected_weight_mass / observed_wage_weight_mass,
-        NA_real_
-      )
-    ) %>%
-    ungroup() %>%
-    mutate(
-      weight_spec = .env$weight_spec,
-      baseline_weight_spec = .env$baseline_weight_spec,
-      weight_component = .env$weight_component,
-      weight_specification = .env$weight_specification,
-      moment_spec = .env$moment_spec,
-      wage_target_used = .env$wage_target_used,
-      rho = .env$rho,
-      kappa_multiplier = .env$kappa_multiplier,
-      is_primary = .env$is_primary,
-      weight_draw_id = NA_integer_,
-      instrument_spec_label = .env$instrument_spec_label
+      na.rm = TRUE
+    ),
+    eligible_calibrated_weight_mass = sum(
+      if_else(donor_eligible, calibrated_center_weight, 0),
+      na.rm = TRUE
+    ),
+    instrument_weight = if_else(
+      donor_eligible & eligible_calibrated_weight_mass > 0,
+      calibrated_center_weight / eligible_calibrated_weight_mass,
+      NA_real_
     )
-}
-
-entropy_area_frames <- lapply(
-  seq_len(nrow(publication_specs)),
-  function(index) {
-    selected_spec <- publication_specs[index, ]
-    spec_weights <- selected_entropy_area_weights %>%
-      filter(
-        weight_specification ==
-          selected_spec$weight_specification[[1]],
-        moment_spec == selected_spec$moment_spec[[1]],
-        is_primary == selected_spec$is_primary[[1]],
-        instrument_spec_label ==
-          selected_spec$instrument_spec_label[[1]]
-      ) %>%
-      select(
-        aewr_region_id,
-        target_cluster,
-        source_year,
-        iv_k,
-        oews_area_code,
-        area_selected_entropy_weight
-      )
-
-    make_area_weight_spec(
-      area_support %>%
-        inner_join(
-          spec_weights,
-          by = c(
-            "aewr_region_id",
-            "target_cluster",
-            "source_year",
-            "iv_k",
-            "oews_area_code"
-          ),
-          relationship = "one-to-one"
-        ),
-      selected_weight_column = "area_selected_entropy_weight",
-      weight_spec = DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC,
-      baseline_weight_spec = DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
-      weight_component = DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT,
-      weight_specification =
-        selected_spec$weight_specification[[1]],
-      moment_spec = selected_spec$moment_spec[[1]],
-      wage_target_used = TRUE,
-      rho = DISSIMILARITY_IV_PRIMARY_RHO,
-      kappa_multiplier = DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER,
-      is_primary = selected_spec$is_primary[[1]],
-      instrument_spec_label =
-        selected_spec$instrument_spec_label[[1]]
-    )
-  }
-)
-
-area_frame <- bind_rows(entropy_area_frames) %>%
+  ) %>%
+  ungroup() %>%
   mutate(
     policy_year = source_year + 1L,
     aewr_iv_cluster_id = make_dissimilarity_cluster_id(
       aewr_region_id,
       target_cluster
     ),
+    weight_spec = DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC,
+    baseline_weight_spec = DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
+    weight_component = DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT,
+    wage_target_used = TRUE,
+    rho = DISSIMILARITY_IV_PRIMARY_RHO,
+    kappa_multiplier = DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER,
+    weight_draw_id = NA_integer_,
     instrument_family = DISSIMILARITY_IV_INSTRUMENT_FAMILY,
     aggregation_spec = DISSIMILARITY_IV_AGGREGATION_SPEC,
     baseline_frame_proxy = DISSIMILARITY_IV_BASELINE_FRAME_PROXY,
@@ -656,11 +327,30 @@ area_frame <- bind_rows(entropy_area_frames) %>%
     target_cluster,
     source_year,
     desc(is_primary),
-    oews_area_code
+    donor_cluster,
+    county_fips
   )
 
-observed_instruments <- area_frame %>%
-  filter(weight_wage_observed) %>%
+assert_geo_columns(
+  county_donor_frame,
+  c("county_fips", "aewr_region_id"),
+  allow_na = character()
+)
+if (
+  nrow(county_donor_frame) == 0L ||
+    anyDuplicated(county_donor_frame[c(
+      "aewr_region_id",
+      "target_cluster",
+      "source_year",
+      "weight_specification",
+      "county_fips"
+    )]) > 0L
+) {
+  stop("The county donor frame must be nonempty and unique by target/spec/county.",
+    call. = FALSE)
+}
+
+observed_instruments <- county_donor_frame %>%
   group_by(
     aewr_region_id,
     target_cluster,
@@ -669,51 +359,85 @@ observed_instruments <- area_frame %>%
   ) %>%
   summarise(
     z_dissimilarity_nominal_raw = sum(
-      instrument_weight *
-        oews_area_mean_hourly_wage
+      instrument_weight * donor_nominal_hourly_wage,
+      na.rm = TRUE
     ),
-    baseline_frame_employment = first(
-      baseline_frame_employment
+    z_dissimilarity_real_raw = sum(
+      instrument_weight * donor_real_hourly_wage,
+      na.rm = TRUE
     ),
-    instrument_frame_employment = first(
-      instrument_frame_employment
+    instrument_weight_sum = sum(instrument_weight, na.rm = TRUE),
+    observed_donor_clusters = n_distinct(donor_cluster[donor_eligible]),
+    observed_donor_units = n_distinct(
+      panel_iv_target_unit_id[donor_eligible]
     ),
-    missing_wage_frame_share = first(
-      missing_wage_frame_share
+    observed_donor_counties = n_distinct(county_fips[donor_eligible]),
+    observed_oews_areas = n_distinct(
+      oews_area_code[donor_eligible & !is.na(oews_area_code)]
     ),
-    eligible_weight_mass = first(eligible_weight_mass),
-    observed_wage_weight_mass = first(
-      observed_wage_weight_mass
+    instrument_weight_ess = {
+      finite_weights <- instrument_weight[
+        is.finite(instrument_weight) & instrument_weight > 0
+      ]
+      if (length(finite_weights) > 0L) {
+        1 / sum(finite_weights^2)
+      } else {
+        NA_real_
+      }
+    },
+    maximum_instrument_county_weight = {
+      finite_weights <- instrument_weight[
+        is.finite(instrument_weight) & instrument_weight > 0
+      ]
+      if (length(finite_weights) > 0L) {
+        max(finite_weights)
+      } else {
+        NA_real_
+      }
+    },
+    oews_wage_proxy_coverage_weight = if_else(
+      nonoverlap_calibrated_weight_mass[[1]] > 0,
+      eligible_calibrated_weight_mass[[1]] /
+        nonoverlap_calibrated_weight_mass[[1]],
+      NA_real_
     ),
-    missing_wage_weight_share = first(
-      missing_wage_weight_share
-    ),
-    observed_oews_areas = n_distinct(oews_area_code),
-    instrument_weight_ess = 1 /
+    qcew_employment_coverage_weight = if_else(
+      nonoverlap_calibrated_weight_mass[[1]] > 0,
       sum(
-        instrument_weight^2
-      ),
-    maximum_instrument_area_weight = max(
-      instrument_weight
+        calibrated_center_weight[
+          calibrated_weight_valid &
+            !target_area_overlap &
+            qcew_strict_complete
+        ],
+        na.rm = TRUE
+      ) / nonoverlap_calibrated_weight_mass[[1]],
+      NA_real_
     ),
-    weighted_oews_occupation_count = sum(
-      instrument_weight * oews_occupation_count
+    candidate_calibrated_weight_mass = first(
+      candidate_calibrated_weight_mass
     ),
-    multi_county_oews_areas = sum(mapped_donor_counties > 1L),
-    multi_unit_oews_areas = sum(mapped_donor_units > 1L),
-    multi_cluster_oews_areas = sum(mapped_donor_clusters > 1L),
+    nonoverlap_calibrated_weight_mass = first(
+      nonoverlap_calibrated_weight_mass
+    ),
+    eligible_calibrated_weight_mass = first(
+      eligible_calibrated_weight_mass
+    ),
+    active_moment_count = first(active_moment_count),
+    inactive_moment_count = first(inactive_moment_count),
+    source_year_ppi_2012 = first(source_year_ppi_2012),
+    source_annual_update_methods = paste(
+      sort(unique(annual_update_source)),
+      collapse = "|"
+    ),
+    donor_wage_spec = first(donor_wage_spec),
+    donor_wage_geography = first(donor_wage_geography),
     .groups = "drop"
   )
-
-write_parquet(
-  area_frame,
-  path_int("panel_iv_area_frame.parquet")
-)
 
 fixed_cluster_counts <- primary_clusters %>%
   count(
     aewr_region_id,
-    donor_cluster = target_cluster,
+    donor_cluster,
     name = "fixed_donor_cluster_units"
   )
 
@@ -740,24 +464,9 @@ target_geometry <- primary_donor_map %>%
     .groups = "drop"
   )
 
-instrument_weight_specs <- area_frame %>%
-  distinct(
-    weight_spec,
-    baseline_weight_spec,
-    weight_component,
-    weight_specification,
-    moment_spec,
-    wage_target_used,
-    rho,
-    kappa_multiplier,
-    is_primary,
-    weight_draw_id,
-    instrument_spec_label
-  )
-
 instrument_grid <- target_geometry %>%
   crossing(source_year = source_years) %>%
-  crossing(instrument_weight_specs) %>%
+  crossing(publication_specs) %>%
   left_join(
     observed_instruments,
     by = c(
@@ -771,77 +480,55 @@ instrument_grid <- target_geometry %>%
     candidate_support,
     by = c("aewr_region_id", "target_cluster", "source_year")
   ) %>%
-  left_join(
-    eligible_support,
-    by = c("aewr_region_id", "target_cluster", "source_year")
-  ) %>%
-  left_join(
-    excluded_overlap_support,
-    by = c("aewr_region_id", "target_cluster", "source_year")
-  ) %>%
   mutate(
-    observed_donor_clusters = eligible_donor_clusters,
-    observed_donor_units = eligible_donor_units,
-    observed_donor_counties = eligible_donor_counties,
     across(
       c(
         observed_donor_clusters,
         observed_donor_units,
         observed_donor_counties,
         observed_oews_areas,
-        multi_county_oews_areas,
-        multi_unit_oews_areas,
-        multi_cluster_oews_areas,
         candidate_donor_clusters,
         candidate_donor_units,
         candidate_donor_counties,
-        candidate_donor_areas,
-        candidate_wage_areas,
-        candidate_frame_areas,
-        eligible_donor_clusters,
-        eligible_donor_units,
-        eligible_donor_counties,
-        eligible_donor_areas,
-        oews_overlap_areas_excluded
+        target_overlap_counties_excluded,
+        target_overlap_areas_excluded
       ),
       ~ replace_na(as.integer(.x), 0L)
+    ),
+    instrument_available =
+      observed_donor_clusters ==
+        DISSIMILARITY_IV_MIN_OBSERVED_DONOR_CLUSTERS &
+        is.finite(instrument_weight_sum) &
+        abs(instrument_weight_sum - 1) <= 1e-10 &
+        is.finite(z_dissimilarity_real_raw) &
+        z_dissimilarity_real_raw > 0,
+    z_dissimilarity_nominal = if_else(
+      instrument_available,
+      z_dissimilarity_nominal_raw,
+      NA_real_
+    ),
+    z_dissimilarity_real = if_else(
+      instrument_available,
+      z_dissimilarity_real_raw,
+      NA_real_
+    ),
+    policy_year = source_year + 1L,
+    aewr_iv_cluster_id = make_dissimilarity_cluster_id(
+      aewr_region_id,
+      target_cluster
     ),
     donor_unit_coverage = if_else(
       fixed_donor_units > 0,
       observed_donor_units / fixed_donor_units,
       NA_real_
     ),
-    instrument_available = observed_donor_clusters ==
-      DISSIMILARITY_IV_MIN_OBSERVED_DONOR_CLUSTERS &
-      is.finite(z_dissimilarity_nominal_raw),
-    z_dissimilarity_nominal = if_else(
-      instrument_available,
-      z_dissimilarity_nominal_raw,
-      NA_real_
-    ),
-    policy_year = source_year + 1L
-  ) %>%
-  left_join(
-    ppi %>%
-      transmute(
-        policy_year = as.integer(year),
-        policy_year_ppi_2012 = as.numeric(ppi_2012)
-      ),
-    by = "policy_year",
-    relationship = "many-to-one"
-  ) %>%
-  mutate(
-    z_dissimilarity_real = if_else(
-      instrument_available &
-        is.finite(policy_year_ppi_2012) &
-        policy_year_ppi_2012 > 0,
-      z_dissimilarity_nominal / policy_year_ppi_2012,
-      NA_real_
-    ),
-    aewr_iv_cluster_id = make_dissimilarity_cluster_id(
-      aewr_region_id,
-      target_cluster
-    ),
+    weight_spec = DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC,
+    baseline_weight_spec = DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
+    weight_component = DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT,
+    wage_target_used = TRUE,
+    rho = DISSIMILARITY_IV_PRIMARY_RHO,
+    kappa_multiplier = DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER,
+    weight_draw_id = NA_integer_,
     instrument_family = DISSIMILARITY_IV_INSTRUMENT_FAMILY,
     aggregation_spec = DISSIMILARITY_IV_AGGREGATION_SPEC,
     baseline_frame_proxy = DISSIMILARITY_IV_BASELINE_FRAME_PROXY,
@@ -859,6 +546,8 @@ instrument_grid <- target_geometry %>%
     donor_cluster_count,
     instrument_family,
     aggregation_spec,
+    donor_wage_spec,
+    donor_wage_geography,
     baseline_frame_proxy,
     annual_update_spec,
     geographic_allocation_spec,
@@ -886,32 +575,24 @@ instrument_grid <- target_geometry %>%
     donor_unit_coverage,
     observed_donor_counties,
     observed_oews_areas,
-    baseline_frame_employment,
-    instrument_frame_employment,
-    missing_wage_frame_share,
-    eligible_weight_mass,
-    observed_wage_weight_mass,
-    missing_wage_weight_share,
-    instrument_weight_ess,
-    maximum_instrument_area_weight,
-    weighted_oews_occupation_count,
-    multi_county_oews_areas,
-    multi_unit_oews_areas,
-    multi_cluster_oews_areas,
     candidate_donor_clusters,
     candidate_donor_units,
     candidate_donor_counties,
-    candidate_donor_areas,
-    candidate_wage_areas,
-    candidate_frame_areas,
-    eligible_donor_clusters,
-    eligible_donor_units,
-    eligible_donor_counties,
-    eligible_donor_areas,
-    oews_overlap_areas_excluded,
+    target_overlap_counties_excluded,
+    target_overlap_areas_excluded,
+    candidate_calibrated_weight_mass,
+    nonoverlap_calibrated_weight_mass,
+    eligible_calibrated_weight_mass,
+    qcew_employment_coverage_weight,
+    oews_wage_proxy_coverage_weight,
+    active_moment_count,
+    inactive_moment_count,
+    instrument_weight_ess,
+    maximum_instrument_county_weight,
     nearest_selected_donor_distance,
     farthest_selected_donor_distance,
-    policy_year_ppi_2012
+    source_annual_update_methods,
+    source_year_ppi_2012
   ) %>%
   arrange(
     aewr_region_id,
@@ -920,7 +601,25 @@ instrument_grid <- target_geometry %>%
     desc(is_primary)
   )
 
+if (
+  nrow(instrument_grid) !=
+    85L * length(source_years) * nrow(publication_specs) ||
+    any(instrument_grid$source_year != instrument_grid$policy_year - 1L) ||
+    anyDuplicated(instrument_grid[c(
+      "aewr_region_id",
+      "target_cluster",
+      "source_year",
+      "instrument_spec_label"
+    )]) > 0L
+) {
+  stop("The Panel-IV instrument grid violates its declared keys or t-1 timing.",
+    call. = FALSE)
+}
 
+write_parquet(
+  county_donor_frame,
+  path_int("panel_iv_county_donor_frame.parquet")
+)
 write_parquet(
   instrument_grid,
   path_int("panel_iv_instrument_cluster_year.parquet")

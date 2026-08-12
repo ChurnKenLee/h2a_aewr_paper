@@ -42,7 +42,8 @@
 
 # Large intermediate cache
 - data/intermediate/cache/**
-- data/intermediate/panel_iv_fls_geography_draws/
+- data/intermediate/panel_iv_fls_geography_draws/**
+- data/intermediate/panel_iv_fls_county_draws/**
 
 # symlink to CCV lean4 proof
 - ccv_symlink.lean

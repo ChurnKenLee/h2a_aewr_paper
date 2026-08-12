@@ -5,37 +5,38 @@
    \begin{tabular}{lcccc}
       \tabularnewline \midrule \midrule
       Dependent Variable: & \multicolumn{4}{c}{fisher\_quantity\_index}\\
-      Specification                        & Wage only & Alt. targets & Wage only + controls & Alt. targets + controls \\   
-      Model:                               & (1)       & (2)          & (3)                  & (4)\\  
+      Specification                        & Wage only & Seasonal/composition & Wage only + controls & Seasonal/composition + controls \\
+      Model:                               & (1)       & (2)                  & (3)                  & (4)\\
       \midrule
       \emph{Variables}\\
-      Real AEWR (2012 dollars)             & -96.78    & -627.0       & -77.19               & -656.5\\   
-                                           & (123.9)   & (575.7)      & (144.2)              & (600.9)\\   
+      Real AEWR (2012 dollars)             & -11.09    & 1.667                & 10.10                & 22.32\\
+                                           & (134.8)   & (120.3)              & (175.6)              & (159.1)\\
       \midrule
       \emph{Fixed-effects}\\
-      county\_fips                         & Yes       & Yes          & Yes                  & Yes\\  
-      year                                 & Yes       & Yes          & Yes                  & Yes\\  
+      county\_fips                         & Yes       & Yes                  & Yes                  & Yes\\
+      year                                 & Yes       & Yes                  & Yes                  & Yes\\
       \midrule
       \emph{Fit statistics}\\
-      First-stage excluded-instrument F    & 32.54     & 10.28        & 34.80                & 10.86\\  
-      Observations                         & 33,165    & 33,165       & 33,165               & 33,165\\  
-      R$^2$                                & 0.42988   & 0.42991      & 0.42999              & 0.43002\\  
-      Alternative seasonal targets         & No        & Yes          & No                   & Yes\\  
-      Controls                             & No        & No           & Yes                  & Yes\\  
-      Static propensity differential trend & No        & No           & Yes                  & Yes\\  
-      Prediction training cutoff           & 2011      & 2011         & 2011                 & 2011\\  
-      County fixed effects                 & Yes       & Yes          & Yes                  & Yes\\  
-      Year fixed effects                   & Yes       & Yes          & Yes                  & Yes\\  
-      AEWR-subregion clustered SEs         & Yes       & Yes          & Yes                  & Yes\\  
-      Number of SE clusters                & 80        & 80           & 80                   & 80\\  
-      Common outcome sample                & Yes       & Yes          & Yes                  & Yes\\  
+      First-stage excluded-instrument F    & 22.97     & 39.31                & 24.96                & 46.11\\
+      Observations                         & 33,441    & 33,441               & 33,441               & 33,441\\
+      R$^2$                                & 0.42988   & 0.42988              & 0.42999              & 0.42999\\
+      Seasonal and composition moments     & No        & Yes                  & No                   & Yes\\
+      Controls                             & No        & No                   & Yes                  & Yes\\
+      Static propensity differential trend & No        & No                   & Yes                  & Yes\\
+      Prediction training cutoff           & 2011      & 2011                 & 2011                 & 2011\\
+      County fixed effects                 & Yes       & Yes                  & Yes                  & Yes\\
+      Year fixed effects                   & Yes       & Yes                  & Yes                  & Yes\\
+      AEWR-subregion clustered SEs         & Yes       & Yes                  & Yes                  & Yes\\
+      Number of SE clusters                & 80        & 80                   & 80                   & 80\\
+      Common outcome sample                & Yes       & Yes                  & Yes                  & Yes\\
       \midrule \midrule
       \multicolumn{5}{l}{\emph{Clustered (aewr\_iv\_cluster\_id) standard-errors in parentheses}}\\
       \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
    \end{tabular}
-   
-   \par \raggedright 
-   Columns 1 and 3 use the wage-only instrument; columns 2 and 4 use the wage-plus-seasonal instrument.\\
+
+   \par \raggedright
+   Columns 1 and 3 use the wage-only instrument; columns 2 and 4 use the wage-plus-seasonal-and-composition instrument.\\
+   Both instruments use the county-mapped OEWS-area Big-Six hourly wage proxy as the donor wage level; QCEW supplies county employment, seasonal, and field/livestock features.\\
    All columns use the controlled specification's complete-case county-year sample from 2011 through 2022. Column 4 is preferred.\\
    Controlled columns include the standardized static PPML propensity interacted with year minus 2011; the selected PPML training cutoff is 2011.
 \end{table}

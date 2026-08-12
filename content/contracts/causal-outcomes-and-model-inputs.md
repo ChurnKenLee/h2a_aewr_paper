@@ -11,7 +11,7 @@ to define treatment, scale an outcome, select a sample, adjust a model, absorb
 heterogeneity, construct an instrument, or calculate inference. A field can be
 scientifically important without being an outcome.
 
-The canonical union contains thirteen causal outcomes. Individual designs use
+The canonical union contains fourteen causal outcomes. Individual designs use
 different subsets and sometimes different units, so similar labels are not
 automatically interchangeable across designs.
 
@@ -19,12 +19,13 @@ automatically interchangeable across designs.
 
 | Causal outcome | Executable column or construction | Supported designs |
 | --- | --- | --- |
-| Certified positions/workers relative to fixed 2011 farm employment | Shared: `h2a_cert_share_farm_workers_2011_start_year`; MC: `mc_y_certified_positions_per_1000`, which multiplies the same source count by 1,000 before dividing by `emp_farm_2011` | DiD primary and event study; panel IV; MC |
-| Certified hours relative to fixed 2011 farm employment | `h2a_cert_hours_per_farm_worker_2011_start_year`; MC equivalent: `mc_y_certified_hours_per_worker` | Panel IV; MC |
-| Applications relative to fixed 2011 farm employment | Shared: `h2a_applications_per_farm_worker_2011_start_year`; MC: `mc_y_applications_per_1000`, which reports per 1,000 baseline workers | Panel IV; MC |
-| H-2A employers using balanced linkage | Source: `nbr_employers_balanced_start_year`; panel IV divides by `emp_farm_2011`; MC models the raw count as `mc_y_employers` | Panel IV; MC |
-| Certified positions per application | `h2a_cert_positions_per_application_start_year`; MC equivalent: `mc_y_positions_per_application` | Panel IV; MC |
-| Certified hours per certified position | `h2a_cert_hours_per_position_start_year`; MC equivalent: `mc_y_hours_per_position` | Panel IV; MC |
+| Certified positions/workers relative to a declared farm-employment baseline | Shared: `h2a_cert_share_farm_workers_2011_start_year`; MC fits raw `mc_y_certified_positions`, then reports a post-fit effect per 1,000 mean 2008–2010 farm workers | DiD primary and event study; panel IV; MC |
+| Certified hours relative to a declared farm-employment baseline | Shared: `h2a_cert_hours_per_farm_worker_2011_start_year`; MC fits raw `mc_y_certified_hours`, then reports a post-fit effect per mean 2008–2010 farm worker | Panel IV; MC |
+| Applications relative to a declared farm-employment baseline | Shared: `h2a_applications_per_farm_worker_2011_start_year`; MC fits raw `mc_y_applications`, then reports a post-fit effect per 1,000 mean 2008–2010 farm workers | Panel IV; MC |
+| Requested H-2A positions/workers | MC fits raw `mc_y_requested_positions` jointly with the other primitive outcomes, then constructs any per-worker rate after fitting with the declared 2008–2010 mean farm-employment denominator | MC |
+| H-2A employers using balanced linkage | Source: `nbr_employers_balanced_start_year`; panel IV divides by `emp_farm_2011`; MC models the raw count as `mc_y_employers_balanced` | Panel IV; MC |
+| Certified positions per application | Shared: `h2a_cert_positions_per_application_start_year`; MC derives the ratio-of-aggregate effect after jointly fitting raw certified positions and applications | Panel IV; MC |
+| Certified hours per certified position | Shared: `h2a_cert_hours_per_position_start_year`; MC derives the ratio-of-aggregate effect after jointly fitting raw certified hours and positions | Panel IV; MC |
 | Any H-2A application | MC constructs `mc_y_any_application = 1[nbr_applications_start_year > 0]` and estimates it as a Gaussian linear-probability outcome | MC |
 
 The shared-panel producer supplies the fixed-2011 denominators and the common
@@ -45,7 +46,7 @@ causal employer outcome.
 | Hired-labor share of farm production expenses | `share_farm_laborexp_prodexp` | DiD; panel IV |
 | Fisher crop output-quantity index | `fisher_quantity_index` | Panel IV |
 
-{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="93f0e3fa0c2df5126f30580f66c680491575dd56ca1f23f4ed36cc09e299d797") }}
+{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="faad687f82c863b634a4a2c847db984773bf48b1f0fe052ec349ecbc3469970a") }}
 
 These are downstream responses to the policy exposure, not controls. Moving
 one of them to the right-hand side or using it for sample selection would
@@ -89,56 +90,69 @@ margin. Its registry constructs the normalized employer and farm-income
 outcomes locally, then requires every outcome together with the treatment,
 instruments, controls, identifiers, and prediction metadata.
 
-{{ grounding(path="code/designs/panel_iv/07_estimate_panel_iv.R", anchor="panel-iv-outcome-and-input-registry", sha256="08334d9cb7d1517baef359f577c13a84deb7a3e6824926eb453242ca288f5cc3") }}
+{{ grounding(path="code/designs/panel_iv/07_estimate_panel_iv.R", anchor="panel-iv-outcome-and-input-registry", sha256="9122a648fbd9208e60f06f4bcfaf8f3ee398de7566687497368e9fac31d1f61d") }}
 
-The model treats real AEWR `aewr_ppi` as endogenous. It requires the wage-only
-and wage-plus-seasonal excluded instruments, with the latter preferred. The
+The model treats real AEWR `aewr_ppi` as endogenous. It requires
+`z_wage_only_real` and the preferred
+`z_wage_seasonal_composition_real`. Both use a prior-period county-weight
+distribution and a county-mapped OEWS-area Big-Six hourly-wage proxy for the
+donor wage level. QCEW 111/112 supplies the annual county employment path and
+the preferred calibration's three independent FLS-worker/QCEW-employment
+seasonal contrasts and quarterly undivided FLS field/livestock-composition
+residuals. QCEW and BEA wage totals are not donor wage fallbacks. These source
+features construct excluded instruments; none is a causal outcome. The
 controlled specifications add lagged log population, lagged farm-employment
-share, lagged employment-to-population ratio, lagged real p10 wage, and the
-standardized static H-2A propensity interacted with `year - 2011`.
+share, lagged
+employment-to-population ratio, lagged real p10 wage, and the standardized
+static H-2A propensity interacted with `year - 2011`.
 
 All specifications include county and year fixed effects and cluster by the
 AEWR-region-by-target-subregion identifier `aewr_iv_cluster_id`. Each outcome
 uses its own complete-case sample, but all four instrument/control columns for
 that outcome must use identical observations.
 
-{{ grounding(path="code/designs/panel_iv/design.R", anchor="panel-iv-design-contract", sha256="c4b4dc58eb8f69d52e674403bbca8668e5b0720f6618d8664af4a7d14a88c650") }}
+{{ grounding(path="code/designs/panel_iv/design.R", anchor="panel-iv-design-contract", sha256="e810543e472e5b67b5b0b2a9a8cd051a1718842e13f3932f4d69fb8ed0ed9960") }}
 
 ## Mundlak-Chamberlain mapping
 
-MC estimates the seven H-2A outcomes and does not currently estimate the six
-farm-economic outcomes. Four volume outcomes—applications, balanced-linkage
-employers, certified positions, and certified hours—are flagged as primary
-totals. Any application and the two conditional adjustment ratios are
-additional margins. Positions per application require positive applications;
-hours per position require positive certified positions.
+MC version 4 jointly estimates six primitive H-2A outcomes on one common
+design and sample: applications, balanced-linkage employers, requested
+positions, certified positions, certified hours, and any application. It then
+constructs per-worker rates, positions per application, hours per position,
+raw-log-AEWR elasticities, and percent-of-observed-mean effects per declared
+treatment unit after fitting. Only untransformed `aewr_log_level` and
+`aewr_log_change` coordinates receive elasticity labels because their 2010-level
+or preceding-year comparison enters additively and drops out of the own-coordinate
+log-AEWR derivative. A ratio of fitted
+aggregates is not confused with an average conditional unit ratio, and the
+supported fit never selects a sample using a positive post-treatment outcome.
 
-Its causal treatment is AEWR growth in log percentage points, with current,
-one-year-lag, and two-year-lag coordinates plus the declared polynomial and
-interaction basis. The main predetermined moderator is standardized mean
-2008–2010 AEWR bite.
+The treatment registry contains separate linear 2011-through-outcome-year
+coordinates for 2012–2022 outcome rows and a current-plus-one-lag benchmark for regional AEWR levels,
+frozen county bite, and predetermined county exposure times the regional path.
+It contains no polynomial dose or lag terms, cross-dose products, imposed
+trends, nonlinear outcome models, randomization inference, or bootstrap.
 
 The model also needs:
 
-- county, state, commuting-zone, AEWR-region, and strict market identifiers;
-- positive fixed-2011 farm employment for eligibility and scaling;
-- the 2008–2010 means and trends of baseline H-2A intensity, AEWR bite,
-  population, employment structure, farm-income composition, low wages,
-  cropland, and predicted H-2A intensity;
-- separate 2008, 2009, and 2010 Chamberlain histories for the declared subset
-  of selection variables, plus multilevel county/market/state/region components
-  constructed from baseline summaries and histories;
-- the 2011–2022 AEWR treatment history and region-level reassignment states;
-  and
-- model-specific year/region structure, resource guards, and finite-design CCV
-  reference law.
+- county, state, commuting-zone, AEWR-region, strict-market, and declared
+  sensitivity-cluster identifiers, all stored as strings;
+- positive mean 2008–2010 farm employment for eligibility and post-fit
+  constructed per-worker quantities, rather than a fixed-2011 filter;
+- 2008–2010 baseline means and their nested county/market/state/region Mundlak
+  components, with categorical calendar interactions but no imposed trend;
+- complete 2010–2022 real and nominal AEWR paths, applicable agricultural
+  minimum wages, and frozen 2008–09/2008–10 wage quantiles used by the declared
+  bite approximation;
+- the common causal-first full-rank basis and exact full-model leverage; and
+- analytic HC3 and cluster covariances plus an explicitly experimental scalar
+  continuous CCV-HC3 comparator.
 
-The executable `MC_OUTCOMES` registry is the authority for outcome columns,
-labels, sample rules, effect units, and primary-total status. The same design
-contract declares the treatment basis, baseline variables, moderator,
-hierarchy, model ladder, and inference reference.
+The executable Python contract is the authority for outcome columns,
+treatment families, history rules, moderators, fixed effects, clusters,
+rejected methods, and inference status.
 
-{{ grounding(path="code/designs/mundlak_chamberlain/design.R", anchor="mundlak-design-contract", sha256="c70937a1d9f59124bb62ddbc5b6c80e313545b905310cff064791c1851db6e93") }}
+{{ grounding(path="code/designs/mundlak_chamberlain/mcw/design.py", anchor="mundlak-design-contract", sha256="6278d1708c14e260861bf0fc8639e79310743d6795f2bfb4aab3bc609dccb252") }}
 
 ## Variables that are not causal outcomes
 
@@ -152,14 +166,18 @@ supported estimators:
 - BEA all-industry wage-and-salary jobs, farm wages and salaries, and farm wage
   supplements; these are shared source totals, not average-wage outcomes unless
   a design defines a positive hired-job denominator and promotes the result;
-- the shared nominal OEWS Big-Six hourly-wage proxy and its geographic and
-  publication-support fields, joined one-to-one by county-year but not treated
-  as an outcome unless an executable design registry explicitly promotes it;
+- the shared nominal OEWS Big-Six hourly- and annual-wage proxies and their
+  geographic and publication-support fields, joined one-to-one by county-year
+  but not treated as outcomes unless an executable design registry explicitly
+  promotes them;
+- separate QCEW NAICS 111/112 employment and wage bills, all-sector QCEW
+  totals, quarterly QCEW employment, FLS workers, and FLS wage rates used as
+  disclosed instrument features or targets rather than outcomes;
 - county/year fixed-effect identifiers, clusters, reassignment states, and
   design weights;
 - fixed-2011 farm employment and positive application/position counts used as
-  denominators or sample rules; and
-- requested positions, conservative/high-recall employer counts, log outcomes,
+  denominators or sample rules in other supported designs; and
+- conservative/high-recall employer counts, log outcomes,
   support measures, first-stage statistics, placebos, and other diagnostics not
   present in an executable outcome registry.
 

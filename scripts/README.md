@@ -17,8 +17,8 @@ Devenv shell before rerunning the pipeline.
 | `run_shared_panel.sh` | C01 normalization/merge followed by C02 shared build |
 | `run_descriptives.sh` | Two retained shared figures |
 | `run_did.sh` | DiD panel, four-column results, summary table, one coefficient plot |
-| `run_panel_iv.sh` | County-year panel IV: four first stages, seven four-column 2SLS tables, summary statistics, and diagnostic figures |
-| `run_mundlak_chamberlain.sh` | Multilevel Mundlak–Chamberlain AEWR-change dose response: panel, 28-model ladder, finite-design CCV inference, ggplot2 coefficient graphs, Great Tables outputs, diagnostics, and validation |
+| `run_panel_iv.sh` | QCEW-primary county-calibrated panel IV with an OEWS-area hourly donor-wage proxy: four first stages, twelve four-column 2SLS tables, diagnostics, figures, and artifact validation |
+| `run_mundlak_chamberlain.sh` | Version-4 Wooldridge–Mundlak–Chamberlain continuous-dose registry: DuckDB/Polars panel, full-history and one-lag OLS, constructed estimands, HC3/cluster inference, experimental scalar CCV comparator, and validation |
 | `run_all.sh` | Sources, derived data, shared panel, descriptives, DiD, panel IV, Mundlak–Chamberlain |
 
 Examples:

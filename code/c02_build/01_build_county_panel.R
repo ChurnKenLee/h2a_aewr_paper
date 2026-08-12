@@ -286,6 +286,30 @@ if (
 }
 # docs-ground:end shared-panel-contract
 
+qcew_shared_series <- c("crop_sector", "animal_sector", "all_sectors")
+for (series in qcew_shared_series) {
+  disclosed <- county_panel[[paste0("qcew_", series, "_disclosed")]]
+  employment <- county_panel[[
+    paste0("qcew_", series, "_annual_avg_emplvl")
+  ]]
+  wages <- county_panel[[paste0("qcew_", series, "_total_annual_wages")]]
+  observed <- !is.na(disclosed)
+  invalid <- observed & (
+    (disclosed &
+      (!is.finite(employment) | employment < 0 |
+        !is.finite(wages) | wages < 0)) |
+      (!disclosed & (!is.na(employment) | !is.na(wages)))
+  )
+  if (any(invalid)) {
+    stop(
+      "Shared-panel QCEW disclosure semantics are invalid for ",
+      series,
+      ".",
+      call. = FALSE
+    )
+  }
+}
+
 # docs-ground:start shared-panel-output
 write_parquet(
   county_panel,

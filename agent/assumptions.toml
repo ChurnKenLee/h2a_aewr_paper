@@ -76,19 +76,19 @@ regex = 'It\s+does\s+not create any design treatment'
 id = "OUTCOME-001"
 risk = "critical"
 owner = "empirical designs"
-statement = "The supported causal-outcome union contains thirteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule."
+statement = "The supported causal-outcome union contains fourteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule."
 source = "content/contracts/causal-outcomes-and-model-inputs.md"
 review_when = "An outcome, transformation, denominator, sample rule, treatment, control, moderator, instrument, or estimator changes."
 scopes = ["code/c02_build", "code/designs", "scripts/run_did.sh", "scripts/run_panel_iv.sh", "scripts/run_mundlak_chamberlain.sh"]
 [[assumptions.checks]]
 path = "content/contracts/causal-outcomes-and-model-inputs.md"
-contains = "The canonical union contains thirteen causal outcomes."
+contains = "The canonical union contains fourteen causal outcomes."
 [[assumptions.checks]]
 path = "code/designs/panel_iv/07_estimate_panel_iv.R"
 contains = "outcomes <- tribble("
 [[assumptions.checks]]
-path = "code/designs/mundlak_chamberlain/design.R"
-contains = "MC_OUTCOMES <- data.frame("
+path = "code/designs/mundlak_chamberlain/mcw/design.py"
+contains = "PRIMITIVE_OUTCOMES: Final = {"
 [[assumptions.checks]]
 path = "code/designs/did/02_main_results.R"
 contains = 'did_model(sample_full, "h2a_cert_share_farm_workers_2011_start_year")'
@@ -112,31 +112,37 @@ contains = "CZ-by-AEWR-region interaction"
 id = "IV-001"
 risk = "critical"
 owner = "panel IV"
-statement = "The preferred panel-IV specification is controlled column 4 with the wage-plus-seasonal instrument and aewr_iv_cluster_id inference clusters."
+statement = "The preferred panel-IV specification is controlled column 4 with QCEW-primary county calibration, the mapped OEWS-area hourly donor-wage proxy, source year t-1, and aewr_iv_cluster_id inference clusters."
 source = "content/designs/panel-iv.md"
 review_when = "Instrument construction, controls, samples, preferred column, or inference changes."
 scopes = ["code/designs/panel_iv", "scripts/run_panel_iv.sh"]
 [[assumptions.checks]]
 path = "content/designs/panel-iv.md"
-regex = 'controlled wage-plus-seasonal specification in column 4 is\s+preferred'
+regex = 'wage-plus-seasonal/composition instrument with controls \(preferred\)'
 [[assumptions.checks]]
 path = "code/designs/panel_iv/design.R"
 contains = 'DISSIMILARITY_IV_INFERENCE_CLUSTER <- "aewr_iv_cluster_id"'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/design.R"
+contains = '"county_mapped_oews_area_big_six_hourly_v1"'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/07_estimate_panel_iv.R"
+contains = '"z_wage_seasonal_composition_real"'
 
 [[assumptions]]
 id = "MC-001"
 risk = "critical"
 owner = "Mundlak-Chamberlain"
-statement = "The supported MC default is the bounded compact queue and inference uses the 17-state finite-design CCV reference law."
-source = "code/designs/mundlak_chamberlain/design.R"
-review_when = "The registry, execution queue, reassignment design, covariance, or resource guards change."
+statement = "The supported MC version-4 default is a bounded linear-history OLS registry; randomization and bootstrap inference are disabled, and the scalar continuous CCV-HC3 mixture is an explicitly experimental comparator rather than a Lean-proved exact reference law."
+source = "code/designs/mundlak_chamberlain/mcw/design.py"
+review_when = "The registry, treatment history, common sample, covariance, inference status, or resource guards change."
 scopes = ["code/designs/mundlak_chamberlain", "scripts/run_mundlak_chamberlain.sh"]
 [[assumptions.checks]]
-path = "code/designs/mundlak_chamberlain/design.R"
-contains = 'MC_SPEC_DEFAULT_STAGE <- "compact"'
+path = "code/designs/mundlak_chamberlain/mcw/design.py"
+contains = 'DEFAULT_STAGE: Final = "compact"'
 [[assumptions.checks]]
-path = "code/designs/mundlak_chamberlain/design.R"
-contains = "MC_CCV_REFERENCE_STATES <- 17L"
+path = "code/designs/mundlak_chamberlain/mcw/design.py"
+contains = "ALLOW_RANDOMIZATION_INFERENCE: Final = False"
 [[assumptions.checks]]
-path = "code/designs/mundlak_chamberlain/design.R"
-contains = 'MC_CCV_METHOD <- "finite_design_covariance_ccv"'
+path = "code/designs/mundlak_chamberlain/mcw/design.py"
+contains = 'CCV_STATUS: Final = "experimental_not_lean_validated"'
