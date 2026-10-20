@@ -41,7 +41,7 @@ def _(input_path, pl):
     census_labor = (
         pl.scan_parquet(input_path)
         .filter(
-            (pl.col("year") >= 2007)
+            (pl.col("year") >= 1997)
             & (pl.col("agg_level_desc") == "COUNTY")
             & (pl.col("freq_desc") == "ANNUAL")
             & (pl.col("reference_period_desc") == "YEAR")

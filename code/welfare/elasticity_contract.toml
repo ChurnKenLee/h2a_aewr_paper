@@ -1,0 +1,29 @@
+contract_version = 1
+status = "unfrozen"
+
+# The real-data runner intentionally stops while this contract is unfrozen.
+# Once one certified-hours elasticity is selected, replace the status above
+# with "frozen" and add the three sections illustrated below.
+#
+# [elasticity]
+# definition = "dlog_certified_hours_dlog_real_aewr"
+# estimate = -0.50
+# standard_error = 0.10
+# confidence_level = 0.95
+# inference_method = "declared_source_method"
+#
+# [source]
+# design = "declared_empirical_design"
+# artifact = "outputs/tables/declared_source_artifact.csv"
+# artifact_sha256 = "64 lowercase hexadecimal characters"
+# row_selector = "human-readable unique source-row selector"
+# target_population = "source estimand population"
+# target_weighting = "source estimand weighting"
+# target_start_year = 2013
+# target_end_year = 2022
+#
+# [application]
+# population = "all_shared_panel_county_years"
+# real_aewr_column = "aewr_ppi"
+# real_aewr_unit = "2012 farm-products-PPI-adjusted dollars per hour"
+# counterfactual_delta = 1.0

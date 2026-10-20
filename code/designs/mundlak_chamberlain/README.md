@@ -4,7 +4,8 @@ This branch consumes `data/processed/county_year_panel.parquet` and runs the
 version-4 DuckDB/Polars specification registry. Version 4 replaces the former
 three-lag polynomial Mundlak–Chamberlain program; the R v2.3/v3 files remain
 only as a historical compatibility record and are not called by the supported
-runner.
+runner. The v4 report stage removes historical result files that contain the
+superseded v1 employer outcome.
 
 ## Run
 
@@ -58,7 +59,7 @@ lower-geography treatments. Causal-first rank selection never drops a named
 history coordinate; it removes only redundant projection columns.
 
 Six primitive outcomes are fitted on one common sample and design:
-applications, balanced-linkage employers, requested positions, certified
+applications, balanced v2 linked worksite businesses, requested positions, certified
 positions, certified hours, and any application. Rates, ratios, and
 mean-normalized effects are constructed after estimation with named gradients;
 no post-outcome-selected sample is used by the supported fit. Only raw
@@ -77,11 +78,20 @@ cross-outcome assignment kernel.
 The frozen-distribution bite uses a declared five-quantile approximation to
 the unavailable county wage microdistribution. The 2008–09 window is the
 candidate definition and 2008–10 is a sensitivity. Both retain support-count
-metadata, including Rhode Island's incomplete 2008–09 history. The analysis
+metadata for quantiles separately from wage-based averages. The corrected
+source retains Rhode Island's 2009 outcome/quantile rows but leaves statutory
+2009 AEWR missing everywhere. Thus the fraction-affected average uses 2008
+alone in `f0809` and 2008/2010 in `f0810`; the baseline bite mean likewise uses
+2008/2010 where observed. `mc_fraction_affected_year_count_f0809`,
+`mc_fraction_affected_year_count_f0810` and `mc_baseline_bite_year_count` make
+that support explicit. These remain available-value averages under the
+existing rule, not reconstructed 2009 statutory exposure. The analysis
 eligibility/normalization input is mean 2008–10 farm employment, not a special
 2011 denominator. The frozen exposure share is the corresponding pre-period
 mean fraction affected, and the baseline bite moderator is the 2008–2010 mean
 real AEWR-minus-p25 gap; neither uses 2011 as a special baseline coordinate.
+After the AEWR source correction, rebuild this branch from the shared panel;
+the compact queue and treatment-history calendar remain unchanged.
 
 ## Inference status
 

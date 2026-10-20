@@ -1,0 +1,18 @@
+{
+  "status": "artifact_checks_passed",
+  "annual_reference_rows": 1764,
+  "occupational_lookup_rows": 297768,
+  "worksite_county_month_rows": 8666143,
+  "county_year_exposure_rows": 35049,
+  "denominator_comparisons": 8,
+  "common_sample_counties": 804,
+  "county_level_inputs_validated": true,
+  "nonpublic_nass_required": false,
+  "external_data_complete": false,
+  "remaining_external_requirements": [
+    "2009 statutory OES determinations and uncached occupational archives",
+    "worksite geocoding and subsequent boundary/outcome-linkage audit"
+  ],
+  "external_requirement_scope": "historical wage and finer spatial extensions; not required to run the current county comparisons",
+  "excluded_data_route": "non-public NASS data/custom tabulations unavailable by user instruction"
+}

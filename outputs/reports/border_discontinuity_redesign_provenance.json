@@ -1,0 +1,27 @@
+{
+  "design_id": "border_redesign_v6",
+  "empirical_status": "infeasible_to_claim_credible_and_informative_causal_redesign_from_current_inputs",
+  "identification_status": "not_established_with_current_local_data",
+  "generated_utc": "2026-09-08 02:02:37 UTC",
+  "R_version": "R version 4.6.1 (2026-06-24)",
+  "packages": ["0.14.2", "0.14.3", "0.4.1"],
+  "files": {
+    "code/designs/border_discontinuity/design.json": "37079303b4fb68ffc9d9ba1d6fa5122aa59d10c4716228a0224f89b8dd6f7487",
+    "code/designs/border_discontinuity/02_construct_geographies.py": "968c87ebd507d7ca842998bb37bee98100f49f12ae82e91c0e32c99d3404abb0",
+    "code/designs/border_discontinuity/geography.py": "be156a509d37437ea441c499914c5881359d91a8bbe3f664c5e78d86f7d11b03",
+    "code/designs/border_discontinuity/03_build_panel.py": "920386fdc6ab35417fead0119f00ff55938d56442cda6f8eb3e5143adbdb9199",
+    "code/designs/border_discontinuity/04_estimate_models.R": "1f31b414b4bb23503db9dee6181de22d1387a8369c2af4a8e2f4775d74af15ae",
+    "code/designs/border_discontinuity/07_estimate_redesign.R": "dc7afeb9f3f3631edf2ad9df2f5ee19c20c7c6587b8958fd39cd82d5b9149f08",
+    "code/designs/border_discontinuity/redesign.R": "a33c8f7eaeb3d183536ce780819db193a174c86c30dd270783a74023018722d0",
+    "code/designs/border_discontinuity/power.R": "b31858c824517fd0bc17517dc9d73c91c73f996903dd11f1ca19df952591dbc0",
+    "code/designs/border_discontinuity/bootstrap_power.R": "50da01f8ec713cdb297206def0316bb5dba14ffcae7dc9bb779debd66db8ed6c",
+    "code/designs/border_discontinuity/08_power_and_report.R": "d8b101c483ee029fb15a968ad89168a89f6f0973e9532f91b1b773e1efe97f01",
+    "data/processed/county_year_panel.parquet": "832109c9fc8b59afac04166f2c01e62cf3182e0e0c612e96e2a790feb9a56419",
+    "data/processed/border_discontinuity_panel.parquet": "8d1a13b279ff8b87273a60f788c346415f9aad75d3ad4e8a32fb00376cc32599",
+    "data/intermediate/border_discontinuity_county_features.parquet": "1880c6179c79181875f9d2cd7b8af8abb68823b194254413fe5e235de135fd4e",
+    "data/intermediate/border_discontinuity_geography_memberships.parquet": "75e2e1e699b4ab896d2f216244d1e8e434ae6b95a834d8980799604788d7f3f8",
+    "renv.lock": "646e82fbe8986d14f04042faf2fe6b78da1f2cd2d4ace603e52c5bebe0226886",
+    "uv.lock": "c376e3f8d2e710b9749f820516930ea200dba66cc5c94619900dec58b3b227eb",
+    "devenv.lock": "c996668fb1f81b24ded5d0ac0902e0c0291404bd568ca760b29f97e4c053bac2"
+  }
+}

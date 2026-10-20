@@ -16,6 +16,10 @@ The branch artifact is:
 data/intermediate/county_year_merged.parquet
 ```
 
+The H-2A normalizer requires one reviewed FY2008--2024 `worksite_business` v2
+linkage contract and passes its unit, version, vintage, review status, and
+review-report hash through to the merge.
+
 Run the complete shared branch with:
 
 ```sh
@@ -53,3 +57,8 @@ The downstream ownership boundary and supported invariants are documented in
 the grounded [shared-panel contract](../../content/contracts/shared-panel.md).
 The complete producer chain and join map are documented in
 [Generating the shared county-year panel](../../content/architecture/shared-panel-generation.md).
+
+The BEA employment normalizer retains the cached 2001--2022 history. The
+shared merge still uses its declared 2008--2022 backbone. AEWR normalization
+passes source status, document ID and the explicitly nonstatutory 2009 field;
+missing canonical 2009 wages propagate into their one- and two-year lags.

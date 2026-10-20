@@ -36,11 +36,21 @@ def _panel() -> pl.DataFrame:
             ],
             "year": list(VALIDATE.VALIDATED_ANALYSIS_YEARS) * 2,
             "mc_baseline_farm_employment": [100.0] * 11 + [None] * 11,
+            "employer_linkage_unit": ["worksite_business"] * 22,
+            "employer_linkage_version": ["v2"] * 22,
+            "employer_linkage_input_max_year": [2024] * 22,
+            "employer_linkage_review_status": ["complete"] * 22,
+            "employer_linkage_review_report_hash": ["a" * 64] * 22,
         },
         schema={
             "county_fips": pl.String,
             "year": pl.Int32,
             "mc_baseline_farm_employment": pl.Float64,
+            "employer_linkage_unit": pl.String,
+            "employer_linkage_version": pl.String,
+            "employer_linkage_input_max_year": pl.Int32,
+            "employer_linkage_review_status": pl.String,
+            "employer_linkage_review_report_hash": pl.String,
         },
     )
 

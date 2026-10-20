@@ -66,6 +66,19 @@ table {
   border-collapse: collapse;
 }
 
+.math-display {
+  max-width: 100%;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+}
+
+.math-display .katex-display {
+  margin: 0;
+  min-width: max-content;
+}
+
 th,
 td {
   padding: 0.45rem 0.7rem;

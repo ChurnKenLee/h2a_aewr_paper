@@ -38,9 +38,71 @@ h2a_zero_columns <- c(
   "nbr_applications_fiscal_year"
 )
 
-county_panel <- read_parquet(path_int("county_year_merged.parquet")) %>%
+county_panel <- read_parquet(path_int("county_year_merged.parquet"))
+
+employer_linkage_metadata_columns <- c(
+  "employer_linkage_unit",
+  "employer_linkage_version",
+  "employer_linkage_input_max_year",
+  "employer_linkage_review_status",
+  "employer_linkage_review_report_hash"
+)
+missing_linkage_metadata <- setdiff(
+  employer_linkage_metadata_columns,
+  names(county_panel)
+)
+if (length(missing_linkage_metadata) > 0L) {
+  stop(
+    "The merged panel is missing employer-linkage provenance: ",
+    paste(missing_linkage_metadata, collapse = ", "),
+    call. = FALSE
+  )
+}
+employer_linkage_contract <- county_panel %>%
+  filter(!is.na(employer_linkage_unit)) %>%
+  distinct(across(all_of(employer_linkage_metadata_columns)))
+if (
+  nrow(employer_linkage_contract) != 1L ||
+    employer_linkage_contract$employer_linkage_unit[[1]] !=
+      "worksite_business" ||
+    employer_linkage_contract$employer_linkage_version[[1]] != "v2" ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2024L ||
+    employer_linkage_contract$employer_linkage_review_status[[1]] !=
+      "complete" ||
+    !grepl(
+      "^[0-9a-f]{64}$",
+      employer_linkage_contract$employer_linkage_review_report_hash[[1]]
+    )
+) {
+  stop(
+    "The merged panel must contain one reviewed worksite-business v2 linkage.",
+    call. = FALSE
+  )
+}
+
+county_panel <- county_panel %>%
   mutate(
     across(all_of(h2a_zero_columns), \(value) replace_na(value, 0)),
+    employer_linkage_unit = coalesce(
+      employer_linkage_unit,
+      employer_linkage_contract$employer_linkage_unit[[1]]
+    ),
+    employer_linkage_version = coalesce(
+      employer_linkage_version,
+      employer_linkage_contract$employer_linkage_version[[1]]
+    ),
+    employer_linkage_input_max_year = coalesce(
+      employer_linkage_input_max_year,
+      employer_linkage_contract$employer_linkage_input_max_year[[1]]
+    ),
+    employer_linkage_review_status = coalesce(
+      employer_linkage_review_status,
+      employer_linkage_contract$employer_linkage_review_status[[1]]
+    ),
+    employer_linkage_review_report_hash = coalesce(
+      employer_linkage_review_report_hash,
+      employer_linkage_contract$employer_linkage_review_report_hash[[1]]
+    ),
     nbr_applications_emergency_start_year = case_when(
       year < 2021L ~ NA_real_,
       nbr_applications_start_year == 0 ~ 0,
@@ -99,7 +161,9 @@ county_panel <- read_parquet(path_int("county_year_merged.parquet")) %>%
     ),
     any_cropland_2007 = census_cropland_2007 > 0
   ) %>%
-  filter(!is.na(aewr), !is.na(aewr_region_id)) %>%
+  # Missing statutory wage coverage must not erase observed outcomes or break
+  # their calendar lags. Each design owns any required wage-complete sample.
+  filter(!is.na(aewr_region_id)) %>%
   arrange(county_fips, year) %>%
   group_by(county_fips) %>%
   mutate(
@@ -283,6 +347,18 @@ if (
     anyDuplicated(county_panel[c("county_fips", "year")]) > 0L
 ) {
   stop("county_year_panel must have unique county-year keys.", call. = FALSE)
+}
+
+filled_linkage_contract <- county_panel %>%
+  distinct(across(all_of(employer_linkage_metadata_columns)))
+if (
+  nrow(filled_linkage_contract) != 1L ||
+    !identical(filled_linkage_contract, employer_linkage_contract)
+) {
+  stop(
+    "Employer-linkage provenance was not filled consistently across county-years.",
+    call. = FALSE
+  )
 }
 # docs-ground:end shared-panel-contract
 

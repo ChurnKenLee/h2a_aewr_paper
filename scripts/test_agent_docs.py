@@ -12,7 +12,7 @@ import agent_docs
 
 
 class AgentDocumentationTests(unittest.TestCase):
-    def test_extraction_matches_zola_shortcode_contract(self):
+    def test_extraction_matches_zola_component_contract(self):
         source = (
             "before\n"
             "# docs-ground:start demo\n"
@@ -31,9 +31,9 @@ class AgentDocumentationTests(unittest.TestCase):
             agent_docs.extract_region(source, "demo.py", "demo")
 
     def test_hash_only_update_is_not_a_prose_change(self):
-        old = '{{ grounding(path="x.py", anchor="demo", sha256="' + "a" * 64 + '") }}\nClaim.\n'
-        new_hash = '{{ grounding(path="x.py", anchor="demo", sha256="' + "b" * 64 + '") }}\nClaim.\n'
-        new_prose = '{{ grounding(path="x.py", anchor="demo", sha256="' + "b" * 64 + '") }}\nRevised claim.\n'
+        old = '{{ <grounding path="x.py" anchor="demo" sha256="' + "a" * 64 + '" /> }}\nClaim.\n'
+        new_hash = '{{ <grounding path="x.py" anchor="demo" sha256="' + "b" * 64 + '" /> }}\nClaim.\n'
+        new_prose = '{{ <grounding path="x.py" anchor="demo" sha256="' + "b" * 64 + '" /> }}\nRevised claim.\n'
         self.assertEqual(
             agent_docs.sha256_text(agent_docs.normalized_document_text(old)),
             agent_docs.sha256_text(agent_docs.normalized_document_text(new_hash)),

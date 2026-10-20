@@ -1,0 +1,24 @@
+{
+  "retrieved_date": "2026-09-07",
+  "sources": [
+    {"id": "rule_2008", "url": "https://www.dol.gov/agencies/oalj/PUBLIC/INA/REFERENCES/FEDERAL_REGISTER/73_FED._REG._77110_%28DEC_18_2008%29", "finding": "Published December 18, 2008, effective January 17, 2009; local OES occupation/skill wage methodology and other program changes."},
+    {"id": "rule_2010", "url": "https://www.govinfo.gov/content/pkg/FR-2010-02-12/pdf/2010-2731.pdf", "finding": "FLS restored; the table of 2009 application-average wages is not a statutory schedule."},
+    {"id": "transition_2010", "url": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/h2a_2010_final_rule_faqs_round1.pdf", "finding": "Pages 2 and 4: March 15 filing cutoff, June 1 normal-processing boundary, special procedures continue, and 2008-rule contracts retain the old wage principles. New contracts face other higher applicable floors."},
+    {"id": "injunction_2009", "url": "https://docs.justia.com/cases/federal/district-courts/north-carolina/ncmdce/1%3A2009cv00411/51449/57", "finding": "The proposed June 29 suspension was enjoined; do not create a third implemented regime."},
+    {"id": "historical_flc", "url": "https://www.datalumos.org/datalumos/project/100447/version/V1/view", "finding": "Archive identifies original DOL FLC wage files since FY2007 with geographic and occupational tables. Files were not downloaded: archive folder requests failed in web access and shell DNS is restricted. Generic BLS OES means/percentiles are not a verified substitute for FLC Levels I-IV."},
+    {"id": "current_flc", "url": "https://flag.dol.gov/wage-data/wage-data-downloads", "finding": "Official page presently lists downloadable wage vintages back to 2021-2022, insufficient for the 2009 regime."},
+    {"id": "herder_rule", "url": "https://www.govinfo.gov/content/pkg/FR-2015-10-16/pdf/2015-26252.pdf", "finding": "Range duty coverage, new wages and nonwage standards. Preexisting 364-day sheep/goat and ten-month other-livestock need limits retained (pages 41-42). Regulatory cost calculations and projected state floors are not observed treatment assignments."},
+    {"id": "herder_initial", "url": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Herder_AEWR.pdf", "finding": "Monthly AEWR 1206.31 from November 16, 2015 through December 31, 2016, including ongoing contracts. Competing statutory/CBA floors still apply."},
+    {"id": "herder_faq", "url": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/herder_faq_round2.pdf", "finding": "Wage adjustments apply at work performance, including existing special-procedure certifications; filing-date grandfathering is invalid for the herder wage increase."},
+    {"id": "herder_2017", "url": "https://www.govinfo.gov/content/pkg/FR-2016-12-23/pdf/2016-30923.pdf", "finding": "Monthly AEWR 1389.67 effective January 1, 2017, including ECI and 90-percent phase-in."},
+    {"id": "herder_2018_correction", "url": "https://www.dol.gov/agencies/eta/foreign-labor/news?lang=ar", "finding": "December 28, 2017 announcement corrects the 2018 floor to 1584.22, effective January 1, 2018; the original notice also printed 1548.22 in error."},
+    {"id": "california_floor", "url": "https://www.dir.ca.gov/t8/11140.html", "finding": "Section 4(E): 2017 and 2018 sheep monthly floors exceed the national herder AEWR and differ by total employer size. H-2A certified positions do not measure total employer size."},
+    {"id": "california_overtime", "url": "https://www.dir.ca.gov/dlse/Sheepherders-owed-as-a-result-of-AB-1066s-Overtime-Phase-In.html", "finding": "Additional California sheep overtime phase-in begins in 2019; stop the herder response window in 2018."},
+    {"id": "mendoza", "url": "https://law.justia.com/cases/federal/appellate-courts/cadc/13-5118/13-5118-2014-06-13.html", "finding": "June 2014 litigation is an anticipation concern; 2014 is not an assured untreated year."}
+  ],
+  "herder_reference_schedule": [
+    {"effective_from": "2015-11-16", "effective_to_exclusive": "2017-01-01", "monthly_aewr": 1206.31, "source_id": "herder_initial"},
+    {"effective_from": "2017-01-01", "effective_to_exclusive": "2018-01-01", "monthly_aewr": 1389.67, "source_id": "herder_2017"},
+    {"effective_from": "2018-01-01", "effective_to_exclusive": "2019-01-01", "monthly_aewr": 1584.22, "source_id": "herder_2018_correction"}
+  ]
+}

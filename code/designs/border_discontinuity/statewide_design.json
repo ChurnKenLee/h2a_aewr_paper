@@ -1,0 +1,107 @@
+{
+  "design_id": "border_statewide_aewr_v1",
+  "status": "declared_before_any_post_policy_outcome_is_parsed_or_inspected",
+  "registry_frozen": "2026-10-18",
+  "research_status": "new_declared_design_motivated_by_v6_power_infeasibility; v6 registry and outputs unchanged",
+  "policy_event": {
+    "rule": "2025-10-02 interim final rule: statewide OEWS-based field-and-livestock AEWRs by skill level",
+    "first_schedule_effective_start": "2025-10-02",
+    "second_schedule_effective_start": "2026-08-03",
+    "source_artifact": "data/intermediate/aewr_occupation_skill_rates.parquet",
+    "source_sheet": "Statewide 655.120(b)(1)(i)"
+  },
+  "period": {
+    "unit": "federal_fiscal_year",
+    "assignment": "rate_in_effect_on_april_1_of_the_fiscal_year",
+    "preperiod_rate": "fls_common_soc_reference regional AEWR from aewr_rate_schedule",
+    "post_fiscal_years": [2026, 2027],
+    "transition_note": "FY2026 begins one day before the rule; cases decided early in FY2026 under prior rates attenuate the intent-to-treat slope"
+  },
+  "treatment": {
+    "primary": {"worker_category": "US", "skill_level": "1", "label": "us_skill_1_total_compensation_floor"},
+    "sensitivities": [
+      {"worker_category": "H2A", "skill_level": "1", "label": "h2a_skill_1_cash_rate_after_housing_adjustment"},
+      {"worker_category": "US", "skill_level": "2", "label": "us_skill_2"}
+    ],
+    "units": "one_nominal_dollar_per_hour",
+    "units_note": "PPI for 2026 is unavailable; identifying gaps are within fiscal year, so real units are a common rescaling",
+    "estimation_only_sensitivity": "max(AEWR, applicable state agricultural minimum wage); not used in power"
+  },
+  "outcome": {
+    "numerator": "nbr_workers_certified_fiscal_year",
+    "numerator_source": "data/intermediate/h2a_data_year.parquet",
+    "denominator": "emp_farm_2011",
+    "denominator_source": "data/processed/county_year_panel.parquet",
+    "missing_numerator": "zero_for_counties_with_positive_fixed_denominator",
+    "units": "certified_positions_per_fixed_2011_farm_worker",
+    "post_period_requirement": "Upstream a01/b01 producers must parse FY2025 and FY2026 disclosure files before estimation; this registry never reads post outcomes."
+  },
+  "geography": {
+    "unit": "county",
+    "node": "state_fips",
+    "pair": "contiguous_state_border",
+    "adjacency": "data/intermediate/county_adjacency2010.parquet",
+    "excluded_states": ["02", "15", "11"],
+    "assignment": "each county joins the state-border pair with the most qualifying cross-border neighbors; ties by lexical pair id; drop pairs without both sides and repeat until stable",
+    "agricultural_screen": {
+      "minimum_county_cropland_share": 0.075,
+      "minimum_county_farm_employment_per_100_square_miles": 30.0,
+      "minimum_county_measurement_coverage": 0.9,
+      "farm_employment_years": 3
+    },
+    "specs": [
+      {"spec_id": "statewide_h0_screened_within_region", "role": "primary", "screened": true, "within_former_aewr_region_only": true},
+      {"spec_id": "statewide_h0_unscreened_within_region", "role": "screen_sensitivity", "screened": false, "within_former_aewr_region_only": true},
+      {"spec_id": "statewide_h0_screened_all_borders", "role": "cross_region_sensitivity", "screened": true, "within_former_aewr_region_only": false}
+    ]
+  },
+  "fixed_effects": ["county", "border_pair_by_fiscal_year"],
+  "weights": "equal_county",
+  "calibration": {
+    "primary_years": [2020, 2022],
+    "primary_reason": "FY2020 onward allocates certifications with Addendum B worksite records, the measurement regime of the post period; the owning county-year producer (h2a_data_year) currently ends at FY2022",
+    "sensitivity_years": [2015, 2022],
+    "data_note": "FY2023-FY2024 worksite allocations exist upstream but are not aggregated by the owning producer; they are not re-aggregated here",
+    "projection": "unit_and_pair_year_FE_only_no_wage_regressor"
+  },
+  "scenarios": [
+    {"scenario_id": "post_fy2026", "policy_years": [2020, 2026], "role": "primary_first_post_year"},
+    {"scenario_id": "post_fy2026_fy2027", "policy_years": [2020, 2027], "role": "two_post_years_after_fy2027_release"}
+  ],
+  "power_settings_source": "design.json redesign.power and redesign.precision_assumptions (unchanged DGPs, fractions, seed, repetitions, effect and MDE grids, size gate)",
+  "node_interpretation": "power helpers' aewr_region_id field carries state_fips; region shocks are state shocks",
+  "inference_methods": ["pair_CRV1", "pair_CV3J", "pair_region_CRV1", "shared_endpoint_dyadic"],
+  "outcome_variants": [
+    {
+      "outcome_id": "certifications_fiscal_year",
+      "role": "primary_quantity_outcome",
+      "period": "federal_fiscal_year_of_decision",
+      "construction": "outcome block above",
+      "sample": "all memberships with positive fixed 2011 farm employment",
+      "precision_source": "design.json redesign.precision_assumptions and effect/MDE grids"
+    },
+    {
+      "outcome_id": "offered_wage_start_year",
+      "role": "wage_pass_through_first_stage",
+      "added": "2026-10-18, before any post-policy outcome is parsed",
+      "period": "calendar_year_of_contract_start",
+      "numerator": "nominal_offered_wage_bill_certified_start_year",
+      "denominator": "cert_hours_with_hourly_wage_start_year",
+      "source": "data/intermediate/h2a_data_year.parquet",
+      "units": "nominal_dollars_per_hour_hours_weighted_hourly_unit_offers",
+      "sample": "counties with positive hourly-offer certified hours in every calibration year; pairs must keep both sides",
+      "sample_note": "pre-period participation restriction; post-period estimation also requires post-period offers",
+      "precision": {
+        "beta_magnitudes": [0.25, 0.5, 1.0],
+        "primary_threshold_beta": 0.25,
+        "effect_grid": [0, 0.1, -0.1, 0.25, -0.25, 0.5, -0.5, 1.0, -1.0],
+        "mde_grid_step": 0.005,
+        "mde_grid_max": 2.0,
+        "note": "Declared pass-through of offered wages per statutory dollar; not user-supplied"
+      },
+      "not_used": "mean_hourly_wage_fiscal_year is worker-weighted, ignores the pay unit and is fiscal-year based; owned by b01 and not used here",
+      "upstream_revision": "2026-10-18, before any post-policy outcome is parsed: b01 caps hourly offers at $100 (employer-error screen), affecting calibration inputs only"
+    }
+  ],
+  "selection_rule": "No outcome-based selection. The primary geography, treatment, calibration and scenario are fixed here; every sensitivity and failed gate is reported."
+}

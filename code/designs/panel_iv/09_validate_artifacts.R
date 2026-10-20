@@ -1,0 +1,13 @@
+# Validate shared-source semantics, deterministic calibration and retained IV outputs.
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("c00_shared", "geography.R"))
+source(path_code("designs", "panel_iv", "design.R"))
+source(path_code("designs", "panel_iv", "io.R"))
+source(path_code("designs", "panel_iv", "calibration.R"))
+source(path_code("designs", "panel_iv", "specification.R"))
+source(path_code("designs", "panel_iv", "validation.R"))
+iv_validate_sources()
+iv_validate_calibration()
+iv_validate_estimates()
+message("Validated QCEW/FLS sources, deterministic county calibration, OEWS hourly instruments and retained estimates")

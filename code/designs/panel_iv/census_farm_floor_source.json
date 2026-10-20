@@ -1,0 +1,9 @@
+{
+  "source": "data/intermediate/qs_census_economics.parquet",
+  "sha256": "d4bef8a64b5a9edb81cf31819409e13f5f988096cc327617180462e53626ef34",
+  "source_rows": 332533,
+  "selected_rows": 12308,
+  "origin": "Original stage03 all-domain farm-operation filter, Polars 1.44.1 sort(county_fips, year), last duplicate",
+  "source_row": "One-based position after the original year, county and short-description filters, before sorting.",
+  "purpose": "Preserve the original prior during the R-only cleanup. This is an explicit source-row selection, not a TOTAL-domain count. A source refresh requires reviewing the selection before rebuilding."
+}

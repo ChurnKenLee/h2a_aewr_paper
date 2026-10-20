@@ -964,7 +964,17 @@ def report_registry() -> None:
         )
     result_frame = pl.DataFrame(rows, infer_schema_length=None)
     atomic_write_frame(result_frame, RESULTS_PATH)
-    existing = pl.read_csv(DIAGNOSTICS_PATH)
+    report_diagnostics = {
+        "experimental_ccv_lambda",
+        "experimental_ccv_omega_cv",
+        "experimental_ccv_kappa_cv",
+    }
+    existing = pl.read_csv(DIAGNOSTICS_PATH).filter(
+        ~pl.col("diagnostic").is_in(report_diagnostics)
+        & ~pl.col("diagnostic").str.starts_with(
+            "full_one_lag_absolute_difference::"
+        )
+    )
     disagreement = _history_disagreement_diagnostics(
         result_frame,
         registry,

@@ -1,43 +1,36 @@
-# Purpose: Standardize H-2A worksite locations and assign county FIPS codes.
-# Inputs: DOL H-2A disclosure files and Census place/county crosswalks.
-# Outputs: h2a_with_fips.parquet, h2a_addendum_b_with_fips.parquet, diagnostics.
+# Purpose: Parse H-2A disclosure and Addendum B files and match worksite
+#   locations to 2010 counties with local, deterministic rules only.
+# Inputs: DOL H-2A disclosure files, Census place/county/ZIP/county-subdivision
+#   files and the pinned USGS GNIS national file.
+# Outputs: h2a_disclosure_records.parquet, h2a_addendum_b_records.parquet and
+#   h2a_location_pieces.parquet (one row per cleaned location piece with its
+#   local match). 02_02 resolves unmatched pieces through Gemini/Places caches;
+#   02_03 assigns counties and writes the with-FIPS files.
 
 import marimo
 
-__generated_with = "0.23.14"
+__generated_with = "0.24.0"
 app = marimo.App(width="full")
 
 
 @app.cell
 def _():
-    import json
+    import io
     import re
-    from pathlib import Path
+    import zipfile
 
     import addfips
     import marimo as mo
     import polars as pl
 
-    from h2a.paths import CACHE, INTERMEDIATE, RAW
+    from h2a.paths import INTERMEDIATE, RAW
 
     DC_STATEHOOD = 1  # Enables DC to be included in the state list
 
     import rapidfuzz
     import us
 
-    return (
-        CACHE,
-        INTERMEDIATE,
-        Path,
-        RAW,
-        addfips,
-        json,
-        mo,
-        pl,
-        rapidfuzz,
-        re,
-        us,
-    )
+    return INTERMEDIATE, RAW, addfips, io, mo, pl, rapidfuzz, re, us, zipfile
 
 
 @app.cell(hide_code=True)
@@ -49,12 +42,11 @@ def _(mo):
 
 
 @app.cell
-def _(CACHE, INTERMEDIATE, RAW):
+def _(INTERMEDIATE, RAW):
     binary_path = INTERMEDIATE
-    json_path = CACHE
     h2a_path = RAW / "h2a"
     census_code_path = RAW / "geographic_crosswalks" / "census"
-    return binary_path, census_code_path, h2a_path, json_path
+    return binary_path, census_code_path, h2a_path
 
 
 @app.cell
@@ -193,7 +185,10 @@ def _(census_code_path, census_county_2010, pl, place_suffix_pattern):
         .select(["state", "statefp", "place", "county_list"])
         .explode("county_list", empty_as_null=True)
         .with_columns(
+            # Counties after the first carry a leading space; trim before the
+            # county-name join so multi-county places keep every county
             pl.col("county_list")
+            .str.strip_chars()
             .str.replace_all(place_suffix_pattern, "")
             .alias("county"),
             pl.col("place").str.replace_all(place_suffix_pattern, ""),
@@ -205,7 +200,7 @@ def _(census_code_path, census_county_2010, pl, place_suffix_pattern):
         census_county_2010, on=["state", "county"]
     )
     census_place_agg_2010 = census_place_agg_2010.group_by(["state", "place"]).agg(
-        pl.col("fips").str.join(",")
+        pl.col("fips").unique().sort().str.join(",")
     )
     return (census_place_agg_2010,)
 
@@ -237,7 +232,7 @@ def _(census_code_path, pl):
     census_zip_agg_2010 = (
         census_zip_2010.rename({"ZCTA5": "zip", "GEOID": "fips"})
         .group_by("zip")
-        .agg(pl.col("fips").str.join(","))
+        .agg(pl.col("fips").unique().sort().str.join(","))
     )
     return (census_zip_agg_2010,)
 
@@ -258,19 +253,55 @@ def _(census_code_path, pl, read_census_file):
 
 
 @app.cell
-def _(pl):
-    # Helper to create a state-based lookup with parallel lists
+def _(rapidfuzz, re):
+    # Normalize locality names identically for references and queries:
+    # rapidfuzz default processing plus common abbreviation expansions
+    name_abbreviations = {
+        "ST": "SAINT",
+        "STE": "SAINTE",
+        "FT": "FORT",
+        "MT": "MOUNT",
+        "PT": "POINT",
+    }
+    trailing_name_suffix = re.compile(r"\s+(?:TWP|TOWNSHIP)$")
+
+    def normalize_place_name(value):
+        text = rapidfuzz.utils.default_process(str(value or "")).upper()
+        tokens = [name_abbreviations.get(token, token) for token in text.split()]
+        return trailing_name_suffix.sub("", " ".join(tokens)).strip()
+
+    return (normalize_place_name,)
+
+
+@app.cell
+def _(normalize_place_name, pl):
+    # Helper to create a state-based lookup with parallel lists. Rows are
+    # sorted so that list order, and therefore every result, is reproducible.
     def create_ref_lookup(df, name_col):
         lookup = {}
-        # Group by state and get lists of names and fips
         grouped = (
-            df.group_by("state")
-            .agg([pl.col(name_col).alias("names"), pl.col("fips")])
+            df.select(["state", pl.col(name_col).alias("name"), "fips"])
+            .unique()
+            .sort(["state", "name", "fips"])
+            .group_by("state", maintain_order=True)
+            .agg([pl.col("name").alias("names"), pl.col("fips")])
             .to_dicts()
         )
 
         for row in grouped:
-            lookup[row["state"]] = {"names": row["names"], "fips": row["fips"]}
+            normalized = [normalize_place_name(name) for name in row["names"]]
+            # Exact index: normalized name -> set of county FIPS
+            exact = {}
+            for name, fips in zip(normalized, row["fips"], strict=True):
+                exact.setdefault(name, set()).update(fips.split(","))
+            lookup[row["state"]] = {
+                "names": row["names"],
+                "normalized": normalized,
+                "fips": row["fips"],
+                "exact": {
+                    name: ",".join(sorted(counties)) for name, counties in exact.items()
+                },
+            }
         return lookup
 
     return (create_ref_lookup,)
@@ -285,6 +316,126 @@ def _(census_county_2010, census_place_agg_2010, create_ref_lookup):
     census_county_ref_map_2020 = create_ref_lookup(census_county_2010, "county")
     census_place_ref_map_2020 = create_ref_lookup(census_place_agg_2010, "place")
     return census_county_ref_map_2010, census_place_ref_map_2010
+
+
+@app.cell
+def _(census_county_2010, normalize_place_name, pl):
+    # Exact-name index for supplementary gazetteers: state -> normalized name
+    # -> county FIPS. Names found in more than one county are ambiguous and
+    # are left out so they cannot decide a match.
+    valid_county_fips_2010 = set(census_county_2010["fips"].to_list())
+
+    def build_exact_gazetteer(df, label):
+        df = df.filter(pl.col("fips").is_in(list(valid_county_fips_2010)))
+        counties = {}
+        for state, name, fips in df.select(["state", "name", "fips"]).iter_rows():
+            key = normalize_place_name(name)
+            if state and key:
+                counties.setdefault(state, {}).setdefault(key, set()).add(fips)
+        index = {
+            state: {key: next(iter(f)) for key, f in names.items() if len(f) == 1}
+            for state, names in counties.items()
+        }
+        unique = sum(len(names) for names in index.values())
+        total = sum(len(names) for names in counties.values())
+        print(f"{label}: {unique} unique-county names of {total}")
+        return index
+
+    def gazetteer_lookup(state, query, index):
+        return index.get(state, {}).get(normalize_place_name(query), "")
+
+    return build_exact_gazetteer, gazetteer_lookup
+
+
+@app.cell
+def _(build_exact_gazetteer, census_code_path, pl, re):
+    # Census 2010 county subdivisions: townships, New England towns, MCDs and
+    # CCDs. Names may contain unquoted commas (Maryland election districts),
+    # so the name is everything between the fifth and the last field.
+    cousub_suffix_pattern = re.compile(
+        r"\s+(?:charter township|township|town|city|village|borough|plantation|"
+        r"gore|grant|purchase|location|UT|CCD|district|precinct|reservation|"
+        r"unorganized territory)$",
+        re.IGNORECASE,
+    )
+    _lines = (
+        (census_code_path / "national_cousub.txt")
+        .read_text(encoding="latin-1")
+        .splitlines()
+    )
+    _records = []
+    for _line in _lines[1:]:
+        _fields = _line.split(",")
+        if len(_fields) < 7:
+            continue
+        _name = ",".join(_fields[5:-1]).strip()
+        if _name.lower().startswith("county subdivisions not defined"):
+            continue
+        _records.append(
+            {
+                "state": _fields[0],
+                "name": cousub_suffix_pattern.sub("", _name),
+                "fips": _fields[1] + _fields[2],
+            }
+        )
+    census_cousub_2010 = pl.DataFrame(
+        _records, schema={"state": pl.String, "name": pl.String, "fips": pl.String}
+    )
+    cousub_exact_index = build_exact_gazetteer(
+        census_cousub_2010, "Census 2010 county subdivisions"
+    )
+    return (cousub_exact_index,)
+
+
+@app.cell
+def _(RAW, build_exact_gazetteer, io, pl, us, zipfile):
+    from h2a.geography import harmonize_county_fips_2010
+
+    # USGS GNIS Domestic Names, populated places only (pinned national file).
+    # GNIS uses current county codes: drop Connecticut planning regions (its
+    # towns are county subdivisions) and map post-2010 Alaska changes back.
+    GNIS_TO_COUNTY_2010 = {"02158": "02270", "02063": "02261", "02066": "02261"}
+    gnis_path = (
+        RAW / "geographic_crosswalks" / "usgs_gnis" / "DomesticNames_National_Text.zip"
+    )
+    with zipfile.ZipFile(gnis_path) as _archive:
+        _raw = _archive.read("Text/DomesticNames_National.txt")
+    gnis = pl.read_csv(
+        io.BytesIO(_raw),
+        separator="|",
+        quote_char=None,
+        infer_schema=False,
+        encoding="utf8-lossy",
+    ).rename(lambda column: column.lstrip("\ufeff"))
+    state_abbreviations = {s.name: s.abbr for s in us.states.STATES_AND_TERRITORIES}
+    state_abbreviations["District of Columbia"] = "DC"
+    gnis_populated_places = (
+        gnis.filter(
+            (pl.col("feature_class") == "Populated Place")
+            & ~pl.col("feature_name").str.contains(r"\(historical\)")
+            & (pl.col("county_numeric").fill_null("") != "")
+        )
+        .with_columns(
+            state=pl.col("state_name").replace_strict(
+                state_abbreviations, default=None
+            ),
+            fips=(pl.col("state_numeric") + pl.col("county_numeric")).replace(
+                GNIS_TO_COUNTY_2010
+            ),
+            name=pl.col("feature_name"),
+        )
+        .filter(pl.col("state").is_not_null() & ~pl.col("fips").str.starts_with("091"))
+        .with_columns(
+            pl.col("fips").map_elements(
+                harmonize_county_fips_2010, return_dtype=pl.String
+            )
+        )
+        .select(["state", "name", "fips"])
+    )
+    gnis_exact_index = build_exact_gazetteer(
+        gnis_populated_places, "USGS GNIS populated places"
+    )
+    return (gnis_exact_index,)
 
 
 @app.cell(hide_code=True)
@@ -337,6 +488,7 @@ def _():
         2022: "H-2A_Disclosure_Data_FY2022_Q4.xlsx",
         2023: "H-2A_Disclosure_Data_FY2023_Q4.xlsx",
         2024: "H-2A_Disclosure_Data_FY2024_Q4.xlsx",
+        2025: "H-2A_Disclosure_Data_FY2025_Q4.xlsx",
     }
 
     # Names of H-2A program Addendum B files from the DOL-OFLC
@@ -346,6 +498,8 @@ def _():
         2022: "H-2A_Addendum_B_Employment_Record_FY2022_Q4.xlsx",
         2023: "H-2A_Addendum_B_Employment_Record_FY2023_Q4.xlsx",
         2024: "H-2A_Addendum_B_Employment_Record_FY2024_Q4.xlsx",
+        # DOL shortened the FY2025 Addendum B file name
+        2025: "H-2A_Addendum_B_Employ_FY2025_Q4.xlsx",
     }
     return add_b_filenames_dict, h2a_filenames_dict
 
@@ -458,7 +612,7 @@ def _(pl):
 
 
 @app.cell
-def _(add_cols_dict, mutate_list, remove_cols_dict, s_map):
+def _(add_cols_dict, h2a_filenames_dict, mutate_list, remove_cols_dict, s_map):
     # Generate set of schemas
     cols_dict = {}
     schema_dict = {}
@@ -486,7 +640,7 @@ def _(add_cols_dict, mutate_list, remove_cols_dict, s_map):
     ]
     schema_dict[2008] = s_map(cols_dict[2008])
 
-    for _y in range(2009, 2025):
+    for _y in range(2009, max(h2a_filenames_dict) + 1):
         add_list = add_cols_dict.get(_y, [])
         remove_list = remove_cols_dict.get(_y, [])
 
@@ -518,6 +672,8 @@ def _(s_map):
     add_b_cols_dict[2022] = add_b_cols_dict[2020]
     add_b_cols_dict[2023] = add_b_cols_dict[2020]
     add_b_cols_dict[2024] = add_b_cols_dict[2020]
+    # FY2025 adds the worksite county, which pre-2025 Addendum B files lack
+    add_b_cols_dict[2025] = add_b_cols_dict[2020] + ["PLACE_OF_EMPLOYMENT_COUNTY"]
 
     for _y, _cols in add_b_cols_dict.items():
         add_b_schema_dict[_y] = s_map(_cols)
@@ -597,6 +753,7 @@ def _():
         "PLACE_OF_EMPLOYMENT_ADDRESS1": "worksite_address_1",
         "PLACE_OF_EMPLOYMENT_ADDRESS2": "worksite_address_2",
         "PLACE_OF_EMPLOYMENT_CITY": "worksite_city",
+        "PLACE_OF_EMPLOYMENT_COUNTY": "worksite_county",
         "PLACE_OF_EMPLOYMENT_STATE": "worksite_state",
         "PLACE_OF_EMPLOYMENT_POSTAL_CODE": "worksite_zip",
         "REQUESTED_BEGIN_DATE": "worksite_requested_begin_date",
@@ -643,7 +800,7 @@ def _(
 ):
     # Read the H-2A performance data files
     h2a_df = pl.DataFrame()
-    for _y in range(2008, 2025):
+    for _y in sorted(h2a_filenames_dict):
         _path = h2a_path / h2a_filenames_dict[_y]
         print(f"Reading H-2A for year {_y}")
         _df = read_h2a_excel(_path, cols_dict[_y], schema_dict[_y], h2a_rename_dict)
@@ -655,7 +812,7 @@ def _(
     # Same with Addendum B files
     # Read the H-2A performance data files
     add_b_df = pl.DataFrame()
-    for _y in range(2020, 2025):
+    for _y in sorted(add_b_filenames_dict):
         _path = h2a_path / add_b_filenames_dict[_y]
         print(f"Reading Addendum B for year {_y}")
         _df = read_h2a_excel(
@@ -666,6 +823,9 @@ def _(
 
         add_b_df = pl.concat(items=[add_b_df, _df], how="diagonal")
         add_b_df = add_b_df.with_columns(pl.col(pl.String).fill_null(""))
+    # Files before FY2025 have no worksite county; keep the key column explicit
+    if "worksite_county" not in add_b_df.columns:
+        add_b_df = add_b_df.with_columns(pl.lit("").alias("worksite_county"))
     return add_b_df, h2a_df
 
 
@@ -686,18 +846,15 @@ def _(mo):
 
 
 @app.cell
-def _(add_b_df, h2a_df, pl):
+def _(add_b_df, h2a_df):
     # Set of unique worksite locations
     h2a_worksite_locations = h2a_df.select(
         ["worksite_city", "worksite_county", "worksite_state", "worksite_zip"]
     ).unique()
+    # Addendum B county is reported from FY2025 and empty before
     add_b_worksite_locations = add_b_df.select(
-        ["worksite_city", "worksite_state", "worksite_zip"]
+        ["worksite_city", "worksite_county", "worksite_state", "worksite_zip"]
     ).unique()
-    # For Addendum B, we need to add the non-existent county column
-    add_b_worksite_locations = add_b_worksite_locations.with_columns(
-        pl.lit("").alias("worksite_county")
-    )
     return add_b_worksite_locations, h2a_worksite_locations
 
 
@@ -721,7 +878,7 @@ def _(pl):
             .str.replace_all("/", ",", literal=True)
             .str.split(",")
             .alias("county_list")
-        ).explode("county_list")
+        ).explode("county_list", empty_as_null=True)
 
         # Clean whitespace and suffixes
         df = df.with_columns(pl.col("county_list").str.strip_chars()).with_columns(
@@ -762,6 +919,50 @@ def _(pl):
 
 @app.cell
 def _(pl):
+    # Split city fields that list several places ("TONOPAH/WENDEN", "1) WENDEN
+    # 2) TONOPAH", "YUMA, WELLTON, & YUMA VALLEY"), strip attachment notes, and
+    # blank placeholders ("VARIOUS COUNTIES", "SEE ADDENDUM"). Single plain
+    # names are left byte-identical so cached Places answers still join.
+    needs_city_cleaning = r"(?i)[()/;&,]|\bAND\b|\d\s*\)|\bSEE\b|^\s*(?:VARIOUS|MULTIPLE)\b"
+    city_placeholder = (
+        r"(?i)^(?:VARIOUS|MULTIPLE|SEE\b|ATTACH|ADDENDUM|N/?A$|TBD$|NONE$|UNKNOWN$)"
+    )
+
+    def clean_city_explode(df, city_col):
+        # Keep the unsplit value: cached Places answers are keyed on it
+        df = df.with_columns(pl.col(city_col).alias(f"{city_col}_raw"))
+        cleaned = (
+            pl.col(city_col)
+            .str.replace_all(r"\([^)]*\)", " ")
+            .str.replace_all(r"(?i)\bSEE\s+(?:ATTACHMENTS?|ADDENDUM|ATTACHED)\b.*$", " ")
+            .str.replace_all(r"\b\d+\s*\)\s*", ",")
+            .str.replace_all(r"(?i)\s+(?:AND|&)\s+|[/;&]", ",")
+            .str.split(",")
+        )
+        df = df.with_columns(
+            pl.when(pl.col(city_col).str.contains(needs_city_cleaning))
+            .then(cleaned)
+            .otherwise(pl.concat_list(pl.col(city_col)))
+            .alias(city_col)
+        ).explode(city_col, empty_as_null=True)
+        df = df.with_columns(
+            pl.when(pl.col(city_col).fill_null("").str.contains(r"[(),/;&]|^\s|\s$"))
+            .then(pl.col(city_col).str.strip_chars(" .-"))
+            .otherwise(pl.col(city_col).fill_null(""))
+            .alias(city_col)
+        )
+        return df.with_columns(
+            pl.when(pl.col(city_col).str.contains(city_placeholder))
+            .then(pl.lit(""))
+            .otherwise(pl.col(city_col))
+            .alias(city_col)
+        )
+
+    return (clean_city_explode,)
+
+
+@app.cell
+def _(pl):
     # Cleans ZIP codes, mostly by removing trailing 4 digits for ZIP+4 codes
     def clean_zip(df, zip_col):
         zip5 = df.with_columns(
@@ -777,34 +978,53 @@ def _(pl):
 
 
 @app.cell
-def _(rapidfuzz):
-    # Uses rapidfuzz.process.extractOne and name maps to quickly find locality with best name match
+def _(normalize_place_name, rapidfuzz):
+    # Fuzzy matching only corrects typos; it never chooses among ambiguous names
+    FUZZY_MIN_QUERY_LENGTH = 4
+    FUZZY_MIN_MARGIN = 5.0
+
+    # Find the locality whose name best matches the query within a state.
+    # 1. An exact normalized name returns its full county set (score 100).
+    # 2. Otherwise whole-string Levenshtein ratio; the best county set must be
+    #    unique and beat every other county set by FUZZY_MIN_MARGIN points.
+    #    Ambiguous or too-short queries return no match.
     def fuzz_search(state, query, ref_map):
-        # Sanity checks
         if not state or not query or state not in ref_map:
             return ("", 0.0, "")
 
         state_data = ref_map[state]
-        choices = state_data["names"]
-
-        # Rapidfuzz handles strings directly now
-        # processor=utils.default_process handles lowercasing/stripping/whitespace
-        match = rapidfuzz.process.extractOne(
-            query,
-            choices,
-            processor=rapidfuzz.utils.default_process,
-            scorer=rapidfuzz.fuzz.partial_ratio,
-        )
-
-        if match:
-            # match is (found_string, score, index)
-            _, score, index = match
-            best_fips = state_data["fips"][index]
-            best_name = state_data["names"][index]
-            return (str(best_fips), float(score), str(best_name))
-
-        else:
+        normalized_query = normalize_place_name(query)
+        if not normalized_query:
             return ("", 0.0, "")
+
+        exact_fips = state_data["exact"].get(normalized_query)
+        if exact_fips:
+            return (exact_fips, 100.0, normalized_query)
+
+        if len(normalized_query) < FUZZY_MIN_QUERY_LENGTH:
+            return ("", 0.0, "")
+
+        matches = rapidfuzz.process.extract(
+            normalized_query,
+            state_data["normalized"],
+            processor=None,
+            scorer=rapidfuzz.fuzz.ratio,
+            limit=25,
+        )
+        if not matches:
+            return ("", 0.0, "")
+
+        # Best score per county set; ties among distinct sets are ambiguous
+        best_by_fips = {}
+        for _name, score, index in matches:
+            fips = state_data["fips"][index]
+            if score > best_by_fips.get(fips, (-1.0, ""))[0]:
+                best_by_fips[fips] = (score, state_data["normalized"][index])
+        ranked = sorted(best_by_fips.items(), key=lambda item: (-item[1][0], item[0]))
+        best_fips, (best_score, best_name) = ranked[0]
+        if len(ranked) > 1 and best_score - ranked[1][1][0] < FUZZY_MIN_MARGIN:
+            return ("", 0.0, "")
+        return (str(best_fips), float(best_score), str(best_name))
 
     return (fuzz_search,)
 
@@ -838,10 +1058,12 @@ def _(us):
 @app.cell
 def _(
     add_fips_using_addfips,
+    clean_city_explode,
     clean_county_explode,
     clean_state_to_abbr,
     clean_zip,
     fuzz_search,
+    gazetteer_lookup,
     pl,
 ):
     # Apply functions in sequence to an input dataframe and produce dataframe with matched FIPS
@@ -854,6 +1076,8 @@ def _(
         census_zip_df,
         census_county_map,
         census_place_map,
+        cousub_index,
+        gnis_index,
     ):
         # Initialize helper columns
         df = df.with_columns(
@@ -866,6 +1090,7 @@ def _(
                 pl.col(zip_col).alias("xzip"),
             ]
         )
+        df = clean_city_explode(df, "xcity")
         df = clean_county_explode(df, "xcounty", "xstate")
         df = clean_zip(df, "xzip")
 
@@ -936,6 +1161,24 @@ def _(
             ]
         ).drop(["county_fuzzy_raw", "city_fuzzy_raw", "ne_fuzzy_raw"])
 
+        # 5. Exact city names in supplementary gazetteers (unique county only)
+        df = df.with_columns(
+            [
+                pl.struct(["xcity", "xstate"])
+                .map_elements(
+                    lambda x: gazetteer_lookup(x["xstate"], x["xcity"], cousub_index),
+                    return_dtype=pl.String,
+                )
+                .alias("fips_from_cousub"),
+                pl.struct(["xcity", "xstate"])
+                .map_elements(
+                    lambda x: gazetteer_lookup(x["xstate"], x["xcity"], gnis_index),
+                    return_dtype=pl.String,
+                )
+                .alias("fips_from_gnis"),
+            ]
+        )
+
         return df
 
     return (add_fips_with_addfips_and_fuzzy_matching,)
@@ -995,6 +1238,11 @@ def _(pl):
                 & (pl.col("fuzzy_city_score") > fuzzy_threshold + 10)
             )
             .then(pl.col("fips_from_fuzzy_city"))
+            # Supplementary gazetteers only when Census rules give nothing
+            .when(pl.col("fips_from_cousub") != "")
+            .then(pl.col("fips_from_cousub"))
+            .when(pl.col("fips_from_gnis") != "")
+            .then(pl.col("fips_from_gnis"))
             .otherwise(pl.lit(""))
             .alias("matched_county_fips_list")
         )
@@ -1011,6 +1259,8 @@ def _(
     census_county_ref_map_2010,
     census_place_ref_map_2010,
     census_zip_agg_2010,
+    cousub_exact_index,
+    gnis_exact_index,
     h2a_worksite_locations,
     pick_best_fips,
 ):
@@ -1024,6 +1274,8 @@ def _(
         census_zip_agg_2010,
         census_county_ref_map_2010,
         census_place_ref_map_2010,
+        cousub_exact_index,
+        gnis_exact_index,
     )
     h2a_worksite_locations_added_fips = pick_best_fips(
         h2a_worksite_locations_added_fips, 80
@@ -1038,6 +1290,8 @@ def _(
         census_zip_agg_2010,
         census_county_ref_map_2010,
         census_place_ref_map_2010,
+        cousub_exact_index,
+        gnis_exact_index,
     )
     add_b_worksite_locations_added_fips = pick_best_fips(
         add_b_worksite_locations_added_fips, 80
@@ -1050,300 +1304,32 @@ def _(
 
 @app.cell
 def _(
-    Path,
+    add_b_df,
     add_b_worksite_locations_added_fips,
+    binary_path,
+    h2a_df,
     h2a_worksite_locations_added_fips,
-    json_path,
     pl,
 ):
-    # Export unmatched
-    def export_unmatched_locations_pl(df, filename):
-        (
-            df.filter(pl.col("matched_county_fips_list") == "")
-            .select(
-                [
-                    pl.col("xcity").alias("city"),
-                    pl.col("xstate").alias("state"),
-                    pl.col("xzip").alias("zip"),
-                    pl.col("county_list").alias("county"),
-                ]
-            )
-            .unique()
-            .write_csv(filename)
-        )
-
-    export_unmatched_locations_pl(
-        h2a_worksite_locations_added_fips,
-        Path(json_path / "unmatched_h2a_locations.csv"),
+    # Exchange artifacts for 02_02 (API queue) and 02_03 (county assignment)
+    location_pieces = pl.concat(
+        [
+            h2a_worksite_locations_added_fips.with_columns(source=pl.lit("disclosure")),
+            add_b_worksite_locations_added_fips.with_columns(source=pl.lit("addendum_b")),
+        ],
+        how="diagonal",
     )
-    export_unmatched_locations_pl(
-        add_b_worksite_locations_added_fips,
-        Path(json_path / "unmatched_add_b_locations.csv"),
+    h2a_df.write_parquet(binary_path / "h2a_disclosure_records.parquet")
+    add_b_df.write_parquet(binary_path / "h2a_addendum_b_records.parquet")
+    location_pieces.write_parquet(binary_path / "h2a_location_pieces.parquet")
+    print(
+        location_pieces.group_by("source")
+        .agg(
+            pl.len().alias("pieces"),
+            (pl.col("matched_county_fips_list") == "").sum().alias("unmatched_locally"),
+        )
+        .sort("source")
     )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    # Use Gemini + Places API to get matches for the unmatched locations, then come back here and use them to fill in the missing FIPS
-    """)
-    return
-
-
-@app.cell
-def _(json, json_path):
-    # 1. Load mappings
-    placeid_to_county_map = {}
-    with open(json_path / "placeid_address_components_mapping.json") as _fp:
-        placeid_mapping = json.load(_fp)
-
-    for _pid, _pid_response in placeid_mapping.items():
-        all_address_components = _pid_response.get("addressComponents", [])
-        _county_list = []
-        for _comp in all_address_components:
-            if "administrative_area_level_2" in _comp.get("types", []):
-                _county_list.append(_comp["longText"])
-
-        placeid_to_county_map[_pid] = _county_list
-    return (placeid_to_county_map,)
-
-
-@app.cell
-def _(pl, placeid_to_county_map):
-    # 3. Helper function for looking up lists of IDs in our dictionary
-    def get_counties_from_list(placeids):
-        if placeids is None:
-            return []
-        # Flatten counties from all placeids provided in the list
-        all_counties = []
-        for pid in placeids:
-            all_counties.extend(placeid_to_county_map.get(pid, []))
-        return list(set(all_counties))  # Return unique counties found
-
-    # 4. Apply PID lookup to list function to df
-    def process_dataframe(df):
-        df_with_counties = df.with_columns(
-            [
-                pl.col("original_location_placeid")
-                .map_elements(get_counties_from_list, return_dtype=pl.List(pl.String))
-                .alias("original_county"),
-                pl.col("suggested_location_placeid")
-                .map_elements(get_counties_from_list, return_dtype=pl.List(pl.String))
-                .alias("suggested_county"),
-            ]
-        ).with_columns(
-            # Common counties between original and suggested PID
-            common_county=pl.col("original_county").list.set_intersection(
-                pl.col("suggested_county")
-            )
-        )
-
-        return df_with_counties
-
-    return (process_dataframe,)
-
-
-@app.cell
-def _(CACHE, addfips, pl, process_dataframe):
-    # Function converts list of county names to one string of FIPS codes joined with ','
-    af = addfips.AddFIPS(vintage=2010)
-
-    def add_fips_to_places_api_county(row):
-        # row is a dictionary passed by pl.struct
-        county_list = row["common_county"]
-        state = row["state_name"]
-
-        if not county_list:
-            return ""
-
-        # Crosswalk modern county names (from Google) back to 2010 county names (for addfips)
-        # Crosswalk modern county names (from Google Places API) back to 2010 county names (for addfips)
-        modern_to_2010_crosswalk = {
-            # --- SOUTH DAKOTA (Changed in 2015) ---
-            "Oglala Lakota County": "Shannon County",
-            # --- ALASKA (Changed in 2015 & 2019) ---
-            "Kusilvak Census Area": "Wade Hampton Census Area",
-            "Chugach Census Area": "Valdez-Cordova Census Area",
-            "Copper River Census Area": "Valdez-Cordova Census Area",
-            # --- VIRGINIA (Merged in 2013) ---
-            # Bedford City reverted to town status and merged into Bedford County
-            "Bedford City": "Bedford County",
-            # --- CONNECTICUT (Changed in 2022) ---
-            # Connecticut replaced its 8 legacy counties with 9 Planning Regions.
-            # Regions do not perfectly map 1:1, but this majority-landmass mapping
-            # is the standard approach to push modern CT data into 2010 boundaries.
-            "Capitol Planning Region": "Hartford County",
-            "Greater Bridgeport Planning Region": "Fairfield County",
-            "Lower Connecticut River Valley Planning Region": "Middlesex County",
-            "Naugatuck Valley Planning Region": "New Haven County",
-            "Northeastern Connecticut Planning Region": "Windham County",
-            "Northwest Hills Planning Region": "Litchfield County",
-            "South Central Connecticut Planning Region": "New Haven County",
-            "Southeastern Connecticut Planning Region": "New London County",
-            "Western Connecticut Planning Region": "Fairfield County",
-        }
-
-        fips_codes = []
-        for county_name in county_list:
-            # 1. Translate the modern name to the 2010 name (if it changed)
-            # If the county name isn't in the crosswalk, it just leaves it alone.
-            historical_county_name = modern_to_2010_crosswalk.get(
-                county_name, county_name
-            )
-
-            # 2. Query AddFIPS using the 2010 vintage
-            county_fips = af.get_county_fips(historical_county_name, state)
-            fips_codes.append(county_fips if county_fips else "")
-
-        return ",".join(fips_codes)
-
-    # Apply to both dataframes
-    h2a_placeid = pl.read_parquet(CACHE / "h2a_location_placeids.parquet")
-    add_b_placeid = pl.read_parquet(CACHE / "add_b_location_placeids.parquet")
-
-    h2a_placeid = process_dataframe(h2a_placeid)
-    add_b_placeid = process_dataframe(add_b_placeid)
-
-    h2a_placeid = h2a_placeid.with_columns(
-        common_county_fips=pl.struct(["common_county", "state_name"]).map_elements(
-            add_fips_to_places_api_county, return_dtype=pl.String
-        )
-    )
-
-    add_b_placeid = add_b_placeid.with_columns(
-        common_county_fips=pl.struct(["common_county", "state_name"]).map_elements(
-            add_fips_to_places_api_county, return_dtype=pl.String
-        )
-    )
-    return add_b_placeid, h2a_placeid
-
-
-@app.cell
-def _(pl):
-    from h2a.geography import normalize_county_fips_list
-
-    def finalize_and_collapse(placeid_df, added_fips_df, original_df, group_keys):
-        # Change col name of df with placeid back to original names
-        placeid_df = placeid_df.select(
-            [
-                pl.col("city").alias("xcity"),
-                pl.col("county").alias("county_list"),
-                pl.col("state").alias("xstate"),
-                pl.col("zip").alias("xzip"),
-                pl.col("common_county_fips").alias("places_county_fips_list"),
-            ]
-        )
-
-        # Force keys to be strings and replace nulls with '' to ensure join matches
-        placeid_df = placeid_df.with_columns(
-            [
-                pl.col(k).cast(pl.String).fill_null("")
-                for k in ["xcity", "xstate", "county_list", "xzip"]
-            ]
-        )
-        added_fips_df = added_fips_df.with_columns(
-            [
-                pl.col(k).cast(pl.String).fill_null("")
-                for k in ["xcity", "xstate", "county_list", "xzip"]
-            ]
-        )
-
-        # Merge back into original df
-        added_fips_and_placeid = added_fips_df.join(
-            placeid_df, on=["xcity", "xstate", "county_list", "xzip"], how="left"
-        ).fill_null("")
-
-        # Select locally matched FIPS > Places API FIPS
-        added_fips_and_placeid = added_fips_and_placeid.with_columns(
-            county_fips_list=pl.when(pl.col("matched_county_fips_list") != "")
-            .then(pl.col("matched_county_fips_list"))
-            .otherwise(pl.col("places_county_fips_list"))
-        )
-
-        # print(added_fips_and_placeid.select(['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip', 'matched_county_fips_list', 'places_county_fips_list']).head())
-
-        # Collapse groups by joining strings with commas
-        added_fips_and_placeid = (
-            added_fips_and_placeid.group_by(group_keys)
-            .agg(
-                pl.col("county_fips_list").filter(pl.col("county_fips_list") != ""),
-                pl.col("matched_county_fips_list").filter(
-                    pl.col("matched_county_fips_list") != ""
-                ),
-                pl.col("places_county_fips_list").filter(
-                    pl.col("places_county_fips_list") != ""
-                ),
-            )
-            .with_columns(
-                pl.col("county_fips_list")
-                .list.join(",")
-                .map_elements(
-                    normalize_county_fips_list,
-                    return_dtype=pl.String,
-                ),
-                pl.col("matched_county_fips_list")
-                .list.join(",")
-                .map_elements(
-                    normalize_county_fips_list,
-                    return_dtype=pl.String,
-                ),
-                pl.col("places_county_fips_list")
-                .list.join(",")
-                .map_elements(
-                    normalize_county_fips_list,
-                    return_dtype=pl.String,
-                ),
-            )
-        )
-        # print(added_fips_and_placeid.select(['worksite_city', 'worksite_county', 'worksite_state', 'worksite_zip', 'fips', 'matched_county_fips_list', 'places_county_fips_list']).head())
-        # Join back to the original large dataset
-        final_df = original_df.join(added_fips_and_placeid, on=group_keys, how="left")
-
-        return final_df
-
-    return (finalize_and_collapse,)
-
-
-@app.cell
-def _(
-    finalize_and_collapse,
-    h2a_df,
-    h2a_placeid,
-    h2a_worksite_locations_added_fips,
-):
-    # Process H2A
-    h2a_with_fips_df = finalize_and_collapse(
-        h2a_placeid,
-        h2a_worksite_locations_added_fips,
-        h2a_df,
-        ["worksite_city", "worksite_county", "worksite_state", "worksite_zip"],
-    )
-    return (h2a_with_fips_df,)
-
-
-@app.cell
-def _(
-    add_b_df,
-    add_b_placeid,
-    add_b_worksite_locations_added_fips,
-    finalize_and_collapse,
-):
-    # Process Addendum B (Note: Addendum B does not have counties)
-    add_b_with_fips_df = finalize_and_collapse(
-        add_b_placeid,
-        add_b_worksite_locations_added_fips,
-        add_b_df,
-        ["worksite_city", "worksite_state", "worksite_zip"],
-    )
-    return (add_b_with_fips_df,)
-
-
-@app.cell
-def _(add_b_with_fips_df, binary_path, h2a_with_fips_df):
-    # Export binary
-    h2a_with_fips_df.write_parquet(binary_path / "h2a_with_fips.parquet")
-    add_b_with_fips_df.write_parquet(binary_path / "h2a_addendum_b_with_fips.parquet")
     return
 
 

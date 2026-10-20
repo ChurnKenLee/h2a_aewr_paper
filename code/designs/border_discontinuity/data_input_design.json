@@ -1,0 +1,18 @@
+{
+  "design_id": "border_data_inputs_v1",
+  "geography": "ring_h1_screened_disjoint",
+  "policy_years": [2011, 2022],
+  "baseline_years": [2008, 2009, 2010],
+  "census_baseline_year": 2007,
+  "denominators": ["farm_jobs_2011", "farm_jobs_2008_2010", "hired_farm_jobs_2008_2010", "census_hired_workers_2007"],
+  "denominator_coverage": "all baseline years observed, finite and positive; no interpolation or postperiod repair",
+  "sample_comparisons": ["native", "common_all_denominators"],
+  "outcome": "certified start-year positions divided by each explicitly named fixed denominator",
+  "treatment": "current real annual AEWR reference",
+  "fixed_effects": "county and border_component_by_year",
+  "weight": "equal_county_year",
+  "inference": "existing pair CRV1/CV3J and shared-endpoint dyadic sensitivity",
+  "power": "existing four bounded DGPs, 999 draws/calibrations, seed 201103; full common-sample denominator comparisons only",
+  "effect_units_warning": "denominators change units and potentially the weighted estimand; smaller numerical standard errors are not evidence of more information",
+  "role": "exploratory input sensitivity; no significance-based selection"
+}

@@ -6,7 +6,7 @@ description = "Version-4 treatment registry, linear-history OLS, estimands, infe
 scopes = ["code/designs/mundlak_chamberlain", "scripts/run_mundlak_chamberlain.sh"]
 +++
 
-{{ grounding(path="code/designs/mundlak_chamberlain/mcw/design.py", anchor="mundlak-design-contract", sha256="6278d1708c14e260861bf0fc8639e79310743d6795f2bfb4aab3bc609dccb252") }}
+{{ <grounding path="code/designs/mundlak_chamberlain/mcw/design.py" anchor="mundlak-design-contract" sha256="beca009639b4dc04dd572e09869cb0b4cb0ce6c90112e2fb62eb946b2235bb91" /> }}
 
 The cross-design distinction between causal outcomes and required model inputs
 is maintained in [Causal outcomes and model inputs](@/contracts/causal-outcomes-and-model-inputs.md).
@@ -86,10 +86,15 @@ employment over 2008–2010 and a balanced outcome panel. The same pre-period
 mean is available for constructed per-worker quantities. The branch does not
 use `emp_farm_2011` as a magic denominator or sample filter.
 
-Rhode Island's five counties lack 2009 support. The panel builder records the
-actual observation count in each frozen window. The 2008–09 definition is not
-silently described as a two-year average for those counties; the 2008–10
-definition remains a declared sensitivity.
+The corrected shared producer retains Rhode Island's five 2009 outcome and
+quantile rows, while canonical 2009 AEWR is missing for every state. The
+`mc_baseline_year_count_*` fields count quantile observations. Separate
+`mc_fraction_affected_year_count_*` and `mc_baseline_bite_year_count` fields
+count observed wage-based inputs. The existing available-value mean rule
+therefore uses 2008 alone for the `f0809` fraction affected and 2008/2010 for
+`f0810` and the baseline bite, where those inputs exist. These values cannot
+be described as complete two-/three-year statutory exposure averages.
+See the [AEWR source correction](@/contracts/aewr-inputs.md).
 
 ## Treatment registry
 
@@ -97,8 +102,8 @@ The archive does not select one unique primary treatment unit. Version 4
 therefore retains the following named families:
 
 1. cumulative real-AEWR log level relative to the end of the pre-period,
-   (100[\log A_{rh}-\log A_{r,2010}]);
-2. cumulative real-dollar AEWR level, (A_{rh}-A_{r,2010});
+   $100[\log A_{rh}-\log A_{r,2010}]$;
+2. cumulative real-dollar AEWR level, $A_{rh}-A_{r,2010}$;
 3. annual real-AEWR log change as a sensitivity;
 4. direct frozen-distribution county bite for 2008–09 and 2008–10 windows; and
 5. predetermined county fraction affected times the regional cumulative log
@@ -108,21 +113,23 @@ The first three vary at the AEWR-region-by-year assignment level. The latter
 two create predetermined continuous variation below the AEWR region and can
 coexist with state-by-year or region-by-year fixed effects.
 
-For county (c) in AEWR region (r), the candidate frozen bite is
+For county $c$ in AEWR region $r$, the candidate frozen bite is
 
-\[
+{% <equation> %}
 B^0_{ct}=\int [A_{rt}-\max\{w,M_{ct}\}]_+\,dF_c^0(w),
-\]
+{% </equation> %}
 
-where (M_{ct}) is the applicable agricultural minimum wage and (F_c^0) is
+where $M_{ct}$ is the applicable agricultural minimum wage and $F_c^0$ is
 frozen before the analysis period. The shared panel does not contain the wage
 microdistribution. The executable builder therefore uses a declared
 five-quantile point-mass approximation from p10, p25, p50, p75, and p90 and
 persists that method label. It must not be described as the exact integral.
-The fraction-affected exposure is the mean, over the named 2008–09 or
-2008–10 window, of the same five point masses lying below that year's
-applicable AEWR after the agricultural wage-floor maximum. The separate
-baseline bite moderator is the 2008–2010 mean real AEWR-minus-county-p25 gap.
+The fraction-affected exposure is the available-value mean, within the named
+2008–09 or 2008–10 window, of the same five point masses lying below that
+year's AEWR reference after the agricultural wage-floor maximum. The separate
+baseline bite moderator is the available-value 2008–2010 mean real
+AEWR-minus-county-p25 gap. The source gap described above affects both means;
+neither incorporates the quarantined nonstatutory 2009 application wage.
 Thus 2011 supplies a treatment-history coordinate but is not a bite moderator
 or frozen-exposure normalization year.
 Contemporaneous local-wage gaps and Kaitz measures are excluded from the
@@ -136,19 +143,19 @@ applicable and is not privileged.
 
 ## Conditional-mean model
 
-For outcome (j), year (t), history coordinate (h\le t), and a declared
-treatment family (D), the full-history causal block is
+For outcome $j$, year $t$, history coordinate $h\le t$, and a declared
+treatment family $D$, the full-history causal block is
 
-\[
+{% <equation> %}
 \sum_{t=2012}^{2022}\sum_{h=2011}^{t}
   1[T=t]D_{ih}\left(\beta^j_{th}+\widetilde Z_{ir}'\theta^j_{th}\right),
 \qquad \widetilde Z_{ir}=Z_i-\overline Z_r.
-\]
+{% </equation> %}
 
 The pooled candidate retains all 77 full-history cells as named causal coordinates;
 causal-first selection chooses their maximal nuisance complement. In the
-county-FE sensitivities, every (h>2012) coordinate is retained in level, but
-for both (h=2011) and (h=2012), the sum over the eleven outcome-year columns is
+county-FE sensitivities, every $h>2012$ coordinate is retained in level, but
+for both $h=2011$ and $h=2012$, the sum over the eleven outcome-year columns is
 a time-invariant county path and is exactly absorbed. That basis therefore
 omits each path's 2012 outcome cell and names the remaining coefficients as
 differences from that cell. Its 75 dimensions are the complete identified
@@ -156,7 +163,7 @@ subspace of the raw 77-column history, not a lag-profile compression; an
 absolute 2012 current effect is not identified with county FE. An invertible QR
 or contrast map may be used internally only within the applicable identified
 space. The one-lag benchmark restricts the inner sum to
-(h\in\{t-1,t\}) and retains all 22 identified cells. Disagreement between the
+$h\in\lbrace t-1,t\rbrace$ and retains all 22 identified cells. Disagreement between the
 two model families is a diagnostic, not an automatic failure.
 
 Pre-period variables enter as means, not separate annual values or linear
@@ -181,11 +188,11 @@ coefficient.
 The common OLS fit contains six primitive H-2A outcomes:
 
 1. application count;
-2. balanced-linkage employer count;
+2. balanced v2 linked-worksite-business count;
 3. requested-position count;
 4. certified-position count;
 5. certified-hour count; and
-6. (1[\text{applications}>0]), estimated as a linear probability outcome.
+6. $1[\text{applications}>0]$, estimated as a linear probability outcome.
 
 For comparability, the branch reports both models' average current-coordinate
 effects over the common identified target 2013–2022. The one-lag model's
@@ -209,16 +216,16 @@ row gradient. It is not attached to arbitrary multivariate gradients: a scalar
 second-moment lambda does not supply a general cross-outcome assignment kernel.
 
 For raw `aewr_log_level` and `aewr_log_change` coordinates,
-(D=100\log(AEWR)) up to, respectively, an additive 2010-level or
+$D=100\log(AEWR)$ up to, respectively, an additive 2010-level or
 preceding-year comparison term. That comparison term drops out of the
 own-coordinate derivative, so their
 conditional-design elasticity is therefore
 
-\[
+{% <equation> %}
 \varepsilon
 =\frac{\partial Y/\partial\log(AEWR)}{\bar Y}
 =100\frac{\partial Y/\partial D}{\bar Y}.
-\]
+{% </equation> %}
 
 The observed mean is fixed and must be computed on exactly the same target
 population and weights as the derivative. County-year, region-year,
@@ -228,9 +235,9 @@ interchangeable.
 For all other treatment families and for every non-raw treatment transform,
 the retained normalization is
 
-\[
+{% <equation> %}
 100\frac{\partial Y/\partial D}{\bar Y},
-\]
+{% </equation> %}
 
 reported as `percent_of_observed_mean_per_treatment_unit`. It is not called an
 elasticity because the registry does not supply a valid unit-specific chain
@@ -245,16 +252,16 @@ sufficient-statistic exercise rather than a global extrapolation.
 
 ## Analytic inference
 
-Let the full design be (X=[Z,D]), with all fixed effects and nuisance
+Let the full design be $X=[Z,D]$, with all fixed effects and nuisance
 regressors included in its column space, and let
-(B=(X'X)^{-1}). The supported robust comparator is full-model HC3:
+$B=(X^{\prime}X)^{-1}$. The supported robust comparator is full-model HC3:
 
-\[
+{% <equation> %}
 \widehat V_{HC3}
 =B\sum_i x_ix_i'
   \frac{\hat u_i^2}{(1-H_{ii})^2}B,
 \qquad H_{ii}=x_i'Bx_i.
-\]
+{% </equation> %}
 
 The implementation computes the exact fixed-effect leverage contribution for
 the balanced nested panels and adds the selected within-design contribution.
@@ -268,21 +275,21 @@ the FWL-conditional Woodbury shortcut is not called exact.
 For a scalar reported contrast, the experimental continuous CCV comparator
 uses
 
-\[
+{% <equation> %}
 \widehat\Omega_g=n_g^{-1}\sum_{i\in g}\widetilde D_i^2,
 \qquad
 \widehat\lambda=1-
 \frac{[G^{-1}\sum_g\widehat\Omega_g]^2}
      {G^{-1}\sum_g\widehat\Omega_g^2},
-\]
+{% </equation> %}
 
-with (q=1), and
+with $q=1$, and
 
-\[
+{% <equation> %}
 \widehat V_{CCV-HC3}^{exp}
 =\widehat\lambda\widehat V_{CR0}
 +(1-\widehat\lambda)\widehat V_{HC3}.
-\]
+{% </equation> %}
 
 This scalar mixture is **experimental**. The Lean development establishes
 arbitrary-continuous covariance-kernel identities, binary reduction, lambda

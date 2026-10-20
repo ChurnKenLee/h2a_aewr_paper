@@ -22,7 +22,7 @@ LLMS = STATIC / "llms.txt"
 ASSUMPTIONS = ROOT / "agent" / "assumptions.toml"
 SCHEMA_VERSION = 1
 
-SHORTCODE_RE = re.compile(r"{{\s*grounding\((?P<args>[^{}]*)\)\s*}}")
+GROUNDING_COMPONENT_RE = re.compile(r"{{\s*<grounding\s+(?P<args>[^{}]*?)\s*/>\s*}}")
 ATTRIBUTE_RE = re.compile(r'(?P<name>path|anchor|sha256)\s*=\s*"(?P<value>[^"]*)"')
 SHA_ATTRIBUTE_RE = re.compile(r'(?P<prefix>sha256\s*=\s*")[^"]*(?P<suffix>")')
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -65,7 +65,7 @@ def normalized_document_text(text: str) -> str:
         call = match.group(0)
         return SHA_ATTRIBUTE_RE.sub(r'\g<prefix>REVIEWED_DIGEST\g<suffix>', call)
 
-    return SHORTCODE_RE.sub(normalize, text)
+    return GROUNDING_COMPONENT_RE.sub(normalize, text)
 
 
 def split_front_matter(path: Path, text: str) -> tuple[dict, str]:
@@ -158,11 +158,11 @@ def parse_documents() -> tuple[list[Document], list[GroundingReference], list[st
         )
         documents.append(document)
 
-        for match in SHORTCODE_RE.finditer(text):
+        for match in GROUNDING_COMPONENT_RE.finditer(text):
             attributes = {item.group("name"): item.group("value") for item in ATTRIBUTE_RE.finditer(match.group("args"))}
             missing = sorted({"path", "anchor", "sha256"} - attributes.keys())
             if missing:
-                errors.append(f"{relative_path}: grounding shortcode missing {', '.join(missing)}")
+                errors.append(f"{relative_path}: grounding component missing {', '.join(missing)}")
                 continue
             source_path = attributes["path"]
             anchor = attributes["anchor"]

@@ -6,7 +6,7 @@ description = "Treatment construction, estimation samples, fixed effects, and ev
 scopes = ["code/designs/did", "scripts/run_did.sh"]
 +++
 
-{{ grounding(path="code/designs/did/helpers.R", anchor="did-estimation-contract", sha256="abc47e8490b0857dc03f19e055b214c3a94a4ec866568d0741614007118fdebd") }}
+{{ <grounding path="code/designs/did/helpers.R" anchor="did-estimation-contract" sha256="abc47e8490b0857dc03f19e055b214c3a94a4ec866568d0741614007118fdebd" /> }}
 
 The cross-design distinction between causal outcomes and required model inputs
 is maintained in [Causal outcomes and model inputs](@/contracts/causal-outcomes-and-model-inputs.md).
@@ -14,6 +14,13 @@ is maintained in [Causal outcomes and model inputs](@/contracts/causal-outcomes-
 The DiD branch consumes `data/processed/county_year_panel.parquet`. Script `01`
 adds the baseline H-2A treatment classification and post-2011 indicator and
 writes `data/processed/did_county_year_panel.parquet`.
+
+The [AEWR source correction](@/contracts/aewr-inputs.md) makes canonical 2009
+wages missing and preserves the corresponding outcome rows. The 2010
+lagged-wage regressor is therefore missing, and the unchanged regression
+complete-case rule excludes those observations. This changes empirical
+support relative to the former nonstatutory-wage benchmark; it does not change
+the treatment thresholds, 2011 reference or inference convention.
 
 Scripts `02` through `06` retain exactly four columns for every regression
 family: full/no-border samples, each without/with controls. County and year

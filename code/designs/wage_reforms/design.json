@@ -1,0 +1,48 @@
+{
+  "version": "wage_reforms_feasibility_v1",
+  "status": "bounded_exploration_after_descriptive_coverage_before_new_response_fits",
+  "question": "Can the 2009-2010 wage-method reversal or 2015-2018 range wage phase-in identify the effect of required wages on H-2A use?",
+  "interpretation": "Diagnostic response and support investigation; no causal elasticity is authorized by this registry.",
+  "known_evidence": "FY2014 title/monthly-pay screening found 2532 certified herder positions and 532 linked businesses; raw low wages conflict with California worksite evidence. Early SOC and requested-position fields are absent.",
+  "source_years": [2008, 2019],
+  "linkage": {"unit": "worksite_business", "version": "v2", "tier": "balanced", "input_max_year": 2024, "review_status": "complete"},
+  "case_rule": "Positive-certified unique source rows; retain a singleton or the B01 national-audit master flag. Fail on duplicate selected case-year keys or uncovered positive case-years. Do not allocate case totals to employer members.",
+  "date_rule": "Parse source ISO dates without repairs. Contract dates use the first observed certification, job, requested date, in that order, accommodating the disclosure field change in FY2016. Receipt dates must lie within fiscal_year minus two through fiscal_year; contract dates must lie within fiscal_year minus one through fiscal_year plus one and end on/after start. Record exclusions. Fiscal cohorts are not policy dates.",
+  "wage_rule": "Nominal dollars in the source pay unit. Hourly HOUR/HR and monthly MONTH/MTH only. Wage samples require a positive numeric rate; no imputation, deflation, winsorization, or conversion of monthly wages to hourly wages.",
+  "herder_regex": "(?i)herd|range.*(?:livestock|cattle|calv)|(?:livestock|cattle).*range",
+  "sheep_regex": "(?i)sheep",
+  "candidate_protected_states": ["CA", "OR", "HI"],
+  "protected_state_caveat": "These are source-audit categories, not verified untreated assignments. California and Oregon had higher floors; Hawaii's prevailing-wage history is not assumed to be a continuing statutory floor. Interstate case evidence is kept separately. California controls have their own wage changes.",
+  "cohorts": [
+    {"name": "early", "baseline_year": 2008, "years": [2008, 2012], "reference_year": 2008},
+    {"name": "herder", "baseline_year": 2011, "years": [2011, 2018], "reference_year": 2014}
+  ],
+  "cohort_rule": "All positive-certified baseline worksite businesses. Classification uses baseline evidence only: all rows monthly/herder, all rows hourly/nonherder, or mixed/unclassified. Future disappearance is retained as zero certified participation. No all-farms entry estimand.",
+  "geographic_support": "Main response contrasts require one valid baseline own worksite state and one state across all baseline associated-case rows; these are observed itinerary screens, not proof of complete itineraries. Mixed and ambiguous cohorts remain in audits.",
+  "diagnostic_outcomes": {
+    "certified_participation": "Indicator for any positive-certified worksite-business source row in the fiscal year, including uses outside the baseline occupation; zero on absence, denominator fixed baseline cohort.",
+    "same_type_participation": "Indicator for at least one positive-certified row of the baseline pay/title type; classification-change diagnostic.",
+    "log_wage": "Log median offered nominal wage over distinct business-case-wage observations in the baseline pay/title type; missing for nonparticipants and missing wages, never zero.",
+    "certified_positions": "Case-level certified positions counted once; not unique workers, admissions, or business-level allocated quantities. Descriptive only."
+  },
+  "reversal_cutoffs": ["2009-01-17", "2010-03-15"],
+  "reversal_assignment": "Receipt-date regime diagnostic. Before 2010-03-15 with start on/after 2010-06-01 is ambiguous and excluded from the 2010 local fit. The attempted 2009 suspension is not a third implemented switch. Observed wages do not construct OES exposure.",
+  "local_windows_days": [30, 60, 90],
+  "local_model": "Equal-case OLS of log hourly offered wage on post, day distance, post times distance, worksite-state and normalized job-title fixed effects. Positive-certified cases only. Actual cutoffs and same-calendar-date 2011/2012 placebos; each fit is separate and descriptive, not an RD causal effect.",
+  "local_cluster": "AEWR region CRV1 with t(G-1); retain rank/support failures. Filing is manipulable and seasonal; display weekly receipt counts and receipt-to-start timing.",
+  "cohort_model": "For each declared year, regress the change from the reference year in certified participation or observed log wage on the fixed baseline herder indicator and state fixed effects. Equal-business weight. Wage differences require two observed wages and therefore condition on survival.",
+  "cohort_cluster": "Baseline worksite state CRV1, t(G-1); at least two states with both baseline groups and variation. Common sector shocks can invalidate this reference law. Leave-one-state-out coefficients are influence diagnostics.",
+  "precision": "Conditional approximate 80-percent MDE = [t(.975,G-1)+normal(.8)] times CRV1 SE. Not a size-validated power calculation or evidence of exogeneity. No retrospective observed-power calculation.",
+  "herder_ddd": "Report baseline support for explicit monthly sheep employers in higher-floor states versus other states and same-state hourly controls. Do not fit a wage elasticity or treat a single protected state as many independent controls.",
+  "measurement_audit_added_after_first_fits": "The large prepolicy cohort attrition triggered a diagnostic of returns reachable through the existing conservative/high-recall tiers and exact nonempty raw name/address/state/postal matches. This does not change assignments, baseline entities, primary fits, or the upstream linkage. Report counts of possible unlinked returns, not corrected outcomes.",
+  "filing_audit_added_after_first_fits": "Retain weekly counts of all disclosure case-years, including nonpositive certifications, so a change in approval need not be interpreted as changed filing. Require one unique valid receipt date within case-year; audit ambiguous dates and case numbers appearing in multiple fiscal vintages. This does not alter the positive-case wage sample.",
+  "resource_guard": {"maximum_source_rows": 1000000, "maximum_regression_rows": 100000, "maximum_design_columns": 1000, "seed": 20150116},
+  "promotion_gates": [
+    "historical FLC area occupation skill schedules and validity dates recovered with source provenance",
+    "baseline occupation and skill assignments reconstructed independently of postreform offered wages",
+    "competing floors and transition cohorts resolved",
+    "herder legal coverage and work itinerary assignments audited",
+    "bundled nonwage reforms and sector trends have a credible counterfactual",
+    "useful precision under a defensible policy-level reference law"
+  ]
+}

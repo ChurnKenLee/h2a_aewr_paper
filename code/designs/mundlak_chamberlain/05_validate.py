@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from mcw.design import (
     CCV_STATUS,
     DESIGN_VERSION,
     DIRECT_LOG_AEWR_TREATMENTS,
+    EMPLOYER_LINKAGE_CONTRACT,
     FULL_HISTORY_REFERENCE_OUTCOME_YEAR,
     INFERENCE_METHODS,
     PRIMITIVE_OUTCOMES,
@@ -157,7 +159,16 @@ def _validate_balanced_panel_keys(
         raise ValueError(
             "Executable analysis years drifted from the validated 2012--2022 window."
         )
-    required = ("county_fips", "year", "mc_baseline_farm_employment")
+    linkage_columns = (
+        *EMPLOYER_LINKAGE_CONTRACT,
+        "employer_linkage_review_report_hash",
+    )
+    required = (
+        "county_fips",
+        "year",
+        "mc_baseline_farm_employment",
+        *linkage_columns,
+    )
     _require_columns(panel, "Analysis panel", required)
     if panel.is_empty():
         raise ValueError("Analysis panel is empty.")
@@ -169,6 +180,17 @@ def _validate_balanced_panel_keys(
         ).any()
     ).item():
         raise ValueError("Analysis panel contains null county-year keys.")
+    linkage = panel.select(linkage_columns).unique()
+    if linkage.height != 1:
+        raise ValueError("Analysis panel mixes employer-linkage metadata.")
+    linkage_row = linkage.row(0, named=True)
+    if any(
+        linkage_row[column] != expected
+        for column, expected in EMPLOYER_LINKAGE_CONTRACT.items()
+    ) or not re.fullmatch(
+        r"[0-9a-f]{64}", linkage_row["employer_linkage_review_report_hash"]
+    ):
+        raise ValueError("Analysis panel does not use reviewed worksite-business v2.")
     observed_baseline = panel.filter(
         pl.col("mc_baseline_farm_employment").is_not_null()
     )

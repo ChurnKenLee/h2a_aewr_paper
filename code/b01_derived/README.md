@@ -6,13 +6,13 @@ producer; run only the artifact family you need from the repository root.
 
 ## Manual execution
 
-Run R scripts with `Rscript`:
+Run R scripts with `Rscript --vanilla` in the project library:
 
 ```sh
-Rscript code/b01_derived/01_h2a_aggregation_nodupes.R
+bash -c 'source scripts/pipeline_helpers.sh; run_step code/b01_derived/01_h2a_aggregation_nodupes.R'
 ```
 
-The three Python files are Marimo applications:
+The Python files are Marimo applications:
 
 ```sh
 uv run marimo edit code/b01_derived/02_price_index_nass_synthetic_cdl.py
@@ -27,7 +27,8 @@ the remaining family and substep numbers are unchanged.
 
 | Script | Responsibility | Primary output |
 | --- | --- | --- |
-| `01_h2a_aggregation_nodupes.R` | Aggregate worksite records without duplicating case totals | `h2a_aggregated.parquet` |
+| `01_h2a_aggregation_nodupes.R` | Aggregate worksite records without duplicating case totals and count positive-certified linked worksite businesses | `h2a_aggregated.parquet` |
+| `01b_h2a_worksite_exposure.py` | Audit case allocation and expand labeled worksite intervals to months | `h2a_worksite_months/` and `h2a_worksite_county_year_exposure.parquet` |
 | `02_price_index_nass_synthetic_cdl.py` | Construct county-year chained Fisher crop price and quantity indexes | `price_index_fisher_county_year.parquet` |
 | `03_01_acs_extract.R` | Request, cache, and convert ACS extracts | One-year wage and five-year imputation extracts |
 | `03_02_acs_immigrant_imputation.R` | Impute and aggregate immigrant agricultural labor | `acs_immigrant_imputed.parquet` |
@@ -42,7 +43,10 @@ the remaining family and substep numbers are unchanged.
 
 ## Dependencies
 
-- `01` consumes the final A02 H-2A location outputs.
+- `01` consumes the final A02 H-2A location outputs and the reviewed A02 v2
+  worksite-business membership artifact. The employer columns keep their
+  historical names but now count positive-certified linked worksite businesses;
+  all non-employer allocation calculations are unchanged.
 - `02` consumes A06 CDL acres and synthetic price/yield outputs.
 - Run `03_01` before `03_02`, `03_03`, `04`, and `05_01`.
 - `04` also requires A04 annual QCEW. `05_02` requires both A05 OEWS artifacts;
@@ -64,3 +68,21 @@ the remaining family and substep numbers are unchanged.
   documented in the grounded
   [H-2A prediction contract](../../content/contracts/prediction-model.md).
 - `03_01` requires `IPUMS_API_KEY`. Other B scripts use local artifacts only.
+
+`01` additionally owns `h2a_case_allocation_source.parquet` (including cases
+outside the positive-certified branch) and `h2a_allocated_worksites.parquet`.
+The latter preserves raw date/staffing evidence and the existing allocation
+before case-modal dates, date exclusions, hours imputation and county splits.
+The historical `h2a_aggregated.parquet` remains the case-date benchmark.
+
+Run `01b` after `01` and the A01 AEWR producer. It reads the allocated-worksite
+artifact and dated FLS references and owns the fiscal-year monthly partitions,
+county-year exposure, `h2a_worksite_exposure_audit.parquet`,
+`h2a_case_allocation_audit.parquet`, `h2a_worksite_exposure_coverage.parquet`, and
+`h2a_worksite_exposure_manifest.json`. See the
+[worksite exposure contract](../../content/contracts/h2a-worksite-exposure.md).
+It does not replace the historical certification counts or refit the prediction.
+
+```sh
+bash -c 'source scripts/pipeline_helpers.sh; run_step code/b01_derived/01b_h2a_worksite_exposure.py'
+```

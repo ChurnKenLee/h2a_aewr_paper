@@ -1,0 +1,18 @@
+{
+  "design_id": "border_data_inputs_v1",
+  "external_data_complete": false,
+  "nonpublic_nass_required": false,
+  "external_gap_scope": "historical wage and finer spatial extensions; current county comparisons use public inputs",
+  "files": {
+    "code/designs/border_discontinuity/data_input_report.py": "c9ebff812cc07c7fbec588a73607a175c6ad79f939b27d6d2f3d985ceba7a283",
+    "code/designs/border_discontinuity/data_input_design.json": "38a7f7234952d688e47a3d51970a6b529afee474ef5b8bcccb968fe38f6b229c",
+    "data/processed/border_data_input_county_year.parquet": "7ea47b89172e75edca66eef38c420b5641f43fc8febcddb3a12df00e8d4b53b3",
+    "data/intermediate/aewr.parquet": "929c5ca4c3333e4590f8817b82b5ff35819b2c8702e5671fa20cbfd98792c383",
+    "data/intermediate/aewr_source_manifest.json": "488805482c08e992fa7a3eb281e0adc581dfe58bb11e5131b2e8a48ab4200f81",
+    "data/intermediate/h2a_worksite_exposure_manifest.json": "e79d8ce1ccc280572a4db7d8d93cad330ad54e55d708c1797b23d739ff00479e",
+    "data/intermediate/h2a_worksite_geocode_manifest.json": "c30ec3310ba510ae8a7f07d944988f9de750aafae052259863f3b3871e215b2d",
+    "outputs/tables/border_data_input_estimates.csv": "37c20726f250fb5ebab441d8e93e31bf0396ebbfb9547ef3ea4952e098075565",
+    "outputs/tables/border_data_input_power.csv": "7861c1d324b7d0c88432960cfee6d24fe5d9406924505a78b06c0266c4b3ae53",
+    "outputs/tables/border_data_input_source_coverage.csv": "410f4e87f30dc9e75b63e080dd0f35059b9f6c94864a65a657dd762c7ee86150"
+  }
+}

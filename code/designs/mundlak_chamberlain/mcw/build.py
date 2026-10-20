@@ -47,6 +47,7 @@ median, and labeled by ``mc_baseline_imputation_method``.
 """
 
 import math
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import MappingProxyType
@@ -131,7 +132,7 @@ STANDARDIZED_BASELINE_COLUMNS: Mapping[str, str] = MappingProxyType(
 SOURCE_OUTCOME_COLUMNS: Mapping[str, str] = MappingProxyType(
     {
         "applications": "nbr_applications_start_year",
-        "employers": "nbr_employers_balanced_start_year",
+        "linked_worksite_businesses": "nbr_employers_balanced_start_year",
         "requested_positions": "nbr_workers_requested_start_year",
         "certified_positions": "nbr_workers_certified_start_year",
         "certified_hours": "man_hours_certified_start_year",
@@ -140,7 +141,7 @@ SOURCE_OUTCOME_COLUMNS: Mapping[str, str] = MappingProxyType(
 OUTCOME_COLUMNS: Mapping[str, str] = MappingProxyType(
     {
         "applications": "mc_y_applications",
-        "employers": "mc_y_employers_balanced",
+        "linked_worksite_businesses": "mc_y_linked_worksite_businesses_balanced",
         "requested_positions": "mc_y_requested_positions",
         "certified_positions": "mc_y_certified_positions",
         "certified_hours": "mc_y_certified_hours",
@@ -191,6 +192,13 @@ GEOGRAPHY_COLUMNS = (
     "cz_id",
     "aewr_region_id",
 )
+EMPLOYER_LINKAGE_COLUMNS = (
+    "employer_linkage_unit",
+    "employer_linkage_version",
+    "employer_linkage_input_max_year",
+    "employer_linkage_review_status",
+    "employer_linkage_review_report_hash",
+)
 REQUIRED_SOURCE_COLUMNS = (
     *GEOGRAPHY_COLUMNS,
     "year",
@@ -201,6 +209,7 @@ REQUIRED_SOURCE_COLUMNS = (
     "emp_farm",
     *BASELINE_VARIABLE_SOURCES.values(),
     *SOURCE_OUTCOME_COLUMNS.values(),
+    *EMPLOYER_LINKAGE_COLUMNS,
 )
 
 
@@ -462,6 +471,9 @@ def _baseline_means(frame: pl.DataFrame) -> pl.DataFrame:
         .otherwise(None)
         .mean()
         .alias(BASELINE_BITE_COLUMN),
+        (real_aewr.is_finite() & low_wage.is_finite())
+        .fill_null(False).sum().cast(pl.Int8)
+        .alias("mc_baseline_bite_year_count"),
         pl.when(farm_employment.is_finite())
         .then(1)
         .otherwise(None)
@@ -606,7 +618,9 @@ def _baseline_fraction_affected(frame: pl.DataFrame, tag: str) -> pl.DataFrame:
         .agg(
             pl.col("__baseline_fraction_affected")
             .mean()
-            .alias(FRACTION_AFFECTED_COLUMNS[tag])
+            .alias(FRACTION_AFFECTED_COLUMNS[tag]),
+            pl.col("__baseline_fraction_affected").count().cast(pl.Int8)
+            .alias(f"mc_fraction_affected_year_count_{tag}"),
         )
     )
 
@@ -770,6 +784,20 @@ def _assert_output_contract(frame: pl.DataFrame) -> None:
     for column in (*GEOGRAPHY_COLUMNS, *CLUSTER_COLUMNS.values()):
         if frame.schema[column] != pl.String:
             raise PanelBuildError(f"constructed geography {column} is not a string")
+    linkage = frame.select(EMPLOYER_LINKAGE_COLUMNS).unique()
+    if linkage.height != 1:
+        raise PanelBuildError("MC panel mixes employer-linkage metadata")
+    row = linkage.row(0, named=True)
+    if (
+        row["employer_linkage_unit"] != "worksite_business"
+        or row["employer_linkage_version"] != "v2"
+        or int(row["employer_linkage_input_max_year"]) != 2024
+        or row["employer_linkage_review_status"] != "complete"
+        or not re.fullmatch(
+            r"[0-9a-f]{64}", row["employer_linkage_review_report_hash"]
+        )
+    ):
+        raise PanelBuildError("MC panel has invalid employer-linkage metadata")
 
 
 def build_mcw_panel(
@@ -800,6 +828,7 @@ def build_mcw_panel(
         *ONE_LAG_BENCHMARK_COLUMNS,
         BASELINE_FARM_EMPLOYMENT_COLUMN,
         BASELINE_BITE_COLUMN,
+        "mc_baseline_bite_year_count",
         "mc_baseline_farm_employment_year_count",
         *BASELINE_MEAN_COLUMNS.values(),
         *BASELINE_IMPUTED_COLUMNS.values(),
@@ -807,6 +836,7 @@ def build_mcw_panel(
         *STANDARDIZED_BASELINE_COLUMNS.values(),
         "mc_baseline_imputation_method",
         *(f"mc_baseline_year_count_{tag}" for tag in BASELINE_WINDOWS),
+        *(f"mc_fraction_affected_year_count_{tag}" for tag in BASELINE_WINDOWS),
         *(
             f"mc_frozen_{column}_{tag}"
             for tag in BASELINE_WINDOWS

@@ -5,6 +5,7 @@
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
 source(path_code("designs", "panel_iv", "design.R"))
+source(path_code("designs", "panel_iv", "specification.R"))
 library(arrow)
 library(dplyr)
 library(fixest)
@@ -19,86 +20,26 @@ obsolete_outputs <- c(
   path_tables("iv_dissimilarity_ar_intervals.csv"),
   path_tables("iv_dissimilarity_model_estimates.csv"),
   path_tables("table_iv_dissimilarity_panel.tex"),
-  path_figures("fig_iv_dissimilarity_first_stage.png")
+  path_figures("fig_iv_dissimilarity_first_stage.png"),
+  path_tables("table_iv_h2a_employers.tex")
 )
 unlink(obsolete_outputs[file.exists(obsolete_outputs)])
 
-# docs-ground:start panel-iv-outcome-and-input-registry
-panel <- read_parquet(
-  path_processed("panel_iv_county_year.parquet")
-) %>%
-  mutate(
-    year = as.integer(year),
-    farm_cashandinc_ppi_per_farm_worker = if_else(
-      is.finite(farm_cashandinc_ppi) &
-        is.finite(emp_farm) &
-        emp_farm > 0,
-      1000 * farm_cashandinc_ppi / emp_farm,
-      NA_real_
-    ),
-    h2a_employers_per_farm_worker_2011_start_year = if_else(
-      is.finite(nbr_employers_balanced_start_year) &
-        is.finite(emp_farm_2011) &
-        emp_farm_2011 > 0,
-      nbr_employers_balanced_start_year / emp_farm_2011,
-      NA_real_
-    )
-  )
-
-endogenous <- "aewr_ppi"
-fixed_effects <- "county_fips + year"
-cluster_vcov <- ~aewr_iv_cluster_id
-control_terms <- paste(
-  DISSIMILARITY_IV_CONTROL_TERMS,
-  collapse = " + "
+specification_path <- path_code("designs", "panel_iv", "estimation_spec.json")
+estimation_spec <- panel_iv_read_specification(specification_path)
+if (!identical(as.character(estimation_spec$controls), DISSIMILARITY_IV_CONTROL_TERMS)) {
+  stop("Panel-IV control registry disagrees with design.R.", call. = FALSE)
+}
+panel <- panel_iv_prepare_outcomes(
+  read_parquet(path_processed("panel_iv_county_year.parquet")),
+  estimation_spec
 )
-
-outcomes <- tribble(
-  ~outcome                                                             , ~outcome_label , ~table_stub ,
-  "h2a_cert_share_farm_workers_2011_start_year"                        ,
-  "H-2A certified workers / 2011 farm employment"                      ,
-  "h2a_normalized"                                                     ,
-  "h2a_cert_hours_per_farm_worker_2011_start_year"                     ,
-  "H-2A certified hours / 2011 farm employment"                        ,
-  "h2a_certified_hours"                                                ,
-  "h2a_applications_per_farm_worker_2011_start_year"                   ,
-  "H-2A applications / 2011 farm employment"                           ,
-  "h2a_applications"                                                   ,
-  "h2a_employers_per_farm_worker_2011_start_year"                      ,
-  "H-2A employers / 2011 farm employment (balanced linkage)"          ,
-  "h2a_employers"                                                      ,
-  "h2a_cert_positions_per_application_start_year"                      ,
-  "H-2A certified positions / application"                             ,
-  "h2a_positions_per_application"                                      ,
-  "h2a_cert_hours_per_position_start_year"                             ,
-  "H-2A certified hours / certified position"                          ,
-  "h2a_hours_per_position"                                             ,
-  "fisher_index_ppi"                                                   ,
-  "Real Fisher crop price index"                                       ,
-  "prices"                                                             ,
-  "emp_farm"                                                           ,
-  "Farm employment"                                                    ,
-  "farm_employment"                                                    ,
-  "share_farm_prodexp_cashandinc"                                      ,
-  "Farm production expenses / cash receipts and other income"          ,
-  "production_expense_share"                                           ,
-  "farm_cashandinc_ppi_per_farm_worker"                                ,
-  "Farm cash receipts and other income per farm worker (2012 dollars)" ,
-  "farm_income"                                                        ,
-  "share_farm_laborexp_prodexp"                                        ,
-  "Hired-labor share of farm production expenses"                      ,
-  "farm_labor_share"                                                   ,
-  "fisher_quantity_index"                                              ,
-  "Fisher crop output-quantity index (2011 = 100)"                     ,
-  "output_quantities"
-)
-
-h2a_adjustment_outcomes <- c(
-  "h2a_cert_hours_per_farm_worker_2011_start_year",
-  "h2a_applications_per_farm_worker_2011_start_year",
-  "h2a_cert_positions_per_application_start_year",
-  "h2a_cert_hours_per_position_start_year"
-)
+endogenous <- estimation_spec$endogenous
+fixed_effects <- paste(estimation_spec$fixed_effects, collapse = " + ")
+cluster_vcov <- stats::as.formula(paste("~", estimation_spec$primary_inference_cluster))
+control_terms <- paste(estimation_spec$controls, collapse = " + ")
+outcomes <- estimation_spec$outcomes
+h2a_adjustment_outcomes <- outcomes$outcome[outcomes$adjustment_margin]
 
 required_columns <- unique(c(
   "county_fips",
@@ -124,7 +65,6 @@ if (length(missing_columns) > 0L) {
     call. = FALSE
   )
 }
-# docs-ground:end panel-iv-outcome-and-input-registry
 
 prediction_cutoffs <- sort(unique(
   panel$h2a_prediction_cutoff_year[
@@ -245,38 +185,23 @@ first_stage_data <- finite_complete(
   c("county_fips", "year", "aewr_iv_cluster_id")
 )
 
-first_stage_specs <- tribble(
-  ~column                   , ~instrument , ~moment_targets , ~controls , ~header ,
-  1L                        ,
-  "z_wage_only_real"        ,
-  "Wage only"               ,
-  FALSE                     ,
-  "Basic"                   ,
-  2L                        ,
-  "z_wage_seasonal_composition_real",
-  "Wage + seasonal/composition",
-  FALSE                     ,
-  "Basic + seasonal/composition",
-  3L                        ,
-  "z_wage_only_real"        ,
-  "Wage only"               ,
-  TRUE                      ,
-  "Controls"                ,
-  4L                        ,
-  "z_wage_seasonal_composition_real",
-  "Wage + seasonal/composition",
-  TRUE                      ,
-  "Controls + seasonal/composition"
-)
+first_stage_specs <- estimation_spec$models %>%
+  transmute(
+    column,
+    instrument,
+    moment_targets,
+    controls,
+    header = first_stage_header
+  )
 
 first_stage_models <- vector("list", nrow(first_stage_specs))
 first_stage_rows <- vector("list", nrow(first_stage_specs))
 
 for (index in seq_len(nrow(first_stage_specs))) {
-  specification <- first_stage_specs[index, ]
+  model_spec <- first_stage_specs[index, ]
   model_data <- first_stage_data %>%
-    mutate(z = .data[[specification$instrument[[1]]]])
-  rhs <- if (specification$controls[[1]]) {
+    mutate(z = .data[[model_spec$instrument[[1]]]])
+  rhs <- if (model_spec$controls[[1]]) {
     paste("z", control_terms, sep = " + ")
   } else {
     "z"
@@ -299,7 +224,7 @@ for (index in seq_len(nrow(first_stage_specs))) {
 
   first_stage_models[[index]] <- model
   first_stage_rows[[index]] <- bind_cols(
-    specification,
+    model_spec,
     tibble(
       observations = nobs(model),
       counties = n_distinct(estimation_data$county_fips),
@@ -417,29 +342,14 @@ etable(
 
 # Four-column 2SLS outcomes -------------------------------------------------
 
-second_stage_specs <- tribble(
-  ~column                   , ~instrument , ~moment_targets , ~controls , ~header ,
-  1L                        ,
-  "z_wage_only_real"        ,
-  "Wage only"               ,
-  FALSE                     ,
-  "Wage only"               ,
-  2L                        ,
-  "z_wage_seasonal_composition_real",
-  "Wage + seasonal/composition",
-  FALSE                     ,
-  "Seasonal/composition"    ,
-  3L                        ,
-  "z_wage_only_real"        ,
-  "Wage only"               ,
-  TRUE                      ,
-  "Wage only + controls"    ,
-  4L                        ,
-  "z_wage_seasonal_composition_real",
-  "Wage + seasonal/composition",
-  TRUE                      ,
-  "Seasonal/composition + controls"
-)
+second_stage_specs <- estimation_spec$models %>%
+  transmute(
+    column,
+    instrument,
+    moment_targets,
+    controls,
+    header = second_stage_header
+  )
 
 iv_result_rows <- list()
 iv_sample_rows <- list()
@@ -662,10 +572,10 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       iv_models[[model_index]],
       "^(fit_)?aewr_ppi$"
     )
-    specification <- second_stage_specs[model_index, ]
+    model_spec <- second_stage_specs[model_index, ]
     iv_result_rows[[length(iv_result_rows) + 1L]] <- bind_cols(
       outcome_spec,
-      specification,
+      model_spec,
       tibble(
         observations = nobs(iv_models[[model_index]]),
         counties = n_distinct(estimation_data$county_fips),
@@ -1020,9 +930,9 @@ email_outcomes <- tribble(
   "Applications / 2011 farm employment",
   "Applications /\n2011 farm\nemployment",
   "H-2A outcomes",
-  "h2a_employers_per_farm_worker_2011_start_year",
-  "Employers / 2011 farm employment",
-  "Employers /\n2011 farm\nemployment",
+  "h2a_linked_worksite_businesses_per_farm_worker_2011_start_year",
+  "Linked worksite businesses / 2011 farm employment",
+  "Linked worksite\nbusinesses /\n2011 farm emp.",
   "H-2A outcomes",
   "h2a_cert_positions_per_application_start_year",
   "Certified positions / application",

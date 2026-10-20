@@ -10,6 +10,7 @@ Requires-Dist: bs4>=0.0.2
 Requires-Dist: chardet>=5.2.0
 Requires-Dist: docling>=2.76.0
 Requires-Dist: dspy>=3.1.3
+Requires-Dist: duckdb==1.5.5
 Requires-Dist: exactextract>=0.3.0
 Requires-Dist: fastexcel>=0.19.0
 Requires-Dist: fastparquet>=2024.11.0
@@ -88,11 +89,10 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
                                        code/c02_build
                                               │
                                               v
-                                        county_year_panel
-                                       /        |        |        \
-                                      v         v        v         v
-                            descriptives      DiD    panel IV   MC dose response
-                            border discontinuity: documented future branch
+                                       county_year_panel
+                         /       |        |        |        |        \
+                        v        v        v        v        v         v
+              descriptives     DiD   panel IV   MC dose   border ring   welfare
 ```
 
 | Branch | Owner | Principal artifact or output |
@@ -104,14 +104,18 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
 | DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
 | Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | Panel-IV artifacts, retained tables, and diagnostics |
-| Multilevel Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | Audited dose-response specification program, retained tables, figures, and diagnostics |
-| Future border design | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Documentation only |
+| Wooldridge–Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | DuckDB/Polars linear-history OLS registry, constructed estimands, and analytic inference diagnostics |
+| AEWR-border ring | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Standalone screened border-ring direct-wage experiment and robustness audit |
+| Narrow welfare | [`code/welfare`](code/welfare/) | Certification-space producer incidence from one frozen certified-hours elasticity |
 
 The shared panel owns normalized source measures, reusable outcomes and
-controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps,
-cropland eligibility, border-CZ status, and stable geographic identifiers. It
-does not own treatment classifications, post indicators, fixed-effect factors,
-year dummies, target-cluster assignments, or instruments.
+controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps, the
+BEA employment and farm wage-bill totals, separate QCEW NAICS 111/112 and
+all-sector employment/wage-bill totals with disclosure flags, nominal OEWS
+Big-Six hourly- and annual-wage proxies and their support fields, cropland
+eligibility, border-CZ status, and stable geographic identifiers. It does not
+own treatment classifications, post indicators, fixed-effect factors, year
+dummies, target-cluster assignments, or instruments.
 
 ## Commands
 
@@ -128,8 +132,14 @@ Run only a supported C-side branch:
 ./scripts/run_descriptives.sh
 ./scripts/run_did.sh
 ./scripts/run_panel_iv.sh
+./scripts/run_border_discontinuity.sh
 ./scripts/run_mundlak_chamberlain.sh
+./scripts/run_welfare.sh
 ```
+
+The AEWR-border ring runner is a standalone experiment and is not called by
+`run_all.sh` or the manuscript workflow. The welfare runner is also standalone
+and intentionally stops until its elasticity contract is frozen.
 
 Set `DRY_RUN=1` before a command to print its execution order without running
 it. See [`scripts/README.md`](scripts/README.md) for source/derived runners and
@@ -143,19 +153,32 @@ expected outputs.
 - `outputs/figures` and `outputs/tables` contain retained manuscript products.
 - Geographic identifiers follow
   [`content/contracts/geographic-codes.md`](content/contracts/geographic-codes.md).
+- H-2A employer IDs and counts follow the reviewed FY2008--2024
+  [worksite-business linkage contract](content/contracts/employer-linkage.md).
 - Old local Parquets may remain on disk, but only the artifacts documented
   above are supported.
 
-## Technical documentation
+## Grounded agent documentation
 
 Cross-cutting contracts and empirical-design explanations live under
-[`content`](content/). They are rendered and checked with Zola:
+[`content`](content/). They are optimized as working context for coding agents
+and remain ordinary readable Markdown for researchers. Before changing a
+scope, inspect its active instructions and canonical pages:
 
 ```sh
-zola serve
-zola check --skip-external-links
+python scripts/agent_docs.py snapshot --scope code/designs/panel_iv
+```
+
+The pages are rendered with Zola and checked against named source regions.
+Inside the Devenv shell, use:
+
+```sh
+agent-docs-check
+agent-docs-serve
 ```
 
 Directory READMEs remain operational entry points. The Zola pages are the
 canonical references for pipeline architecture, artifact semantics, and
-research-design claims.
+research-design claims. `static/llms.txt` and
+`static/grounding-manifest.json` are generated LLM entry points; do not edit
+them directly.

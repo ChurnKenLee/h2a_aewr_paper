@@ -25,6 +25,13 @@ From the repository root:
 The branch writes `data/processed/did_county_year_panel.parquet` and retained
 products under `outputs/tables` and `outputs/figures`.
 
+The corrected canonical 2009 AEWR is missing. Its 2010 lag is consequently
+missing, so the existing regression complete-case rule excludes those rows.
+The shared/DiD panels retain the outcome rows. Rebuild the branch after this
+source correction; no treatment thresholds, reference year or clustering rule
+changes. The [AEWR input contract](../../../content/contracts/aewr-inputs.md)
+documents the unresolved statutory source history.
+
 ## Design documentation
 
 The treatment definition, samples, fixed effects, clustering, and event-study

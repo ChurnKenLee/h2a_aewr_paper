@@ -76,7 +76,7 @@ bea_caemp25n_data <- read_parquet(
   ) %>%
   select(-temp) %>%
   pivot_wider(names_from = "category", values_from = "emp") %>%
-  filter(year > 2007L, year <= 2022L) %>%
+  filter(year >= 2001L, year <= 2022L) %>%
   apply_bea_county_crosswalk(bea_fips_xwalk) %>%
   semi_join(canonical_counties, by = "county_fips") %>%
   arrange(county_fips, year)

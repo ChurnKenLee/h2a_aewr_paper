@@ -65,25 +65,74 @@ AssertNestedHours <- function(total, hourly, aewr_observed, at_aewr, label) {
 # ---- Produce workers requested and certified counts for each worksite entry ----
 h2a_df <- read_parquet(path_int("h2a_with_fips.parquet")) %>%
   clean_names() %>%
-  distinct(.keep_all = TRUE)
+  distinct(.keep_all = TRUE) %>%
+  mutate(
+    allocation_source_dataset = "main",
+    allocation_source_row = row_number(),
+    source_number_of_hours = number_of_hours
+  )
 
 addendum_b <- read_parquet(path_int(
   "h2a_addendum_b_with_fips.parquet"
 )) %>%
+  clean_names() %>%
+  mutate(
+    allocation_source_dataset = "addendum_b",
+    allocation_source_row = row_number(),
+    source_worksite_workers_requested = total_h2a_workers_requested
+  )
+
+employer_membership <- read_parquet(path_int(
+  "h2a_employer_record_membership.parquet"
+)) %>%
   clean_names()
 
-employer_xwalk <- read_parquet(path_int("h2a_employer_crosswalk.parquet")) %>%
-  clean_names()
+employer_linkage_metadata_columns <- c(
+  "employer_linkage_unit",
+  "employer_linkage_version",
+  "employer_linkage_input_max_year",
+  "employer_linkage_review_status",
+  "employer_linkage_review_report_hash"
+)
 
-test <- employer_xwalk %>%
-  group_by(employer_id_balanced) %>%
-  mutate(n_appear = n()) %>%
-  ungroup() %>%
-  arrange(n_appear, employer_id_balanced)
+missing_linkage_metadata <- setdiff(
+  employer_linkage_metadata_columns,
+  names(employer_membership)
+)
+if (length(missing_linkage_metadata) > 0L) {
+  stop(
+    "Employer membership is missing v2 provenance: ",
+    paste(missing_linkage_metadata, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+employer_linkage_contract <- employer_membership %>%
+  distinct(across(all_of(employer_linkage_metadata_columns)))
+if (
+  nrow(employer_linkage_contract) != 1L ||
+    employer_linkage_contract$employer_linkage_unit[[1]] !=
+      "worksite_business" ||
+    employer_linkage_contract$employer_linkage_version[[1]] != "v2" ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2024L ||
+    employer_linkage_contract$employer_linkage_review_status[[1]] !=
+      "complete" ||
+    !grepl(
+      "^[0-9a-f]{64}$",
+      employer_linkage_contract$employer_linkage_review_report_hash[[1]]
+    )
+) {
+  stop(
+    "Employer membership does not declare one reviewed worksite-business v2 contract.",
+    call. = FALSE
+  )
+}
 
 
 # Crosswalk join keys: input column = crosswalk column
 h2a_employer_keys <- c(
+  "case_number" = "case_number",
+  "fiscal_year" = "fiscal_year",
   "employer_name" = "source_name_raw",
   "trade_name_dba" = "source_trade_name_raw",
   "employer_address_1" = "source_address_1_raw",
@@ -92,10 +141,18 @@ h2a_employer_keys <- c(
   "employer_state" = "source_state_raw",
   "employer_postal_code" = "source_postal_code_raw",
   "employer_phone" = "source_phone_raw",
-  "employer_fein" = "source_fein_raw"
+  "employer_fein" = "source_fein_raw",
+  "primary_sub" = "source_primary_sub_raw",
+  "organization_flag" = "source_organization_flag_raw",
+  "type_of_employer_application" =
+    "source_type_of_employer_application_raw",
+  "ag_association_or_agency" = "source_ag_association_or_agency_raw",
+  "h2a_labor_contractor" = "source_h2a_labor_contractor_raw"
 )
 
 addendum_employer_keys <- c(
+  "case_number" = "case_number",
+  "fiscal_year" = "fiscal_year",
   "business_name" = "source_name_raw",
   "worksite_address_1" = "source_address_1_raw",
   "worksite_address_2" = "source_address_2_raw",
@@ -108,7 +165,9 @@ employer_id_columns <- c(
   "employer_record_id",
   "employer_id_conservative",
   "employer_id_balanced",
-  "employer_id_high_recall"
+  "employer_id_high_recall",
+  "employer_record_role",
+  "employer_is_worksite_business"
 )
 
 # The crosswalk represents missing source values as empty strings.
@@ -116,14 +175,14 @@ EmptyIfMissing <- function(x) {
   replace_na(as.character(x), "")
 }
 
-h2a_employer_xwalk <- employer_xwalk %>%
+h2a_employer_membership <- employer_membership %>%
   filter(source_dataset == "h2a_with_fips") %>%
   select(
     all_of(unname(h2a_employer_keys)),
     all_of(employer_id_columns)
   )
 
-addendum_employer_xwalk <- employer_xwalk %>%
+addendum_employer_membership <- employer_membership %>%
   filter(source_dataset == "h2a_addendum_b_with_fips") %>%
   select(
     all_of(unname(addendum_employer_keys)),
@@ -132,20 +191,58 @@ addendum_employer_xwalk <- employer_xwalk %>%
 
 # Canonicalize missing values exactly as the Python notebook does.
 h2a_df <- h2a_df %>%
-  mutate(across(all_of(names(h2a_employer_keys)), EmptyIfMissing)) %>%
+  mutate(across(
+    all_of(setdiff(names(h2a_employer_keys), "fiscal_year")),
+    EmptyIfMissing
+  )) %>%
   left_join(
-    h2a_employer_xwalk,
+    h2a_employer_membership,
     by = h2a_employer_keys,
     relationship = "many-to-one"
   )
 
 addendum_b <- addendum_b %>%
-  mutate(across(all_of(names(addendum_employer_keys)), EmptyIfMissing)) %>%
+  mutate(across(
+    all_of(setdiff(names(addendum_employer_keys), "fiscal_year")),
+    EmptyIfMissing
+  )) %>%
   left_join(
-    addendum_employer_xwalk,
+    addendum_employer_membership,
     by = addendum_employer_keys,
     relationship = "many-to-one"
   )
+
+if (
+  any(is.na(h2a_df$employer_record_role)) ||
+    any(is.na(addendum_b$employer_record_role))
+) {
+  stop(
+    "The v2 role map does not cover every H-2A and Addendum B source row.",
+    call. = FALSE
+  )
+}
+for (column in c(
+  "employer_id_conservative",
+  "employer_id_balanced",
+  "employer_id_high_recall"
+)) {
+  if (
+    any(
+      h2a_df$employer_is_worksite_business & is.na(h2a_df[[column]])
+    ) ||
+      any(
+        addendum_b$employer_is_worksite_business &
+          is.na(addendum_b[[column]])
+      )
+  ) {
+    stop(
+      "Named included worksite businesses are missing ",
+      column,
+      ".",
+      call. = FALSE
+    )
+  }
+}
 
 
 aewr_rates <- read_parquet(path_int("aewr.parquet")) %>%
@@ -176,6 +273,19 @@ h2a_df <- h2a_df %>%
 # records. This branch is collapsed to county-year moments later; it is not
 # exported as a separate case-level dataset.
 h2a_case_source <- h2a_df
+
+# Source coverage includes applications absent from the positive-certified
+# allocation branch. This audit is not a second producer of case allocations.
+write_parquet(
+  h2a_case_source %>% select(
+    case_number, fiscal_year, allocation_source_row, primary_sub,
+    organization_flag, nbr_workers_certified, nbr_workers_requested,
+    county_fips_list, case_status, certification_begin_date,
+    certification_end_date, job_begin_date, job_end_date,
+    requested_begin_date, requested_end_date
+  ),
+  path_int("h2a_case_allocation_source.parquet")
+)
 
 # Entries with 0 workers certified indicate worker lodgings
 h2a_df <- h2a_df %>%
@@ -838,7 +948,43 @@ h2a_combined <- h2a_combined %>%
     )
   )
 
-# Create harmonized dates
+# docs-ground:start h2a-worksite-allocation-audit
+# Preserve the existing allocation before any case-modal date replacement,
+# date exclusion, hours imputation, or geographic splitting. The separate
+# worksite-month producer uses site dates and labels fallback/uncertainty;
+# h2a_aggregated remains the historical case-date certification benchmark.
+write_parquet(
+  h2a_combined %>%
+    mutate(
+      allocation_id = paste0(allocation_source_dataset, ":", allocation_source_row),
+      allocation_method = case_when(
+        !is.na(adjustment_method_certified) ~ adjustment_method_certified,
+        !is.na(weight_ratio) & is.na(nbr_workers_requested) ~
+          "case_certifications_requested_staffing_imputed",
+        !is.na(weight_ratio) ~ "case_certifications_requested_staffing_observed",
+        TRUE ~ "single_disclosed_record"
+      )
+    ) %>%
+    select(
+      allocation_id, allocation_source_dataset, allocation_source_row,
+      case_number, fiscal_year, county_fips_list, allocation_method,
+      adjusted_nbr_workers_certified, adjusted_nbr_workers_requested,
+      nbr_workers_requested, source_worksite_workers_requested,
+      case_nbr_workers_certified, master_n_workers_certified,
+      certification_begin_date, certification_end_date,
+      job_begin_date, job_end_date, requested_begin_date, requested_end_date,
+      worksite_requested_begin_date, worksite_requested_end_date,
+      number_of_hours, source_number_of_hours, wage_rate, wage_unit,
+      soc_code, case_status_harmonized, employer_record_role,
+      employer_is_worksite_business, employer_id_balanced,
+      worksite_address_1, worksite_address_2, worksite_city,
+      worksite_state, worksite_zip
+    ),
+  path_int("h2a_allocated_worksites.parquet")
+)
+# docs-ground:end h2a-worksite-allocation-audit
+
+# Create harmonized dates for the retained case-date benchmark.
 h2a_combined <- h2a_combined %>%
   mutate(
     begin_date = if_else(
@@ -1043,13 +1189,16 @@ h2a_cleaned_df <- h2a_cleaned_df %>%
 # We need to select a cutoff for distinguishing hourly wage values from non-hourly
 # Note that unit of pay does not actually correspond to the rate of pay, even though they should
 # Assume that those with reported wage rates above $100 are non-hourly wages instead
+# Both wage definitions share the (0, 100] plausibility range; hourly_offered_wage
+# additionally requires an hourly pay unit
+HOURLY_WAGE_MAX <- 100
 h2a_cleaned_df <- h2a_cleaned_df %>%
   mutate(wage_rate = as.numeric(wage_rate))
 
 h2a_cleaned_df <- h2a_cleaned_df %>%
   mutate(
     hourly_wage = case_when(
-      wage_rate <= 100 ~ wage_rate,
+      wage_rate > 0 & wage_rate <= HOURLY_WAGE_MAX ~ wage_rate,
       .default = NaN
     ),
     wage_unit_harmonized = str_to_upper(str_trim(wage_unit)),
@@ -1057,7 +1206,8 @@ h2a_cleaned_df <- h2a_cleaned_df %>%
       wage_unit_harmonized %in%
         c("HOUR", "HOURLY", "HR") &
         is.finite(wage_rate) &
-        wage_rate > 0 ~ wage_rate,
+        wage_rate > 0 &
+        wage_rate <= HOURLY_WAGE_MAX ~ wage_rate,
       TRUE ~ NA_real_
     )
   )
@@ -1150,7 +1300,12 @@ h2a_all_years_df <- h2a_all_years_df %>%
 h2a_all_years_df <- h2a_all_years_df %>%
   mutate(
     hourly_wage_X_nbr_workers = hourly_wage *
-      county_year_weighted_nbr_workers_certified
+      county_year_weighted_nbr_workers_certified,
+    nbr_workers_with_hourly_wage = if_else(
+      !is.na(hourly_wage),
+      county_year_weighted_nbr_workers_certified,
+      0
+    )
   )
 
 # Collapse by county-year
@@ -1180,14 +1335,22 @@ h2a_all_years_aggregated_df <- h2a_all_years_df %>%
     total_hourly_wage_X_nbr_workers = sum(
       hourly_wage_X_nbr_workers,
       na.rm = TRUE
+    ),
+    total_nbr_workers_with_hourly_wage = sum(
+      nbr_workers_with_hourly_wage,
+      na.rm = TRUE
     )
   ) %>%
   ungroup() %>%
   mutate(
-    mean_hourly_wage_all_years = total_hourly_wage_X_nbr_workers /
-      nbr_workers_certified_all_years
+    # Average over certified workers with a valid hourly wage only
+    mean_hourly_wage_all_years = if_else(
+      total_nbr_workers_with_hourly_wage > 0,
+      total_hourly_wage_X_nbr_workers / total_nbr_workers_with_hourly_wage,
+      NA_real_
+    )
   ) %>%
-  select(-total_hourly_wage_X_nbr_workers)
+  select(-total_hourly_wage_X_nbr_workers, -total_nbr_workers_with_hourly_wage)
 
 test <- h2a_all_years_aggregated_df %>%
   arrange(year)
@@ -1263,6 +1426,7 @@ h2a_start_year_employer_counts <- h2a_start_year_df %>%
     year = as.integer(start_year)
   ) %>%
   filter(
+    employer_is_worksite_business,
     is.finite(county_nbr_workers_certified),
     county_nbr_workers_certified > 0
   ) %>%
@@ -1297,7 +1461,14 @@ stopifnot(
 
 # We have to manually calculate weighted average of hourly wage because R cannot handle NAs in weights
 h2a_start_year_df <- h2a_start_year_df %>%
-  mutate(hourly_wage_X_nbr_workers = hourly_wage * county_nbr_workers_certified)
+  mutate(
+    hourly_wage_X_nbr_workers = hourly_wage * county_nbr_workers_certified,
+    nbr_workers_with_hourly_wage = if_else(
+      !is.na(hourly_wage),
+      county_nbr_workers_certified,
+      0
+    )
+  )
 
 # Collapse by county-year
 h2a_start_year_aggregated_df <- h2a_start_year_df %>%
@@ -1339,12 +1510,20 @@ h2a_start_year_aggregated_df <- h2a_start_year_df %>%
     total_hourly_wage_X_nbr_workers = sum(
       hourly_wage_X_nbr_workers,
       na.rm = TRUE
+    ),
+    total_nbr_workers_with_hourly_wage = sum(
+      nbr_workers_with_hourly_wage,
+      na.rm = TRUE
     )
   ) %>%
   ungroup() %>%
   mutate(
-    mean_hourly_wage_start_year = total_hourly_wage_X_nbr_workers /
-      nbr_workers_certified_start_year,
+    # Average over certified workers with a valid hourly wage only
+    mean_hourly_wage_start_year = if_else(
+      total_nbr_workers_with_hourly_wage > 0,
+      total_hourly_wage_X_nbr_workers / total_nbr_workers_with_hourly_wage,
+      NA_real_
+    ),
     share_cert_hours_with_hourly_wage_start_year = if_else(
       man_hours_certified_start_year > 0,
       cert_hours_with_hourly_wage_start_year /
@@ -1358,7 +1537,7 @@ h2a_start_year_aggregated_df <- h2a_start_year_df %>%
       NA_real_
     )
   ) %>%
-  select(-total_hourly_wage_X_nbr_workers)
+  select(-total_hourly_wage_X_nbr_workers, -total_nbr_workers_with_hourly_wage)
 
 AssertNestedHours(
   h2a_start_year_aggregated_df$man_hours_certified_start_year,
@@ -1384,7 +1563,14 @@ h2a_fiscal_year_df <- h2a_fiscal_year_df %>%
 
 # We have to manually calculate weighted average of hourly wage because R cannot handle NAs in weights
 h2a_fiscal_year_df <- h2a_fiscal_year_df %>%
-  mutate(hourly_wage_X_nbr_workers = hourly_wage * county_nbr_workers_certified)
+  mutate(
+    hourly_wage_X_nbr_workers = hourly_wage * county_nbr_workers_certified,
+    nbr_workers_with_hourly_wage = if_else(
+      !is.na(hourly_wage),
+      county_nbr_workers_certified,
+      0
+    )
+  )
 
 # Collapse by county-fiscal-year
 h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_df %>%
@@ -1410,14 +1596,22 @@ h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_df %>%
     total_hourly_wage_X_nbr_workers = sum(
       hourly_wage_X_nbr_workers,
       na.rm = TRUE
+    ),
+    total_nbr_workers_with_hourly_wage = sum(
+      nbr_workers_with_hourly_wage,
+      na.rm = TRUE
     )
   ) %>%
   ungroup() %>%
   mutate(
-    mean_hourly_wage_fiscal_year = total_hourly_wage_X_nbr_workers /
-      nbr_workers_certified_fiscal_year
+    # Average over certified workers with a valid hourly wage only
+    mean_hourly_wage_fiscal_year = if_else(
+      total_nbr_workers_with_hourly_wage > 0,
+      total_hourly_wage_X_nbr_workers / total_nbr_workers_with_hourly_wage,
+      NA_real_
+    )
   ) %>%
-  select(-total_hourly_wage_X_nbr_workers)
+  select(-total_hourly_wage_X_nbr_workers, -total_nbr_workers_with_hourly_wage)
 
 # Combine
 # Harmonize variable names
@@ -1523,7 +1717,17 @@ h2a_aggregated_df <- h2a_all_years_aggregated_df %>%
 h2a_aggregated_df <- h2a_aggregated_df %>%
   mutate(
     state_fips = state_from_county_fips(county_fips),
-    county_code = county_code_from_county_fips(county_fips)
+    county_code = county_code_from_county_fips(county_fips),
+    employer_linkage_unit =
+      employer_linkage_contract$employer_linkage_unit[[1]],
+    employer_linkage_version =
+      employer_linkage_contract$employer_linkage_version[[1]],
+    employer_linkage_input_max_year =
+      employer_linkage_contract$employer_linkage_input_max_year[[1]],
+    employer_linkage_review_status =
+      employer_linkage_contract$employer_linkage_review_status[[1]],
+    employer_linkage_review_report_hash =
+      employer_linkage_contract$employer_linkage_review_report_hash[[1]]
   )
 
 # Export

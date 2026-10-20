@@ -17,7 +17,7 @@ with the current filenames, C01 scripts `01` through `12` prepare normalized
 artifacts, C01 script `13` merges the subset listed below, and C02 script `01`
 constructs the final design-neutral panel.
 
-{{ grounding(path="scripts/run_shared_panel.sh", anchor="shared-panel-runner", sha256="0b5a5366cd9efbf9742c0b33b6735817f552506eba9c914fca37f7858689f560") }}
+{{ <grounding path="scripts/run_shared_panel.sh" anchor="shared-panel-runner" sha256="0b5a5366cd9efbf9742c0b33b6735817f552506eba9c914fca37f7858689f560" /> }}
 
 Run the complete branch from the repository root:
 
@@ -44,7 +44,7 @@ artifacts:
 | `cz_file_2010_small.parquet` | county | 2010 commuting zone |
 | `bea_caemp25n_data_year.parquet` | county, year | Total, wage-and-salary, farm, proprietor, and nonfarm jobs |
 | `bea_cainc45_data_year.parquet` | county, year | Farm receipts, government payments, production costs, hired-labor expenses, wages, and wage supplements in nominal and real terms |
-| `h2a_data_year.parquet` | county, year | Aggregated H-2A applications, positions, hours, wages, and employer counts |
+| `h2a_data_year.parquet` | county, year | Aggregated H-2A applications, positions, hours, wages, positive-certified linked worksite-business counts, and v2 linkage provenance |
 | `census_pop_ests_year.parquet` | county, year | Harmonized annual population |
 | `census_ag_cropland_year.parquet` | county, year | Census of Agriculture cropland |
 | `nass_fisher_price_index.parquet` | county, year | Chained Fisher price and quantity indexes |
@@ -94,7 +94,7 @@ other county-level values use many-to-one joins. Duplicate source keys
 therefore fail during the join. The completed intermediate artifact must also
 be nonempty and unique by `county_fips, year`.
 
-{{ grounding(path="code/c01_clean/13_merge_county_panel.R", anchor="county-year-merge", sha256="faad687f82c863b634a4a2c847db984773bf48b1f0fe052ec349ecbc3469970a") }}
+{{ <grounding path="code/c01_clean/13_merge_county_panel.R" anchor="county-year-merge" sha256="faad687f82c863b634a4a2c847db984773bf48b1f0fe052ec349ecbc3469970a" /> }}
 
 The result of this stage is:
 
@@ -114,9 +114,10 @@ following transformations:
 2. It constructs certified-hour shares, real AEWR-to-local-p25 wage gaps,
    employment-to-population and farm-employment shares, logged AEWR and
    population, farm expense/receipt shares, and a 2007-cropland indicator.
-3. It retains only rows with both an AEWR value and an AEWR-region identifier.
-   Consequently, the final panel is derived from a balanced backbone but is
-   not promised to remain balanced after this required-coverage filter.
+3. It requires an AEWR-region identifier and retains outcome rows when the
+   statutory AEWR is unavailable. The corrected 2009 AEWR is missing, with
+   source status and a separately named nonstatutory application wage.
+   Designs own their wage-complete estimation samples.
 4. Within county, it creates population, farm-employment-share, and
    employment-to-population lags only when the previous observation is the
    immediately preceding calendar year.
@@ -125,8 +126,10 @@ following transformations:
 6. It constructs normalized H-2A position, hour, and application measures plus
    application-status rates using current farm employment, fixed-2011 farm
    employment, application counts, or certified positions as the appropriate
-   positive denominator. The three employer-linkage counts remain separate
-   source measures.
+   positive denominator. The three v2 worksite-business linkage counts remain
+   separate source measures. It validates one reviewed FY2008--2024 linkage
+   contract and fills its unit, version, vintage, review status, and
+   review-report hash across zero-use county-years.
 
 The nominal OEWS hourly- and annual-wage proxies and their geographic and
 publication-support fields pass through this stage without policy-year
@@ -138,7 +141,7 @@ The BEA wage-and-salary job count, farm wage bill, and farm wage supplements
 also pass through without constructing hired-job counts, per-job wages, or
 compensation ratios.
 
-{{ grounding(path="code/c02_build/01_build_county_panel.R", anchor="shared-panel-construction", sha256="2b7bc73b507e5b8c67b4964eb693412066519ae003469531e4b6ef2972d9e2df") }}
+{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-construction" sha256="e244d51f7819cd5b7fac8a45120289f56744875fe504a449d755f0c261e995c4" /> }}
 
 The shared stage does not construct treatments, post indicators, event time,
 fixed-effect encodings, target clusters, excluded instruments, design weights,
@@ -162,12 +165,12 @@ also verifies that each observed QCEW disclosure flag agrees with its source
 values: disclosed employment and wages are finite and nonnegative, while
 suppressed values remain null.
 
-{{ grounding(path="code/c02_build/01_build_county_panel.R", anchor="shared-panel-contract", sha256="ffb30f884e3403e1fd5c2b88d13d20c21eace1d1e1df0957fe7ac8c24b55aada") }}
+{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-contract" sha256="b8fd6cf733f2ea700c01ab53c1b5d582073d588ee0707dff590b17387ffd2677" /> }}
 
 Only after those checks pass does the producer write
 `data/processed/county_year_panel.parquet`.
 
-{{ grounding(path="code/c02_build/01_build_county_panel.R", anchor="shared-panel-output", sha256="3529d63a7ff3a82e529475253c3bcf46166d3b9161f6e470269a74ef7131cdaf") }}
+{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-output" sha256="3529d63a7ff3a82e529475253c3bcf46166d3b9161f6e470269a74ef7131cdaf" /> }}
 
 ## Narrow rebuilds
 

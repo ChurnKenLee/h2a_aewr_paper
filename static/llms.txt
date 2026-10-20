@@ -20,6 +20,8 @@ The machine-readable instruction and reviewed-source bundle is [`/grounding-mani
   - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-contract`
   - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-output`
 - [Data and code contracts](/contracts/)
+- [AEWR input history and applicability](/contracts/aewr-inputs/) — Source-correct annual references, dated wage lookup tables and explicit coverage gaps.
+  - Grounded in `code/a01_sources/01_aewr_extract_tables.py#aewr-source-contract`
 - [Causal outcomes and model inputs](/contracts/causal-outcomes-and-model-inputs/) — Canonical cross-design outcome inventory and the treatments, controls, moderators, denominators, samples, and inference fields required to estimate them.
   - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-construction`
   - Grounded in `code/c01_clean/13_merge_county_panel.R#county-year-merge`
@@ -28,25 +30,40 @@ The machine-readable instruction and reviewed-source bundle is [`/grounding-mani
   - Grounded in `code/designs/did/06_labor_share.R#did-labor-share-outcome`
   - Grounded in `code/designs/did/01_build_did_panel.R#did-treatment-inputs`
   - Grounded in `code/designs/did/helpers.R#did-estimation-contract`
-  - Grounded in `code/designs/panel_iv/07_estimate_panel_iv.R#panel-iv-outcome-and-input-registry`
+  - Grounded in `code/designs/panel_iv/specification.R#panel-iv-outcome-and-input-registry`
   - Grounded in `code/designs/panel_iv/design.R#panel-iv-design-contract`
+  - Grounded in `code/designs/border_discontinuity/04_estimate_models.R#border-discontinuity-estimation-contract`
+  - Grounded in `code/designs/border_discontinuity/07_estimate_redesign.R#border-redesign-estimation-contract`
   - Grounded in `code/designs/mundlak_chamberlain/mcw/design.py#mundlak-design-contract`
+- [H-2A worksite-business linkage](/contracts/employer-linkage/) — Role-aware FY2008--2024 business universe, nested linkage rules, review protocol, and downstream count semantics.
+  - Grounded in `src/h2a/employer_linkage.py#employer-linkage-contract`
 - [Geographic code contract](/contracts/geographic-codes/) — Canonical geographic identifiers shared by R and Python producers.
   - Grounded in `code/c00_shared/geography.R#geographic-code-contract-r`
   - Grounded in `src/h2a/geography.py#geographic-code-contract-python`
 - [Maintaining grounded documentation](/contracts/grounding/) — How to add, review, and refresh checked code references.
+- [H-2A allocation and worksite calendar](/contracts/h2a-worksite-exposure/) — Certification capacity, source dates, geographic uncertainty and allocation conservation.
+  - Grounded in `code/b01_derived/01_h2a_aggregation_nodupes.R#h2a-worksite-allocation-audit`
 - [H-2A prediction contract](/contracts/prediction-model/) — Canonical prediction cutoff, model specification, and panel semantics.
   - Grounded in `code/paths.R#prediction-selection`
   - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-contract`
 - [Shared county-year panel](/contracts/shared-panel/) — Design-neutral ownership, prediction semantics, and artifact invariants.
   - Grounded in `code/c02_build/01_build_county_panel.R#shared-panel-contract`
 - [Empirical designs](/designs/)
+- [Border data-input comparisons](/designs/border-data-inputs/) — Fixed labor denominators, consistent histories, source audits and unresolved external inputs.
+- [AEWR-border redesign](/designs/border-discontinuity/) — Bounded local border redesign, preserved benchmarks, dependence and power evidence, and identification limitations.
+  - Grounded in `code/designs/border_discontinuity/07_estimate_redesign.R#border-redesign-estimation-contract`
+  - Grounded in `code/designs/border_discontinuity/04_estimate_models.R#border-discontinuity-estimation-contract`
 - [Difference-in-differences](/designs/difference-in-differences/) — Treatment construction, estimation samples, fixed effects, and event-study specification.
   - Grounded in `code/designs/did/helpers.R#did-estimation-contract`
 - [Wooldridge–Mundlak–Chamberlain continuous-dose design](/designs/mundlak-chamberlain/) — Version-4 treatment registry, linear-history OLS, estimands, inference, and diagnostics.
   - Grounded in `code/designs/mundlak_chamberlain/mcw/design.py#mundlak-design-contract`
-- [Panel IV](/designs/panel-iv/) — QCEW-primary county calibration, OEWS-area hourly donor wages, preferred specifications, inference, and retained outputs.
+- [Panel IV](/designs/panel-iv/) — Original moving-wage county panel IV with deterministic R calibration.
   - Grounded in `code/designs/panel_iv/design.R#panel-iv-design-contract`
+- [Historical wage-reform investigation](/designs/wage-reforms/) — Dated wage-method reversal and herder phase-in diagnostics, source gaps, employer cohorts and identification gates.
+  - Grounded in `code/designs/wage_reforms/analysis.py#wage-reforms-estimation`
+  - Grounded in `scripts/run_wage_reforms.sh#wage-reforms-runner`
+- [Narrow certification-space welfare calculation](/designs/welfare/) — Frozen elasticity input, real one-dollar AEWR counterfactual, exposure rules, and producer-incidence outputs.
+  - Grounded in `code/welfare/01_narrow_welfare.py#welfare-design-contract`
 - [Agent reference](/reference/)
 - [Coding-agent workflow](/reference/agent-workflow/) — Scoped discovery, reviewed drift acceptance, and machine-readable context.
   - Grounded in `scripts/agent_docs.py#agent-context-snapshot`
@@ -57,15 +74,22 @@ The machine-readable instruction and reviewed-source bundle is [`/grounding-mani
 
 ## Declared high-risk assumptions
 
+- `ACCESS-001` (critical, repository data access) — Non-public NASS data and custom tabulations are unavailable by user instruction. Use publicly released NASS data; the implemented county-level work requires no farm-level nonparticipant frame or institutional-access application.
 - `AUTH-001` (critical, repository) — Executable code, runners, locks, and machine checks outrank prose when sources disagree.
 - `GROUND-001` (critical, agent documentation) — A source-region digest can be accepted only after the linked documentation context changes.
 - `GEO-001` (critical, shared pipeline) — Persistent geographic identifiers are strings and county FIPS uses the 2010 vintage, including 46102 to 46113 harmonization.
+- `EMPLOYER-001` (critical, H-2A worksite-business linkage) — The supported employer unit is the reviewed v2 worksite business linked with full FY2008--2024 identity evidence; the balanced tier is canonical, and alias-only individual masters are not counted as businesses.
 - `PRED-001` (critical, prediction and shared panel) — The supported H-2A prediction is the static climate_norm_static_v1 model trained through 2011.
 - `PANEL-001` (critical, shared panel) — The shared panel is design-neutral and excludes treatments, post indicators, design fixed effects, target clusters, and instruments.
 - `OUTCOME-001` (critical, empirical designs) — The supported causal-outcome union contains fourteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule.
 - `DID-001` (critical, difference in differences) — The supported event study uses 2011 as its reference and clusters inference by CZ-by-AEWR-region.
-- `IV-001` (critical, panel IV) — The preferred panel-IV specification is controlled column 4 with QCEW-primary county calibration, the mapped OEWS-area hourly donor-wage proxy, source year t-1, and aewr_iv_cluster_id inference clusters.
+- `IV-001` (critical, panel IV) — Panel IV retains the original moving-wage four-column design with deterministic county entropy weights and source year t-1. All branch stages and tests are R. The fixed-wage revision, later exploratory exercises, and simulated calibration draws were retired by explicit user instruction. estimation_spec.json is the sole model/outcome registry; controlled seasonal/composition column4 remains preferred. Preserve original donor support, prior behavior, twelve outcomes, reviewed business linkage, controls, equal weights, county/year FE and target-subregion CRV1. The farm-floor selection explicitly records the original all-domain Census source rows and refuses source-fingerprint drift; revising those choices is an empirical change. Recovered weights are not observed sampling errors; current FLS wage targets may induce mechanical relevance. The runner validates at stage09 and ends with the user-reauthorized stage10--11 Kitagawa decomposition diagnostic, which uses recovered weights as-is, fixes donor wages at their 2008--2010 real mean on a balanced donor set, and never replaces an instrument or selects a model.
 - `MC-001` (critical, Mundlak-Chamberlain) — The supported MC version-4 default is a bounded linear-history OLS registry; randomization and bootstrap inference are disabled, and the scalar continuous CCV-HC3 mixture is an explicitly experimental comparator rather than a Lean-proved exact reference law.
+- `WELFARE-001` (critical, narrow welfare) — The narrow welfare branch reports certification-space producer incidence for an anticipated real one-dollar AEWR increase, applies one frozen certified-hours elasticity to all shared-panel counties in its declared target years, and leaves paid-hours incidence as rho times the reported result.
+- `BORDER-001` (critical, AEWR-border bounded redesign) — The standalone v6 border investigation retains all v5 benchmarks and evaluates four declared local redesigns. New members satisfy frozen agricultural screens and surviving-edge one-ring locality; direct current-real-AEWR, certifications/fixed2011 employment and county/component-year FE remain. Fixed weights/history and region-disjoint matching are labeled sensitivities. Pair inference is retained alongside shared-endpoint/spatial size/power and region deletion evidence; the nonstatutory 2009 wage is excluded from new wage diagnostics and FE-only noise calibration never uses it. No significance-based selection or empirical-adequacy claim follows from completed code. The separate statewide_design.json registry (stages 12-13) declares the 2025-10-02 statewide-AEWR state-border design before any post-policy outcome is parsed; its power uses only pre-period FE-only scale and actual statewide rates.
+- `AEWR-001` (critical, AEWR source extraction and shared-panel consumers) — Canonical 2009 AEWR is null; application means are quarantined in explicitly nonstatutory fields. Annual references retain 1990--2025 independently of validation coverage. Dated FLS and occupation/skill tables retain job-cohort and competing-floor limitations. Shared outcomes survive wage missingness; stage04 alone reconstructs the contaminated historical comparator. Frozen 2009 OEWS loadings remain a distinct source.
+- `WORKSITE-001` (critical, H-2A allocation calendar and point-geocoding producers) — Allocated certification position-days are capacity, not realized employment. Site dates and case fallback remain distinguishable; unreconciled cases are quarantined and county/month expansion conserves mass. Missing hours, unmatched counties and unacquired geocodes remain explicit. Outcome-weighted FLS references are timing diagnostics, and applicant locations do not supply a nonparticipant population.
+- `REFORM-001` (critical, historical wage-reform investigation) — Historical wage-reform outputs are diagnostics, not a promoted causal elasticity. Cohort type and geography are fixed at baseline; absent certification is zero participation while wages stay missing. Observed 2009 application wages never assign statutory exposure, and old herder contracts are not grandfathered out of the wage increase.
 
 ## Grounding rule
 

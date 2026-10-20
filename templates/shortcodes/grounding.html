@@ -1,3 +1,4 @@
+{% component grounding(path: string, anchor: string, sha256: string, @config: map) %}
 {% set start_marker = "# docs-ground:start " ~ anchor %}
 {% set end_marker = "# docs-ground:end " ~ anchor %}
 {% set source = load_data(path=path, format="plain") %}
@@ -35,3 +36,4 @@
   Grounded in <a href="{{ source_url }}"><code>{{ path }}</code></a>,
   region <code>{{ anchor }}</code>.
 </aside>
+{% endcomponent grounding %}

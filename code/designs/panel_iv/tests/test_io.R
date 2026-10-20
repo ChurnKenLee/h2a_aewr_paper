@@ -1,0 +1,28 @@
+here::i_am("code/paths.R")
+source(here::here("code", "paths.R"))
+source(path_code("designs", "panel_iv", "io.R"))
+source(path_code("designs", "panel_iv", "calibration.R"))
+directory <- tempfile("panel-iv-io-", tmpdir = "/tmp")
+dir.create(directory)
+path <- file.path(directory, "weights.parquet")
+keys <- c("aewr_region_id", "source_year", "county_fips")
+initial <- data.frame(aewr_region_id = c("1", "2"), source_year = c(2010L, 2011L),
+  county_fips = c("01001", "02001"), weight = c(1, 2), calibration_version = IV_CALIBRATION_VERSION)
+iv_atomic_parquet(initial, path)
+replacement <- initial[1, ]; replacement$weight <- 3
+merged <- iv_merge_selected(path, replacement, 2010L, "1", keys)
+stopifnot(identical(as.data.frame(merged[2, ]), as.data.frame(initial[2, ])), merged$weight[1] == 3)
+iv_atomic_parquet(merged, path)
+stopifnot(identical(iv_read(path), merged))
+before <- readBin(path, "raw", n = file.info(path)$size)
+invalid <- initial; invalid$unsupported <- list(environment(), environment())
+stopifnot(inherits(tryCatch(iv_atomic_parquet(invalid, path), error = identity), "error"),
+  identical(readBin(path, "raw", n = file.info(path)$size), before))
+stale <- initial; stale$calibration_version <- NULL
+iv_atomic_parquet(stale, path)
+stopifnot(inherits(tryCatch(iv_require_calibration_version(stale), error = identity), "error"))
+stopifnot(identical(iv_require_calibration_version(initial), initial))
+stopifnot(inherits(tryCatch(iv_merge_selected(path, replacement, 2010L, "1", keys), error = identity), "error"))
+stopifnot(nrow(iv_merge_selected(path, initial, 2010:2011, NULL, keys)) == 2L)
+unlink(directory, recursive = TRUE)
+message("Partial-rebuild and atomic-write tests passed")

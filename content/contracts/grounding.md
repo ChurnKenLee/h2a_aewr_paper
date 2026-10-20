@@ -7,7 +7,7 @@ scopes = ["AGENTS.md", "content", "scripts/agent_docs.py", "templates"]
 +++
 
 A grounding reference records that a documentation claim was reviewed against
-a named region of source code. Zola extracts that region, calculates its
+a named region of source code. The Tera component extracts that region, calculates its
 SHA-256 digest, and fails the build when the recorded digest is stale.
 
 ## Add a code region
@@ -28,7 +28,9 @@ documentation. Do not use line numbers: they change when unrelated lines move.
 Place the reference next to the claim it supports:
 
 ```text
-{{/* grounding(path="code/example.R", anchor="example-contract", sha256="REPLACE_WITH_CURRENT_DIGEST") */}}
+{% raw %}
+{{/* <grounding path="code/example.R" anchor="example-contract" sha256="REPLACE_WITH_CURRENT_DIGEST" /> */}}
+{% endraw %}
 ```
 
 Run Zola first. For a new reference it fails with the current digest; review

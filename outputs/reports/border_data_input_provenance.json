@@ -1,0 +1,15 @@
+{
+  "design_id": "border_data_inputs_v1",
+  "interpretation": "denominators change units and potentially the weighted estimand; smaller numerical standard errors are not evidence of more information",
+  "files": {
+    "code/designs/border_discontinuity/data_input_design.json": "38a7f7234952d688e47a3d51970a6b529afee474ef5b8bcccb968fe38f6b229c",
+    "code/designs/border_discontinuity/09_compare_data_inputs.R": "c5e4fa511e48f26b867018fb5714099be61bfa97ce48504cce6a55e112e5a63c",
+    "code/designs/border_discontinuity/redesign.R": "a33c8f7eaeb3d183536ce780819db193a174c86c30dd270783a74023018722d0",
+    "code/designs/border_discontinuity/power.R": "b31858c824517fd0bc17517dc9d73c91c73f996903dd11f1ca19df952591dbc0",
+    "data/processed/border_discontinuity_panel.parquet": "8d1a13b279ff8b87273a60f788c346415f9aad75d3ad4e8a32fb00376cc32599",
+    "data/processed/county_year_panel.parquet": "832109c9fc8b59afac04166f2c01e62cf3182e0e0c612e96e2a790feb9a56419",
+    "data/intermediate/bea_caemp25n_data_year.parquet": "3e8bf5221d4192cd5bbf617a2e80748dea0ab2e7c200ef09e2b4ebea50a6f494",
+    "data/intermediate/census_ag_hired_worker_duration_county.parquet": "11f059baf2bb260554cad16689ff44afe84f9e1fb30e32f7be8ebad7b7046159",
+    "data/intermediate/h2a_worksite_county_year_exposure.parquet": "fb9e32f22a6b18edb466b60a9b2fe6ce55e5af6498f312f3e6d207624fb5211f"
+  }
+}

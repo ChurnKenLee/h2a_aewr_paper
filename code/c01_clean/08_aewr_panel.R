@@ -26,7 +26,9 @@ aewr_data <- read_parquet(
   left_join(ppi_data, by = "year", relationship = "many-to-one") %>%
   mutate(
     aewr = as.numeric(aewr),
-    aewr_ppi = aewr / ppi_2012
+    aewr_ppi = aewr / ppi_2012,
+    aewr_nonstatutory_application_wage_2009_ppi =
+      aewr_nonstatutory_application_wage_2009 / ppi_2012
   ) %>%
   arrange(state_fips, year) %>%
   group_by(state_fips) %>%
@@ -46,6 +48,10 @@ aewr_data <- read_parquet(
     aewr_ppi_l1,
     aewr_l2,
     aewr_ppi_l2,
+    aewr_reference_status,
+    aewr_source_document,
+    aewr_nonstatutory_application_wage_2009,
+    aewr_nonstatutory_application_wage_2009_ppi,
     year,
     state_fips,
     state_abbrev

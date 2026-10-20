@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "version": "wage_reforms_feasibility_v1",
+  "checks": [
+    "wage_reforms_build_manifest.json: all input/output hashes match",
+    "wage_reforms_provenance.json: all input/output hashes match",
+    "Unique keys, canonical geographic strings, fixed assignments and complete zero-inclusive cohorts",
+    "Case totals/share arithmetic and complete declared response menus, including failures",
+    "Source-traced monthly schedule, corrected 2018 value and no causal promotion"
+  ],
+  "positive_cases": 85466,
+  "all_application_cases": 89580,
+  "business_year_rows": 73934,
+  "local_fits": 18,
+  "cohort_fits": 20
+}

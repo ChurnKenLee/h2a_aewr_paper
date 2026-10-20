@@ -49,11 +49,18 @@ CURRENT_EFFECT_REPORTING_YEARS: Final = tuple(range(2013, 2023))
 
 PRIMITIVE_OUTCOMES: Final = {
     "applications": "mc_y_applications",
-    "employers": "mc_y_employers_balanced",
+    "linked_worksite_businesses": "mc_y_linked_worksite_businesses_balanced",
     "requested_positions": "mc_y_requested_positions",
     "certified_positions": "mc_y_certified_positions",
     "certified_hours": "mc_y_certified_hours",
     "any_application": "mc_y_any_application",
+}
+
+EMPLOYER_LINKAGE_CONTRACT: Final = {
+    "employer_linkage_unit": "worksite_business",
+    "employer_linkage_version": "v2",
+    "employer_linkage_input_max_year": 2024,
+    "employer_linkage_review_status": "complete",
 }
 
 CONSTRUCTED_OUTCOMES: Final = (

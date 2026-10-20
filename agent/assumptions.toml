@@ -1,6 +1,21 @@
 schema_version = 1
 
 [[assumptions]]
+id = "ACCESS-001"
+risk = "critical"
+owner = "repository data access"
+statement = "Non-public NASS data and custom tabulations are unavailable by user instruction. Use publicly released NASS data; the implemented county-level work requires no farm-level nonparticipant frame or institutional-access application."
+source = "AGENTS.md"
+review_when = "A data plan introduces restricted NASS access/tabulations, a farm-participation estimand, or a new population denominator."
+scopes = ["AGENTS.md", "code", "src/h2a", "scripts", "content"]
+[[assumptions.checks]]
+path = "AGENTS.md"
+contains = "Non-public NASS data and custom tabulations are unavailable"
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/data_input_validation.py"
+contains = '"nonpublic_nass_required": False'
+
+[[assumptions]]
 id = "AUTH-001"
 risk = "critical"
 owner = "repository"
@@ -46,6 +61,30 @@ path = "src/h2a/geography.py"
 contains = 'return "46113" if county == "46102" else county'
 
 [[assumptions]]
+id = "EMPLOYER-001"
+risk = "critical"
+owner = "H-2A worksite-business linkage"
+statement = "The supported employer unit is the reviewed v2 worksite business linked with full FY2008--2024 identity evidence; the balanced tier is canonical, and alias-only individual masters are not counted as businesses."
+source = "content/contracts/employer-linkage.md"
+review_when = "The business universe, role classification, evidence vintage, linkage rule, threshold, shared-contact guard, name-sprawl guard, manual review policy, count eligibility, or provenance schema changes."
+scopes = ["code/a01_sources/02_04_h2a_match_employers.py", "src/h2a/employer_linkage.py", "code/b01_derived/01_h2a_aggregation_nodupes.R", "code/c01_clean", "code/c02_build", "code/designs"]
+[[assumptions.checks]]
+path = "src/h2a/employer_linkage.py"
+contains = 'LINKAGE_UNIT: Final = "worksite_business"'
+[[assumptions.checks]]
+path = "src/h2a/employer_linkage.py"
+contains = 'INPUT_MAX_YEAR: Final = 2024'
+[[assumptions.checks]]
+path = "src/h2a/employer_linkage.py"
+contains = '"post2020_individual_master_alias_only"'
+[[assumptions.checks]]
+path = "code/b01_derived/01_h2a_aggregation_nodupes.R"
+contains = "employer_is_worksite_business"
+[[assumptions.checks]]
+path = "content/contracts/employer-linkage.md"
+contains = "Balanced adds name similarity of at least 97"
+
+[[assumptions]]
 id = "PRED-001"
 risk = "critical"
 owner = "prediction and shared panel"
@@ -79,20 +118,22 @@ owner = "empirical designs"
 statement = "The supported causal-outcome union contains fourteen outcomes, and each design's executable registry controls its subset, scaling, denominator, and sample rule."
 source = "content/contracts/causal-outcomes-and-model-inputs.md"
 review_when = "An outcome, transformation, denominator, sample rule, treatment, control, moderator, instrument, or estimator changes."
-scopes = ["code/c02_build", "code/designs", "scripts/run_did.sh", "scripts/run_panel_iv.sh", "scripts/run_mundlak_chamberlain.sh"]
+scopes = ["code/c02_build", "code/designs", "scripts/run_did.sh", "scripts/run_panel_iv.sh", "scripts/run_mundlak_chamberlain.sh", "scripts/run_border_discontinuity.sh", "scripts/run_wage_reforms.sh"]
 [[assumptions.checks]]
 path = "content/contracts/causal-outcomes-and-model-inputs.md"
 contains = "The canonical union contains fourteen causal outcomes."
 [[assumptions.checks]]
-path = "code/designs/panel_iv/07_estimate_panel_iv.R"
-contains = "outcomes <- tribble("
+path = "code/designs/panel_iv/estimation_spec.json"
+contains = '"primary_outcome": "h2a_cert_share_farm_workers_2011_start_year"'
 [[assumptions.checks]]
 path = "code/designs/mundlak_chamberlain/mcw/design.py"
 contains = "PRIMITIVE_OUTCOMES: Final = {"
 [[assumptions.checks]]
 path = "code/designs/did/02_main_results.R"
 contains = 'did_model(sample_full, "h2a_cert_share_farm_workers_2011_start_year")'
-
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = '"outcome": "h2a_cert_share_farm_workers_2011_start_year"'
 [[assumptions]]
 id = "DID-001"
 risk = "critical"
@@ -112,22 +153,43 @@ contains = "CZ-by-AEWR-region interaction"
 id = "IV-001"
 risk = "critical"
 owner = "panel IV"
-statement = "The preferred panel-IV specification is controlled column 4 with QCEW-primary county calibration, the mapped OEWS-area hourly donor-wage proxy, source year t-1, and aewr_iv_cluster_id inference clusters."
+statement = "Panel IV retains the original moving-wage four-column design with deterministic county entropy weights and source year t-1. All branch stages and tests are R. The fixed-wage revision, later exploratory exercises, and simulated calibration draws were retired by explicit user instruction. estimation_spec.json is the sole model/outcome registry; controlled seasonal/composition column4 remains preferred. Preserve original donor support, prior behavior, twelve outcomes, reviewed business linkage, controls, equal weights, county/year FE and target-subregion CRV1. The farm-floor selection explicitly records the original all-domain Census source rows and refuses source-fingerprint drift; revising those choices is an empirical change. Recovered weights are not observed sampling errors; current FLS wage targets may induce mechanical relevance. The runner validates at stage09 and ends with the user-reauthorized stage10--11 Kitagawa decomposition diagnostic, which uses recovered weights as-is, fixes donor wages at their 2008--2010 real mean on a balanced donor set, and never replaces an instrument or selects a model."
 source = "content/designs/panel-iv.md"
-review_when = "Instrument construction, controls, samples, preferred column, or inference changes."
-scopes = ["code/designs/panel_iv", "scripts/run_panel_iv.sh"]
+review_when = "Donor support, frame fills or farm floor, calibration moments/solver/guards, deterministic schema, controls, samples, preferred column, outcome/linkage registry, inference or implementation language changes."
+scopes = ["code/designs/panel_iv", "scripts/run_panel_iv.sh", "content/designs/panel-iv.md"]
 [[assumptions.checks]]
-path = "content/designs/panel-iv.md"
-regex = 'wage-plus-seasonal/composition instrument with controls \(preferred\)'
+path = "scripts/run_panel_iv.sh"
+contains = 'run_step code/designs/panel_iv/03_build_fls_frame.R'
+[[assumptions.checks]]
+path = "scripts/run_panel_iv.sh"
+contains = 'run_step code/designs/panel_iv/04_recover_fls_geography.R'
+[[assumptions.checks]]
+path = "scripts/run_panel_iv.sh"
+contains = 'run_step code/designs/panel_iv/09_validate_artifacts.R'
+[[assumptions.checks]]
+path = "scripts/run_panel_iv.sh"
+contains = 'run_step code/designs/panel_iv/11_estimate_instrument_decomposition.R'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/decomposition.R"
+contains = 'IV_DECOMPOSITION_BASE_WAGE_YEARS <- 2008:2010'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/calibration.R"
+contains = 'IV_MAX_ITERATIONS <- 100L'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/calibration.R"
+contains = 'IV_RHO <- 0.10'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/io.R"
+contains = 'panel_iv_deterministic_v1'
+[[assumptions.checks]]
+path = "code/designs/panel_iv/frame.R"
+contains = 'digest::digest(file = source_path, algo = "sha256")'
 [[assumptions.checks]]
 path = "code/designs/panel_iv/design.R"
 contains = 'DISSIMILARITY_IV_INFERENCE_CLUSTER <- "aewr_iv_cluster_id"'
 [[assumptions.checks]]
-path = "code/designs/panel_iv/design.R"
-contains = '"county_mapped_oews_area_big_six_hourly_v1"'
-[[assumptions.checks]]
 path = "code/designs/panel_iv/07_estimate_panel_iv.R"
-contains = '"z_wage_seasonal_composition_real"'
+contains = 'panel_iv_read_specification'
 
 [[assumptions]]
 id = "MC-001"
@@ -146,3 +208,120 @@ contains = "ALLOW_RANDOMIZATION_INFERENCE: Final = False"
 [[assumptions.checks]]
 path = "code/designs/mundlak_chamberlain/mcw/design.py"
 contains = 'CCV_STATUS: Final = "experimental_not_lean_validated"'
+
+[[assumptions]]
+id = "WELFARE-001"
+risk = "critical"
+owner = "narrow welfare"
+statement = "The narrow welfare branch reports certification-space producer incidence for an anticipated real one-dollar AEWR increase, applies one frozen certified-hours elasticity to all shared-panel counties in its declared target years, and leaves paid-hours incidence as rho times the reported result."
+source = "content/designs/welfare.md"
+review_when = "The elasticity definition, counterfactual, application population, exposure construction, numeraire, realization treatment, or welfare boundary changes."
+scopes = ["code/welfare", "scripts/run_welfare.sh", "content/designs/welfare.md"]
+[[assumptions.checks]]
+path = "code/welfare/01_narrow_welfare.py"
+contains = 'ELASTICITY_DEFINITION = "dlog_certified_hours_dlog_real_aewr"'
+[[assumptions.checks]]
+path = "code/welfare/01_narrow_welfare.py"
+contains = 'APPLICATION_POPULATION = "all_shared_panel_county_years"'
+[[assumptions.checks]]
+path = "code/welfare/01_narrow_welfare.py"
+contains = "COUNTERFACTUAL_DELTA = 1.0"
+[[assumptions.checks]]
+path = "content/designs/welfare.md"
+contains = "fraction $\\rho$ of certified hours"
+
+[[assumptions]]
+id = "BORDER-001"
+risk = "critical"
+owner = "AEWR-border bounded redesign"
+statement = "The standalone v6 border investigation retains all v5 benchmarks and evaluates four declared local redesigns. New members satisfy frozen agricultural screens and surviving-edge one-ring locality; direct current-real-AEWR, certifications/fixed2011 employment and county/component-year FE remain. Fixed weights/history and region-disjoint matching are labeled sensitivities. Pair inference is retained alongside shared-endpoint/spatial size/power and region deletion evidence; the nonstatutory 2009 wage is excluded from new wage diagnostics and FE-only noise calibration never uses it. No significance-based selection or empirical-adequacy claim follows from completed code. The separate statewide_design.json registry (stages 12-13) declares the 2025-10-02 statewide-AEWR state-border design before any post-policy outcome is parsed; its power uses only pre-period FE-only scale and actual statewide rates."
+source = "content/designs/border-discontinuity.md"
+review_when = "Outcome, wage semantics, feature window, geography/support/locality, model roles, sample/weight/FE, matching, dependence, simulation DGP/seed/guards, size/power criteria or feasibility interpretation changes."
+scopes = ["code/designs/border_discontinuity", "scripts/run_border_discontinuity.sh", "content/designs/border-discontinuity.md"]
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = '"all_member_agricultural_screen": true'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/13_statewide_power.R"
+contains = 'this power stage must not read it'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = '"strict_retained_locality": true'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = '"region_disjoint_matching": true'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/04_estimate_models.R"
+contains = 'bootstrap_method <- design$bootstrap$method'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/07_estimate_redesign.R"
+contains = 'excluded_region_id=r'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/power.R"
+contains = 'border_power_projection(model$pre$data, NULL, model$pre$y, fe_only = TRUE)'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = '"calibration_repetitions": 999'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = '"seed": 201103'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+regex = '"new_diagnostic_years":\s*\[\s*2008,\s*2010\s*\]'
+
+[[assumptions]]
+id = "AEWR-001"
+risk = "critical"
+owner = "AEWR source extraction and shared-panel consumers"
+statement = "Canonical 2009 AEWR is null; application means are quarantined in explicitly nonstatutory fields. Annual references retain 1990--2025 independently of validation coverage. Dated FLS and occupation/skill tables retain job-cohort and competing-floor limitations. Shared outcomes survive wage missingness; stage04 alone reconstructs the contaminated historical comparator. Frozen 2009 OEWS loadings remain a distinct source."
+source = "content/contracts/aewr-inputs.md"
+review_when = "The 2009 source table/column, wage definition, effective dates, occupation/skill/cohort coverage, source history, downstream baseline support or correction/rebuild plan changes."
+scopes = ["code/a01_sources/01_aewr_extract_tables.py", "code/a01_sources/aewr_rate_schedule_manifest.csv", "code/a01_sources/aewr_policy_events.csv", "src/h2a/aewr.py", "code/c01_clean", "code/c02_build", "code/designs", "scripts/run_border_data_inputs.sh", "content/contracts/aewr-inputs.md"]
+[[assumptions.checks]]
+path = "content/contracts/shared-panel.md"
+contains = 'The canonical 2009 `aewr` is missing'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/design.json"
+contains = 'source_special_case_uses_average_certified_application_wages_not_statutory_AEWR'
+
+[[assumptions]]
+id = "WORKSITE-001"
+risk = "critical"
+owner = "H-2A allocation calendar and point-geocoding producers"
+statement = "Allocated certification position-days are capacity, not realized employment. Site dates and case fallback remain distinguishable; unreconciled cases are quarantined and county/month expansion conserves mass. Missing hours, unmatched counties and unacquired geocodes remain explicit. Outcome-weighted FLS references are timing diagnostics, and applicant locations do not supply a nonparticipant population."
+source = "content/contracts/h2a-worksite-exposure.md"
+review_when = "Allocation, date priority/bounds, hours imputation, county splitting, geocoding source/provider/vintage, conservation, wage applicability, denominator population or spatial-readiness rules change."
+scopes = ["code/b01_derived/01_h2a_aggregation_nodupes.R", "code/b01_derived/01b_h2a_worksite_exposure.py", "src/h2a/worksite_exposure.py", "code/a01_sources/02_05_h2a_geocode_worksites.py", "src/h2a/worksite_geocoding.py", "code/designs/border_discontinuity", "scripts/run_derived.sh", "scripts/run_border_data_inputs.sh"]
+[[assumptions.checks]]
+path = "src/h2a/worksite_exposure.py"
+contains = '"measure": "allocated certification position-days, not actual workers, entries or employment"'
+[[assumptions.checks]]
+path = "src/h2a/worksite_exposure.py"
+contains = 'Calendar/county expansion does not conserve allocated position-days'
+[[assumptions.checks]]
+path = "src/h2a/worksite_geocoding.py"
+contains = '"spatial_rd_ready": False'
+[[assumptions.checks]]
+path = "code/designs/border_discontinuity/data_input_design.json"
+contains = '"common_all_denominators"'
+
+[[assumptions]]
+id = "REFORM-001"
+risk = "critical"
+owner = "historical wage-reform investigation"
+statement = "Historical wage-reform outputs are diagnostics, not a promoted causal elasticity. Cohort type and geography are fixed at baseline; absent certification is zero participation while wages stay missing. Observed 2009 application wages never assign statutory exposure, and old herder contracts are not grandfathered out of the wage increase."
+source = "content/designs/wage-reforms.md"
+review_when = "A wage schedule, cohort, occupation/skill assignment, timing convention, legal coverage, outcome, identity map, inference rule or causal-promotion decision changes."
+scopes = ["code/designs/wage_reforms", "scripts/run_wage_reforms.sh", "content/designs/wage-reforms.md"]
+[[assumptions.checks]]
+path = "code/designs/wage_reforms/design.json"
+contains = 'Diagnostic response and support investigation; no causal elasticity is authorized by this registry.'
+[[assumptions.checks]]
+path = "code/designs/wage_reforms/design.json"
+contains = 'Future disappearance is retained as zero certified participation.'
+[[assumptions.checks]]
+path = "code/designs/wage_reforms/policy_sources.json"
+contains = 'filing-date grandfathering is invalid for the herder wage increase'
+[[assumptions.checks]]
+path = "code/designs/wage_reforms/report.py"
+contains = '"causal_elasticity_estimated": False'

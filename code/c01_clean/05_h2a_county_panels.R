@@ -12,6 +12,45 @@ library(dplyr)
 h2a_data <- read_parquet(
   file = path_int("h2a_aggregated.parquet")
 )
+
+employer_linkage_metadata_columns <- c(
+  "employer_linkage_unit",
+  "employer_linkage_version",
+  "employer_linkage_input_max_year",
+  "employer_linkage_review_status",
+  "employer_linkage_review_report_hash"
+)
+missing_linkage_metadata <- setdiff(
+  employer_linkage_metadata_columns,
+  names(h2a_data)
+)
+if (length(missing_linkage_metadata) > 0L) {
+  stop(
+    "The H-2A aggregate is missing employer-linkage provenance: ",
+    paste(missing_linkage_metadata, collapse = ", "),
+    call. = FALSE
+  )
+}
+employer_linkage_contract <- h2a_data %>%
+  distinct(across(all_of(employer_linkage_metadata_columns)))
+if (
+  nrow(employer_linkage_contract) != 1L ||
+    employer_linkage_contract$employer_linkage_unit[[1]] !=
+      "worksite_business" ||
+    employer_linkage_contract$employer_linkage_version[[1]] != "v2" ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2024L ||
+    employer_linkage_contract$employer_linkage_review_status[[1]] !=
+      "complete" ||
+    !grepl(
+      "^[0-9a-f]{64}$",
+      employer_linkage_contract$employer_linkage_review_report_hash[[1]]
+    )
+) {
+  stop(
+    "The H-2A aggregate must declare one reviewed worksite-business v2 linkage.",
+    call. = FALSE
+  )
+}
 h2a_predict <- read_parquet(
   file = path_int("h2a_prediction_using_elastic_net_by_cutoff.parquet")
 ) %>%

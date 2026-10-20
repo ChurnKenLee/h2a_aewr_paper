@@ -1,0 +1,38 @@
+\begin{table}[htbp]
+\centering
+\caption{First Stage by Kitagawa Instrument Component}
+\label{tab:iv_instrument_decomposition_first_stage}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrr}
+\hline\hline
+Weights & Instrument & Coefficient & Clustered SE & Excluded-instrument F & Equality $p$ & Within $R^2$ \\
+\hline
+Wage only & Retained instrument & 0.192 & 0.037 & 26.88 &  & 0.168 \\
+Wage only & Balanced-donor instrument & 0.240 & 0.026 & 83.25 &  & 0.204 \\
+Wage only & Weight component (wages fixed) & 0.414 & 0.602 & 0.47 &  & 0.071 \\
+Wage only & Wage component (weights fixed) & 0.219 & 0.025 & 79.14 &  & 0.186 \\
+Wage only & Interaction component & 0.178 & 0.404 & 0.19 &  & 0.067 \\
+Wage only & Weight component + half interaction & 0.691 & 0.508 & 1.85 &  & 0.079 \\
+Wage only & Wage component + half interaction & 0.226 & 0.025 & 84.33 &  & 0.191 \\
+Wage only & Joint components: Weight component (wages fixed) & 1.030 & 0.419 & 34.81 & 0.003 & 0.228 \\
+Wage only & Joint components: Wage component (weights fixed) & 0.251 & 0.026 & 34.81 & 0.003 & 0.228 \\
+Wage only & Joint components: Interaction component & 0.943 & 0.214 & 34.81 & 0.003 & 0.228 \\
+Wage only & Joint Shapley: Weight component + half interaction & 1.089 & 0.365 & 37.87 & 0.021 & 0.223 \\
+Wage only & Joint Shapley: Wage component + half interaction & 0.246 & 0.028 & 37.87 & 0.021 & 0.223 \\
+Seasonal/composition & Retained instrument & 0.173 & 0.024 & 52.50 &  & 0.176 \\
+Seasonal/composition & Balanced-donor instrument & 0.213 & 0.025 & 72.93 &  & 0.191 \\
+Seasonal/composition & Weight component (wages fixed) & 0.208 & 0.138 & 2.27 &  & 0.073 \\
+Seasonal/composition & Wage component (weights fixed) & 0.221 & 0.026 & 70.94 &  & 0.184 \\
+Seasonal/composition & Interaction component & 0.065 & 0.105 & 0.38 &  & 0.066 \\
+Seasonal/composition & Weight component + half interaction & 0.263 & 0.119 & 4.88 &  & 0.077 \\
+Seasonal/composition & Wage component + half interaction & 0.216 & 0.026 & 68.10 &  & 0.183 \\
+Seasonal/composition & Joint components: Weight component (wages fixed) & 0.247 & 0.114 & 24.99 & 0.292 & 0.194 \\
+Seasonal/composition & Joint components: Wage component (weights fixed) & 0.219 & 0.027 & 24.99 & 0.292 & 0.194 \\
+Seasonal/composition & Joint components: Interaction component & 0.115 & 0.072 & 24.99 & 0.292 & 0.194 \\
+Seasonal/composition & Joint Shapley: Weight component + half interaction & 0.216 & 0.132 & 36.94 & 0.986 & 0.191 \\
+Seasonal/composition & Joint Shapley: Wage component + half interaction & 0.213 & 0.026 & 36.94 & 0.986 & 0.191 \\
+\hline\hline
+\end{tabular}%
+}
+\begin{minipage}{0.98\textwidth}\footnotesize Notes: Real AEWR on each component with the controlled column-3/4 specification, county and year fixed effects and AEWR-subregion clustered standard errors on the common balanced-donor sample (31,440 county-years; the retained common sample has 33,497). The weight component holds donor wages at their 2008--2010 real mean; the wage component holds calibrated weights at their source-year mean. Calibrated weights include their intended response to wage features. Joint rows report one F for all listed components and a clustered test of equal coefficients.\end{minipage}
+\end{table}

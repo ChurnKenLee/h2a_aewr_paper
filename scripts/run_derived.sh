@@ -3,6 +3,7 @@
 source "$(dirname "$0")/pipeline_helpers.sh"
 
 run_step code/b01_derived/01_h2a_aggregation_nodupes.R
+run_step code/b01_derived/01b_h2a_worksite_exposure.py
 run_step code/b01_derived/02_price_index_nass_synthetic_cdl.py
 run_step code/b01_derived/03_01_acs_extract.R
 run_step code/b01_derived/03_02_acs_immigrant_imputation.R

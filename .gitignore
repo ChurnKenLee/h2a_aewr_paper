@@ -3,6 +3,8 @@
 data/
 *.dta
 *.csv
+!code/a01_sources/aewr_rate_schedule_manifest.csv
+!code/a01_sources/aewr_policy_events.csv
 !outputs/tables/iv_dissimilarity_model_estimates.csv
 !outputs/tables/iv_dissimilarity_ar_intervals.csv
 *.xlsx

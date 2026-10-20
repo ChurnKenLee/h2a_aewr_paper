@@ -1,0 +1,26 @@
+\begin{table}[htbp]
+\centering
+\caption{Preferred-Specification 2SLS by Kitagawa Instrument Component}
+\label{tab:iv_instrument_decomposition_second_stage}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrr}
+\hline\hline
+Outcome & Retained $Z$ & Weight component & Weight AR 95\% set & Wage component & Hansen $J$ $p$ \\
+\hline
+H-2A certified workers / 2011 farm employment & -0.092 (0.048) & -0.211 (0.174) & $(-\infty, \infty)$ & -0.093 (0.057) & 0.540 \\
+H-2A certified hours / 2011 farm employment & -63.132 (31.780) & -128.385 (124.129) & $(-\infty, \infty)$ & -57.020 (36.667) & 0.595 \\
+H-2A applications / 2011 farm employment & -0.002 (0.001) & 0.001 (0.004) & $(-\infty, \infty)$ & -0.000 (0.001) & 0.574 \\
+H-2A linked worksite businesses / 2011 farm employment (balanced v2) & -0.002 (0.003) & -0.012 (0.011) & $(-\infty, \infty)$ & -0.002 (0.002) & 0.706 \\
+H-2A certified positions / application & -1.828 (2.811) & -39.360 (32.398) & $(-\infty$, -4.876] $\cup$ [28.563, $\infty)$ & 0.603 (3.605) & 0.070 \\
+H-2A certified hours / certified position & -60.516 (47.181) & 286.393 (305.569) & $(-\infty$, -306.595] $\cup$ [-56.593, $\infty)$ & -65.038 (47.305) & 0.039 \\
+Real Fisher crop price index & -3.460 (5.483) & -8.992 (10.416) & $(-\infty, \infty)$ & -6.650 (4.610) & 0.658 \\
+Farm employment & -11.682 (9.428) & -11.031 (30.688) & $(-\infty, \infty)$ & -5.746 (8.577) & 0.624 \\
+Farm production expenses / cash receipts and other income & 0.000 (0.031) & 0.159 (0.152) & $(-\infty, \infty)$ & -0.006 (0.031) & 0.135 \\
+Farm cash receipts and other income per farm worker (2012 dollars) & 37,636.913 (12,389.313) & 2,954.941 (20,195.768) & $(-\infty, \infty)$ & 21,306.959 (6,452.568) & 0.839 \\
+Hired-labor share of farm production expenses & 0.004 (0.003) & 0.018 (0.015) & $(-\infty$, -0.048] $\cup$ [-0.001, $\infty)$ & 0.002 (0.003) & 0.135 \\
+Fisher crop output-quantity index (2011 = 100) & 50.649 (176.735) & -5,910.130 (6,780.481) & $(-\infty, \infty)$ & 970.011 (1,060.949) & 0.308 \\
+\hline\hline
+\end{tabular}%
+}
+\begin{minipage}{0.98\textwidth}\footnotesize Notes: Column-4 controls, fixed effects and AEWR-subregion clustered standard errors on each outcome's balanced-donor sample. Each estimate is just identified by the named instrument. The AR set inverts the clustered Anderson--Rubin test. Hansen $J$ tests equality of the effects implied by the two Shapley components (weight and wage components each plus half the interaction) using cluster-robust two-step GMM.\end{minipage}
+\end{table}

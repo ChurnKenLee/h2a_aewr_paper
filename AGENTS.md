@@ -50,6 +50,9 @@ Respect the documented dependency graph:
 
 ## Data and research integrity
 
+- Non-public NASS data and custom tabulations are unavailable for this project.
+  Use publicly released NASS data. Do not request institutional access details
+  or make nonparticipant farm microdata a prerequisite for county-level work.
 - Do not silently change an outcome, treatment, sample restriction, timing
   convention, weight, fixed effect, clustering level, instrument, normalization,
   seed, or resource guard.
@@ -72,6 +75,16 @@ Respect the documented dependency graph:
 ## Environment and dependencies
 
 - Use the existing direnv/devenv environment.
+- Implement analysis and pipeline logic imperatively. Prefer explicit,
+  sequential transformations and plain functions or data structures. Discard
+  object-oriented best practices: do not introduce classes, inheritance,
+  factories, service objects, dependency injection, or object-oriented
+  architecture unless an external interface requires one.
+- Write executable Python scripts as Marimo notebooks in `.py` source
+  files. New or substantially changed Python analysis and pipeline scripts
+  should use `marimo.App` cells rather than conventional top-level script
+  execution. Reusable modules under `src/h2a` and test modules are not scripts
+  and may remain ordinary Python.
 - Run Python through `uv run --no-sync`. When needed in a restricted
   environment, set `UV_CACHE_DIR=/tmp/h2a-uv-cache`.
 - Run R entry points with `Rscript --vanilla`.

@@ -66,6 +66,11 @@ def _synthetic_panel() -> pl.DataFrame:
                     "nbr_workers_requested_start_year": 3.0,
                     "nbr_workers_certified_start_year": base_aewr / 5.0,
                     "man_hours_certified_start_year": 5.0,
+                    "employer_linkage_unit": "worksite_business",
+                    "employer_linkage_version": "v2",
+                    "employer_linkage_input_max_year": 2024,
+                    "employer_linkage_review_status": "complete",
+                    "employer_linkage_review_report_hash": "a" * 64,
                     "emp_farm": 100.0 + float(year - 2008),
                     "ln_pop_census": (
                         10.0 + base_aewr / 100.0 + 0.01 * float(year - 2008)
@@ -142,7 +147,9 @@ class BuildPanelTests(unittest.TestCase):
         self.assertEqual(row["mc_bite_approximation_method"], BITE_APPROXIMATION_LABEL)
 
         self.assertEqual(row[OUTCOME_COLUMNS["applications"]], 0.5)
-        self.assertEqual(row[OUTCOME_COLUMNS["employers"]], 2.0)
+        self.assertEqual(
+            row[OUTCOME_COLUMNS["linked_worksite_businesses"]], 2.0
+        )
         self.assertEqual(row[OUTCOME_COLUMNS["any_application"]], 1)
         self.assertEqual(row[CLUSTER_COLUMNS["county"]], "01001")
         self.assertEqual(row[CLUSTER_COLUMNS["state"]], "01")
@@ -158,6 +165,22 @@ class BuildPanelTests(unittest.TestCase):
         duplicate = pl.concat([source, source.head(1)])
         with self.assertRaisesRegex(PanelBuildError, "county-year keys are not unique"):
             self._build(duplicate)
+
+    def test_missing_2009_wage_preserves_quantiles_and_counts_wage_support(self) -> None:
+        source = _synthetic_panel().with_columns(*(
+            pl.when(pl.col("year") == 2009).then(None).otherwise(pl.col(name)).alias(name)
+            for name in ("aewr", "aewr_ppi")
+        ))
+        panel = self._build(source)
+        row = panel.filter(pl.col("county_fips") == "01001").row(0, named=True)
+        self.assertEqual(panel.height, 4)
+        self.assertEqual(row["mc_baseline_year_count_f0809"], 2)
+        self.assertEqual(row["mc_baseline_year_count_f0810"], 3)
+        self.assertEqual(row["mc_fraction_affected_year_count_f0809"], 1)
+        self.assertEqual(row["mc_fraction_affected_year_count_f0810"], 2)
+        self.assertEqual(row["mc_baseline_bite_year_count"], 2)
+        self.assertAlmostEqual(row[FRACTION_AFFECTED_COLUMNS["f0809"]], 0.625)
+        self.assertAlmostEqual(row["mc_baseline_bite"], 1.5)
 
     def test_non_string_geography_is_rejected_without_lossy_cast(self) -> None:
         source = _synthetic_panel().with_columns(pl.col("state_fips").cast(pl.Int32))

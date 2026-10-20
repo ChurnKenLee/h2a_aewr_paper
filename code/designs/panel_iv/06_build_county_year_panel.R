@@ -18,6 +18,35 @@ county_panel <- read_parquet(
     )
   )
 
+employer_linkage_contract <- county_panel %>%
+  distinct(
+    employer_linkage_unit,
+    employer_linkage_version,
+    employer_linkage_input_max_year,
+    employer_linkage_review_status,
+    employer_linkage_review_report_hash
+  )
+if (
+  nrow(employer_linkage_contract) != 1L ||
+    employer_linkage_contract$employer_linkage_unit[[1]] !=
+      DISSIMILARITY_IV_EMPLOYER_LINKAGE_UNIT ||
+    employer_linkage_contract$employer_linkage_version[[1]] !=
+      DISSIMILARITY_IV_EMPLOYER_LINKAGE_VERSION ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] !=
+      DISSIMILARITY_IV_EMPLOYER_LINKAGE_INPUT_MAX_YEAR ||
+    employer_linkage_contract$employer_linkage_review_status[[1]] !=
+      DISSIMILARITY_IV_EMPLOYER_LINKAGE_REVIEW_STATUS ||
+    !grepl(
+      "^[0-9a-f]{64}$",
+      employer_linkage_contract$employer_linkage_review_report_hash[[1]]
+    )
+) {
+  stop(
+    "Panel IV requires the reviewed FY2008--2024 worksite-business v2 linkage.",
+    call. = FALSE
+  )
+}
+
 cluster_assignments <- read_parquet(
   path_int("panel_iv_target_clusters.parquet")
 ) %>%
@@ -55,8 +84,7 @@ instrument_long <- read_parquet(
       c(
         DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL,
         DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
-      ),
-    is.na(weight_draw_id)
+      )
   )
 
 instrument_keys <- c(

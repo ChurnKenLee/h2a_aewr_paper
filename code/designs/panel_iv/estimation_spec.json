@@ -1,0 +1,140 @@
+{
+  "version": "panel_iv_estimation_v1",
+  "status": "single_source_of_truth_for_panel_iv_estimation",
+  "policy_years": [2011, 2022],
+  "endogenous": "aewr_ppi",
+  "fixed_effects": ["county_fips", "year"],
+  "primary_inference_cluster": "aewr_iv_cluster_id",
+  "dependence_sensitivity_cluster": "aewr_region_id",
+  "weights": "equal_county_year_observations",
+  "controls": [
+    "ln_pop_census_l1",
+    "farm_emp_share_l1",
+    "emp_pop_ratio_l1",
+    "wage_p10_l1",
+    "h2a_ppml_static_propensity_z:year_centered"
+  ],
+  "models": [
+    {
+      "column": 1,
+      "instrument": "z_wage_only_real",
+      "moment_targets": "Wage only",
+      "controls": false,
+      "first_stage_header": "Basic",
+      "second_stage_header": "Wage only"
+    },
+    {
+      "column": 2,
+      "instrument": "z_wage_seasonal_composition_real",
+      "moment_targets": "Wage + seasonal/composition",
+      "controls": false,
+      "first_stage_header": "Basic + seasonal/composition",
+      "second_stage_header": "Seasonal/composition"
+    },
+    {
+      "column": 3,
+      "instrument": "z_wage_only_real",
+      "moment_targets": "Wage only",
+      "controls": true,
+      "first_stage_header": "Controls",
+      "second_stage_header": "Wage only + controls"
+    },
+    {
+      "column": 4,
+      "instrument": "z_wage_seasonal_composition_real",
+      "moment_targets": "Wage + seasonal/composition",
+      "controls": true,
+      "first_stage_header": "Controls + seasonal/composition",
+      "second_stage_header": "Seasonal/composition + controls"
+    }
+  ],
+  "primary_outcome": "h2a_cert_share_farm_workers_2011_start_year",
+  "derived_outcomes": {
+    "farm_cashandinc_ppi_per_farm_worker": {
+      "numerator": "farm_cashandinc_ppi",
+      "denominator": "emp_farm",
+      "scale": 1000,
+      "require_positive_denominator": true
+    },
+    "h2a_linked_worksite_businesses_per_farm_worker_2011_start_year": {
+      "numerator": "nbr_employers_balanced_start_year",
+      "denominator": "emp_farm_2011",
+      "scale": 1,
+      "require_positive_denominator": true
+    }
+  },
+  "outcomes": [
+    {
+      "outcome": "h2a_cert_share_farm_workers_2011_start_year",
+      "outcome_label": "H-2A certified workers / 2011 farm employment",
+      "table_stub": "h2a_normalized",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "h2a_cert_hours_per_farm_worker_2011_start_year",
+      "outcome_label": "H-2A certified hours / 2011 farm employment",
+      "table_stub": "h2a_certified_hours",
+      "adjustment_margin": true
+    },
+    {
+      "outcome": "h2a_applications_per_farm_worker_2011_start_year",
+      "outcome_label": "H-2A applications / 2011 farm employment",
+      "table_stub": "h2a_applications",
+      "adjustment_margin": true
+    },
+    {
+      "outcome": "h2a_linked_worksite_businesses_per_farm_worker_2011_start_year",
+      "outcome_label": "H-2A linked worksite businesses / 2011 farm employment (balanced v2)",
+      "table_stub": "h2a_linked_worksite_businesses",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "h2a_cert_positions_per_application_start_year",
+      "outcome_label": "H-2A certified positions / application",
+      "table_stub": "h2a_positions_per_application",
+      "adjustment_margin": true
+    },
+    {
+      "outcome": "h2a_cert_hours_per_position_start_year",
+      "outcome_label": "H-2A certified hours / certified position",
+      "table_stub": "h2a_hours_per_position",
+      "adjustment_margin": true
+    },
+    {
+      "outcome": "fisher_index_ppi",
+      "outcome_label": "Real Fisher crop price index",
+      "table_stub": "prices",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "emp_farm",
+      "outcome_label": "Farm employment",
+      "table_stub": "farm_employment",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "share_farm_prodexp_cashandinc",
+      "outcome_label": "Farm production expenses / cash receipts and other income",
+      "table_stub": "production_expense_share",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "farm_cashandinc_ppi_per_farm_worker",
+      "outcome_label": "Farm cash receipts and other income per farm worker (2012 dollars)",
+      "table_stub": "farm_income",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "share_farm_laborexp_prodexp",
+      "outcome_label": "Hired-labor share of farm production expenses",
+      "table_stub": "farm_labor_share",
+      "adjustment_margin": false
+    },
+    {
+      "outcome": "fisher_quantity_index",
+      "outcome_label": "Fisher crop output-quantity index (2011 = 100)",
+      "table_stub": "output_quantities",
+      "adjustment_margin": false
+    }
+  ]
+}

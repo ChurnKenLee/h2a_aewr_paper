@@ -10,6 +10,7 @@ source(here::here("code", "paths.R"))
 source(path_code("c00_shared", "geography.R"))
 source(path_code("designs", "panel_iv", "design.R"))
 source(path_code("designs", "panel_iv", "helpers.R"))
+source(path_code("designs", "panel_iv", "io.R"))
 library(arrow)
 library(dplyr)
 library(stringr)
@@ -66,8 +67,7 @@ frame_employment <- read_parquet(path_int("panel_iv_fls_frame.parquet")) %>%
   filter(
     source_year %in% source_years,
     weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
-    annual_update_spec == DISSIMILARITY_IV_ANNUAL_UPDATE_SPEC,
-    is.na(weight_draw_id)
+    annual_update_spec == DISSIMILARITY_IV_ANNUAL_UPDATE_SPEC
   ) %>%
   select(
     county_fips,
@@ -85,16 +85,12 @@ frame_employment <- read_parquet(path_int("panel_iv_fls_frame.parquet")) %>%
 recovered_weights <- read_parquet(path_int(
   "panel_iv_fls_county_weight_summary.parquet"
 )) %>%
+  iv_require_calibration_version() %>%
   filter(
     source_year %in% source_years,
     weight_spec == DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC,
     baseline_weight_spec == DISSIMILARITY_IV_FRAME_WEIGHT_SPEC,
     near(rho, DISSIMILARITY_IV_PRIMARY_RHO),
-    near(
-      kappa_multiplier,
-      DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER
-    ),
-    is.na(weight_draw_id),
     str_detect(center_solver_status, "^calibrated"),
     is.finite(calibrated_center_weight),
     calibrated_center_weight >= 0
@@ -312,8 +308,6 @@ county_donor_frame <- candidate_counties %>%
     weight_component = DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT,
     wage_target_used = TRUE,
     rho = DISSIMILARITY_IV_PRIMARY_RHO,
-    kappa_multiplier = DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER,
-    weight_draw_id = NA_integer_,
     instrument_family = DISSIMILARITY_IV_INSTRUMENT_FAMILY,
     aggregation_spec = DISSIMILARITY_IV_AGGREGATION_SPEC,
     baseline_frame_proxy = DISSIMILARITY_IV_BASELINE_FRAME_PROXY,
@@ -527,8 +521,6 @@ instrument_grid <- target_geometry %>%
     weight_component = DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT,
     wage_target_used = TRUE,
     rho = DISSIMILARITY_IV_PRIMARY_RHO,
-    kappa_multiplier = DISSIMILARITY_IV_PRIMARY_KAPPA_MULTIPLIER,
-    weight_draw_id = NA_integer_,
     instrument_family = DISSIMILARITY_IV_INSTRUMENT_FAMILY,
     aggregation_spec = DISSIMILARITY_IV_AGGREGATION_SPEC,
     baseline_frame_proxy = DISSIMILARITY_IV_BASELINE_FRAME_PROXY,
@@ -558,10 +550,8 @@ instrument_grid <- target_geometry %>%
     moment_spec,
     wage_target_used,
     rho,
-    kappa_multiplier,
     is_primary,
     cluster_size_rule,
-    weight_draw_id,
     instrument_spec_label,
     z_dissimilarity_nominal,
     z_dissimilarity_real,

@@ -1,0 +1,44 @@
+{
+  "version": "wage_reforms_feasibility_v1",
+  "audit": {
+    "linkage": {
+      "employer_linkage_unit": "worksite_business",
+      "employer_linkage_version": "v2",
+      "employer_linkage_input_max_year": 2024,
+      "employer_linkage_review_status": "complete",
+      "employer_linkage_review_report_hash": "dfb58119dce96cb3d172c1eeb7287973cb867f7d2c3cd10d9baf67df784d87ee"
+    },
+    "unique_source_rows": 122564,
+    "positive_source_rows": 116663,
+    "all_source_case_years": 89580,
+    "positive_case_years": 85466,
+    "selected_positive_positions": 1639568.0,
+    "nonpositive_case_years": 4114,
+    "application_case_years_without_unique_valid_receipt": 7,
+    "case_numbers_in_multiple_fiscal_vintages": 12
+  },
+  "inputs": {
+    "data/intermediate/h2a_with_fips.parquet": "4628df4d5d23ccd2a63f1ba60af90a10e81809e55dd7475c2b387dac4f7289b9",
+    "data/intermediate/h2a_employer_record_membership.parquet": "905b3162d68719aab04f051a562c3698ada7aca657e36469697b2398288a54dd",
+    "data/raw/aewr/aewr_regions.csv": "90ed79a64cbf5379f8b5f5ccdc13d62735675df6350d0b7b8993075629bc556a",
+    "code/designs/wage_reforms/design.json": "a8115e1e710b095b00ddd1a3b21ccadf896266c8bc138effb0abe845823201f3",
+    "code/designs/wage_reforms/policy_sources.json": "45c39d0d16f1b082035f4ad3bb625b793e0620783234218a655bcf29bbb71bb1",
+    "code/designs/wage_reforms/analysis.py": "f6fd2f775ece63e720e1e0035a98fcc9c539bf307d601922e3b23ffe4eabbeb8",
+    "code/designs/wage_reforms/01_build.py": "6717661a44b3d15889b5fb4b4756d72ae733c09b42eb0bc857283f6bca2d9b42"
+  },
+  "outputs": {
+    "outputs/tables/wage_reforms/coverage.csv": "594b4c885f87b8bc2dc5e2491832ceff772ebbc8c6f35e6e45efd0417f5bba80",
+    "outputs/tables/wage_reforms/herder_wage_distribution.csv": "2e045f68bb5a955ad591967b5df547de30820a837acefbf61f35e0c04d30ad52",
+    "outputs/tables/wage_reforms/monthly_title_support.csv": "f8960a5044dcf0743624a5db0b3547db7caceec9cd2b64a3f16804a6f8cab3b0",
+    "outputs/tables/wage_reforms/wage_quality.csv": "ab54f198c966b629b90389d038774b0598b028289f6ff079354df84b826c72cd",
+    "outputs/tables/wage_reforms/herder_geography_support.csv": "8748381e0904d6f9748070543d3c8f0110261e273f0c4f23c67e5a0b040c6128",
+    "outputs/tables/wage_reforms/herder_business_geography.csv": "9431788ccd7539b40208a69535e2ed9a44a7d2941aeb12ff1d595a17186b9430",
+    "outputs/tables/wage_reforms/cohort_trajectories.csv": "2d0cac8fdfe90595648dbf3acb18aed7b45febcf77ce8d21b71c112847845fc0",
+    "outputs/tables/wage_reforms/candidate_ddd_support.csv": "646b01de76f9fdd7991f784122250bc13f56940b27142f7ee2258d33db59b6e7",
+    "outputs/tables/wage_reforms/linkage_retention_audit.csv": "7457f858c9fc504346d6f2ab5802b9a3d1aee94598b31ad3282efd35ee230937",
+    "outputs/tables/wage_reforms/weekly_cutoff_counts.csv": "a96a8b5e59eea92a0cc9a5f90ed77447a74486c507461898fb54ef54859aa58c",
+    "data/processed/wage_reforms_cases.parquet": "3d8eb5524c86f3cc73235f8865793f17e513e48262054d9fd78a358282c6f957",
+    "data/processed/wage_reforms_business_year.parquet": "836a781b63354258f877f18ab891477c8963a2039132075d73610f9850b629de",
+    "data/processed/wage_reforms_application_cases.parquet": "4859cff5956face336ab38d9df89451dfcfea0639e89df66684914d93ba53412"
+  }
+}

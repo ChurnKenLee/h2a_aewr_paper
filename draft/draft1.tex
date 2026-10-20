@@ -1,5 +1,5 @@
 \documentclass[14pt]{article}
-\usepackage[usenames,dvips]{color}
+\usepackage[usenames]{color}
 \usepackage[margin=1in]{geometry}
 \usepackage{setspace}
 \usepackage{graphicx}
@@ -38,7 +38,7 @@ county characteristics.  Our difference-in-differences design compares
 counties facing different lagged AEWR premiums relative to the 25th percentile
 of the wage distribution in their commuting zone before and after 2011.  A
 larger premium is associated with lower H-2A use after 2011: the controlled
-estimate is -0.0077 percentage points of 2011 farm employment per additional
+estimate is -0.72 percentage points of 2011 farm employment per additional
 2012 dollar of the lagged premium.  Event-study estimates are near zero before
 2011 and become increasingly negative after 2014.  We also report exploratory
 evidence on agricultural prices and labor expenditure shares, which should not
@@ -68,7 +68,7 @@ minimum wage.
 Our baseline specification is a continuous-treatment difference-in-differences
 model with county and year fixed effects.  It compares changes after 2011 in
 counties with relatively high and low AEWR wage premiums.  In the controlled
-model, a one-dollar larger lagged premium is associated with a 0.0077
+model, a one-dollar larger lagged premium is associated with a 0.72
 percentage-point lower H-2A certification rate (Table
 \ref{tab:main-results}).  The estimate is similar when commuting zones that
 span AEWR-region boundaries are excluded.  The event study provides no clear
@@ -210,7 +210,7 @@ An additional complication is that employers of H-2A workers have to pay all wor
 	      \begin{itemize}
 		      \item 73 FR 77110 Final Rule implementing switch to OES goes into effect
 		      \item DOL no longer required to publish AEWR
-		      \item Table 1 in 75 FR 6884 gives us the AEWRs in effect, calculated from OES numbers and provided to applicants
+		      \item Table 1 in 75 FR 6884 reports average application wages, not statutory AEWR schedules. We retain those means separately and leave canonical 2009 AEWR missing pending the actual area/occupation/skill determinations.
 	      \end{itemize}
 	\item May 29, 2009
 	      \begin{itemize}
@@ -247,7 +247,7 @@ An additional complication is that employers of H-2A workers have to pay all wor
 \subsection{H-2A program usage}
 
 The DOL's Office of Foreign Labor Certification (OFLC) posts disclosure files on H-2A program performance data on their website every year.
-The primary data source consists of H-2A disclosure files from fiscal years 2008 through 2022.
+The primary data source consists of H-2A disclosure files from fiscal years 2008 through 2024; the shared county-year analysis window remains 2008--2022.
 These files contain detailed information on every H-2A application received in that year, and include the employer's name and address, the number of workers requested, the nature of the job, worksite addresses, job start and end dates, negotiated hourly wage rates, weekly work hours, and sometimes the relevant crops.
 The biggest challenge here is in assigning counties to worksites correctly.
 This is because, prior to 2017, the OFLC only had worksite location data by city, ZIP code, and state.
@@ -294,8 +294,9 @@ The final dataset includes the following aggregated variables for each county-ye
 
 \subsection{Adverse Effect Wage Rates (AEWR)}
 
-We collect historical AEWR values from annual notices published the Department of Labor in the Federal Register.
-We identify Department of Labor notices in the Federal Register containing the keywords ``labor certification process'' and ``adverse effect wage rates'' and download the relevant pages.  Because the annual notices use a consistent table format, the extraction is automated to construct an AEWR panel by state and year.
+We assemble annual FLS reference rates from CRS historical tables and explicitly selected Department of Labor state tables in cached Federal Register notices. The source retains 1990--2025 independently of a separate USDA validation workbook. Annual references do not by themselves establish each job's binding wage or exact within-year exposure.
+
+The 2009 OES regime requires area, occupation, skill and job-cohort information. Table 1 of the 2010 final rule reports application wage means rather than statutory AEWR schedules.\footnote{Department of Labor, 75 FR 6884, February 12, 2010, Table 1: \href{https://www.govinfo.gov/content/pkg/FR-2010-02-12/pdf/2010-2731.pdf}{Federal Register source}.} We retain those means only as a separately labeled source audit. Canonical 2009 AEWR is missing, and the lagged wage regressor is consequently unavailable in 2010. We retain outcome rows in the shared panel and apply the existing regression complete-case rule.
 
 \subsection{Crop acreage}
 
@@ -336,9 +337,11 @@ The analysis panel covers 2008--2022.  We retain counties with positive
 cropland in 2007 and exclude counties classified as ``always takers'' by the
 project's treatment-group construction.  Alaska, Hawaii, the District of
 Columbia, and observations without an AEWR-region assignment are not in the
-analysis file.  The finalized panel contains 46,615 county-year observations.
-The descriptive main sample in Table \ref{tab:sumstats} contains 33,672
-observations, and the regression sample contains 33,669 complete cases.
+analysis file. The finalized shared panel contains 46,620 county-year observations.
+The descriptive main sample in Table \ref{tab:sumstats} contains 34,215
+observations, and the main regression sample contains 31,934 complete cases.
+The missing statutory 2009 wage removes 2010 observations from lagged-wage
+regressions; it does not imply zero H-2A activity in those years.
 
 \input{../outputs/tables/table_sumstats_dd_variables.tex}
 
@@ -383,23 +386,27 @@ before the post period and traces the evolution of the estimated relationship.
 
 \begin{table}[ht]
 	\centering
-	\input{../outputs/tables/table_1_main_results.tex}
+	\resizebox{\linewidth}{!}{\input{../outputs/tables/table_1_main_results.tex}}
 	\caption{Difference-in-differences estimates of the relationship between the lagged AEWR wage premium and normalized H-2A utilization.}
 	\label{tab:main-results}
 \end{table}
 
 Table \ref{tab:main-results} reports the main estimates.  In column (2), the
-coefficient on the post-2011 interaction is -0.0077 (standard error 0.0030),
-and in the no-border controlled sample it is -0.0094 (standard error 0.0039).
+coefficient on the post-2011 interaction is -0.0072 (standard error 0.0033),
+and in the no-border controlled sample it is -0.0095 (standard error 0.0044).
 Thus, the negative relationship is not driven by the commuting zones that
-cross AEWR-region borders.  These magnitudes are percentage points of 2011
-farm employment, not percent changes in the number of certifications.
+cross AEWR-region borders. The table reports changes in the ratio of certified
+positions to 2011 farm jobs. Multiplying by 100 gives approximately -0.72 and
+-0.95 percentage points per dollar in the two controlled samples. These are
+not percent changes in the number of certifications.
 
 Figure \ref{fig:event-study} and Table \ref{tab:event-study} show the flexible
-event-study results.  The coefficients in 2008--2010 are small relative to
-their standard errors.  The post-period estimates turn negative in 2014 and
-are largest in 2022, when the controlled estimate is -0.0147 (standard error
-0.0046).  The pattern is consistent with a growing negative association
+event-study results. The available 2008 and 2009 coefficients are small relative
+to their standard errors; the 2010 coefficient is unavailable because its
+lagged statutory wage is missing. This short diagnostic does not establish
+parallel trends. The post-period estimates turn negative in 2014 and
+are largest in 2022, when the controlled estimate is -0.0158 (standard error
+0.0056).  The pattern is consistent with a growing negative association
 between the AEWR premium and H-2A use, while the limited number of AEWR regions
 and the observational nature of the wage premium warrant cautious
 interpretation.
@@ -418,13 +425,13 @@ The code also constructs a county Fisher agricultural price index, chained
 from crop-level prices and acreage and expressed in real 2012 dollars.  In the
 same reduced-form specification, the post-2011 premium interaction is negative
 in all four price regressions (Table \ref{tab:price-results}).  The controlled
-baseline estimate is -1.925 index points per dollar (standard error 0.764).
+baseline estimate is -2.174 index points per dollar (standard error 0.7998).
 This result is exploratory: it combines price and crop-composition changes and
 does not identify a pass-through mechanism.
 
 The corresponding estimates for the labor share of farm production expenses
-are small: -0.0005 (standard error 0.0004) in the controlled full sample and
--0.0008 (standard error 0.0004) in the controlled no-border sample (Table
+are -0.0009 (standard error 0.0005) in the controlled full sample and
+-0.0014 (standard error 0.0005) in the controlled no-border sample (Table
 \ref{tab:laborshare-results}).  The sensitivity of precision across samples
 does not establish that the H-2A response operates through a shift in labor's
 share of farm production expenses.
@@ -432,7 +439,7 @@ share of farm production expenses.
 \begin{table}[ht]
 	\centering
 	\small
-	\input{../outputs/tables/table_fisher_price_dd.tex}
+	\resizebox{\linewidth}{!}{\input{../outputs/tables/table_fisher_price_dd.tex}}
 	\caption{Exploratory reduced-form estimates for the county Fisher agricultural price index.}
 	\label{tab:price-results}
 \end{table}
@@ -440,7 +447,7 @@ share of farm production expenses.
 \begin{table}[ht]
 	\centering
 	\small
-	\input{../outputs/tables/table_laborshare_dd.tex}
+	\resizebox{\linewidth}{!}{\input{../outputs/tables/table_laborshare_dd.tex}}
 	\caption{Exploratory reduced-form estimates for labor's share of farm production expenses.}
 	\label{tab:laborshare-results}
 \end{table}

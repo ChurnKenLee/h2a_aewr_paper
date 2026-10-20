@@ -1,77 +1,86 @@
 # Panel IV
 
-This branch consumes `data/processed/county_year_panel.parquet`, constructs
-the panel-IV instruments and analysis panel, and produces the retained
-estimates and diagnostics.
+This branch estimates the original moving-wage panel IV from the design-neutral
+shared panel. All stages, numerical helpers, and tests are R. The fixed-wage
+revision and subsequent separation/innovation exercises have been retired and
+their generated artifacts deleted at the user's request. Stages 10--11 add a
+user-requested Kitagawa decomposition diagnostic of the retained instruments;
+they do not change any retained instrument, column or table.
 
 ## Run
 
-From the repository root:
+From the repository root in the configured direnv/devenv environment:
 
 ```sh
+DRY_RUN=1 ./scripts/run_panel_iv.sh
 ./scripts/run_panel_iv.sh
 ```
 
-## Order and artifacts
+The runner uses `Rscript --vanilla` and the existing project R library. It reads
+local inputs and does not acquire source data. Run the shared-panel producer
+first when its inputs have changed.
 
-| Script | Principal output |
+## Order and ownership
+
+| Stage | Principal outputs |
 | --- | --- |
-| `01_build_county_features.R` | `panel_iv_county_features.parquet` |
-| `02_cluster_target_units.R` | Fixed target/donor subregions and cluster map |
-| `03_build_fls_frame.py` | `panel_iv_fls_frame.parquet` |
-| `04_recover_fls_geography.py` | County-keyed features, soft-entropy weights, moment diagnostics, and deterministic draws |
+| `01_build_county_features.R` | County clustering features |
+| `02_cluster_target_units.R` | Fixed target/donor clusters and map |
+| `03_build_fls_frame.R` | `panel_iv_fls_frame.parquet` and frame diagnostics |
+| `04_recover_fls_geography.R` | County features, deterministic weights, calibration and moment diagnostics |
 | `05_construct_instruments.R` | County donor frame and cluster-year instruments |
 | `06_build_county_year_panel.R` | `data/processed/panel_iv_county_year.parquet` |
-| `07_estimate_panel_iv.R` | First stages, 2SLS tables, diagnostics, summary statistics, and email-ready PDF/CSVs |
-| `08_generate_figures.R` | QCEW-feature/FLS/OEWS-proxy diagnostic figures and plotting-data CSVs |
-| `09_validate_artifacts.py` | Source, calibration, wage-proxy, timing, sample, and retained-table contracts |
+| `07_estimate_panel_iv.R` | Four-column first stages and twelve-outcome 2SLS tables, samples, summary statistics and email exports |
+| `08_generate_figures.R` | Six retained diagnostic figures and plotting-data CSVs |
+| `09_validate_artifacts.R` | Source, calibration, instrument, sample and retained-output checks |
+| `10_decompose_instruments.R` | `panel_iv_instrument_decomposition_cluster_year.parquet` and `iv_instrument_decomposition_support.csv` |
+| `11_estimate_instrument_decomposition.R` | `iv_instrument_decomposition_{first_stage,variance,second_stage,overidentification}.csv` and two `table_iv_instrument_decomposition_*.tex` tables |
 
-Retained products are written under `outputs/tables` and `outputs/figures`.
-`panel_iv_email_results.pdf` contains one landscape page per specification,
-with outcomes in columns. Four matching
-`panel_iv_email_results_spec*.csv` files provide editable transposed tables.
+`frame.R` owns the rolling Census/QCEW/QWI/BEA prior. `calibration.R` owns moment
+construction and deterministic entropy recovery. `io.R` provides atomic writes
+and partial-rebuild schema guards. `validation.R` checks retained artifacts.
+`estimation_spec.json`, read by `specification.R`, is the single model/outcome
+registry. `design.R` owns the target/donor and calibration constants.
+`decomposition.R` owns the decomposition constants, the Kitagawa identity, the
+Anderson-Rubin set and the cluster-robust Hansen J.
 
-## Instrument contract
+`census_farm_floor_selection.csv` records the original source-row choices for
+the all-domain Census farm floor. `census_farm_floor_source.json` fingerprints
+the local QuickStats input. Stage 03 verifies both before use and fails if the
+source changes; review the selection before rebuilding with refreshed data.
+These explicit choices preserve the former Polars tie ordering without a
+Python dependency. They are not a corrected TOTAL-domain farm count.
 
-The Census hired-worker benchmark supplies a county prior. Annual county paths
-use disclosed all-ownership QCEW 111+112 employment first, QWI next, and BEA
-hired-farm jobs last, followed by state raking. One normalized county-weight
-distribution is estimated per AEWR region and source year for each
-specification; the four survey weeks never receive separate distributions and
-FLS worker totals never set regional employment levels.
+Stage 04 accepts `--years 2010 2011` and `--regions 1 2` for partial rebuilds.
+Use the runner's existing helper so the configured R library is available:
 
-The wage-only specification softly targets annual FLS combined
-field/livestock wages using county-mapped OEWS hourly wages. The preferred
-specification adds three independent FLS-worker/QCEW-employment seasonal
-contrasts and one undivided field/livestock composition residual per quarter:
-
-```text
-(FLS field wage - FLS combined wage) * QCEW 111 employment
-+ (FLS livestock wage - FLS combined wage) * QCEW 112 employment
+```sh
+source scripts/pipeline_helpers.sh
+run_step code/designs/panel_iv/04_recover_fls_geography.R --years 2010 2011 --regions 1 2
 ```
 
-Every active moment is standardized under the county prior; zero-variation or
-unavailable published moments remain explicit inactive diagnostics. USDA did
-not conduct the April 2011 FLS survey, so the corresponding seasonal contrast
-and composition moment are inactive rather than imputed.
+A complete stage 03--09 rebuild is required when migrating from the former
+simulation-bearing artifacts. Stage 04 writes `calibration_version =
+panel_iv_deterministic_v1`; a partial rebuild rejects incompatible retained
+cells before writing. There are no draw partitions, simulation envelopes,
+random-stream adapters, or simulated-draw success guards. Deterministic
+convergence, normalization, moment-fit and coverage checks remain mandatory.
+After changing the frame or calibration, rebuild every downstream stage.
 
-Donor wage levels use only the shared county-mapped OEWS-area Big-Six mean
-hourly-wage proxy. This is a reporting-area local-labor-market measure assigned
-through the shared county mapping, not a direct county farm-wage observation.
-QCEW remains primary for the county employment path, quarterly seasonality,
-and field/livestock composition; QCEW wage bills and BEA wages are not donor
-wage fallbacks. The source-year hourly proxy is PPI-deflated, donor county
-weights are restricted and renormalized after the existing target-area overlap
-exclusion, and policy year always equals source year plus one.
-
-The retained instrument fields are `z_wage_only_real` and
-`z_wage_seasonal_composition_real`. Columns 1--4 remain wage-only,
+The retained instruments are `z_wage_only_real` and
+`z_wage_seasonal_composition_real`. Columns 1--4 are wage-only,
 seasonal/composition, wage-only with controls, and seasonal/composition with
-controls; column 4 remains preferred.
+controls; column 4 remains preferred. The original input construction and
+samples are preserved, including reviewed v2 linked-worksite-business counts.
 
-## Design documentation
+## Validation
 
-Instrument construction, controls, samples, inference, preferred
-specifications, outcomes, and the complete retained-output inventory are
-documented in the grounded
-[panel-IV design](../../../content/designs/panel-iv.md).
+Run the five `tests/test_*.R` files with `run_step` or configured
+`Rscript --vanilla`. They cover calibration, frame completeness, geographic
+keys, atomic writes, partial rebuilds, outcome definitions, donor wages and
+the decomposition identity, AR sets and Hansen J.
+Stage 09 independently checks artifacts. No Python or project C adapter is
+needed by this branch.
+
+See the [canonical design](../../../content/designs/panel-iv.md) for the
+estimand, moment definitions, source limitations and retained products.

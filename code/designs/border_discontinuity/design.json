@@ -1,0 +1,301 @@
+{
+  "design_id": "border_redesign_v6",
+  "feature_start_year": 2008,
+  "feature_end_year": 2010,
+  "placebo_start_year": 2008,
+  "placebo_end_year": 2010,
+  "policy_start_year": 2011,
+  "policy_end_year": 2022,
+  "outcome": "h2a_cert_share_farm_workers_2011_start_year",
+  "treatment": "aewr_ppi",
+  "caliper_quantile": 0.9,
+  "agricultural_county_pair_filter": {
+    "filter_unit": "cross_border_county_pair",
+    "cropland_year": 2007,
+    "farm_employment_start_year": 2008,
+    "farm_employment_end_year": 2010,
+    "minimum_county_cropland_share": 0.075,
+    "minimum_county_farm_employment_per_100_square_miles": 30.0,
+    "minimum_county_measurement_coverage": 0.9
+  },
+  "ring_bandwidths": [
+    0,
+    1,
+    2
+  ],
+  "primary_ring_bandwidth": 1,
+  "baseline_control_columns": [
+    "ln_pop_census",
+    "farm_emp_share",
+    "emp_pop_ratio",
+    "wage_p10"
+  ],
+  "diagnostic_margin_columns": {
+    "requested_positions": "nbr_workers_requested_start_year",
+    "certified_positions": "nbr_workers_certified_start_year",
+    "applications": "nbr_applications_start_year",
+    "balanced_linked_worksite_businesses": "nbr_employers_balanced_start_year",
+    "baseline_farm_employment": "emp_farm_2011"
+  },
+  "employer_linkage": {
+    "unit": "worksite_business",
+    "version": "v2",
+    "input_max_year": 2024,
+    "review_status": "complete"
+  },
+  "bootstrap": {
+    "method": "WCR11-FNW",
+    "bootstrap_type": "fnw11",
+    "weights": "webb",
+    "repetitions": 9999,
+    "seed": 201103,
+    "cluster": "region_pair_id",
+    "confidence_level": 0.95
+  },
+  "two_way_cluster_sensitivity": {
+    "method": "CRV1",
+    "clusters": [
+      "region_pair_id",
+      "aewr_region_id"
+    ],
+    "confidence_level": 0.95
+  },
+  "geography_specs": [
+    {
+      "spec_id": "ring_h0_disjoint",
+      "family": "ring",
+      "membership_mode": "disjoint",
+      "role": "benchmark",
+      "ring_bandwidth": 0
+    },
+    {
+      "spec_id": "ring_h1_disjoint",
+      "family": "ring",
+      "membership_mode": "disjoint",
+      "role": "legacy_primary_benchmark",
+      "ring_bandwidth": 1
+    },
+    {
+      "spec_id": "ring_h2_disjoint",
+      "family": "ring",
+      "membership_mode": "disjoint",
+      "role": "sensitivity",
+      "ring_bandwidth": 2
+    },
+    {
+      "spec_id": "ring_h1_stacked",
+      "family": "ring",
+      "membership_mode": "stacked",
+      "role": "sensitivity",
+      "ring_bandwidth": 1
+    },
+    {
+      "spec_id": "ring_h1_screened_disjoint",
+      "family": "ring",
+      "membership_mode": "disjoint",
+      "role": "redesign_candidate",
+      "ring_bandwidth": 1,
+      "all_member_agricultural_screen": true,
+      "strict_retained_locality": true
+    },
+    {
+      "spec_id": "ring_h1_screened_region_disjoint",
+      "family": "ring",
+      "membership_mode": "disjoint",
+      "role": "independent_region_sensitivity",
+      "ring_bandwidth": 1,
+      "all_member_agricultural_screen": true,
+      "strict_retained_locality": true,
+      "region_disjoint_matching": true
+    }
+  ],
+  "diagnostic_audit": {
+    "primary_spec_id": "ring_h1_disjoint",
+    "annual_start_year": 2008,
+    "annual_end_year": 2022,
+    "leave_one_border_pair_out": true,
+    "cluster_jackknife_method": "CV3J",
+    "cluster_jackknife_confidence_level": 0.95
+  },
+  "benchmark_design_id": "border_ring_experiment_v5",
+  "benchmark_geography_ids": [
+    "ring_h0_disjoint",
+    "ring_h1_disjoint",
+    "ring_h2_disjoint",
+    "ring_h1_stacked"
+  ],
+  "redesign": {
+    "registry_frozen_before_new_policy_fits": "2026-09-07",
+    "research_status": "exploratory_redesign_informed_by_v5_outcomes_not_preregistered",
+    "selection_rule": "Use the all-member screened, strictly local one-ring comparison as the structural candidate; do not choose by coefficients or p-values. Empirical adequacy separately requires defensible conditional gap trends and dependence, informative confidence sets, and simulated size/power. Retain every candidate and failed gate.",
+    "candidate_spec_id": "ring_h1_screened_disjoint",
+    "region_disjoint_spec_id": "ring_h1_screened_region_disjoint",
+    "matching_rule": "maximum_cardinality_then_maximum_eligible_core_edges_then_lexicographic_pair_ids; frozen geography only",
+    "all_member_screen": "same_thresholds_as_endpoint_screen_before_assignment; prune_to_surviving_qualifying_edges_within_own_region_h1_and_opposite_core_feature_caliper",
+    "models": [
+      {
+        "model_id": "screened_h1__base",
+        "spec_id": "ring_h1_screened_disjoint",
+        "weight_spec": "equal_county",
+        "control_spec": "none",
+        "role": "structural_candidate"
+      },
+      {
+        "model_id": "screened_h1__preemployment_weight",
+        "spec_id": "ring_h1_screened_disjoint",
+        "weight_spec": "baseline_farm_employment",
+        "control_spec": "none",
+        "role": "weight_sensitivity"
+      },
+      {
+        "model_id": "screened_h1__baseline_history",
+        "spec_id": "ring_h1_screened_disjoint",
+        "weight_spec": "equal_county",
+        "control_spec": "baseline_outcome_trend",
+        "role": "precision_sensitivity"
+      },
+      {
+        "model_id": "screened_h1__region_disjoint",
+        "spec_id": "ring_h1_screened_region_disjoint",
+        "weight_spec": "equal_county",
+        "control_spec": "none",
+        "role": "independent_region_sensitivity"
+      }
+    ],
+    "unchanged_estimand_fields": {
+      "outcome": "h2a_cert_share_farm_workers_2011_start_year",
+      "treatment": "aewr_ppi",
+      "treatment_units": "one_2012_dollar_per_hour",
+      "years": [
+        2011,
+        2022
+      ],
+      "denominator": "fixed_2011_farm_employment",
+      "fixed_effects": [
+        "county",
+        "stratum_year"
+      ]
+    },
+    "precision_assumptions": {
+      "effect_per_1000_farm_workers_per_dollar": [
+        5,
+        10,
+        20
+      ],
+      "beta_magnitudes": [
+        0.005,
+        0.01,
+        0.02
+      ],
+      "alpha": 0.05,
+      "target_power": 0.8,
+      "primary_threshold_beta": 0.01,
+      "size_maximum": 0.075,
+      "note": "Substantive working assumptions, not user-supplied thresholds; signed injected alternatives, never observed-effect post-hoc power."
+    },
+    "power": {
+      "seed": 201103,
+      "repetitions": 999,
+      "ar1": 0.5,
+      "nthreads": 1,
+      "scale_information": "2008_2010_FE_only_outcome_RSS_primary; policy_full_model_residual_scale_explicit_sensitivity",
+      "dgp_ids": [
+        "county_serial",
+        "shared_region_serial",
+        "shared_region_and_pair_serial",
+        "spatial_region_serial"
+      ],
+      "effect_grid": [
+        0,
+        0.005,
+        -0.005,
+        0.01,
+        -0.01,
+        0.02,
+        -0.02,
+        0.04,
+        -0.04,
+        0.08,
+        -0.08
+      ],
+      "calibration_repetitions": 999,
+      "chunk_size": 100,
+      "spatial_graph_coefficient": 0.4,
+      "variance_fractions": {
+        "county_serial": {
+          "region": 0,
+          "pair": 0,
+          "county": 1
+        },
+        "shared_region_serial": {
+          "region": 0.5,
+          "pair": 0,
+          "county": 0.5
+        },
+        "shared_region_and_pair_serial": {
+          "region": 0.25,
+          "pair": 0.25,
+          "county": 0.5
+        },
+        "spatial_region_serial": {
+          "region": 0.5,
+          "pair": 0.25,
+          "county": 0.25
+        }
+      },
+      "mde_grid_step": 0.001,
+      "mde_grid_max": 0.2,
+      "size_gate": "upper_Wilson_95_percent_bound_at_null_lte_0.075",
+      "bootstrap_simulation_repetitions": 199,
+      "bootstrap_simulation_status": "run_only_if_equivalence_test_matches_locked_package",
+      "preperiod_calibration_projection": "unit_and_stratum_year_FE_only_no_wage_regressor",
+      "bootstrap_model_ids": [
+        "ring_h1_disjoint__base",
+        "screened_h1__base",
+        "screened_h1__region_disjoint"
+      ],
+      "bootstrap_effect_grid": [
+        0,
+        0.005,
+        -0.005,
+        0.01,
+        -0.01,
+        0.02,
+        -0.02
+      ]
+    },
+    "inference": {
+      "comparators": [
+        "pair_CRV1",
+        "pair_WCR11_FNW",
+        "pair_CV3J",
+        "pair_region_CRV1"
+      ],
+      "added": [
+        "shared_endpoint_dyadic_sandwich",
+        "delete_region_with_all_incident_pairs_influence"
+      ],
+      "dyadic_reference": "t_with_region_count_minus_one_is_small_sample_sensitivity_not_exact",
+      "negative_variance": "retain_raw_and_mark_unavailable_no_silent_PSD_repair",
+      "randomization_inference": "not_justified_no_assignment_mechanism"
+    },
+    "unimplemented_menu_disposition": {
+      "gap_panel": "Algebraically equivalent gap changes audit; no claim of new policy assignments.",
+      "bite": "No observed prepolicy agricultural hourly wage distribution; nonfarm proxy changes estimand and exclusion assumptions, not selected.",
+      "finer_units": "County adjacency/aggregates cannot identify pointwise spatial RD; worksite-distance panel and valid policy innovations needed.",
+      "extra_years": "Existing common panel 2008-2022; 2023 occupation-specific rule is a new regime and requires new aligned data."
+    },
+    "preanalysis_wage_audit": {
+      "excluded_years": [
+        2009
+      ],
+      "reason": "source_special_case_uses_average_certified_application_wages_not_statutory_AEWR",
+      "new_diagnostic_years": [
+        2008,
+        2010
+      ],
+      "legacy_audit": "preserved_contaminated_benchmark_not_valid_policy_placebo",
+      "source": "https://www.govinfo.gov/content/pkg/FR-2010-02-12/pdf/2010-2731.pdf"
+    }
+  }
+}
