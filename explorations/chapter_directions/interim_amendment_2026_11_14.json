@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-14",
+  "authorization": "User: partial window estimates are unavoidable. what 2025 files do you need? This supersedes the earlier prohibition on interim outcome access and partial-window estimates.",
+  "timing": "Declared before opening any post-policy earnings. Earlier wage and pre-policy earnings results were already inspected. Original registries and frozen implementation hashes remain intact as historical records.",
+  "files": "Use the existing public 2025 and 2026 quarterly single-file ZIPs under data/raw/qcew_episode_2025_2026, verifying their acquisition manifest hashes. Use existing pre-2025 extracts for prior-year comparisons. No new download is required if quarter coverage passes.",
+  "interim_primary": "Mean YoY log earnings change over 2025Q4 and 2026Q1, requiring both current and prior quarters for each county. If either quarter is absent globally, stop rather than silently selecting another window.",
+  "quarter_diagnostics": "Report 2025Q4 and 2026Q1 separately using each quarter's eligible sample. Also report the primary crop slope for each quarter on the common two-quarter sample.",
+  "preserved": "Private NAICS 111 average weekly earnings, original frozen 2022-2024 H-2A intensity and statutory dose, intensity control and state effects, equal county weights, state deletion jackknife t(G-1). Require positive disclosed earnings and employment >=10 in every required quarter; states have >=2 eligible counties.",
+  "sensitivities": "For crop, retain employment weights, H-2A cash dose, commuting-zone exposure, no-intensity-control specification, and frozen covered/excluded/ambiguous UI splits. All-private and animal-production primary-model diagnostics use the same three interim windows.",
+  "lead": "Complete the previously registered full prior-window lead, 2024Q4-2025Q2 against the year before, for the five crop specifications using the cached annual files.",
+  "matched_placebos": "Run primary crop specification for the same Q4/Q1 two-quarter window in placebo event years 2016-2024. Retain every result.",
+  "QWI": "Run the five secondary crop specifications for the same two-quarter interim window only if the existing source-owned QWI panel contains both current and prior quarters. Otherwise record unavailable coverage; do not substitute a different period.",
+  "vintage": "Cached QCEW ZIPs retrieved 2026-11-14 UTC, source Last-Modified 2026-08-21. Record hashes of every extract and archive. This is an explicitly labeled cached-vintage interim estimate; the full-window estimate remains a later update.",
+  "interpretation": "Exploratory interim evidence. It changes the outcome time window and eligible sample. Quarter-specific estimates and later updates are multiple looks and are not independent confirmatory replications. The future full-window earnings outcome is no longer wholly uninspected after this run.",
+  "reporting": "Retain the earlier report as a historical pre-interim assessment; generate a separate interim report and complete result ledger. No result-based specification selection. No automatic scheduling."
+}

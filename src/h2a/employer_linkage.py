@@ -25,7 +25,7 @@ from rapidfuzz import fuzz
 LINKAGE_UNIT: Final = "worksite_business"
 LINKAGE_VERSION: Final = "v2"
 INPUT_MIN_YEAR: Final = 2008
-INPUT_MAX_YEAR: Final = 2024
+INPUT_MAX_YEAR: Final = 2026
 AS_OF_YEAR: Final = 2022
 REVIEW_SEED: Final = 1729
 REVIEW_ACCEPTED_COUNT: Final = 140
@@ -892,6 +892,11 @@ def link_employer_records(
         for index in group[1:]:
             attempt(group[0], index, "exact_fein", all_tiers, score=100, threshold=100)
 
+    # Shared-contact groups. Every all-tier exact rule runs for both contact
+    # types before any balanced-only similar-name rule, so a fuzzy merge cannot
+    # pull a record into another FEIN's cluster ahead of its exact links and
+    # break the nesting of the conservative partition within the balanced one.
+    contact_groups_to_link: list[tuple[str, list[int]]] = []
     for contact_column, contact_label in (
         ("normalized_full_address", "address"),
         ("normalized_phone", "phone"),
@@ -924,68 +929,71 @@ def link_employer_records(
                             )
                         )
                 continue
+            contact_groups_to_link.append((contact_label, group))
 
-            exact_groups: dict[str, list[int]] = defaultdict(list)
-            for index in group:
-                for alias in aliases[index]:
-                    exact_groups[alias].append(index)
-            for alias in sorted(exact_groups):
-                exact_group = sorted(
-                    set(exact_groups[alias]),
-                    key=lambda i: rows[i]["employer_record_id"],
-                )
-                for index in exact_group[1:]:
-                    uses_dba = alias in {
-                        rows[exact_group[0]]["normalized_trade_name"],
-                        rows[index]["normalized_trade_name"],
-                    }
-                    rule = (
-                        f"exact_dba_exact_{contact_label}"
-                        if uses_dba
-                        else f"exact_name_exact_{contact_label}"
-                    )
-                    attempt(
-                        exact_group[0], index, rule, all_tiers, score=100, threshold=100
-                    )
-
-            representatives: dict[tuple[str, str], int] = {}
-            for index in group:
-                fein = str(rows[index]["normalized_fein"])
-                for alias in aliases[index]:
-                    key = (alias, fein)
-                    current = representatives.get(key)
-                    if current is None or rows[index]["employer_record_id"] < rows[
-                        current
-                    ]["employer_record_id"]:
-                        representatives[key] = index
-            entries = sorted(
-                ((alias, index) for (alias, _), index in representatives.items()),
-                key=lambda item: (item[0], rows[item[1]]["employer_record_id"]),
+    for contact_label, group in contact_groups_to_link:
+        exact_groups: dict[str, list[int]] = defaultdict(list)
+        for index in group:
+            for alias in aliases[index]:
+                exact_groups[alias].append(index)
+        for alias in sorted(exact_groups):
+            exact_group = sorted(
+                set(exact_groups[alias]),
+                key=lambda i: rows[i]["employer_record_id"],
             )
-            for position, (left_alias, left) in enumerate(entries):
-                for right_alias, right in entries[position + 1 :]:
-                    if left == right or left_alias == right_alias:
-                        continue
-                    score = float(fuzz.WRatio(left_alias, right_alias))
-                    rule = f"similar_name_exact_{contact_label}"
-                    if score >= BALANCED_CONTACT_SIMILARITY:
-                        attempt(
-                            left,
-                            right,
-                            rule,
-                            balanced_tiers,
-                            score=score,
-                            threshold=BALANCED_CONTACT_SIMILARITY,
-                        )
-                    else:
-                        reject_near_threshold(
-                            left,
-                            right,
-                            rule,
-                            balanced_tiers,
-                            score,
-                            BALANCED_CONTACT_SIMILARITY,
-                        )
+            for index in exact_group[1:]:
+                uses_dba = alias in {
+                    rows[exact_group[0]]["normalized_trade_name"],
+                    rows[index]["normalized_trade_name"],
+                }
+                rule = (
+                    f"exact_dba_exact_{contact_label}"
+                    if uses_dba
+                    else f"exact_name_exact_{contact_label}"
+                )
+                attempt(
+                    exact_group[0], index, rule, all_tiers, score=100, threshold=100
+                )
+
+    for contact_label, group in contact_groups_to_link:
+        representatives: dict[tuple[str, str], int] = {}
+        for index in group:
+            fein = str(rows[index]["normalized_fein"])
+            for alias in aliases[index]:
+                key = (alias, fein)
+                current = representatives.get(key)
+                if current is None or rows[index]["employer_record_id"] < rows[
+                    current
+                ]["employer_record_id"]:
+                    representatives[key] = index
+        entries = sorted(
+            ((alias, index) for (alias, _), index in representatives.items()),
+            key=lambda item: (item[0], rows[item[1]]["employer_record_id"]),
+        )
+        for position, (left_alias, left) in enumerate(entries):
+            for right_alias, right in entries[position + 1 :]:
+                if left == right or left_alias == right_alias:
+                    continue
+                score = float(fuzz.WRatio(left_alias, right_alias))
+                rule = f"similar_name_exact_{contact_label}"
+                if score >= BALANCED_CONTACT_SIMILARITY:
+                    attempt(
+                        left,
+                        right,
+                        rule,
+                        balanced_tiers,
+                        score=score,
+                        threshold=BALANCED_CONTACT_SIMILARITY,
+                    )
+                else:
+                    reject_near_threshold(
+                        left,
+                        right,
+                        rule,
+                        balanced_tiers,
+                        score,
+                        BALANCED_CONTACT_SIMILARITY,
+                    )
 
     location_entries: list[tuple[str, str, str, str, int]] = []
     location_representatives: dict[tuple[str, str, str, str], int] = {}
@@ -1789,7 +1797,7 @@ def build_review_report(labeled_sample: pl.DataFrame) -> tuple[pl.DataFrame, str
 
 
 def _add_provenance(
-    frame: pl.DataFrame, review_report_hash: str
+    frame: pl.DataFrame, review_report_hash: str, review_status: str = "complete"
 ) -> pl.DataFrame:
     return frame.with_columns(
         pl.lit(LINKAGE_UNIT).alias("employer_linkage_unit"),
@@ -1797,7 +1805,7 @@ def _add_provenance(
         pl.lit(INPUT_MAX_YEAR, dtype=pl.Int32).alias(
             "employer_linkage_input_max_year"
         ),
-        pl.lit("complete").alias("employer_linkage_review_status"),
+        pl.lit(review_status).alias("employer_linkage_review_status"),
         pl.lit(review_report_hash).alias("employer_linkage_review_report_hash"),
     )
 
@@ -1822,6 +1830,44 @@ def finalize_linkage_artifacts(
         "vintage_comparison",
     ):
         finalized[name] = _add_provenance(finalized[name], report_hash)
+    return finalized
+
+
+def finalize_pending_review_linkage_artifacts(
+    artifacts: dict[str, pl.DataFrame], labels: pl.DataFrame | None
+) -> dict[str, pl.DataFrame]:
+    """Stamp artifacts as review-pending when the current sample is not fully labeled.
+
+    No precision metrics are computed. The report records how many sampled
+    pairs already carry a label, and the provenance hash identifies the
+    unlabeled sample that still needs review.
+    """
+    sample = artifacts["review_sample"]
+    labeled_ids = (
+        set(labels["pair_id"].cast(pl.String).str.strip_chars().to_list())
+        if labels is not None and "pair_id" in labels.columns
+        else set()
+    )
+    labeled_count = sum(pair_id in labeled_ids for pair_id in sample["pair_id"].to_list())
+    report = pl.DataFrame(
+        {
+            "metric_group": ["review_status", "review_status"],
+            "metric": ["sampled_pairs_labeled", "sampled_pairs_unlabeled"],
+            "stratum": ["all", "all"],
+            "sample_count": [labeled_count, sample.height - labeled_count],
+        }
+    )
+    sample_hash = hashlib.sha256(sample.write_csv().encode("utf-8")).hexdigest()
+    finalized = dict(artifacts)
+    finalized["review_report"] = report
+    for name in (
+        "crosswalk",
+        "membership",
+        "edge_audit",
+        "cluster_diagnostics",
+        "vintage_comparison",
+    ):
+        finalized[name] = _add_provenance(finalized[name], sample_hash, "pending")
     return finalized
 
 

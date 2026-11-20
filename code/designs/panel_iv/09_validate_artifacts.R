@@ -1,6 +1,7 @@
 # Validate shared-source semantics, deterministic calibration and retained IV outputs.
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
+library(dplyr)
 source(path_code("c00_shared", "geography.R"))
 source(path_code("designs", "panel_iv", "design.R"))
 source(path_code("designs", "panel_iv", "io.R"))

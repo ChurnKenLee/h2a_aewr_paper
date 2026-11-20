@@ -37,3 +37,9 @@ documents the unresolved statutory source history.
 The treatment definition, samples, fixed effects, clustering, and event-study
 interpretation are documented in the grounded
 [DiD design](../../../content/designs/difference-in-differences.md).
+
+The common input calendar is now 2008--2025. Each regression continues to use
+its existing complete-case rule, so missing source controls can shorten its
+estimation window. Event-study code applies that same rule before expanding
+year interactions: this avoids a fixest dimension error when an entire year
+has missing regressors. It does not fill controls or change the 2011 reference.

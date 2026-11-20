@@ -1,4 +1,4 @@
-# Synthetic checks for the Kitagawa decomposition, AR sets and Hansen J.
+# Synthetic checks for the Kitagawa decomposition identity.
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
 source(path_code("designs", "panel_iv", "decomposition.R"))
@@ -31,10 +31,6 @@ stopifnot(
   nrow(components) == 8L,
   isTRUE(all.equal(components$z_balanced, direct$z)),
   max(abs(components$identity_residual)) < 1e-12,
-  isTRUE(all.equal(
-    components$z_weight_shapley + components$z_wage_shapley,
-    components$z_weight + components$z_wage + components$z_interaction
-  )),
   # The weight component equals the fixed-wage aggregate up to a cluster constant.
   all(abs(tapply(
     direct$z_fixed_wage - components$z_weight,
@@ -64,31 +60,27 @@ stopifnot(inherits(
   "error"
 ))
 
-# AR sets: strong first stage is bounded and contains pi_y / pi_x; weak is not.
-strong <- iv_ar_confidence_set(2, 1, 0.04, 0.01, 0.005, qnorm(0.975)^2)
-weak <- iv_ar_confidence_set(2, 0.1, 0.04, 0.01, 0, qnorm(0.975)^2)
+# Balanced donors: a county missing eligibility in one year is dropped and the
+# remaining weights are renormalized; a group that loses a donor cluster is
+# reported unsupported and contributes no components.
+frame <- cells %>%
+  mutate(
+    donor_cluster = if_else(county_fips == "01005", 2L, 1L),
+    eligible = !(target_cluster == 1L & county_fips == "01003" & source_year == 2011L),
+    weight = raw_weight
+  )
+balanced <- iv_balanced_components(frame, "target_cluster", 2010:2013, 2L)
+first_group <- balanced$balanced %>% filter(target_cluster == 1L)
 stopifnot(
-  strong$type == "bounded",
-  strong$lower < 2, strong$upper > 2,
-  weak$type %in% c("complement_of_interval", "unbounded")
+  !"01003" %in% first_group$county_fips,
+  all(abs(tapply(first_group$decomposition_weight, first_group$source_year, sum) - 1) < 1e-12),
+  all(balanced$supported_groups$decomposition_supported),
+  nrow(balanced$components) == 8L
 )
-
-# Hansen J: valid overidentifying instruments rarely reject; first-step 2SLS
-# matches the closed form.
-n <- 4000L
-cluster <- rep(seq_len(200L), each = n / 200L)
-z <- cbind(rnorm(n), rnorm(n))
-error <- rnorm(n)
-x <- z %*% c(1, 0.8) + 0.5 * error + rnorm(n)
-y <- 1.5 * x + error
-valid <- iv_cluster_hansen_j(as.vector(y), x, z, cluster)
-invalid <- iv_cluster_hansen_j(as.vector(y + 0.5 * z[, 2]), x, z, cluster)
-projection <- z %*% solve(crossprod(z), crossprod(z, x))
+one_cluster <- frame %>% mutate(eligible = eligible & !(target_cluster == 2L & county_fips == "01005"))
+unsupported <- iv_balanced_components(one_cluster, "target_cluster", 2010:2013, 2L)
 stopifnot(
-  abs(valid$beta_2sls - sum(projection * y) / sum(projection * x)) < 1e-10,
-  abs(valid$beta_2sls - 1.5) < 0.1,
-  valid$df == 1L,
-  invalid$p_value < 0.001
+  identical(unsupported$supported_groups$decomposition_supported, c(TRUE, FALSE)),
+  all(unsupported$components$target_cluster == 1L)
 )
-
-message("Panel-IV decomposition tests passed")
+message("Decomposition tests passed")

@@ -1,4 +1,4 @@
-# Purpose: Construct county-weighted Panel-IV OEWS hourly-wage instruments.
+# Purpose: Construct the county-weighted Panel-IV OEWS hourly-wage instrument.
 # Inputs: fixed clusters, pseudo-FLS county entropy weights, shared county
 # source fields, the Census/QCEW/QWI/BEA employment frame, and PPI.
 # Outputs:
@@ -21,16 +21,12 @@ source_years <- seq.int(
   DISSIMILARITY_IV_POLICY_END_YEAR - 1L
 )
 
-publication_specs <- tibble::tribble(
-  ~weight_specification, ~moment_spec, ~is_primary, ~instrument_spec_label,
-  DISSIMILARITY_IV_WAGE_ONLY_WEIGHT_SPECIFICATION,
-  DISSIMILARITY_IV_WAGE_ONLY_MOMENT_SPEC,
-  FALSE,
-  DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL,
-  DISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION,
-  DISSIMILARITY_IV_PRIMARY_MOMENT_SPEC,
-  TRUE,
-  DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
+# The one retained calibration and the label of its instrument.
+publication_specs <- tibble::tibble(
+  weight_specification = DISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION,
+  moment_spec = DISSIMILARITY_IV_PRIMARY_MOMENT_SPEC,
+  is_primary = TRUE,
+  instrument_spec_label = DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
 )
 
 county_panel <- read_parquet(
@@ -128,11 +124,11 @@ weight_sums <- recovered_weights %>%
     .groups = "drop"
   )
 if (
-  nrow(weight_sums) != 17L * length(source_years) * 2L ||
+  nrow(weight_sums) != 17L * length(source_years) ||
     any(abs(weight_sums$prior_sum - 1) > 1e-10) ||
     any(abs(weight_sums$calibrated_sum - 1) > 1e-10)
 ) {
-  stop("Recovered county weights must sum to one by region-year-specification.",
+  stop("Recovered county weights must sum to one by region-year.",
     call. = FALSE)
 }
 
@@ -255,7 +251,7 @@ county_donor_frame <- candidate_counties %>%
   inner_join(
     recovered_weights,
     by = c("county_fips", "aewr_region_id", "source_year"),
-    relationship = "many-to-many"
+    relationship = "many-to-one"
   ) %>%
   mutate(
     calibrated_weight_valid = is.finite(calibrated_center_weight) &

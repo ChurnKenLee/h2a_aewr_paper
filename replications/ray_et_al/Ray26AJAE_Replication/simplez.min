@@ -1,0 +1,990 @@
+#FILES
+Logical Name         In/Out Ud  Type Actual Name
+CZSETS                In     n  HAR
+ model sets
+CZDATA                In     y  HAR
+ model data
+CZPARM                In     n  HAR
+ model parameters
+REGPARM               In     n  HAR
+ model parameters
+LABMRKT               In     n  HAR
+ file to sepcify the labor market shed for mig. lab
+ESTIPARM              In     n  HAR
+ file with parameters to calibrate
+(Display)             Out    n  DIS
+(Solution)            Out    y  SL4
+(Equations)           Out    y  EQ4
+#TABFILE
+simplez.tab
+#TMDATE
+at 09:57:32 on 17-JUL-2026
+#STIFILE
+%none
+#SETS
+    6
+    1 REG                 -1  u regions
+    2 CZ                  -1  u domestic labor market shed
+    3 PR                  -1  u production regions
+    4 US_CZ               -1  u
+    5 S@US                 1  kSet with one element US, a subset of REG
+US          
+    6 US_PR               -1  u
+#VARIABLES
+        73
+    1 p_AOCROPz               -1     1 ?
+    2
+    2 p_AFNITROz              -1     1 ? nitrogen eff. index in Crop prod. by CZ (z)
+    2
+    3 p_AFLANDz               -1     1 ? land eff. index in crop prod. by CZ (z)
+    2
+    4 p_AFWATERz              -1     1 ? aggregate irrigation eff. index in crop prod. by CZ (z)
+    2
+    5 p_AFWATSGz              -1     1 ? water eff. index in crop prod. by CZ (z)
+    2
+    6 p_AFWEQPTz              -1     1 ? water equipment eff. index in crop prod. by CZ (z)
+    2
+    7 p_AFLABORz              -1     1 ? Labor eff. index in crop prod. by CZ (z)
+    2
+    8 p_AFNLABORz             -1     1 ? Non-labor eff. index in crop prod. by CZ (z)
+    2
+    9 p_AFNLANDz              -1     1 ? NonLand eff. index in crop prod. by CZ (z)
+    2
+   10 p_AFLANDWTRz            -1     1 ? Land+water eff. index in crop prod. by CZ (z)
+    2
+   11 p_AFNITROa              -1     1 ? N Fert eff. index in crop prod. by PR
+    3
+   12 p_AFNLANDa              -1     1 ? NonLand eff. index in crop prod. by PR
+    3
+   13 p_AFLABORa              -1     1 ? Labor eff. index in crop prod. by PR
+    3
+   14 p_AFNLABORa             -1     1 ? Non-labor eff. index in crop prod. by PR
+    3
+   15 p_AFLANDWTRa            -1     1 ? Land+water eff. index in crop prod. by PR
+    3
+   16 p_AOCROPr               -1     1 ? input-neutral eff. index in Crop prod. by reg
+    1
+   17 p_AFNITROr              -1     1 ? nitrogen eff. index in Crop prod. by reg
+    1
+   18 p_AFLANDr               -1     1 ? land eff. index in crop prod. by reg
+    1
+   19 p_AFWATERr              -1     1 ? aggregate irrigation eff. index in crop prod. by reg
+    1
+   20 p_AFWATSGr              -1     1 ? water eff. index in crop prod. by reg
+    1
+   21 p_AFWEQPTr              -1     1 ? water equipment eff. index in crop prod. by reg
+    1
+   22 p_AFLABORr              -1     1 ? Labor eff. index in crop prod. by PR
+    1
+   23 p_AFNLABORr             -1     1 ? Non-labor eff. index in crop prod. by PR
+    1
+   24 p_AFNLANDr              -1     1 ? NonLand eff. index in crop prod. by reg
+    1
+   25 p_AFLANDWTRr            -1     1 ? Land+water eff. index in crop prod. by reg
+    1
+   26 p_AFLABOR               -1     1 ? Labor eff. index in crop prod. by CZ (z)
+    2
+   27 p_AFNLABOR              -1     1 ? Non-labor eff. index in crop prod. by CZ (z)
+    2
+   28 p_AFLANDWTR             -1     1 ? Land+water eff. index in crop prod. by CZ (z)
+    2
+   29 s_QLANDz                -1     1 ? Slack to control cropland by CZ (z)
+    2
+   30 s_QWATERz               -1     1 ? Slack to control water use by CZ (z)
+    2
+   31 s_PCROPz                -1     1 ? dictate CZ level crop price
+    2
+   32 s_QAUGLANDz             -1     1 ?
+    2
+   33 s_QLABORz               -1     1 ?
+    2
+   34 s_QLABORa               -1     1 ?
+    3
+   35 s_QLABOR                -1     1 ?
+    2
+   36 p_QLANDz                -1     1 ? cropland area by a (z) (1000 HA)
+    2
+   37 p_QLABORz               -1     1 ? Labor in a commuting zone (in 1000 hours)
+    2
+   38 p_PCROPz                -1     1 ? price of crops by CZ ($/kg corn-eq)
+    2
+   39 p_QCROPz                -1     1 ? crop output by CZ    (1000 kg)
+    2
+   40 p_PLANDz                -1     1 ? price of cropland by CZ
+    2
+   41 p_PAUGLANDz             -1     1 ? price of aug. land by CZ
+    2
+   42 p_QAUGLANDz             -1     1 ? quantity of aug. land by CZ
+    2
+   43 p_PLANDWTRz             -1     1 ? price of land+irrig by CZ
+    2
+   44 p_QLANDWTRz             -1     1 ? quantity of land+irrig by CZ
+    2
+   45 p_PWATERz               -1     1 ? price of water+eqpt by CZ
+    2
+   46 p_QWATERz               -1     1 ? quantity of water+eqpt by CZ
+    2
+   47 p_VCROPz                -1     1 ?
+    2
+   48 t_PAUGLANDz             -1     1 ?
+    2
+   49 t_PNITROz               -1     1 ?
+    2
+   50 t_PNLABORz              -1     1 ?
+    2
+   51 p_QNLABORz              -1     1 ? Change in use of non-labor in a CZ
+    2
+   52 p_PNLABORz              -1     1 ? Change in cost of non-labor in a CZ
+    2
+   53 p_PLABORz               -1     1 ? Change in wages in a CZ
+    2
+   54 p_VLABORz               -1     1 ?
+    2
+   55 p_PLABORa               -1     1 ?
+    3
+   56 p_QLABORa               -1     1 ?
+    3
+   57 p_VLABORa               -1     1 ?
+    3
+   58 p_VLANDz                -1     1 ?
+    2
+   59 p_PLANDa                -1     1 ?
+    3
+   60 p_QLANDa                -1     1 ?
+    3
+   61 p_VLANDa                -1     1 ?
+    3
+   62 p_VNLABORz              -1     1 ?
+    2
+   63 p_PNLABORa              -1     1 ?
+    3
+   64 p_QNLABORa              -1     1 ?
+    3
+   65 p_VNLABORa              -1     1 ?
+    3
+   66 p_VAUGLANDz             -1     1 ?
+    2
+   67 p_PAUGLANDa             -1     1 ?
+    3
+   68 p_QAUGLANDa             -1     1 ?
+    3
+   69 p_VAUGLANDa             -1     1 ?
+    3
+   70 p_VLANDWTRz             -1     1 ?
+    2
+   71 p_PLANDWTRa             -1     1 ?
+    3
+   72 p_QLANDWTRa             -1     1 ?
+    3
+   73 p_VLANDWTRa             -1     1 ?
+    3
+#VCSTAT
+cccccccccccccccccccccccccccccccccccccccc
+ccbcbcccccccccccccccccccccccccccc
+#VCTP
+pppppppppppppppppppppppppppppppppppppppp
+ppppppppppppppppppppppppppppppppp
+#SUBSETS
+     3
+     1     4     2
+     2     5     1
+     3     6     3
+#COEFFICIENTS
+   69
+    1 CZ2REG          1 i y r
+    2 m    2    1
+    2 CZ2PR           1 i y r
+    2 m    2    3
+    3 PR2REG          1 i y r
+    3 m    3    1
+    4 QLANDz          1 r y y  cropland area by a (z) (1000 HA)
+    2
+    5 QLABORz         1 r y y  Labor in a commuting zone (in 1000 hours)
+    2
+    6 PCROPz          1 r n n  price of crops by CZ ($/kg corn-eq)
+    2
+    7 QCROPz          1 r y y  crop output by CZ    (1000 kg)
+    2
+    8 VLANDz          1 r y y  Val land      by a (z) (1000 USD)
+    2
+    9 VLABORz         1 r y y  Val labor     by a (z) (1000 USD)
+    2
+   10 VNLABORz        1 r y y  Val non-labor by a (z) (1000 USD)
+    2
+   11 VNITROz         1 r y y  Val nitr frt  by a (z) (1000 USD)
+    2
+   12 VWATSGz         1 r y y  Val water     by a (z) (1000 USD)
+    2
+   13 VWEQPTz         1 r y y  Val wat eqpt  by a (z) (1000 USD)
+    2
+   14 VCROPz          1 r n n  Val crop output   by z (1000 USD)
+    2
+   15 VWATERz         1 r n n  Val irrigation    by z (1000 USD)
+    2
+   16 VLNDWTRz        1 r n n  Val land+irrig    by z (1000 USD)
+    2
+   17 VNLANDz         1 r n n  Val lan+non-lab   by z (1000 USD)
+    2
+   18 VAUGLANDz       1 r n n  Val oth+lnd+irrig by z (1000 USD)
+    2
+   19 SHR_LinNLz      1 r n n  shr labor in non-land by CZ
+    2
+   20 SHR_CinNLz      1 r n n  shr capital in non-land by CZ
+    2
+   21 SHR_LABORz      1 r n n  shr labor in tot cost by CZ
+    2
+   22 SHR_NLABORz     1 r n n  shr non-labor in tot cost by CZ
+    2
+   23 SHR_LANDz       1 r n n  shr land  in tot cost by CZ
+    2
+   24 SHR_NITROz      1 r n n  shr nitr  in tot cost by CZ
+    2
+   25 SHR_WATSGz      1 r n n  shr water S+G   in tot cost by CZ
+    2
+   26 SHR_WEQPTz      1 r n n  shr water equipment in tot cost by CZ
+    2
+   27 SHR_NLANDz      1 r n n  shr non-land in tot cost by CZ
+    2
+   28 SHR_OinAUGz     1 r n n  shr oth   in aug. land by CZ (z)
+    2
+   29 SHR_LinAUGz     1 r n n  shr land  in aug. land by CZ (z)
+    2
+   30 SHR_WinAUGz     1 r n n  shr water in aug. land by CZ (z)
+    2
+   31 SHR_LinLWz      1 r n n  shr land  in land+wat+eqpt by CZ (z)
+    2
+   32 SHR_WinLWz      1 r n n  shr water in land+wat+eqpt by CZ (z)
+    2
+   33 SHR_WWinWz      1 r n n  shr wat S+G in wat+eqpt by CZ (z)
+    2
+   34 SHR_WKinWz      1 r n n  shr Weqpt in wat+eqpt by CZ (z)
+    2
+   35 SHR_QLANDz      1 r n n  quantity shr of each land type in CET by a
+    2
+   36 SHR_VLANDz      1 r n n  shr each land type in CET by a
+    2
+   37 ECROPz          1 r y r  Elas. of subs. in crop production by grid & ltype
+    2
+   38 EIRRIGz         1 r y r  Elas. of subs. between land & water by grid
+    2
+   39 EAUGLANDz       1 r y r  Elas. of subs. between humand and resources by PR
+    2
+   40 ESUB_WKz        1 r y r  Elas. of subs. in wat+eqpt CES nest by grid & ltype
+    2
+   41 EWATSGz         1 r y r  supply elas. of water by grid & ltype
+    2
+   42 ELANDz          1 r y r  supply elas. of land
+    2
+   43 ENITROr         1 r y r  supply elas. of nitrogen  by reg
+    1
+   44 EWATKLr         1 r y r  supply elas. of irrig eqpt  by reg
+    1
+   45 QWATSRFz        1 r y y  vol surface water by a (xx m3)
+    2
+   46 QWATGRDz        1 r y y  vol groundwater   by a (xx m3)
+    2
+   47 SHR_SinSGz      1 r n n  shr srf  in tot water by g&l
+    2
+   48 SHR_GinSGz      1 r n n  shr grd  in tot water by g&l
+    2
+   49 ETA_WATSRFz     1 r y r  supply elasticity of surface water
+    2
+   50 ETA_WATGRDz     1 r y r  supply elasticity of groundwater
+    2
+   51 ESUB_SGz        1 r y r  substitution elasticity between groundwater and surface water
+    2
+   52 ELABORa         1 r y r  calibrating labor ss at the CZ level
+    3
+   53 ESUB_LZa        1 r y r  Elas. of subs. bet. labor and capital in NLAND nest CZ & ltype
+    3
+   54 ENLABORr        0 r y r
+   55 QLABORa         1 r n n
+    3
+   56 VLABORa         1 r n n
+    3
+   57 SHR_QLABORz     1 r n n
+    2
+   58 QLANDa          1 r n n
+    3
+   59 VLANDa          1 r n n
+    3
+   60 VNLABORa        1 r n n
+    3
+   61 VAUGLANDa       1 r n n
+    3
+   62 VLANDWTRa       1 r n n
+    3
+   63 C00063          1 r n n Introduced during condensation
+    2
+   64 C00064          1 r n n Introduced during condensation
+    2
+   65 C00065          1 r n n Introduced during condensation
+    2
+   66 C00066          1 r n n Introduced during condensation
+    2
+   67 C00067          1 r n n Introduced during condensation
+    2
+   68 C00068          1 r n n Introduced during condensation
+    2
+   69 C00069          1 r n n Introduced during condensation
+    2
+#EQUATIONS
+   37
+    1 E_AFLABOR                  -1  1
+    2
+    2 E_AFNLABOR                 -1  1
+    2
+    3 E_AFLANDWTR                -1  1
+    2
+    4 E_SQLABOR                  -1  1
+    2
+    5 E_QLABORz                  -1  1
+    2
+    6 E_PLABORz                  -1  1
+    2
+    7 E_QNLABORz                 -1  1
+    2
+    8 E_PNLABORz                 -1  1
+    2
+    9 E_PLANDz                   -1  1
+    2
+   10 E_QLANDz                   -1  1
+    2
+   11 E_QAUGLANDz                -1  1
+    2
+   12 E_QWATERz                  -1  1
+    2
+   13 E_QLANDWTRz                -1  1
+    2
+   14 E_PAUGLANDz                -1  1
+    2
+   15 E_QCROPz                   -1  1
+    2
+   16 E_PCROPz                   -1  1
+    2
+   17 E_VCROPz                   -1  1
+    2
+   18 E_VLABORz                  -1  1
+    2
+   19 E_QLABORa                  -1  1
+    3
+   20 E_VLABORa                  -1  1
+    3
+   21 E_PLABORa                  -1  1
+    3
+   22 E_VLANDz                   -1  1
+    2
+   23 E_QLANDa                   -1  1
+    3
+   24 E_VLANDa                   -1  1
+    3
+   25 E_PLANDa                   -1  1
+    3
+   26 E_VNLABORz                 -1  1
+    2
+   27 E_VNLABORa                 -1  1
+    3
+   28 E_PNLABORa                 -1  1
+    3
+   29 E_QNLABORa                 -1  1
+    3
+   30 E_VAUGLANDz                -1  1
+    2
+   31 E_VAUGLANDa                -1  1
+    3
+   32 E_PAUGLANDa                -1  1
+    3
+   33 E_QAUGLANDa                -1  1
+    3
+   34 E_VLANDWTRz                -1  1
+    2
+   35 E_VLANDWTRa                -1  1
+    3
+   36 E_PLANDWTRa                -1  1
+    3
+   37 E_QLANDWTRa                -1  1
+    3
+#READS
+   28
+    1     1 CZ2REG            1 CZSETS               MAP6 a h     1
+     2
+    2     2 CZ2PR             5 LABMRKT              MAP4 a h     1
+     2
+    3     3 PR2REG            5 LABMRKT              MP12 a h     1
+     3
+    4     4 QLANDz            2 CZDATA               QLND a h     1
+     2
+    5     5 QLABORz           2 CZDATA               QLAB a h     1
+     2
+    6     7 QCROPz            2 CZDATA               QCRP a h     1
+     2
+    7     8 VLANDz            2 CZDATA               VLND a h     1
+     2
+    8     9 VLABORz           2 CZDATA               VLAB a h     1
+     2
+    9    10 VNLABORz          2 CZDATA               VNLB a h     1
+     2
+   10    11 VNITROz           2 CZDATA               VNIT a h     1
+     2
+   11    12 VWATSGz           2 CZDATA               VWTR a h     1
+     2
+   12    13 VWEQPTz           2 CZDATA               VWOR a h     1
+     2
+   13    37 ECROPz            3 CZPARM               ECRP a h     1
+     2
+   14    38 EIRRIGz           3 CZPARM               EIRR a h     1
+     2
+   15    39 EAUGLANDz         3 CZPARM               EAUG a h     1
+     2
+   16    40 ESUB_WKz          3 CZPARM               EWAT a h     1
+     2
+   17    41 EWATSGz           3 CZPARM               EWTR a h     1
+     2
+   18    42 ELANDz            3 CZPARM               ELND a h     1
+     2
+   19    43 ENITROr           4 REGPARM              ENTR a h     1
+     1
+   20    44 EWATKLr           4 REGPARM              EWKL a h     1
+     1
+   21    45 QWATSRFz          2 CZDATA               QSRF a h     1
+     2
+   22    46 QWATGRDz          2 CZDATA               QGRD a h     1
+     2
+   23    49 ETA_WATSRFz       3 CZPARM               ETAS a h     1
+     2
+   24    50 ETA_WATGRDz       3 CZPARM               ETAG a h     1
+     2
+   25    51 ESUB_SGz          3 CZPARM               ESW  a h     1
+     2
+   26    52 ELABORa           6 ESTIPARM             ELAB a h     1
+     3
+   27    53 ESUB_LZa          6 ESTIPARM             ESLZ a h     1
+     3
+   28    54 ENLABORr          3 CZPARM               ENL6 a h     0
+#READ(EXTRA)
+    3
+    1 el
+ REG          CZSETS               REG 
+    2 el
+ CZ           LABMRKT              CZ  
+    3 el
+ PR           LABMRKT              SMKT
+#NCVARIABLES
+   26
+   26 p_AOCROP                -1     1 s input-neutral eff. index in Crop prod. by CZ (z)
+    2
+   27 p_AFNITRO               -1     1 s nitrogen eff. index in Crop prod. by CZ (z)
+    2
+   28 p_AFLAND                -1     1 s land eff. index in crop prod. by CZ (z)
+    2
+   29 p_AFWATER               -1     1 s aggregate irrigation eff. index in crop prod. by CZ (z)
+    2
+   30 p_AFWATSG               -1     1 s water eff. index in crop prod. by CZ (z)
+    2
+   31 p_AFWEQPT               -1     1 s water equipment eff. index in crop prod. by CZ (z)
+    2
+   34 p_AFNLAND               -1     1 s NonLand eff. index in crop prod. by CZ (z)
+    2
+   38 s_QCROPz                -1     1 o Slack to control crop output by CZ
+    2
+   40 s_QLANDWTRz             -1     1 o supply shock to composite land+wtr (z)
+    2
+   42 s_QNLANDz               -1     1 o QNLAND slack
+    2
+   43 s_PNLANDz               -1     1 o
+    2
+   47 s_QNLABORz              -1     1 o Slack to control non-labor market by grid & ltype
+    2
+   52 p_QNITROz               -1     1 s nitrogen use by CZ
+    2
+   53 p_PNITROz               -1     1 s price of nitrogen use by CZ
+    2
+   54 p_QWATSGz               -1     1 s water use by CZ
+    2
+   55 p_PWATSGz               -1     1 s price of water use by CZ
+    2
+   57 p_QNLANDz               -1     1 s other input by CZ
+    2
+   58 p_PNLANDz               -1     1 s price of other input by CZ
+    2
+   59 p_QWEQPTz               -1     1 s irrig eqpt by CZ
+    2
+   60 p_PWEQPTz               -1     1 s price of irrig eqpt by CZ
+    2
+   68 p_QWATSRFz              -1     1 s vol of surface water withdrawal by CZ
+    2
+   69 p_QWATGRDz              -1     1 s vol of groundwater withdrawal by CZ
+    2
+   70 p_PWATSRFz              -1     1 s price of surface water by CZ
+    2
+   71 p_PWATGRDz              -1     1 s price of groundwater by CZ
+    2
+   72 s_QWATSRFz              -1     1 o slack for surface water withdrawal by CZ
+    2
+   73 s_QWATGRDz              -1     1 o slack for groundwater withdrawal by CZ
+    2
+#STATEMENTS
+      56   1 fl                                                 56  31    0 n
+      57   7 fl                                                 57  31    0 n
+      58   7 fl                                                 58  37    0 n
+      59   7 fl                                                 59  37    0 n
+      60   7 fl                                                 60  71    0 n
+      61   7 fl                                                 61  54    0 n
+      63   1 st REG                                             63 107    0 n
+      64   1 st CZ                                              64 108    0 n
+      65   1 st PR                                              65 110    0 n
+      67   1 cs CZ2REG                                          67  30    0 n
+      68  13 rd CZ2REG               a                          68  56    0 n
+      70   1 cs CZ2PR                                           70  28    0 n
+      71  13 rd CZ2PR                a                          71  56    0 n
+      73   1 cs PR2REG                                          73  30    0 n
+      74  13 rd PR2REG               a                          74  57    0 n
+      76   1 st S@US                                            76  44    0 n
+      76   1 ss                                                 76  44    0 n
+      76   1 st US_CZ                                           76  44    0 n
+      76   1 fm                                                 76  44    0 n
+      76   1 ss                                                 76  44    0 n
+      77   1 st US_PR                                           77  44    0 n
+      77   1 fm                                                 77  44    0 n
+      77   1 ss                                                 77  44    0 n
+      87   1 vr p_AOCROPz                                       87  34    0 n
+      88   1 vr p_AFNITROz                                      88  84    0 n
+      89   1 vr p_AFLANDz                                       89  80    0 n
+      90   1 vr p_AFWATERz                                      90  96    0 n
+      91   1 vr p_AFWATSGz                                      91  81    0 n
+      92   1 vr p_AFWEQPTz                                      92  91    0 n
+      93   1 vr p_AFLABORz                                      93  81    0 n
+      94   1 vr p_AFNLABORz                                     94  85    0 n
+      95   1 vr p_AFNLANDz                                      95  83    0 n
+      96   1 vr p_AFLANDWTRz                                    96  86    0 n
+      99   1 vr p_AFNITROa                                      99  80    0 n
+     100   1 vr p_AFNLANDa                                     100  81    0 n
+     101   1 vr p_AFLABORa                                     101  79    0 n
+     102   1 vr p_AFNLABORa                                    102  84    0 n
+     103   1 vr p_AFLANDWTRa                                   103  84    0 n
+     106   1 vr p_AOCROPr                                      106  86    0 n
+     107   1 vr p_AFNITROr                                     107  82    0 n
+     108   1 vr p_AFLANDr                                      108  77    0 n
+     109   1 vr p_AFWATERr                                     109  93    0 n
+     110   1 vr p_AFWATSGr                                     110  79    0 n
+     111   1 vr p_AFWEQPTr                                     111  89    0 n
+     112   1 vr p_AFLABORr                                     112  77    0 n
+     113   1 vr p_AFNLABORr                                    113  82    0 n
+     114   1 vr p_AFNLANDr                                     114  81    0 n
+     115   1 vr p_AFLANDWTRr                                   115  86    0 n
+     118   1 vr p_AOCROP                                       118  85    0 n
+     119   1 vr p_AFNITRO                                      119  81    0 n
+     120   1 vr p_AFLAND                                       120  76    0 n
+     121   1 vr p_AFWATER                                      121  93    0 n
+     122   1 vr p_AFWATSG                                      122  78    0 n
+     123   1 vr p_AFWEQPT                                      123  88    0 n
+     124   1 vr p_AFLABOR                                      124  78    0 n
+     125   1 vr p_AFNLABOR                                     125  83    0 n
+     126   1 vr p_AFNLAND                                      126  80    0 n
+     127   1 vr p_AFLANDWTR                                    127  85    0 n
+     130   1 eq E_AOCROP                                       131  82    0 n
+     132   2 eq E_AFNITRO                                      132 106    0 n
+     133   2 eq E_AFLAND                                       133  82    0 n
+     134   2 eq E_AFWATER                                      134  83    0 n
+     135   2 eq E_AFWATSG                                      135  83    0 n
+     136   2 eq E_AFWEQPT                                      136  83    0 n
+     137   2 eq E_AFLABOR                                      137 106    0 n
+     138   2 eq E_AFNLABOR                                     138 110    0 n
+     139   2 eq E_AFNLAND                                      139 108    0 n
+     140   2 eq E_AFLANDWTR                                    140 110    0 n
+     145   1 vr s_QLANDz                                       146  69    0 n
+     147   2 vr s_QWATERz                                      147  70    0 n
+     148   2 vr s_QCROPz                                       148  68    0 n
+     149   2 vr s_PCROPz                                       149  61    0 n
+     150   2 vr s_QLANDWTRz                                    150  72    0 n
+     151   2 vr s_QAUGLANDz                                    151  33    0 n
+     152   2 vr s_QNLANDz                                      152  47    0 n
+     153   2 vr s_PNLANDz                                      153  30    0 n
+     154   2 vr s_QLABORz                                      154  30    0 n
+     155   2 vr s_QLABORa                                      155  30    0 n
+     156   2 vr s_QLABOR                                       156  29    0 n
+     157   2 vr s_QNLABORz                                     157  81    0 n
+     159   1 eq E_SQLABOR                                      160  82    0 n
+     166   1 vr p_QLANDz             QLANDz                    167  72    0 n
+     166   1 cs QLANDz                                         167  72    0 n
+     168   2 vr p_QLABORz            QLABORz                   168  81    0 n
+     168   2 cs QLABORz                                        168  81    0 n
+     170   2 vr p_PCROPz                                       170  75    0 n
+     170   2 cs PCROPz                                         170  75    0 n
+     171   2 vr p_QCROPz             QCROPz                    171  70    0 n
+     171   2 cs QCROPz                                         171  70    0 n
+     173   1 cs VLANDz                                         174  63    0 n
+     175   2 cs VLABORz                                        175  63    0 n
+     176   2 cs VNLABORz                                       176  63    0 n
+     177   2 cs VNITROz                                        177  63    0 n
+     178   2 cs VWATSGz                                        178  63    0 n
+     179   2 cs VWEQPTz                                        179  63    0 n
+     181   1 rd QLANDz               a                         182  41    0 n
+     183   2 rd QLABORz              a                         183  41    0 n
+     185   2 rd QCROPz               a                         185  41    0 n
+     187   2 rd VLANDz               a                         187  41    0 n
+     188   2 rd VLABORz              a                         188  41    0 n
+     189   2 rd VNLABORz             a                         189  41    0 n
+     190   2 rd VNITROz              a                         190  41    0 n
+     191   2 rd VWATSGz              a                         191  41    0 n
+     192   2 rd VWEQPTz              a                         192  41    0 n
+     194   1 cs VCROPz                                         195  62    0 n
+     196   1 cs VWATERz                                        196  62    0 n
+     197   1 cs VLNDWTRz                                       197  62    0 n
+     198   1 cs VNLANDz                                        198  62    0 n
+     199   1 cs VAUGLANDz                                      199  62    0 n
+     201   1 fm                                                202  50    0 n
+     203   1 fm                                                203  50    0 n
+     204   1 fm                                                204  52    0 n
+     205   1 fm                                                205  52    0 n
+     206   1 fm                                                206  53    0 n
+     208   1 cs SHR_LinNLz                                     209  60    0 n
+     210   2 cs SHR_CinNLz                                     210  62    0 n
+     211   2 cs SHR_LABORz                                     211  60    0 n
+     212   2 cs SHR_NLABORz                                    212  64    0 n
+     214   1 zd                                                214  24    0 n
+     215   1 fm                                                216  64    0 n
+     217  11 fm                                                217  64    0 n
+     218  11 fm                                                218  65    0 n
+     219  11 fm                                                219  65    0 n
+     220   1 zd                                                220  15    0 n
+     223   1 cs SHR_LANDz                                      225  58    0 n
+     226   1 cs SHR_NITROz                                     226  58    0 n
+     227   1 cs SHR_WATSGz                                     227  64    0 n
+     228   1 cs SHR_WEQPTz                                     228  68    0 n
+     229   1 cs SHR_NLANDz                                     229  61    0 n
+     231   1 cs SHR_OinAUGz                                    231  63    0 n
+     232   1 cs SHR_LinAUGz                                    232  63    0 n
+     233   1 cs SHR_WinAUGz                                    233  63    0 n
+     234   1 cs SHR_LinLWz                                     234  67    0 n
+     235   1 cs SHR_WinLWz                                     235  67    0 n
+     236   1 cs SHR_WWinWz                                     236  64    0 n
+     237   1 cs SHR_WKinWz                                     237  62    0 n
+     241   1 cs SHR_QLANDz                                     242  72    0 n
+     244   1 cs SHR_VLANDz                                     244  60    0 n
+     246   1 fm                                                247  51    0 n
+     248   2 fm                                                248  51    0 n
+     249   2 fm                                                249  51    0 n
+     250   2 fm                                                250  51    0 n
+     251   2 fm                                                251  51    0 n
+     253   1 zd                                                253  28    0 n
+     254   1 fm                                                255  55    0 n
+     256   2 fm                                                256  55    0 n
+     257   2 fm                                                257  55    0 n
+     259   1 zd                                                259  24    0 n
+     260   1 fm                                                261  54    0 n
+     262   2 fm                                                262  53    0 n
+     264   1 zd                                                264  23    0 n
+     265   1 fm                                                266  52    0 n
+     267   2 fm                                                267  52    0 n
+     268   1 zd                                                268  15    0 n
+     270   1 cs ECROPz                                         271  92    0 n
+     272   2 cs EIRRIGz                                        272  86    0 n
+     273   2 cs EAUGLANDz                                      273  92    0 n
+     274   2 cs ESUB_WKz                                       274  94    0 n
+     275   2 cs EWATSGz                                        275  79    0 n
+     276   2 cs ELANDz                                         276  63    0 n
+     277   2 cs ENITROr                                        277  75    0 n
+     278   2 cs EWATKLr                                        278  77    0 n
+     280   1 rd ECROPz               a                         281  47    0 n
+     282   2 rd EIRRIGz              a                         282  47    0 n
+     283   2 rd EAUGLANDz            a                         283  47    0 n
+     284   2 rd ESUB_WKz             a                         284  47    0 n
+     285   2 rd EWATSGz              a                         285  47    0 n
+     286   2 rd ELANDz               a                         286  47    0 n
+     287   2 rd ENITROr              a                         287  46    0 n
+     288   2 rd EWATKLr              a                         288  46    0 n
+     290   1 vr p_QNITROz                                      291  51    0 n
+     292   2 vr p_PNITROz                                      292  58    0 n
+     293   2 vr p_QWATSGz                                      293  51    0 n
+     294   2 vr p_PWATSGz                                      294  58    0 n
+     295   2 vr p_PLANDz                                       295  58    0 n
+     296   2 vr p_QNLANDz                                      296  58    0 n
+     297   2 vr p_PNLANDz                                      297  58    0 n
+     298   2 vr p_QWEQPTz                                      298  58    0 n
+     299   2 vr p_PWEQPTz                                      299  58    0 n
+     300   2 vr p_PAUGLANDz                                    300  61    0 n
+     301   2 vr p_QAUGLANDz                                    301  61    0 n
+     302   2 vr p_PLANDWTRz                                    302  61    0 n
+     303   2 vr p_QLANDWTRz                                    303  61    0 n
+     304   2 vr p_PWATERz                                      304  60    0 n
+     305   2 vr p_QWATERz                                      305  60    0 n
+     306   2 vr p_VCROPz                                       306  25    0 n
+     308   1 ud VLANDz               ap                        309  52    0 n
+     310   2 ud VNITROz              ap                        310  53    0 n
+     311   2 ud VWATSGz              ap                        311  53    0 n
+     312   2 ud VWEQPTz              ap                        312  53    0 n
+     317   1 cs QWATSRFz                                       319  59    0 n
+     320   2 cs QWATGRDz                                       320  59    0 n
+     322   2 cs SHR_SinSGz                                     322  59    0 n
+     323   2 cs SHR_GinSGz                                     323  59    0 n
+     325   1 rd QWATSRFz             a                         326  42    0 n
+     327   2 rd QWATGRDz             a                         327  42    0 n
+     329   1 zd                                                329  24    0 n
+     330   1 fm                                                331  69    0 n
+     332   2 fm                                                332  69    0 n
+     333   1 zd                                                333  15    0 n
+     335   1 cs ETA_WATSRFz                                    336  79    0 n
+     337   2 cs ETA_WATGRDz                                    337  77    0 n
+     338   2 cs ESUB_SGz                                       338 106    0 n
+     340   1 rd ETA_WATSRFz          a                         341  46    0 n
+     342   2 rd ETA_WATGRDz          a                         342  46    0 n
+     343   2 rd ESUB_SGz             a                         343  45    0 n
+     345   1 vr p_QWATSRFz                                     346  69    0 n
+     347   2 vr p_QWATGRDz                                     347  68    0 n
+     348   2 vr p_PWATSRFz                                     348  60    0 n
+     349   2 vr p_PWATGRDz                                     349  59    0 n
+     350   2 vr s_QWATSRFz                                     350  72    0 n
+     351   2 vr s_QWATGRDz                                     351  71    0 n
+     352   2 vr t_PAUGLANDz                                    352  28    0 n
+     353   2 vr t_PNITROz                                      353  25    0 n
+     354   2 vr t_PNLABORz                                     354  26    0 n
+     356   1 eq E_PWATSRFz                                     357  87    0 n
+     358   2 eq E_PWATGRDZ                                     358  87    0 n
+     359   2 eq E_QWATSRFZ                                     359 100    0 n
+     360   2 eq E_QWATGRDz                                     360 100    0 n
+     362   2 eq E_PWATSGz                                      363  73    0 n
+     364   1 ud QWATSRFz             ap                        365  40    0 n
+     366   2 ud QWATGRDz             ap                        366  40    0 n
+     371   1 cs ELABORa                                        372  77    0 n
+     373   2 cs ESUB_LZa                                       373 105    0 n
+     374   2 cs ENLABORr                                       374  23    0 n
+     376   1 rd ELABORa              a                         377  45    0 n
+     378   2 rd ESUB_LZa             a                         378  45    0 n
+     379   2 rd ENLABORr             a                         379  45    0 n
+     381   1 vr p_QNLABORz                                     382  72    0 n
+     383   2 vr p_PNLABORz                                     383  73    0 n
+     384   2 vr p_PLABORz                                      384  61    0 n
+     387   1 eq E_QLABORz                                      391  92    0 n
+     394   1 eq E_PLABORz                                      396  63    0 n
+     399   1 eq E_QNLABORz                                     401 109    0 n
+     403   1 eq E_PNLABORz                                     404  58    0 n
+     407   2 eq E_PNLANDz                                      410  70    0 n
+     412   1 ud VLABORz              ap                        413  56    0 n
+     414   2 ud VNLABORz             ap                        414  57    0 n
+     416   1 eq E_PLANDz                                       419  73    0 n
+     422   1 eq E_QLANDz                                       424  83    0 n
+     427   1 eq E_PWEQPTz                                      427  71    0 n
+     430   1 eq E_QNITROz                                      432 107    0 n
+     434   1 eq E_PNITROz                                      435  65    0 n
+     438   1 eq E_QWATSGz                                      439  98    0 n
+     442   1 eq E_QWEQPTz                                      443  99    0 n
+     446   1 eq E_QNLANDz                                      447 117    0 n
+     450   1 eq E_QAUGLANDz                                    451 110    0 n
+     454   1 eq E_QWATERz                                      455 113    0 n
+     458   1 eq E_QLANDWTRz                                    459 121    0 n
+     462   1 eq E_PWATERz                                      464  62    0 n
+     467   1 eq E_PLANDWTRz                                    470  53    0 n
+     473   1 eq E_PAUGLANDz                                    477  70    0 n
+     481   1 eq E_QCROPz                                       489  33    0 n
+     492   1 eq E_PCROPz                                       493  26    0 n
+     495   1 eq E_VCROPz                                       496  40    0 n
+     560   1 sb                                                560  36    0 n
+     561   1 sb                                                561  37    0 n
+     562   1 sb                                                562  36    0 n
+     563   1 sb                                                563  37    0 n
+     564   1 sb                                                564  37    0 n
+     565   1 sb                                                565  37    0 n
+     566   1 sb                                                566  37    0 n
+     568   1 sb                                                568  39    0 n
+     569   1 sb                                                569  39    0 n
+     571   1 sb                                                571  39    0 n
+     573   1 bs                                                573  41    0 n
+     574   1 bs                                                574  39    0 n
+     576   1 sb                                                576  41    0 n
+     577   1 sb                                                577  41    0 n
+     578   1 sb                                                578  41    0 n
+     579   1 sb                                                579  41    0 n
+     581   1 sb                                                581  40    0 n
+     582   1 sb                                                582  40    0 n
+     583   1 sb                                                583  40    0 n
+     584   1 sb                                                584  40    0 n
+     585   1 sb                                                585  40    0 n
+     587   1 om                                                587  18    0 n
+     588   1 om                                                588  14    0 n
+     591   1 om                                                591  15    0 n
+     592   1 om                                                592  15    0 n
+     593   1 om                                                593  16    0 n
+     594   1 om                                                594  16    0 n
+     595   1 om                                                595  16    0 n
+     613   1 vr p_VLABORz                                      613  34    0 n
+     614   1 vr p_PLABORa                                      614  33    0 n
+     615   1 vr p_QLABORa                                      615  33    0 n
+     616   1 vr p_VLABORa                                      616  33    0 n
+     618   1 cs QLABORa                                        618  34    0 n
+     619   1 cs VLABORa                                        619  34    0 n
+     620   1 cs SHR_QLABORz                                    620  39    0 n
+     622   1 fm                                                623  81    0 n
+     624   3 fm                                                624  81    0 n
+     625   3 fm                                                625  77    0 n
+     627   1 eq E_VLABORz                                      628  85    0 n
+     630   1 eq E_QLABORa                                      630  91    0 n
+     631   1 eq E_VLABORa                                      631 106    0 n
+     632   1 eq E_PLABORa                                      632  83    0 n
+     635   1 vr p_VLANDz                                       635  33    0 n
+     636   1 vr p_PLANDa                                       636  32    0 n
+     637   1 vr p_QLANDa                                       637  32    0 n
+     638   1 vr p_VLANDa                                       638  32    0 n
+     640   1 cs QLANDa                                         640  33    0 n
+     641   1 cs VLANDa                                         641  33    0 n
+     643   1 fm                                                644  79    0 n
+     645   3 fm                                                645  79    0 n
+     647   1 eq E_VLANDz                                       648  81    0 n
+     649   1 eq E_QLANDa                                       649 101    0 n
+     650   1 eq E_VLANDa                                       650 101    0 n
+     651   1 eq E_PLANDa                                       651  79    0 n
+     654   1 vr p_VNLABORz                                     654  35    0 n
+     655   1 vr p_PNLABORa                                     655  34    0 n
+     656   1 vr p_QNLABORa                                     656  34    0 n
+     657   1 vr p_VNLABORa                                     657  34    0 n
+     659   1 cs VNLABORa                                       659  35    0 n
+     661   1 fm                                                662  83    0 n
+     664   1 eq E_VNLABORz                                     665  87    0 n
+     666   1 eq E_VNLABORa                                     666 108    0 n
+     667   1 eq E_PNLABORa                                     667 108    0 n
+     668   1 eq E_QNLABORa                                     668  85    0 n
+     671   1 vr p_VAUGLANDz                                    671  36    0 n
+     672   1 vr p_PAUGLANDa                                    672  35    0 n
+     673   1 vr p_QAUGLANDa                                    673  35    0 n
+     674   1 vr p_VAUGLANDa                                    674  35    0 n
+     676   1 cs VAUGLANDa                                      676  36    0 n
+     678   1 fm                                                679  85    0 n
+     681   1 eq E_VAUGLANDz                                    682  91    0 n
+     683   1 eq E_VAUGLANDa                                    683 113    0 n
+     684   1 eq E_PAUGLANDa                                    684 113    0 n
+     685   1 eq E_QAUGLANDa                                    685  89    0 n
+     688   1 vr p_VLANDWTRz                                    688  36    0 n
+     689   1 vr p_PLANDWTRa                                    689  35    0 n
+     690   1 vr p_QLANDWTRa                                    690  35    0 n
+     691   1 vr p_VLANDWTRa                                    691  35    0 n
+     693   1 cs VLANDWTRa                                      693  36    0 n
+     695   1 fm                                                696  84    0 n
+     698   1 eq E_VLANDWTRz                                    699  91    0 n
+     700   1 eq E_VLANDWTRa                                    700 112    0 n
+     701   1 eq E_PLANDWTRa                                    701 112    0 n
+     702   1 eq E_QLANDWTRa                                    702  89    0 n
+       0   1 ud QLANDz               ap                          0   0    0 n
+       0   1 ud QLABORz              ap                          0   0    0 n
+       0   1 ud QCROPz               ap                          0   0    0 n
+      -1   0 cs C00063                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 cs C00064                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 cs C00065                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 cs C00066                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 cs C00067                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 cs C00068                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 cs C00069                                           0   0    0 n
+      -1   0 fm                                                  0   0    0 n
+      -1   0 en                                                  0   0    0 n
+#GPVER
+  122001
+#PRVER
+    7000
+#FINAL_LEVEL
+ ln c p_AOCROPz
+ ln c p_AFNITROz
+ ln c p_AFLANDz
+ ln c p_AFWATERz
+ ln c p_AFWATSGz
+ ln c p_AFWEQPTz
+ ln c p_AFLABORz
+ ln c p_AFNLABORz
+ ln c p_AFNLANDz
+ ln c p_AFLANDWTRz
+ ln c p_AFNITROa
+ ln c p_AFNLANDa
+ ln c p_AFLABORa
+ ln c p_AFNLABORa
+ ln c p_AFLANDWTRa
+ ln c p_AOCROPr
+ ln c p_AFNITROr
+ ln c p_AFLANDr
+ ln c p_AFWATERr
+ ln c p_AFWATSGr
+ ln c p_AFWEQPTr
+ ln c p_AFLABORr
+ ln c p_AFNLABORr
+ ln c p_AFNLANDr
+ ln c p_AFLANDWTRr
+ ln s p_AOCROP
+ ln s p_AFNITRO
+ ln s p_AFLAND
+ ln s p_AFWATER
+ ln s p_AFWATSG
+ ln s p_AFWEQPT
+ ln c p_AFLABOR
+ ln c p_AFNLABOR
+ ln s p_AFNLAND
+ ln c p_AFLANDWTR
+ ln c s_QLANDz
+ ln c s_QWATERz
+ ln o s_QCROPz
+ ln c s_PCROPz
+ ln o s_QLANDWTRz
+ ln c s_QAUGLANDz
+ ln o s_QNLANDz
+ ln o s_PNLANDz
+ ln c s_QLABORz
+ ln c s_QLABORa
+ ln c s_QLABOR
+ ln o s_QNLABORz
+ lv c p_QLANDz        QLANDz
+ lv c p_QLABORz       QLABORz
+ ln c p_PCROPz
+ lv c p_QCROPz        QCROPz
+ ln s p_QNITROz
+ ln s p_PNITROz
+ ln s p_QWATSGz
+ ln s p_PWATSGz
+ ln c p_PLANDz
+ ln s p_QNLANDz
+ ln s p_PNLANDz
+ ln s p_QWEQPTz
+ ln s p_PWEQPTz
+ ln c p_PAUGLANDz
+ ln c p_QAUGLANDz
+ ln b p_PLANDWTRz
+ ln c p_QLANDWTRz
+ ln b p_PWATERz
+ ln c p_QWATERz
+ ln c p_VCROPz
+ ln s p_QWATSRFz
+ ln s p_QWATGRDz
+ ln s p_PWATSRFz
+ ln s p_PWATGRDz
+ ln o s_QWATSRFz
+ ln o s_QWATGRDz
+ ln c t_PAUGLANDz
+ ln c t_PNITROz
+ ln c t_PNLABORz
+ ln c p_QNLABORz
+ ln c p_PNLABORz
+ ln c p_PLABORz
+ ln c p_VLABORz
+ ln c p_PLABORa
+ ln c p_QLABORa
+ ln c p_VLABORa
+ ln c p_VLANDz
+ ln c p_PLANDa
+ ln c p_QLANDa
+ ln c p_VLANDa
+ ln c p_VNLABORz
+ ln c p_PNLABORa
+ ln c p_QNLABORa
+ ln c p_VNLABORa
+ ln c p_VAUGLANDz
+ ln c p_PAUGLANDa
+ ln c p_QAUGLANDa
+ ln c p_VAUGLANDa
+ ln c p_VLANDWTRz
+ ln c p_PLANDWTRa
+ ln c p_QLANDWTRa
+ ln c p_VLANDWTRa
+#CSPSIM
+nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+nnnnnnnnnnnnnnnnnnnnnnnnnnnnn

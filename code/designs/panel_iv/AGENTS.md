@@ -1,15 +1,38 @@
 # Panel-IV instructions
 
-- Retain the original moving-wage four-column design. The fixed-wage revision,
+- Retain the original moving-wage design. The fixed-wage revision,
   separation/innovation exercises and simulated calibration draws were removed
   by explicit user instruction. Do not restore those branches or their outputs.
-- Exception, re-authorized by the user: stages 10--11 run the Kitagawa
-  decomposition of the retained instruments into calibrated-weight,
-  donor-wage and interaction components. It is diagnostic only. It uses the
-  recovered weights as-is (their response to wage features is intended), never
-  recalibrates with frozen wages, never replaces an instrument or column and
+- Stage 10 is a user-requested diagnostic: the Kitagawa decomposition of the
+  instrument into calibrated-weight, donor-wage and interaction components and
+  the share of identifying variance each carries. It uses the recovered
+  weights as-is (their response to wage features is intended), never
+  recalibrates with frozen wages, never replaces the instrument or a column and
   never selects a model. Keep its 2008--2010 base wage, balanced-donor rule and
-  source-year-mean reference weights unless a revision is declared.
+  source-year-mean reference weights unless a revision is declared. The former
+  component 2SLS, Anderson--Rubin sets and Hansen J were removed to keep it
+  simple; do not restore them unasked.
+- Stage 11 is a user-requested diagnostic of donor-wage granularity. It
+  multiplies the OEWS wage by an annual county QWI NAICS 111/112 factor in
+  memory, recalibrates the weights on that wage with stage 04's moments and
+  solver, and compares the result with the design. By user instruction it
+  reports only that recalibrated annual-factor variant beside the design; the
+  fixed-factor, design-weight and QWI-outright variants were dropped. It
+  rebuilds the instrument with stage 05's rules, repeats stage 10's
+  decomposition and reports preferred-column first stages for the instrument
+  and its weight and wage components. The OEWS proxy stays the only wage of
+  the design: the stage writes no calibration or instrument artifact,
+  estimates no outcome equation, and no result selects a wage source. It must
+  reproduce stages 04, 05 and 10 with the OEWS wage; keep those guards when
+  any of them changes.
+- By explicit user instruction (2026-11-09) the design has one instrument,
+  `z_wage_seasonal_composition_real`, estimated in two columns: column 1
+  without controls and column 2 with controls (preferred). The wage-only
+  calibration, its `z_wage_only_real` field and estimation columns, and the
+  `continuing` control set were removed; do not restore them or their
+  `_continuing_controls` outputs without a declared revision. Stage 04
+  recovers only the wage-plus-seasonal/composition distribution, and the
+  validator rejects any other calibration or instrument specification.
 - Keep all branch implementation and tests in R, using plain functions and
   the existing configured packages. JSON registries and shell runners remain.
   Do not add Python runtime bridges or custom NumPy/C compatibility adapters.
@@ -17,7 +40,12 @@
   outcome/model registry. Preserve the twelve outcomes and reviewed v2
   worksite-business linkage, controls, equal county-year weights, common
   samples, county/year FE and target-cluster CRV1 inference. Controlled
-  seasonal/composition column 4 remains preferred.
+  column 2 is preferred.
+- Estimation policy years run 2011--2023 (source years 2010--2022): the
+  committed BEA controls are the only control set, and CAEMP25N ends in 2022.
+  Instruments and the county-year panel are still constructed through policy
+  year 2024 (`DISSIMILARITY_IV_POLICY_END_YEAR`); the estimation window is
+  `DISSIMILARITY_IV_ESTIMATION_END_YEAR` and `policy_years` in the registry.
 - Consume the shared panel directly. Do not use DiD treatments or its panel.
 - Preserve five target subregions per AEWR region, the two selected donor
   clusters, target-primary-OEWS-area overlap exclusion, source year t-1,

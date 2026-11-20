@@ -32,7 +32,7 @@ supports the declared region-by-year full-history sensitivity.
 | --- | --- |
 | `01_build_panel.py` | DuckDB scan; frozen-baseline bite/exposure construction; Polars panel and deterministic cluster partitions |
 | `02_build_registry.py` | Compile the bounded or opt-in specification registry |
-| `03_estimate.py` | Exact nested-FE FWL, causal-first rank selection, common-design six-outcome OLS, full leverage, and provenance caches |
+| `03_estimate.py` | Exact nested-FE FWL, causal-first rank selection, common-design five-outcome OLS, full leverage, and provenance caches |
 | `04_report.py` | Construct identified 2013–2022 average current-coordinate effects and compare HC3, CR0/CR1, and explicitly experimental scalar CCV-HC3 |
 | `05_validate.py` | Check artifact coverage, input hashes, inference labels, and rejected-method flags |
 
@@ -58,8 +58,8 @@ global/state/region-year models are retained as sensitivities and for
 lower-geography treatments. Causal-first rank selection never drops a named
 history coordinate; it removes only redundant projection columns.
 
-Six primitive outcomes are fitted on one common sample and design:
-applications, balanced v2 linked worksite businesses, requested positions, certified
+Five primitive outcomes are fitted on one common sample and design:
+applications, balanced v2 linked worksite businesses, certified
 positions, certified hours, and any application. Rates, ratios, and
 mean-normalized effects are constructed after estimation with named gradients;
 no post-outcome-selected sample is used by the supported fit. Only raw
@@ -107,3 +107,14 @@ are verification/diagnostic oracles.
 Identification, treatment families, unresolved choices, estimands, inference,
 and retained diagnostics are documented in the grounded
 [design page](../../../content/designs/mundlak-chamberlain.md).
+
+## Shared-baseline refresh through 2025
+
+The common panel now reaches 2025 and carries FY2008--2026 Q3 linkage
+provenance. This branch retains its declared 2012--2022 outcome window.
+Version 4.1.0 excludes requested positions and their derived per-worker rate
+from the baseline outcome registry, as authorized by the user. The builder no
+longer requires requested-position inputs. Their known source gaps in calendar
+2012--2014 do not restrict the five-outcome sample. The shared source retains
+its observed values and missingness. Rebuild stages 01--05 after this registry
+change; old six-outcome fit caches and reports are incompatible.

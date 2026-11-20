@@ -1,6 +1,6 @@
 # AEWR-border redesign instructions
 
-- Treat `design.json` as the executable v6 registry. The redesign is exploratory
+- Treat `design.json` as the executable v7 registry. The redesign is exploratory
   and informed by v5 outcomes; never select a model by its coefficient or p-value.
 - Preserve the original four geography/seven model v5 registry and its complete
   audit as labeled benchmarks. Stage04's diagnostic primary is the OLD h1 model;
@@ -15,7 +15,7 @@
   caliper for noncore members. Preserve connectivity and actual boundary support.
 - Region matching uses the declared maximum-cardinality/core-edge/lexical rule
   based only on geography. More memberships do not create independent regions.
-- Retain the direct current-real-AEWR treatment, 2011--2022 policy sample,
+- Retain the direct current-real-AEWR treatment, user-approved 2011--2025 baseline policy sample,
   certifications/fixed-2011-farm-employment outcome, and county/component-year
   FE. Fixed 2008--2010 employment weights change the weighted population, not
   the outcome denominator. The sole history adjustment is baseline mean outcome
@@ -48,8 +48,8 @@
   integrated validation and empirical adequacy; no automatic manuscript/welfare use.
 - `statewide_design.json` is a separate, user-requested registry for the
   2025-10-02 statewide-AEWR state-border design (stages 12--13). It never
-  changes the v6 registry or outputs. Its geography, treatment, outcome,
+  changes the regional-reference registry or outputs. Its geography, treatment, outcome,
   calibration years and scenarios were frozen before any post-policy outcome
   was parsed; stage 13 must fail if a post-policy fiscal year is present and
   must not use post-period residuals for scale. Estimation is a later stage
-  that requires upstream FY2025+ disclosure parsing; keep failed gates.
+  with its own cohort alignment; FY2026 Q3 is now parsed upstream. Keep failed gates.

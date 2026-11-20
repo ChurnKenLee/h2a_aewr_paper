@@ -1,5 +1,5 @@
 # Purpose: Extract county farm employment and related BEA source measures.
-# Inputs: BEA CAEMP25N and CAINC45 archives in data/raw/bea.
+# Inputs: BEA CAEMP25N, CAINC45 and CAINC5N archives in data/raw/bea.
 # Outputs: trimmed BEA tables and bea_farm_nonfarm_emp.parquet.
 
 import marimo
@@ -22,11 +22,13 @@ def _():
 def _(RAW):
     caemp_zip = RAW / "bea" / "CAEMP25N.zip"
     cainc_zip = RAW / "bea" / "CAINC45.zip"
-    return caemp_zip, cainc_zip
+    # CAEMP25N and CAINC45 were discontinued after 2022; CAINC5N continues.
+    cainc5n_zip = RAW / "bea" / "CAINC5N.zip"
+    return caemp_zip, cainc5n_zip, cainc_zip
 
 
 @app.cell
-def _(caemp_zip, cainc_zip, pl, zipfile):
+def _(caemp_zip, cainc5n_zip, cainc_zip, pl, zipfile):
     # We have to extract csv as raw data before passing to polars
     # Tis because polars does not apply encoding when streamed data
     with zipfile.ZipFile(caemp_zip) as _z:
@@ -51,11 +53,22 @@ def _(caemp_zip, cainc_zip, pl, zipfile):
             },
             encoding="cp1252",
         )
-    return caemp_raw, cainc_raw
+    with zipfile.ZipFile(cainc5n_zip) as _z:
+        _data = _z.read("CAINC5N__ALL_AREAS_2001_2024.csv")
+        cainc5n_raw = pl.read_csv(
+            _data,
+            infer_schema=False,
+            schema_overrides={
+                "GeoFIPS": pl.String,
+                "LineCode": pl.String,
+            },
+            encoding="cp1252",
+        )
+    return caemp_raw, cainc5n_raw, cainc_raw
 
 
 @app.cell
-def _(INTERMEDIATE, caemp_raw, cainc_raw, pl):
+def _(INTERMEDIATE, caemp_raw, cainc5n_raw, cainc_raw, pl):
     # Remove footers and prepend "y" to year columns
     # This is needed for Phil's code, as he previously cleaned this by hand
     caemp_year_cols = [_c for _c in caemp_raw.columns if _c.startswith("1")] + [
@@ -83,6 +96,20 @@ def _(INTERMEDIATE, caemp_raw, cainc_raw, pl):
         pl.col("GeoFIPS").str.strip_chars().str.strip_chars('"').str.zfill(5),
     ).drop(pl.col(cainc_year_cols))
     cainc_trim.write_parquet(INTERMEDIATE / "bea_CAINC45_trim.parquet")
+
+    cainc5n_year_cols = [_c for _c in cainc5n_raw.columns if _c.startswith("2")]
+    cainc5n_trim = (
+        cainc5n_raw.filter(
+            pl.col("GeoName").is_not_null(),
+            pl.col("LineCode").is_in(["35", "81"]),
+        )
+        .with_columns(
+            pl.col(cainc5n_year_cols).name.prefix("y"),
+            pl.col("GeoFIPS").str.strip_chars().str.strip_chars('"').str.zfill(5),
+        )
+        .drop(pl.col(cainc5n_year_cols))
+    )
+    cainc5n_trim.write_parquet(INTERMEDIATE / "bea_CAINC5N_trim.parquet")
     return caemp, caemp_year_cols
 
 

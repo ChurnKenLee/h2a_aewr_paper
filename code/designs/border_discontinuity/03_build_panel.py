@@ -106,7 +106,7 @@ def _():
             is None
         ):
             raise ValueError(
-                "border design requires the reviewed FY2008--2024 "
+                "border design requires the declared FY2008--2026 Q3 "
                 "worksite-business v2 linkage"
             )
 

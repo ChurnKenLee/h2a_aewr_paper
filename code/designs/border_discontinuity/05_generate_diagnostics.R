@@ -11,6 +11,10 @@ library(sf)
 library(stringr)
 library(tidyr)
 
+design <- jsonlite::read_json(
+  path_code("designs", "border_discontinuity", "design.json")
+)
+
 features <- read_parquet(
   path_int("border_discontinuity_county_features.parquet")
 )
@@ -502,7 +506,7 @@ stratum_year_plot <- ggplot(
     limits = c(-contribution_limit, contribution_limit),
     name = "Coefficient\ncontribution"
   ) +
-  scale_x_continuous(breaks = seq.int(2011, 2022)) +
+  scale_x_continuous(breaks = seq.int(design$policy_start_year, design$policy_end_year)) +
   labs(
     title = "Border-stratum contributions by policy year",
     subtitle = "Each cell sums the two AEWR-region sides of a retained component",

@@ -38,8 +38,8 @@ def _panel() -> pl.DataFrame:
             "mc_baseline_farm_employment": [100.0] * 11 + [None] * 11,
             "employer_linkage_unit": ["worksite_business"] * 22,
             "employer_linkage_version": ["v2"] * 22,
-            "employer_linkage_input_max_year": [2024] * 22,
-            "employer_linkage_review_status": ["complete"] * 22,
+            "employer_linkage_input_max_year": [2026] * 22,
+            "employer_linkage_review_status": ["pending"] * 22,
             "employer_linkage_review_report_hash": ["a" * 64] * 22,
         },
         schema={

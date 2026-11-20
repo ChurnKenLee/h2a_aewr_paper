@@ -1,4 +1,4 @@
-# Purpose: Attach the two publication instruments to the full county panel.
+# Purpose: Attach the publication instrument to the full county panel.
 # Output: data/processed/panel_iv_county_year.parquet.
 
 here::i_am("code/paths.R")
@@ -42,7 +42,7 @@ if (
     )
 ) {
   stop(
-    "Panel IV requires the reviewed FY2008--2024 worksite-business v2 linkage.",
+    "Panel IV requires the declared FY2008--2026 Q3 worksite-business v2 linkage.",
     call. = FALSE
   )
 }
@@ -76,58 +76,29 @@ if (
   )
 }
 
-instrument_long <- read_parquet(
+instrument <- read_parquet(
   path_int("panel_iv_instrument_cluster_year.parquet")
 ) %>%
-  filter(
-    instrument_spec_label %in%
-      c(
-        DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL,
-        DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
-      )
-  )
-
-instrument_keys <- c(
-  "aewr_region_id",
-  "target_cluster",
-  "source_year",
-  "policy_year"
-)
-
-wage_only_instrument <- instrument_long %>%
-  filter(
-    instrument_spec_label == DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL
-  ) %>%
-  transmute(
-    across(all_of(instrument_keys)),
-    z_wage_only_real = z_dissimilarity_real,
-    wage_only_instrument_available = instrument_available
-  )
-
-wage_seasonal_composition_instrument <- instrument_long %>%
   filter(
     instrument_spec_label == DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL
   ) %>%
   transmute(
-    across(all_of(instrument_keys)),
+    aewr_region_id,
+    target_cluster,
+    source_year,
+    policy_year,
     z_wage_seasonal_composition_real = z_dissimilarity_real,
     wage_seasonal_composition_instrument_available = instrument_available
   )
 
-instrument_pair <- wage_only_instrument %>%
-  inner_join(
-    wage_seasonal_composition_instrument,
-    by = instrument_keys,
-    relationship = "one-to-one"
-  )
-
 if (
-  nrow(instrument_pair) !=
+  nrow(instrument) !=
     85L *
       (DISSIMILARITY_IV_POLICY_END_YEAR -
         DISSIMILARITY_IV_POLICY_START_YEAR +
         1L) ||
-    any(instrument_pair$source_year != instrument_pair$policy_year - 1L)
+    anyDuplicated(instrument[c("aewr_region_id", "target_cluster", "policy_year")]) > 0L ||
+    any(instrument$source_year != instrument$policy_year - 1L)
 ) {
   stop(
     "Instrument grid must contain all 85 subregions and use source year t-1.",
@@ -146,7 +117,7 @@ panel_iv <- county_panel %>%
     relationship = "many-to-one"
   ) %>%
   left_join(
-    instrument_pair,
+    instrument,
     by = c(
       "aewr_region_id",
       "target_cluster",

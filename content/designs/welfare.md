@@ -38,8 +38,12 @@ sum across target years is not presented as an annual effect.
 
 The observed calculation uses `cert_hours_at_aewr_start_year`, which classifies
 explicit hourly offers within five cents of the contract start-year or
-prior-year AEWR. This is a wage-offer exposure proxy, not proof that the AEWR
-was the legally binding wage floor.
+prior-year AEWR. From 2023-03-30 it also accepts a dated occupation or
+U.S.-worker skill-tier rate that applied to the job's occupation in the year
+ending on the contract start date; the
+[AEWR input contract](@/contracts/aewr-inputs.md) gives the rule. This is a
+wage-offer exposure proxy, not proof that the AEWR was the legally binding wage
+floor.
 
 The coverage-adjusted sensitivity applies the observed binding share among
 comparable hours to all certified hours. A positive-hours county-year without

@@ -17,22 +17,6 @@ finite_min <- function(value) {
   min(value[keep])
 }
 
-finite_max <- function(value) {
-  keep <- is.finite(value)
-  if (!any(keep)) {
-    return(NA_real_)
-  }
-  max(value[keep])
-}
-
-positive_weighted_mean <- function(value, weight) {
-  keep <- is.finite(value) & is.finite(weight) & weight > 0
-  if (!any(keep)) {
-    return(NA_real_)
-  }
-  stats::weighted.mean(value[keep], weight[keep])
-}
-
 select_panel_iv_donor_wage <- function(
   oews_hourly_wage,
   oews_wage_observed

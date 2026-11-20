@@ -1,0 +1,75 @@
+{
+  "design_id": "episode_2025_domestic_crop_pay_v1",
+  "status": "declared_before_any_QCEW_or_QWI_pay_outcome_for_2025Q4_or_later_was_acquired_opened_or_inspected",
+  "frozen": "2026-11-13",
+  "hashes": "explorations/episode_2025/domestic_wage_registry.sha256 records the SHA-256 of this file, the exposure table, the estimator, the extractor and the helpers. Change any of them only by a dated amendment with its own hash, and only before a pay file for 2025 Q4 or later is opened.",
+  "decided_by": [
+    "user, 2026-11-13: acquisition of the 2025-26 QCEW and QWI files approved once this registry is frozen",
+    "user, 2026-11-13: unsure which pay series should be primary. The series was therefore chosen by the rule stated in the draft of 2026-11-12, applied to pre-period data only (see outcome.primary_choice). The user may reverse it by amendment before any outcome is read."
+  ],
+  "question": "Did the 2025 cut in the statutory AEWR change the pay of crop workers in unemployment-insurance records, more so where H-2A use is heavier?",
+  "blindness": "On the freeze date the repository held QCEW and QWI through 2024 only. No post-policy pay outcome had been downloaded, opened or tabulated. The H-2A side (FY2026 Q1-Q3 usage and offered wages) had been seen and enters only through the pre-period exposure.",
+  "estimand": "beta in: change_c = beta x (S_c x cut_s) + gamma x S_c + state effects + error. It is the differential pay response per unit of H-2A intensity per statutory dollar. A positive beta means pay fell more where intensity and the cut were larger. It is not the H-2A usage elasticity.",
+  "exposure_and_dose": {
+    "file": "explorations/episode_2025/domestic_wage_exposure_frozen.csv (built by 09_domestic_wage_exposure.R from data/processed/county_year_panel.parquet and the AEWR schedules)",
+    "S_c": "mean over start years 2022-2024 of certified positions per 2011 farm worker, winsorized at the 99th percentile across counties (cap 2.099)",
+    "cut_s": "U.S. skill-I rate of 2025-10-02 minus the regional rate in force on 2025-04-01 (mean -3.96, SD 1.22 across 48 states)",
+    "support": "3,041 counties; S median 0.035, 90th percentile 0.32, within-state SD 0.27",
+    "known_weakness": "County assignment of H-2A worksites may be wrong for some cases, which attenuates beta. The commuting-zone sensitivity addresses this."
+  },
+  "outcome": {
+    "primary": "QCEW average weekly wage, private ownership, crop production (NAICS 111), county by quarter",
+    "change_c": "the mean, over 2025 Q4, 2026 Q1 and 2026 Q2, of the year-over-year change in the log average weekly wage",
+    "sample_rule": "county-quarters that are disclosed, have average monthly employment of at least 10 and a positive wage, in both years, for all three quarters; states with at least two such counties",
+    "excluded": "2026 Q3 onward (new schedule on 2026-08-03, ruling of 2026-08-26, backpay period from 2026-09-02). If estimated later it is reported separately and labeled.",
+    "primary_choice": {
+      "rule": "QCEW quarterly is primary if its pre-period precision in this window is close to QWI's; otherwise QWI (draft of 2026-11-12).",
+      "evidence": "Placebo years 2016-2024, equal weights, controlling for S: QCEW window MDE 0.61 of the benchmark, QWI window 0.67. Employment-weighted: 0.80 and 0.54 (domestic_wage_placebo_summary.csv).",
+      "result": "QCEW, equal county weights. It also includes short seasonal jobs and is published sooner."
+    }
+  },
+  "model": {
+    "primary": "change_c on S_winsorized x cut_us and S_winsorized, state effects, equal county weights",
+    "inference": "state leave-one-out jackknife, t(G-1), is primary; state CRV1 also reported",
+    "secondary": "the same model weighted by prior-year employment",
+    "sensitivities": [
+      "H-2A skill-I cash dose in place of the U.S. skill-I dose",
+      "intensity aggregated to the commuting zone (2011-farm-employment-weighted), winsorized at its 99th percentile",
+      "no S control, labeled: it assumes H-2A-heavy counties would otherwise have had the same pay growth"
+    ],
+    "estimator": "explorations/episode_2025/08_domestic_wage_estimate.R with tau = 2026. Run with tau = 2024 it reproduces the support script's placebo estimate exactly (-0.00812, state-clustered SE 0.00823)."
+  },
+  "secondary_series": "QWI NAICS 111 stable-job monthly earnings, same window, model and exposure, reported next to the primary when the three quarters are published. It is not a co-primary.",
+  "data_rules": {
+    "no_interim_look": "Nothing is estimated until the QCEW release that contains 2026 Q2. The estimator stops if any of the three quarters is missing.",
+    "vintage": "The estimate uses the QCEW quarterly files current at estimation time; their SHA-256 and Last-Modified dates are recorded then. Files downloaded earlier are kept unopened and their hashes are in data/raw/qcew_episode_2025_2026/MANIFEST.csv.",
+    "storage": "Post-policy files live in data/raw/qcew_episode_2025_2026/, apart from data/raw/qcew, so the shared QCEW producer and the county panel are unaffected."
+  },
+  "declared_splits": {
+    "what": "States where H-2A workers are covered by state unemployment insurance against states where they are not.",
+    "rule": "The classification is taken from statute and agency guidance, written to a sourced table and hashed by a dated amendment before the estimator is run. If no such table exists by then, the split is not run. The primary estimate pools all states and does not depend on it.",
+    "why": "Where H-2A workers are outside the records the series measures domestic workers and beta is a spillover. Where they are inside, part of beta is mechanical.",
+    "descriptive_evidence_only": "In 2024, H-2A full-time equivalents exceed all state crop and crop-support employment in GA, KY, LA and NC, and exceed crop employment in AR, MS and SC as well; there is no state-level inconsistency in FL, CA or WA (h2a_fte_vs_qcew_excess_states.csv). This motivates the split and does not define it."
+  },
+  "falsification": [
+    "placebo event years 2016-2024 with the same window (run before freezing; mean placebo estimate 0.0005 with the S control, equal weights)",
+    "placebo outcome: all-private county pay, same window and model",
+    "placebo outcome: animal production (NAICS 112) pay, same window and model",
+    "lead: the same window one year earlier (2024 Q4 to 2025 Q2 against the year before) on the dose"
+  ],
+  "design_stage_precision": {
+    "method": "placebo event years 2016-2024 on real pre-period pay changes with the actual dose; MDE = 2.8 x max(mean state-clustered SE, SD of placebo estimates); not a size-validated simulation",
+    "benchmark": "crop pay moving with H-2A offers in proportion to S: 0.66 / 16.60 = 0.040 log points per share-dollar. Where H-2A workers are outside the series this benchmark is generous.",
+    "primary": "MDE 0.024 log points per share-dollar, 0.61 of the benchmark: a pay change of 2.9% for a county at S = 0.3 facing a $4 cut. 1,483 counties in 47 states holding 82% of 2024 certified hours in the last placebo year.",
+    "employment_weighted": "0.032, 0.80 of the benchmark, 3.8%",
+    "source": "domestic_wage_placebo_summary.csv, domestic_wage_coverage.csv"
+  },
+  "threats": [
+    "immigration-enforcement shocks in 2025-26 correlated with H-2A intensity and with cut size",
+    "QCEW suppression: the window sample covers 82% of 2024 certified hours",
+    "the average weekly wage moves with hours and workforce mix, not only the wage rate",
+    "workers employed through labor contractors are classified outside NAICS 111",
+    "one season only"
+  ],
+  "selection_rule": "No outcome-based selection. The primary, the secondary, every declared sensitivity, split and placebo are reported. Anything else is labeled post-outcome."
+}

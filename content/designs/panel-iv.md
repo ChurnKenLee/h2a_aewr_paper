@@ -6,10 +6,11 @@ description = "Original moving-wage county panel IV with deterministic R calibra
 scopes = ["code/designs/panel_iv", "scripts/run_panel_iv.sh"]
 +++
 
-{{ <grounding path="code/designs/panel_iv/design.R" anchor="panel-iv-design-contract" sha256="bddefbfc8e4431bd23752b2a4e738ae63b3d05b5321dca38f16140a007e684e7" /> }}
+{{ <grounding path="code/designs/panel_iv/design.R" anchor="panel-iv-design-contract" sha256="4a662b10cda761571109a03086866464b2d10a58f019a02fe917dbf0825d7f51" /> }}
 
 This branch consumes `data/processed/county_year_panel.parquet` and estimates
-the original moving-wage design for 2011--2022. Its two instruments average
+the original moving-wage design for policy years 2011--2023. Its instrument
+averages
 current source-year OEWS hourly wage proxies with recovered county weights
 among the selected donors, with policy year equal to source year plus one.
 Both wages and weights may move. Recovered county distributions are
@@ -18,19 +19,29 @@ inclusion probabilities or identified sampling errors. FLS wage targets can
 induce mechanical relevance; the construction does not establish exclusion.
 
 The user explicitly retired the fixed-wage revision and all later separation
-and innovation exercises, including their results. This restores the original
-four-column estimator as the sole supported design; it is not a selection
+and innovation exercises, including their results. The original moving-wage
+estimator is the sole supported design; it is not a selection
 based on favorable first-stage statistics. All retained implementation,
 reporting and validation is R. The outcome registry and reviewed business
 linkage remain current rather than reverting to an older repository commit.
-The user later re-authorized one diagnostic, the Kitagawa instrument
-decomposition below. It leaves every retained instrument, column and table
-unchanged.
+
+On 2026-11-09 the user reduced the specifications. The wage-only instrument
+(its calibration, its `z_wage_only_real` field and its estimation columns)
+and the `continuing` control set with its 2024 samples were removed together
+with their outputs. The two retained columns reproduce former columns 2 and 4
+exactly, and the retained calibration, instrument and panel values are
+unchanged; the removal was requested as a simplification and was not chosen
+from the retired results. The Kitagawa instrument decomposition was first
+removed and then restored the same day in the reduced form described below:
+the components and their variance shares, without the former component
+2SLS, Anderson--Rubin sets or Hansen $J$ test. Component first stages
+returned with the stage 11 QWI wage-granularity diagnostic.
 
 `estimation_spec.json` and its R reader declare the twelve outcomes, real AEWR
-treatment, controls, county/year fixed effects and four columns. All county-year
-observations receive equal weight. Column 4 remains the preferred controlled
-seasonal/composition specification. There are no DiD classifications, cropland
+treatment, the single estimated instrument, controls, county/year fixed effects
+and two columns. All county-year
+observations receive equal weight. Column 2 is the preferred controlled
+specification. There are no DiD classifications, cropland
 restrictions or new sample definitions in this branch. See
 [Causal outcomes and model inputs](@/contracts/causal-outcomes-and-model-inputs.md).
 
@@ -55,9 +66,9 @@ is constructed once from 2008--2011 features. The starting models cluster standa
 errors by the resulting AEWR-region-by-subregion identifier
 `aewr_iv_cluster_id`.
 
-Both instruments use source information from year (t-1), a common Census
-hired-worker county prior, and soft entropy calibration with `rho = 0.10`.
-They differ only in the active target moments described below.
+The instrument uses source information from year (t-1), a Census
+hired-worker county prior, and soft entropy calibration with `rho = 0.10`
+on the target moments described below.
 
 ## County prior and annual path
 
@@ -88,7 +99,7 @@ zero. Removing it or replacing it with a different prior would change the
 weights and requires a separately declared empirical revision.
 
 Calibration estimates normalized county weights, not OEWS-area weights. For
-each specification there is exactly one county distribution per AEWR region
+the retained specification there is exactly one county distribution per AEWR region
 and source year, shared by all four survey weeks. Published FLS worker totals
 set seasonal shares only; they never constrain a regional employment level.
 
@@ -102,7 +113,8 @@ release no later than that report is selected. Release date, source ZIP, source
 CSV, table title, annual source, and selection method travel with both
 quarterly artifacts. See the [USDA NASS Farm Labor survey guide](https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_Labor/).
 
-The supported 2010--2021 grid contains all 816 region-year-quarter keys. USDA
+The supported 2010--2023 source-year grid contains all 952 region-year-quarter
+keys. USDA
 explicitly did not conduct the April 2011 survey. Those 17 paired table rows
 carry `survey_not_conducted`; no worker count or wage rate is fabricated. For
 2011 the available three survey weeks yield two independent seasonal
@@ -111,12 +123,14 @@ retained as explicit inactive diagnostics.
 
 ## Calibration moments
 
-The wage-only specification uses the annual FLS combined
+The calibration targets the annual FLS combined
 field-and-livestock/OEWS-hourly moment. County-mapped OEWS-area Big-Six hourly
-wages supply the wage feature for that benchmark; QCEW continues to supply the
-county employment distribution used by the prior and the preferred moments.
+wages supply the wage feature for that benchmark; QCEW supplies the
+county employment distribution used by the prior and the remaining moments.
+A separate distribution calibrated to this wage moment alone was retired on
+2026-11-09 and is no longer recovered.
 
-The preferred specification adds QCEW-primary seasonal and composition
+The calibration also targets QCEW-primary seasonal and composition
 information:
 
 1. Three independent Helmert contrasts of the four FLS quarterly worker
@@ -146,9 +160,9 @@ The deterministic recovery chooses $p_c$ to minimize
 
 Zero-prior counties remain outside the support. This trades off departure from
 the prior against moment mismatch; it does not impose exact matching or
-identify actual survey inclusion probabilities. The wage-only distribution
-uses one moment, while the preferred distribution adds the three seasonal
-contrasts and four composition residuals. One distribution is shared across
+identify actual survey inclusion probabilities. The distribution uses the
+annual wage moment, the three seasonal contrasts and the four composition
+residuals. One distribution is shared across
 the year's survey weeks. Missing county features use their observed-county
 mean weighted by the prior within that region-year, with coverage recorded.
 
@@ -193,17 +207,14 @@ year must equal source year plus one.
 
 ## Estimation contract
 
-The retained instrument fields are:
+The panel carries one instrument field,
+`z_wage_seasonal_composition_real`. The validator rejects a panel that still
+carries the retired `z_wage_only_real`.
 
-- `z_wage_only_real`; and
-- `z_wage_seasonal_composition_real`, the preferred field.
+The two first-stage columns use a common complete-case sample:
 
-The four first-stage columns use a common complete-case sample:
-
-1. wage-only instrument;
-2. wage-plus-seasonal/composition instrument;
-3. wage-only instrument with controls; and
-4. wage-plus-seasonal/composition instrument with controls (preferred).
+1. wage-plus-seasonal/composition instrument without controls; and
+2. wage-plus-seasonal/composition instrument with controls (preferred).
 
 The controls are lagged log county population, lagged farm-employment share,
 lagged employment-to-population ratio, the lagged real county 10th-percentile
@@ -214,37 +225,59 @@ employment and is constant across panel years. The score level is omitted
 because county fixed effects absorb it, and the interaction is a control in
 both IV stages, never an excluded instrument.
 
-Each outcome has the same four 2SLS columns and an outcome-specific common
-sample. Column 4 remains preferred. The twelve outcomes are normalized H-2A
+## Estimation window
+
+BEA discontinued the county CAEMP25N employment table after 2022, so the
+lagged farm-employment share and employment-to-population controls end in
+policy year 2023. Both columns use the controlled specification's complete
+cases, so every estimation sample runs from policy year 2011 through 2023
+(source years 2010--2022). `DISSIMILARITY_IV_ESTIMATION_END_YEAR` and
+`policy_years` in `estimation_spec.json` declare that window.
+
+Stages 05--06 still construct the instrument and the county-year panel through
+policy year 2024 (`DISSIMILARITY_IV_POLICY_END_YEAR`); the 2024 rows are not
+estimated. The former `continuing` control set, which replaced the two BEA
+employment ratios with the CAINC5N farm-earnings share and QCEW all-sector
+employment per resident in order to reach 2024, was removed at the user's
+request. Restoring it or otherwise extending the window is a separate
+specification change. The common shared baseline reaches 2025 and includes
+FY2026 Q3 disclosures. The 2023 occupation-specific rates and late-2025
+job-order cohort are source applicability diagnostics, not a wholesale
+replacement of annual regional AEWR. Outcomes built from current BEA farm
+employment or CAINC45 farm income end in 2022.
+
+Each outcome has the same two 2SLS columns and an outcome-specific common
+sample. Column 2 is preferred. The twelve outcomes are normalized H-2A
 certifications, certified contract hours, applications, the balanced v2
 linked-worksite-business count per 2011 farm employee, positions per application, hours per
 position, real crop prices, farm employment, farm-production expense share,
 real farm income per current-year farm worker, farm-labor share, and output
 quantities.
 
-The panel builder and final validator require the reviewed FY2008--2024
-`worksite_business` v2 provenance before the balanced business count can enter
+The panel builder and final validator require the FY2008--2026 Q3
+`worksite_business` v2 provenance with the review status pinned in `design.R`
+(currently `pending`) before the balanced business count can enter
 this registry. The review metrics do not select the IV specification or tier.
 
 `07_estimate_panel_iv.R` also writes an identical-sample diagnostic comparing
-the committed four-control preferred specification with those same controls
-plus the static propensity differential trend. It reports the AEWR
+the four lagged controls alone with the preferred specification, which adds
+the static propensity differential trend. It reports the AEWR
 coefficient, clustered standard error, within-(R^2), excluded-instrument F,
 observations, counties, and changes without imposing a precision-improvement
 sign.
 
 ## Kitagawa instrument decomposition (diagnostic)
 
-Stages 10--11 ask how much of each retained instrument's identifying variation
-comes from reallocating calibrated mass across donors rather than from donor
-wage movements. The recovered weights are used exactly as produced. Their
-response to OEWS wage features through the calibration is part of the design,
-so the weight component below includes that response. There is no
-recalibration with frozen wages.
+Stage 10 asks how much of the instrument's identifying variation comes from
+reallocating calibrated mass across donor counties rather than from donor wage
+movements. The recovered weights are used exactly as produced. Their response
+to OEWS wage features through the calibration is part of the design, so the
+weight component below includes that response. There is no recalibration with
+frozen wages.
 
-For target cluster $g$ and source year $t$, the decomposition restricts each
+For target cluster $g$ and source year $t$, the decomposition restricts the
 instrument to a balanced donor set: counties eligible in every source year
-2010--2021 that have a 2008--2010 base wage. It renormalizes their calibrated
+2010--2023 that have a 2008--2010 base wage. It renormalizes their calibrated
 weights to $p_{ct}$, and requires both selected donor clusters in every year.
 Clusters without such a set are excluded from the diagnostic, and the retained
 eligible mass is reported. With $\bar w_c$ the 2008--2010 mean real OEWS
@@ -259,26 +292,66 @@ Z^{b}_{gt}=\sum_c\bar p_c\bar w_c
 {% </equation> %}
 
 holds exactly. County fixed effects absorb the constant, and the weight
-component depends on $\bar p_c$ only through that constant. The Shapley
-components add half the interaction to each of the weight and wage terms.
+component depends on $\bar p_c$ only through that constant.
 
-Stage 11 uses the controlled column-3 (wage-only) and column-4 (preferred)
-specifications: the same controls, county/year FE, equal weights and
-target-subregion CRV1. It runs on the subsample where the decomposition exists
-and reports:
+The stage then residualizes the instrument, the balanced instrument $Z^b$ and
+the three components on the preferred column's county and year fixed effects
+and controls, on the preferred first-stage sample where the decomposition
+exists. It reports each component's variance, the pairwise covariances, and
+each component's covariance with $Z^b$ as a share of the variance of $Z^b$;
+the last three shares sum to one. It also reports the residual variance of the
+actual instrument relative to $Z^b$ and their correlation. Entry and exit of
+donor counties is excluded by the balanced-donor rule, so that comparison
+shows how much of the instrument's variation the decomposition does not
+cover. The shares describe the instrument only. They do not establish
+exclusion for either channel, and no result selects a specification.
 
-- first stages on the retained, balanced, and each component instrument, plus
-  joint models with a clustered test of equal component coefficients;
-- variance and covariance shares of the components after partialling out FE and
-  controls;
-- just-identified 2SLS for every outcome and instrument, with clustered
-  Anderson--Rubin confidence sets; and
-- 2SLS with the two Shapley components as separate instruments, with a
-  cluster-robust two-step-GMM Hansen $J$ test of equal implied effects.
+## QWI wage-granularity diagnostic
 
-As with the stage 07 diagnostic, each outcome's sample is the one fixest
-retains for the retained-instrument 2SLS model. These diagnostics do not
-establish exclusion for either channel, and no result selects a specification.
+The weight component is small partly because about five donor counties share
+each OEWS reporting area and therefore one wage level, so reallocating
+calibrated mass among them changes nothing. Stage 11, added at the user's
+request on 2026-11-09, shows what a county-level wage would do. It uses QWI
+average monthly earnings of stable NAICS 111/112 jobs
+(`qwi_county_ag_quarterly_earnings.parquet`, published values only), averaged
+over quarters and both industries with stable-employment weights and deflated
+with the source-year PPI. Two variants are compared:
+
+- `oews`, the design wage and weights, which must reproduce the stage 04
+  weights, the stage 05 instrument and the stage 10 components; and
+- `qwi_annual_recalibrated`, the OEWS wage times an annual county factor, in
+  the calibration's county wage feature and in the instrument, with weights
+  recalibrated in memory by stage 04's moments, solver and `rho = 0.10`. The
+  region's wage path stays OEWS while each county's position within the
+  region follows QWI year by year.
+
+The annual factor is the county's QWI/OEWS ratio in that year divided by its
+AEWR region's mean ratio, weighted by mean prior weight times the OEWS wage,
+from 2008 on. That normalization keeps each region-year's prior-mean wage, and
+therefore the calibration's gap to the FLS wage target, close to the design's,
+so recalibration responds to the added county dispersion rather than to a
+level shift. A county-year without a ratio takes the county's nearest earlier
+year, else its nearest later year, so some early factors use later data; a
+county never observed keeps factor one. Earlier versions of the stage also
+reported a fixed 2008--2010 factor, the design weights with adjusted wages,
+and QWI earnings outright; the user dropped them on 2026-11-09.
+
+For each the stage rebuilds the instrument with stage 05's eligibility,
+renormalization and support rules, repeats the stage 10 decomposition and
+reports QWI coverage, the spread of wage levels across donors, the weight,
+wage and interaction shares of the balanced instrument's variance after fixed
+effects and controls, and preferred-column first stages for the instrument,
+the balanced instrument, and the weight and wage components alone.
+
+The county-mapped OEWS-area wage remains the only wage of the design, in the
+calibration and in the instrument. The stage writes no calibration or
+instrument artifact, estimates no outcome equation, and
+its results do not select a wage source. QWI earnings mix pay with hours and
+are not an hourly wage; dividing them by 2080/12 hours only places them on the
+OEWS scale, and the regional normalization removes that constant from the
+factor. A weight-only first stage is
+the first stage of a fixed-wage instrument on the balanced donors, so this
+stage also reports on that retired revision without restoring it.
 
 ## Retained artifacts
 
@@ -292,11 +365,11 @@ The runner executes stages 01--11 in R. Each retained artifact has one owner:
 | `04_recover_fls_geography.R` | County-keyed features, deterministic weights, and moment/calibration diagnostics |
 | `05_construct_instruments.R` | `panel_iv_county_donor_frame.parquet` and `panel_iv_instrument_cluster_year.parquet` |
 | `06_build_county_year_panel.R` | `data/processed/panel_iv_county_year.parquet` |
-| `07_estimate_panel_iv.R` | First stages, twelve four-column 2SLS tables, diagnostics, H-2A margins, and summary statistics |
+| `07_estimate_panel_iv.R` | First stage, twelve two-column 2SLS tables, diagnostics, H-2A margins, and summary statistics |
 | `08_generate_figures.R` | Six county-calibration diagnostic figures and plotting-data CSVs |
 | `09_validate_artifacts.R` | Source, calibration, wage-proxy, timing, sample, and retained-table checks |
-| `10_decompose_instruments.R` | `panel_iv_instrument_decomposition_cluster_year.parquet` and decomposition support summary |
-| `11_estimate_instrument_decomposition.R` | Decomposition first stages, variance shares, component 2SLS with AR sets, and Hansen $J$ tables |
+| `10_decompose_instrument.R` | `panel_iv_instrument_decomposition_cluster_year.parquet`, decomposition support summary and variance shares |
+| `11_qwi_wage_diagnostics.R` | `iv_qwi_wage_diagnostics_coverage.csv`, `iv_qwi_wage_diagnostics_summary.csv` and `iv_qwi_wage_diagnostics_first_stage.csv` |
 
 The newly named recovery artifacts are:
 
@@ -338,10 +411,8 @@ The retained estimation filenames under `outputs/tables` are unchanged:
 For email circulation, the same estimates are also transposed into
 `panel_iv_email_results.pdf`, which contains one landscape table per model
 specification and one outcome per column. Editable copies are written as
-`panel_iv_email_results_spec1_wage_only.csv`,
-`panel_iv_email_results_spec2_seasonal_composition.csv`,
-`panel_iv_email_results_spec3_wage_only_controls.csv`, and
-`panel_iv_email_results_spec4_preferred.csv`. These exports change only table
+`panel_iv_email_results_spec1_no_controls.csv` and
+`panel_iv_email_results_spec2_preferred.csv`. These exports change only table
 orientation and formatting; they do not re-estimate or rescale any model.
 
 The diagnostic figures are
@@ -358,5 +429,5 @@ Synthetic regression checks live under `code/designs/panel_iv/tests/`. The
 final validator checks geographic strings, declared keys, QCEW disclosure
 semantics, paired FLS releases and the documented 2011 gap, weight sums,
 optimizer success, OEWS hourly proxy semantics and coverage, (t-1) timing,
-four-column ordering, common samples, cluster counts, and first-stage
+two-column ordering, common samples, cluster counts, and first-stage
 diagnostics.

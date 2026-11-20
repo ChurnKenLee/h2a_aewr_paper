@@ -118,14 +118,8 @@ def prepare_rows(config: dict) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame
         title_normalized=pl.col("job_title").fill_null("").str.to_uppercase()
         .str.replace_all(r"\s+", " ").str.strip_chars(),
         receipt_date=pl.col("case_received_date").str.to_date("%Y-%m-%d", strict=False),
-        start_date=pl.coalesce([
-            pl.col(c).str.to_date("%Y-%m-%d", strict=False)
-            for c in ["certification_begin_date", "job_begin_date", "requested_begin_date"]
-        ]),
-        end_date=pl.coalesce([
-            pl.col(c).str.to_date("%Y-%m-%d", strict=False)
-            for c in ["certification_end_date", "job_end_date", "requested_end_date"]
-        ]),
+        start_date=pl.col("period_begin_date").str.to_date("%Y-%m-%d", strict=False),
+        end_date=pl.col("period_end_date").str.to_date("%Y-%m-%d", strict=False),
         valid_state=pl.col("worksite_state").is_in(valid_states).fill_null(False),
         is_master=pl.when(pl.col("fiscal_year") < 2016)
         .then(pl.col("organization_flag").fill_null("") != "")

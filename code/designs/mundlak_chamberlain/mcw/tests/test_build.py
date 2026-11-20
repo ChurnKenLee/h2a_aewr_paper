@@ -68,8 +68,8 @@ def _synthetic_panel() -> pl.DataFrame:
                     "man_hours_certified_start_year": 5.0,
                     "employer_linkage_unit": "worksite_business",
                     "employer_linkage_version": "v2",
-                    "employer_linkage_input_max_year": 2024,
-                    "employer_linkage_review_status": "complete",
+                    "employer_linkage_input_max_year": 2026,
+                    "employer_linkage_review_status": "pending",
                     "employer_linkage_review_report_hash": "a" * 64,
                     "emp_farm": 100.0 + float(year - 2008),
                     "ln_pop_census": (
@@ -97,6 +97,23 @@ class BuildPanelTests(unittest.TestCase):
                 history_years=(2011, 2012, 2013),
                 analysis_years=(2012, 2013),
             )
+
+    def test_unavailable_requests_do_not_change_panel_or_sample(self) -> None:
+        from polars.testing import assert_frame_equal
+
+        source = _synthetic_panel()
+        expected = self._build(source).drop("nbr_workers_requested_start_year")
+        for unavailable in (
+            source.drop("nbr_workers_requested_start_year"),
+            source.with_columns(
+                pl.lit(None, dtype=pl.Float64).alias("nbr_workers_requested_start_year")
+            ),
+        ):
+            actual = self._build(unavailable)
+            assert_frame_equal(actual.select(expected.columns), expected)
+            self.assertEqual(actual.height, 4)
+            self.assertEqual(set(actual["year"]), {2012, 2013})
+            self.assertNotIn("mc_y_requested_positions", actual.columns)
 
     def test_paths_bites_outcomes_and_string_clusters(self) -> None:
         panel = self._build(_synthetic_panel())

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checks": 164,
+  "tolerance": 1e-10,
+  "coefficient_rows": {
+    "wage": 347,
+    "earnings_pre": 135,
+    "earnings_interim_without_QWI": 46
+  },
+  "outcomes_previously_inspected": true
+}

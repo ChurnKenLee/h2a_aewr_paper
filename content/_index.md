@@ -24,6 +24,7 @@ every Zola build.
 - [AEWR-border ring experiment](@/designs/border-discontinuity.md)
 - [Border data-input comparisons](@/designs/border-data-inputs.md)
 - [Historical wage reforms](@/designs/wage-reforms.md)
+- [2025 H-2A policy shift](@/designs/policy-2025.md)
 - [Mundlak–Chamberlain](@/designs/mundlak-chamberlain.md)
 - [Narrow welfare calculation](@/designs/welfare.md)
 - [Coding-agent workflow](@/reference/agent-workflow.md)

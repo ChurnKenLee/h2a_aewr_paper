@@ -983,7 +983,7 @@ def _(
     supported_keys = {
         (str(region), year, quarter)
         for region in range(1, 18)
-        for year in range(2010, 2022)
+        for year in range(2010, 2024)
         for quarter in ("january", "april", "july", "october")
     }
     worker_keys = set(
@@ -999,11 +999,11 @@ def _(
     if not supported_keys.issubset(worker_keys & wage_keys):
         missing = sorted(supported_keys.difference(worker_keys & wage_keys))
         raise ValueError(
-            "FLS worker/wage release pairs are incomplete for 2010-2021: "
+            "FLS worker/wage release pairs are incomplete for 2010-2023: "
             + ", ".join(f"{region}-{year}-{quarter}" for region, year, quarter in missing[:10])
         )
     supported_pairs = fls_region_quarterly_workers.filter(
-        pl.col("year").is_between(2010, 2021)
+        pl.col("year").is_between(2010, 2023)
     )
     known_nonconducted = supported_pairs.filter(
         ~pl.col("fls_pair_values_available")

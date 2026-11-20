@@ -39,7 +39,7 @@ aewr_data <- read_parquet(
     aewr_l2 = lag(aewr, n = 2)
   ) %>%
   ungroup() %>%
-  filter(year > 2007, year <= 2022) %>%
+  filter(year >= SHARED_PANEL_START_YEAR, year <= SHARED_PANEL_END_YEAR) %>%
   left_join(fips_codes, by = "state_fips", relationship = "many-to-one") %>%
   select(
     aewr,

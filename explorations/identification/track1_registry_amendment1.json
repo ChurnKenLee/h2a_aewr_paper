@@ -1,0 +1,44 @@
+{
+  "design_id": "identification_track1_statewide_all_county_v1_amendment1",
+  "amends": {
+    "registry": "explorations/identification/track1_registry.json",
+    "registry_sha256": "bbffa053953873aa8a36c04a5af71c012fd15460b2cd0ff84bd378f6e65aafd8",
+    "base_registry_status": "unchanged and still frozen; every base-registry specification is estimated and reported as a declared sensitivity"
+  },
+  "status": "declared_before_any_FY2026_outcome_offered_wage_or_case_count_is_parsed_or_inspected",
+  "amendment_frozen": "2026-11-02",
+  "decided_by": "user, 2026-11-02, after reading the pre-period diagnostics (04b) and amendment power (04c); no FY2026 data had been read",
+  "reason": "04b found a smooth dose-correlated pre-trend (linear drift 0.00125 per dollar per FY); the base static contrast (FY2026 vs FY2012-FY2025 mean) would carry about +0.009 drift bias, about 1 elasticity unit. A one-year contrast limits that bias to about one year of drift (about 0.0013, 0.15 elasticity units).",
+  "legal_status": {
+    "statement": "User confirmed on 2026-11-02 that the statewide rates were implemented after the full notice-and-comment process and that legal challenges ultimately failed; the rates applied throughout FY2026 Q1-Q3.",
+    "note": "The base registry described the 2025-10-02 rule as an interim final rule; that description was written from memory without a network check. The user's statement governs. No entity-specific exceptions are modelled."
+  },
+  "primary": {
+    "contrast": "B: FY2025 and FY2026 only",
+    "model": "y_ct = beta * rate_ct + county FE + former-region x FY FE, t in {FY2025, FY2026}; equivalent to the FY2026-minus-FY2025 county change on the FY2026 statewide rate with former-region FE",
+    "treatment": "us_skill_1 rate in effect on April 1 of the FY (FY2025: regional reference rate; FY2026: statewide U.S. skill-I rate), nominal dollars",
+    "outcomes": {
+      "primary": "cert_positions_q1q3 (certified positions per 2011 farm worker, decisions dated 1 Oct - 30 Jun)",
+      "secondary": ["cert_hours_q1q3", "PPML certified positions and hours (counts), same FE", "offered_wage_q1q3 first stage (counties with hourly offers in both FYs)"]
+    },
+    "sample": "base-registry sample: all counties with positive emp_farm_2011 in multi-state former AEWR regions, excluding AK, HI, DC; balanced county x FY",
+    "weights": "equal county",
+    "inference": {
+      "primary": "state leave-one-out jackknife (CV3), t(G-1)",
+      "primary_reason": "design-stage simulation (04, 04c): state CRV1 null rejection 0.14-0.18 under every declared error process; the state jackknife was size-valid in 04. This choice is made before outcomes are read.",
+      "also_reported": ["state CRV1", "former-region CRV1", "restricted Webb wild cluster bootstrap over states, 9999 draws, seed 20261102 (OLS only)", "randomization inference permuting FY2026 statewide rates across states within former region, 9999 draws, seed 20261102"]
+    },
+    "elasticity": "beta x mean(rate) / mean(outcome) over the estimation sample (id_rows convention); semi-elasticity for PPML is beta x mean(rate)"
+  },
+  "placebo": "the primary model estimated on FY2024 and FY2025 with the FY2026 dose (FY2025 rate replaced by the FY2026 statewide rate in the FY2025 row); same inference",
+  "declared_sensitivities": [
+    "S1 base registry static model: FY2012-FY2026, county + former-region x FY FE, all base-registry outcomes, treatments and inference",
+    "S2 amendment A: S1 plus state-specific linear trends",
+    "S3 primary contrast with h2a_skill_1 and us_skill_2 treatments",
+    "S4 primary contrast with the cohort-aligned treatment (FY2026 cases received before 2025-10-02 assigned the FY2025 regional rate; county treatment = certified-position-weighted mean of assigned rates; counties with no FY2026 cases get the statutory rate)",
+    "S5 primary contrast with the state minimum wage (nominal, effective 1 April of the FY) as a control: general state minimum, and the applicable agricultural minimum under the producer coding in force at estimation time, each labeled"
+  ],
+  "data_coverage_rule": "If FY2026 decisions in the local artifacts end before 30 June 2026, the seasonal window in BOTH years is truncated to the last month fully covered in FY2026 (window stated in output); the 1 Oct start is unchanged. If FY2026 rows are absent, nothing is estimated and the user is told.",
+  "gate": "design stage: fails elasticity-MDE <= 1.0 (realistic size-valid MDE about 1.5); results are reported regardless and labeled underpowered against the gate",
+  "selection_rule": "No outcome-based selection. All primary, placebo and declared sensitivity results are reported. Any later choice is labeled post-outcome."
+}

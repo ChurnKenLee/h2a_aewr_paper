@@ -34,10 +34,8 @@ def prepare_worksites(source: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]
     work = source.with_columns(
         parsed_date("worksite_requested_begin_date").alias("site_begin"),
         parsed_date("worksite_requested_end_date").alias("site_end"),
-        pl.coalesce(parsed_date("certification_begin_date"), parsed_date("job_begin_date"),
-                    parsed_date("requested_begin_date")).alias("case_begin"),
-        pl.coalesce(parsed_date("certification_end_date"), parsed_date("job_end_date"),
-                    parsed_date("requested_end_date")).alias("case_end"),
+        parsed_date("period_begin_date").alias("case_begin"),
+        parsed_date("period_end_date").alias("case_end"),
         pl.col("number_of_hours").cast(pl.Float64, strict=False).alias("weekly_hours"),
         pl.coalesce("case_nbr_workers_certified", "master_n_workers_certified",
                     "adjusted_nbr_workers_certified").alias("case_target_candidate"),
@@ -87,7 +85,7 @@ def candidate_counties(value: str | None) -> list[str | None]:
 
 def expand_months(work: pl.DataFrame) -> pl.DataFrame:
     keep = ["allocation_id", "case_number", "fiscal_year", "county_fips_list",
-            "adjusted_nbr_workers_certified", "weekly_hours", "date_basis",
+            "adjusted_nbr_workers_certified", "weekly_hours", "date_basis", "period_date_basis",
             "valid_site_interval", "site_case_dates_differ", "allocation_method",
             "exposure_begin", "exposure_end"]
     month = work.filter(pl.col("exposure_begin").is_not_null()

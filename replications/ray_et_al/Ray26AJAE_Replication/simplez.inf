@@ -1,0 +1,2639 @@
+
+    TTTTTTTTTT  AAAAAAAAAA   BBBBBBB      LLLL        OOOOOOOOOO
+    TTTTTTTTTT  AAA    AAA   BBBBBBBBB    LLLL        OOOOOOOOOO
+       TTT      AAA    AAA   BBB    BBB   LLLL        OOO    OOO
+       TTT      AAA    AAA   BBB  BBB     LLLL        OOO    OOO
+       TTT      AAAAAAAAAA   BBBBBBB      LLLL        OOO    OOO
+       TTT      AAAAAAAAAA   BBB  BBB     LLLL        OOO    OOO
+       TTT      AAA    AAA   BBB    BBB   LLLL        OOO    OOO
+       TTT      AAA    AAA   BBBBBBBBB    LLLLLLLLL   OOOOOOOOOO
+       TTT      AAA    AAA   BBBBBBB      LLLLLLLLL   OOOOOOOOOO
+
+ <TABLO  Version 7.0   August 2018>                                    
+
+
+
+
+
+                     GEMPACK SOFTWARE
+     << COPYRIGHT 1987-2018:  The Impact Project and KPSOFT >>
+   
+   
+
+    +++  INFORMATION ABOUT THIS PRINT FILE  +++
+   
+
+ ! This file was created at 09:57:31 on 17-JUL-2026 by the program
+ !  <TABLO  Version 7.0   August 2018>
+ ! which accesses some of the routines in the GEMPACK software release
+ !  <GEMPACK Release 12.2.001   April 2025>
+ 
+ !     -------------------------------------------------------                
+ !    !            GEMPACK Software System Licence            !               
+ !    !  Single-user Source-code Licence for GEMPACK on a PC  !               
+ !    !                 Licence No.  GFS-2201                 !               
+ !    !          Licence for Release 12.2 of GEMPACK          !               
+ !    !                     Srabashi Ray,                     !               
+ !    !               University of Luxembourg                !               
+ !    !                Named User-Srabashi Ray                !               
+ !     -------------------------------------------------------                
+    
+
+    +++  END OF INFORMATION ABOUT THIS PRINT FILE  +++
+
+ ======================================================
+           TABLO PORTABLE   
+ ++> TABLO OPTIONS   ( --> indicates those in effect )
+ ======================================================
+
+
+
+      -----------                   ----------
+  --> F1 CHECK                      L1 CHECK
+      F2 CONDENSATION               L2 CONDENSATION
+      F3 CODE GENERATION        --> L3 CODE GENERATION
+      Mode
+      ----
+      INTERACTIVE
+      BATCH
+  --> UNSPECIFIED
+
+
+ ==================================================
+ ++> TABLO Input file is 'simplez.tab'
+ ++> This Information file is 'simplez'
+ ==================================================
+
+
+
+ ******************************************************************************
+ -1-
+ -->                     Starting CHECK stage
+
+ ******************************************************************************
+
+
+      1   !===========================================================================!
+      2   !
+      3   SIMPLEZ-US-EST at labor shed level
+      4   This version is designed for Ray et al., 2025
+      5   For first stage estimation (FSE) and hist. validation and Second stage estimation (SSE)
+      6   Unknown parameters = {AFL,AFZ,AFR,ESLZ,ELAB}, read in from shf/ESTIPARM.har
+      7   Initial values for {AO,AO,AO,0.26, abs[(ql(a)+phil(a))/pl(a)]}
+      8   All (inputs & outputs) markets clear at the CZ level
+      9    
+     10   ****************************************************************************
+     11      Basic model structure is as follows:
+     12    
+     13   **********
+     14   * DEMAND *
+     15   **********
+     16    Change in production exogenously determined based on CoA Data
+     17    
+     18                                           |
+     19   ********************                 QCROPz
+     20   * SUPPLY STRUCTURE *                /      \
+     21   ********************               /        \
+     22                                     /----------\       <--ces
+     23                                    /  ECROPz   \
+     24                                   /              \
+     25                             QAUGLANDz         QNITROz
+     26                               /      \
+     27                              /--------\                 <--ces
+     28                             /EAUGLANDz\
+     29                            /            \
+     30                           /              \
+     31                      QNLANDz         QLANDWTRz
+     32                     /       \         /       \
+     33                   /-ESUB_LZ-\        /         \
+     34                 /           \       /-----------\        <--ces
+     35             LABOR        NLABOR    /  EIRRIGz   \
+     36                                   /              \
+     37                               QLANDz           QWATERz
+     38                                 /                  \
+     39                                / ------------------ \  <--ces
+     40                              /       ESUB_WKz       \
+     41                             /                         \
+     42                         QWATSGz                   QWEQPTz
+     43                        /       \
+     44                       /         \
+     45                      /-----------\        <--ces
+     46                     /  ESUB_SGz  \
+     47                   /               \
+     48               QWATSRFz        QWATGRDz
+     49    !
+     50    
+     51    
+     52    
+     53   !<  PRELIMINARIES
+     54       ====================================================================   >!
+     55   !   Declaration of files & sets (see 'in' folder)                           !
+     56   File  CZSETS    # model sets #;
+     57         CZDATA    # model data #;
+     58         CZPARM    # model parameters #;
+     59         REGPARM   # model parameters #;
+     60         LABMRKT   # file to sepcify the labor market shed for mig. lab #;
+     61         ESTIPARM  # file with parameters to calibrate #;
+     62    
+     63   Set REG         # regions #                                    read elements from file CZSETS header "REG";
+     64   Set CZ    # domestic labor market shed #                        read elements from file LABMRKT header "CZ";
+     65   Set PR    # production regions #                                read elements from file LABMRKT header "SMKT";
+     66    
+     67   Mapping CZ2REG from CZ to REG;
+     68               read CZ2REG from file  CZSETS header "MAP6";
+     69    
+     70   Mapping CZ2PR from CZ to PR;
+     71               read CZ2PR from file  LABMRKT header "MAP4";
+     72    
+     73   Mapping PR2REG from PR to REG;
+     74               read PR2REG from file  LABMRKT header "MP12";
+     75    
+     76   Set US_CZ   =(all,z,CZ:  CZ2REG(z)  = "US");
+     77   Set US_PR   =(all,a,PR:  PR2REG(a)  = "US");
+     78    
+     79   !   **********************************
+     80       Policy levers in Crop CES nest
+     81       **********************************   !
+     82    
+     83   !   ****************************************
+     84       Technical variables in Crop CES nest
+     85       ****************************************   !
+     86   ! technical change by by CZ !
+     87   Variable  (all,z,CZ) p_AOCROPz(z);
+     88   Variable  (all,z,CZ) p_AFNITROz(z)   # nitrogen eff. index in Crop prod. by CZ (z)#;
+     89   Variable  (all,z,CZ) p_AFLANDz(z)    # land eff. index in crop prod. by CZ (z)#;
+     90   Variable  (all,z,CZ) p_AFWATERz(z)   # aggregate irrigation eff. index in crop prod. by CZ (z)#;
+     91   Variable  (all,z,CZ) p_AFWATSGz(z)   # water eff. index in crop prod. by CZ (z)#;
+     92   Variable  (all,z,CZ) p_AFWEQPTz(z)   # water equipment eff. index in crop prod. by CZ (z)#;
+     93   Variable  (all,z,CZ) p_AFLABORz(z)   # Labor eff. index in crop prod. by CZ (z)#;
+     94   Variable  (all,z,CZ) p_AFNLABORz(z)  # Non-labor eff. index in crop prod. by CZ (z)#;
+     95   Variable  (all,z,CZ) p_AFNLANDz(z)   # NonLand eff. index in crop prod. by CZ (z)#;
+     96   Variable  (all,z,CZ) p_AFLANDWTRz(z) # Land+water eff. index in crop prod. by CZ (z)#;
+     97    
+     98   ! technical change by PR  !
+     99   Variable  (all,a,PR) p_AFNITROa(a)   # N Fert eff. index in crop prod. by PR  #;
+    100   Variable  (all,a,PR) p_AFNLANDa(a)   # NonLand eff. index in crop prod. by PR  #;
+    101   Variable  (all,a,PR) p_AFLABORa(a)   # Labor eff. index in crop prod. by PR  #;
+    102   Variable  (all,a,PR) p_AFNLABORa(a)   # Non-labor eff. index in crop prod. by PR  #;
+    103   Variable  (all,a,PR) p_AFLANDWTRa(a) # Land+water eff. index in crop prod. by PR  #;
+    104    
+    105   ! technical change by reg  !
+    106   Variable  (all,r,REG) p_AOCROPr(r) # input-neutral eff. index in Crop prod. by reg  #;
+    107   Variable  (all,r,REG) p_AFNITROr(r) # nitrogen eff. index in Crop prod. by reg  #;
+    108   Variable  (all,r,REG) p_AFLANDr(r) # land eff. index in crop prod. by reg  #;
+    109   Variable  (all,r,REG) p_AFWATERr(r) # aggregate irrigation eff. index in crop prod. by reg #;
+    110   Variable  (all,r,REG) p_AFWATSGr(r) # water eff. index in crop prod. by reg  #;
+    111   Variable  (all,r,REG) p_AFWEQPTr(r) # water equipment eff. index in crop prod. by reg  #;
+    112   Variable  (all,r,REG) p_AFLABORr(r) # Labor eff. index in crop prod. by PR #;
+    113   Variable  (all,r,REG) p_AFNLABORr(r) # Non-labor eff. index in crop prod. by PR #;
+    114   Variable  (all,r,REG) p_AFNLANDr(r) # NonLand eff. index in crop prod. by reg  #;
+    115   Variable  (all,r,REG) p_AFLANDWTRr(r) # Land+water eff. index in crop prod. by reg  #;
+    116    
+    117   ! final technical change variable !
+    118   Variable  (all,z,CZ) p_AOCROP(z) # input-neutral eff. index in Crop prod. by CZ (z)#;
+    119   Variable  (all,z,CZ) p_AFNITRO(z) # nitrogen eff. index in Crop prod. by CZ (z)#;
+    120   Variable  (all,z,CZ) p_AFLAND(z) # land eff. index in crop prod. by CZ (z)#;
+    121   Variable  (all,z,CZ) p_AFWATER(z) # aggregate irrigation eff. index in crop prod. by CZ (z)#;
+    122   Variable  (all,z,CZ) p_AFWATSG(z) # water eff. index in crop prod. by CZ (z)#;
+    123   Variable  (all,z,CZ) p_AFWEQPT(z) # water equipment eff. index in crop prod. by CZ (z)#;
+    124   Variable  (all,z,CZ) p_AFLABOR(z) # Labor eff. index in crop prod. by CZ (z)#;
+    125   Variable  (all,z,CZ) p_AFNLABOR(z) # Non-labor eff. index in crop prod. by CZ (z)#;
+    126   Variable  (all,z,CZ) p_AFNLAND(z) # NonLand eff. index in crop prod. by CZ (z)#;
+    127   Variable  (all,z,CZ) p_AFLANDWTR(z) # Land+water eff. index in crop prod. by CZ (z)#;
+    128    
+    129   !   Equation linking regional and grid specific tech change parameters      !
+    130   Equation
+    131    E_AOCROP     (all,z,CZ) p_AOCROP(z)    = p_AOCROPz(z)     + p_AOCROPr(CZ2REG(z));
+    132    E_AFNITRO    (all,z,CZ) p_AFNITRO(z)   = p_AFNITROz(z)    + p_AFNITROa(CZ2PR(z)) + p_AFNITROr(CZ2REG(z));
+    133    E_AFLAND     (all,z,CZ) p_AFLAND(z)    = p_AFLANDz(z)     + p_AFLANDr(CZ2REG(z));
+    134    E_AFWATER    (all,z,CZ) p_AFWATER(z)   = p_AFWATERz(z)    + p_AFWATERr(CZ2REG(z));
+    135    E_AFWATSG    (all,z,CZ) p_AFWATSG(z)   = p_AFWATSGz(z)    + p_AFWATSGr(CZ2REG(z));
+    136    E_AFWEQPT    (all,z,CZ) p_AFWEQPT(z)   = p_AFWEQPTz(z)    + p_AFWEQPTr(CZ2REG(z));
+    137    E_AFLABOR    (all,z,CZ) p_AFLABOR(z)   = p_AFLABORz(z)    + p_AFLABORa(CZ2PR(z)) + p_AFLABORr(CZ2REG(z));
+    138    E_AFNLABOR   (all,z,CZ) p_AFNLABOR(z)  = p_AFNLABORz(z)   + p_AFNLABORa(CZ2PR(z))   + p_AFNLABORr(CZ2REG(z));
+    139    E_AFNLAND    (all,z,CZ) p_AFNLAND(z)   = p_AFNLANDz(z)    + p_AFNLANDa(CZ2PR(z))   + p_AFNLANDr(CZ2REG(z));
+    140    E_AFLANDWTR  (all,z,CZ) p_AFLANDWTR(z) = p_AFLANDWTRz(z)  + p_AFLANDWTRa(CZ2PR(z)) + p_AFLANDWTRr(CZ2REG(z));
+    141    
+    142   !   ******************************
+    143       Control/slack variables
+    144       ******************************   !
+    145   Variable
+    146    (all,z,CZ)  s_QLANDz(z)     # Slack to control cropland by CZ (z) #;
+    147    (all,z,CZ)  s_QWATERz(z)    # Slack to control water use by CZ (z) #;
+    148    (all,z,CZ)  s_QCROPz(z)     # Slack to control crop output by CZ #;
+    149    (all,z,CZ)  s_PCROPz(z)     # dictate CZ level crop price #;
+    150    (all,z,CZ)  s_QLANDWTRz(z)  # supply shock to composite land+wtr (z) #;
+    151    (all,z,CZ)  s_QAUGLANDz(z)  # #;
+    152    (all,z,CZ)  s_QNLANDz(z)    # QNLAND slack # ;
+    153    (all,z,CZ)  s_PNLANDz(z)    ;
+    154    (all,z,CZ)  s_QLABORz(z)    ;
+    155    (all,a,PR)  s_QLABORa(a)    ;
+    156    (all,z,CZ)  s_QLABOR(z)    ;
+    157    (all,z,CZ)  s_QNLABORz(z) # Slack to control non-labor market by grid & ltype #;
+    158    
+    159   Equation
+    160    E_SQLABOR     (all,z,CZ) s_QLABOR(z)    = s_QLABORz(z)     + s_QLABORa(CZ2PR(z));
+    161    
+    162   !<  PRODUCTION SYSTEM
+    163       ====================================================================   >!
+    164    
+    165   ! define main inputs and assign values!
+    166   Variable
+    167    (levels) (all,z,CZ) QLANDz(z)     # cropland area by a (z) (1000 HA) #;
+    168    (levels)(all,z,CZ)  QLABORz(z)    # Labor in a commuting zone (in 1000 hours) #;
+    169   ! (levels)(all,z,CZ)  QNLABORz(z)   # Non-Labor in a commuting zone (in 1000 hours) #;!
+    170    (levels)(all,z,CZ)  PCROPz(z)     # price of crops by CZ ($/kg corn-eq) #;
+    171    (levels)(all,z,CZ)  QCROPz(z)     # crop output by CZ    (1000 kg) #;
+    172    
+    173   Coefficient
+    174    (all,z,CZ) VLANDz(z)    # Val land      by a (z) (1000 USD) #;
+    175    (all,z,CZ) VLABORz(z)   # Val labor     by a (z) (1000 USD) #;
+    176    (all,z,CZ) VNLABORz(z)  # Val non-labor by a (z) (1000 USD) #;
+    177    (all,z,CZ) VNITROz(z)   # Val nitr frt  by a (z) (1000 USD) #;
+    178    (all,z,CZ) VWATSGz(z)   # Val water     by a (z) (1000 USD) #;
+    179    (all,z,CZ) VWEQPTz(z)   # Val wat eqpt  by a (z) (1000 USD) #;
+    180    
+    181   Read
+    182    QLANDz   from file CZDATA header "QLND";
+    183    QLABORz  from file CZDATA header "QLAB";
+    184   ! QNLABORz from file CZDATA header "QNLB";!
+    185    QCROPz   from file CZDATA header "QCRP";
+    186    
+    187    VLANDz   from file CZDATA header "VLND";
+    188    VLABORz  from file CZDATA header "VLAB";
+    189    VNLABORz from file CZDATA header "VNLB";
+    190    VNITROz  from file CZDATA header "VNIT";
+    191    VWATSGz  from file CZDATA header "VWTR";
+    192    VWEQPTz  from file CZDATA header "VWOR";
+    193    
+    194   Coefficient
+    195   (all,z,CZ) VCROPz(z)    # Val crop output   by z (1000 USD) #;
+    196   (all,z,CZ) VWATERz(z)   # Val irrigation    by z (1000 USD) #;
+    197   (all,z,CZ) VLNDWTRz(z)  # Val land+irrig    by z (1000 USD) #;
+    198   (all,z,CZ) VNLANDz(z)   # Val lan+non-lab   by z (1000 USD) #;
+    199   (all,z,CZ) VAUGLANDz(z) # Val oth+lnd+irrig by z (1000 USD) #;
+    200    
+    201   Formula
+    202   (all,z,CZ) VWATERz(z)   = VWATSGz(z) + VWEQPTz(z);
+    203   (all,z,CZ) VLNDWTRz(z)  = VWATERz(z) + VLANDz(z) ;
+    204   (all,z,CZ) VNLANDz(z)   = VLABORz(z) + VNLABORz(z) ;
+    205   (all,z,CZ) VAUGLANDz(z) = VNLANDz(z) + VLNDWTRz(z) ;
+    206   (all,z,CZ) VCROPz(z)    = VNITROz(z) + VAUGLANDz(z) ;
+    207    
+    208   Coefficient
+    209    (all,z,CZ)  SHR_LinNLz(z)  # shr labor in non-land by CZ #;
+    210    (all,z,CZ)  SHR_CinNLz(z)  # shr capital in non-land by CZ #;
+    211    (all,z,CZ)  SHR_LABORz(z)  # shr labor in tot cost by CZ #;
+    212    (all,z,CZ)  SHR_NLABORz(z) # shr non-labor in tot cost by CZ #;
+    213    
+    214   Zerodivide default 0.20;
+    215   Formula
+    216             (all,z,CZ)   SHR_LABORz(z)  = VLABORz(z)  / VCROPz(z);
+    217             (all,z,CZ)   SHR_NLABORz(z) = VNLABORz(z) / VCROPz(z);
+    218             (all,z,CZ)   SHR_LinNLz(z)  = VLABORz(z)  / VNLANDz(z);
+    219             (all,z,CZ)   SHR_CinNLz(z)  = VNLABORz(z) / VNLANDz(z);
+    220   Zerodivide off;
+    221    
+    222   ! define share parameters and assign values!
+    223   Coefficient
+    224   ! shr: cost shares!
+    225   (all,z,CZ) SHR_LANDz(z)   # shr land  in tot cost by CZ #;
+    226   (all,z,CZ) SHR_NITROz(z)  # shr nitr  in tot cost by CZ #;
+    227   (all,z,CZ) SHR_WATSGz(z)  # shr water S+G   in tot cost by CZ #;
+    228   (all,z,CZ) SHR_WEQPTz(z)  # shr water equipment in tot cost by CZ #;
+    229   (all,z,CZ) SHR_NLANDz(z)  # shr non-land in tot cost by CZ #;
+    230    
+    231   (all,z,CZ) SHR_OinAUGz(z) # shr oth   in aug. land by CZ (z) #;
+    232   (all,z,CZ) SHR_LinAUGz(z) # shr land  in aug. land by CZ (z) #;
+    233   (all,z,CZ) SHR_WinAUGz(z) # shr water in aug. land by CZ (z) #;
+    234   (all,z,CZ) SHR_LinLWz(z)  # shr land  in land+wat+eqpt by CZ (z) #;
+    235   (all,z,CZ) SHR_WinLWz(z)  # shr water in land+wat+eqpt by CZ (z) #;
+    236   (all,z,CZ) SHR_WWinWz(z)  # shr wat S+G in wat+eqpt by CZ (z) #;
+    237   (all,z,CZ) SHR_WKinWz(z)  # shr Weqpt in wat+eqpt by CZ (z) #;
+    238    
+    239   ! QCET !
+    240   ! shr: quantity shares!
+    241   Coefficient
+    242   (all,z,CZ) SHR_QLANDz(z) # quantity shr of each land type in CET by a #;
+    243   ! shr: revenue shares!
+    244   (all,z,CZ) SHR_VLANDz(z) # shr each land type in CET by a #;
+    245    
+    246   Formula
+    247    (all,z,CZ) SHR_LANDz(z)  = VLANDz(z)  / VCROPz(z);
+    248    (all,z,CZ) SHR_NITROz(z) = VNITROz(z) / VCROPz(z);
+    249    (all,z,CZ) SHR_WATSGz(z) = VWATSGz(z) / VCROPz(z);
+    250    (all,z,CZ) SHR_WEQPTz(z) = VWEQPTz(z) / VCROPz(z);
+    251    (all,z,CZ) SHR_NLANDz(z) = VNLANDz(z) / VCROPz(z);
+    252    
+    253   Zerodivide default 0.333333;
+    254   Formula
+    255    (all,z,CZ) SHR_OinAUGz(z) = VNLANDz(z) / VAUGLANDz(z);
+    256    (all,z,CZ) SHR_LinAUGz(z) = VLANDz(z)  / VAUGLANDz(z);
+    257    (all,z,CZ) SHR_WinAUGz(z) = VWATERz(z) / VAUGLANDz(z);
+    258    
+    259   Zerodivide default 0.50;
+    260   Formula
+    261    (all,z,CZ) SHR_WinLWz(z) = VWATERz(z) / VLNDWTRz(z) ;
+    262    (all,z,CZ) SHR_LinLWz(z) = VLANDz(z)  / VLNDWTRz(z);
+    263    
+    264   Zerodivide default 0.5;
+    265   Formula
+    266    (all,z,CZ) SHR_WWinWz(z) = VWATSGz(z) / VWATERz(z);
+    267    (all,z,CZ) SHR_WKinWz(z) = VWEQPTz(z) / VWATERz(z);
+    268   Zerodivide off;
+    269    
+    270   Coefficient
+    271    (Parameter) (all,z,CZ)  ECROPz(z)    # Elas. of subs. in crop production by grid & ltype #;
+    272    (Parameter) (all,z,CZ)  EIRRIGz(z)   # Elas. of subs. between land & water by grid #;
+    273    (Parameter) (all,z,CZ)  EAUGLANDz(z) # Elas. of subs. between humand and resources by PR #;
+    274    (Parameter) (all,z,CZ)  ESUB_WKz(z)  # Elas. of subs. in wat+eqpt CES nest by grid & ltype #;
+    275    (Parameter) (all,z,CZ)  EWATSGz(z)   # supply elas. of water by grid & ltype#;
+    276    (Parameter) (all,z,CZ)  ELANDz(z)    # supply elas. of land #;
+    277    (Parameter) (all,r,REG) ENITROr(r)   # supply elas. of nitrogen  by reg #;
+    278    (Parameter) (all,r,REG) EWATKLr(r)   # supply elas. of irrig eqpt  by reg #;
+    279    
+    280   Read
+    281    ECROPz       from file CZPARM   header "ECRP";
+    282    EIRRIGz      from file CZPARM   header "EIRR";
+    283    EAUGLANDz    from file CZPARM   header "EAUG"; !=0.5!
+    284    ESUB_WKz     from file CZPARM   header "EWAT"; ! 0.5 !
+    285    EWATSGz      from file CZPARM   header "EWTR";
+    286    ELANDz       from file CZPARM   header "ELND";
+    287    ENITROr      from file REGPARM header "ENTR";
+    288    EWATKLr      from file REGPARM header "EWKL";
+    289    
+    290   Variable
+    291    (all,z,CZ)  p_QNITROz(z) # nitrogen use by CZ   #;
+    292    (all,z,CZ)  p_PNITROz(z) # price of nitrogen use by CZ #;
+    293    (all,z,CZ)  p_QWATSGz(z) # water use by CZ      #;
+    294    (all,z,CZ)  p_PWATSGz(z) # price of water use by CZ    #;
+    295    (all,z,CZ)  p_PLANDz(z)  # price of cropland by CZ     #;
+    296    (all,z,CZ)  p_QNLANDz(z) # other input by CZ           #;
+    297    (all,z,CZ)  p_PNLANDz(z) # price of other input by CZ  #;
+    298    (all,z,CZ)  p_QWEQPTz(z) # irrig eqpt by CZ            #;
+    299    (all,z,CZ)  p_PWEQPTz(z) # price of irrig eqpt by CZ   #;
+    300    (all,z,CZ)  p_PAUGLANDz(z) # price of aug. land by CZ     #;
+    301    (all,z,CZ)  p_QAUGLANDz(z) # quantity of aug. land by CZ  #;
+    302    (all,z,CZ)  p_PLANDWTRz(z) # price of land+irrig by CZ    #;
+    303    (all,z,CZ)  p_QLANDWTRz(z) # quantity of land+irrig by CZ #;
+    304    (all,z,CZ)  p_PWATERz(z)  # price of water+eqpt by CZ    #;
+    305    (all,z,CZ)  p_QWATERz(z)  # quantity of water+eqpt by CZ #;
+    306    (all,z,CZ)  p_VCROPz(z);
+    307    
+    308   Update
+    309    (all,z,CZ) VLANDz(z)  = p_PLANDz(z)  * p_QLANDz(z);
+    310    (all,z,CZ) VNITROz(z) = p_PNITROz(z) * p_QNITROz(z);
+    311    (all,z,CZ) VWATSGz(z) = p_PWATSGz(z) * p_QWATSGz(z);
+    312    (all,z,CZ) VWEQPTz(z) = p_PWEQPTz(z) * p_QWEQPTz(z);
+    313   ! (all,z,CZ) VNLANDz(z) = p_PNLANDz(z)*p_QNLANDz(z);
+    314    (all,z,CZ) VLNDWTRz(z) = p_PLANDWTRz(z)*p_QLANDWTRz(z);!
+    315    
+    316   ![[! start--- water module by source !]]!
+    317   Coefficient
+    318   ! water by source!
+    319    (all,z,CZ) QWATSRFz(z) # vol surface water by a (xx m3) #;
+    320    (all,z,CZ) QWATGRDz(z) # vol groundwater   by a (xx m3) #;
+    321   ! shr: vol shares!
+    322    (all,z,CZ) SHR_SinSGz(z) # shr srf  in tot water by g&l #;
+    323    (all,z,CZ) SHR_GinSGz(z) # shr grd  in tot water by g&l #;
+    324    
+    325   Read
+    326    QWATSRFz  from file CZDATA header "QSRF";
+    327    QWATGRDz  from file CZDATA header "QGRD";
+    328    
+    329   Zerodivide default 0.50;
+    330   Formula
+    331    (all,z,CZ) SHR_SinSGz(z) = QWATSRFz(z)  / [QWATSRFz(z)+QWATGRDz(z)];
+    332    (all,z,CZ) SHR_GinSGz(z) = QWATGRDz(z)  / [QWATSRFz(z)+QWATGRDz(z)];
+    333   Zerodivide off;
+    334    
+    335   Coefficient
+    336    (Parameter) (all,z,CZ)  ETA_WATSRFz(z) # supply elasticity of surface water #;
+    337    (Parameter) (all,z,CZ)  ETA_WATGRDz(z) # supply elasticity of groundwater #;
+    338    (Parameter) (all,z,CZ)  ESUB_SGz(z)    # substitution elasticity between groundwater and surface water #;
+    339    
+    340   Read
+    341    ETA_WATSRFz   from file CZPARM header "ETAS";
+    342    ETA_WATGRDz   from file CZPARM header "ETAG";
+    343    ESUB_SGz      from file CZPARM header "ESW";
+    344    
+    345   Variable
+    346    (all,z,CZ) p_QWATSRFz(z)  # vol of surface water withdrawal by CZ #;
+    347    (all,z,CZ) p_QWATGRDz(z)  # vol of groundwater withdrawal by CZ  #;
+    348    (all,z,CZ) p_PWATSRFz(z)  # price of surface water by CZ #;
+    349    (all,z,CZ) p_PWATGRDz(z)  # price of groundwater by CZ  #;
+    350    (all,z,CZ) s_QWATSRFz(z)  # slack for surface water withdrawal by CZ #;
+    351    (all,z,CZ) s_QWATGRDz(z)  # slack for groundwater withdrawal by CZ  #;
+    352    (all,z,CZ) t_PAUGLANDz(z) ;
+    353    (all,z,CZ) t_PNITROz(z);
+    354    (all,z,CZ) t_PNLABORz(z);
+    355    
+    356   Equation
+    357    E_PWATSRFz (all,z,CZ) p_QWATSRFz(z)  = ETA_WATSRFz(z) * p_PWATSRFz(z) + s_QWATSRFz(z);
+    358    E_PWATGRDZ (all,z,CZ) p_QWATGRDz(z)  = ETA_WATGRDz(z) * p_PWATGRDz(z) + s_QWATGRDz(z);
+    359    E_QWATSRFZ (all,z,CZ) p_QWATSRFz(z)  = p_QWATSGz(z) - ESUB_SGz(z) * [p_PWATSRFz(z) - p_PWATSGz(z)];
+    360    E_QWATGRDz (all,z,CZ) p_QWATGRDz(z)  = p_QWATSGz(z) - ESUB_SGz(z) * [p_PWATGRDz(z) - p_PWATSGz(z)];
+    361   !price index for srf + grd water!
+    362    E_PWATSGz  (all,z,CZ) p_PWATSGz(z)   = SHR_SinSGz(z) * [p_PWATSRFz(z) ]
+    363                                         + SHR_GinSGz(z) * [p_PWATGRDz(z) ];
+    364   Update
+    365    (all,z,CZ) QWATSRFz(z) = p_QWATSRFz(z);
+    366    (all,z,CZ) QWATGRDz(z) = p_QWATGRDz(z);
+    367    
+    368   ![[! water module by source --- end !]]!
+    369    
+    370   ![[! labor module by types  --- start !]]!
+    371   Coefficient
+    372    (Parameter) (all,a,PR) ELABORa(a) # calibrating labor ss at the CZ level # ;
+    373    (Parameter) (all,a,PR) ESUB_LZa(a)   # Elas. of subs. bet. labor and capital in NLAND nest CZ & ltype #;
+    374    (parameter) ENLABORr ;
+    375    
+    376   Read
+    377    ELABORa    from file ESTIPARM header "ELAB"; ! calculated from labor ss equation !
+    378    ESUB_LZa   from file ESTIPARM header "ESLZ"; !0.2!
+    379    ENLABORr   from file CZPARM   header "ENL6";
+    380    
+    381   Variable
+    382    (all,z,CZ)  p_QNLABORz(z)       # Change in use of non-labor in a CZ #;
+    383    (all,z,CZ)  p_PNLABORz(z)       # Change in cost of non-labor in a CZ #;
+    384    (all,z,CZ)  p_PLABORz(z)        # Change in wages in a CZ #;
+    385    
+    386   ! labor market equations!
+    387   Equation
+    388   ! Demand of labor by CZ!
+    389   E_QLABORz (all,z,CZ)
+    390       p_QLABORz(z) + p_AFLABOR(z)
+    391           = p_QNLANDz(z) - ESUB_LZa(CZ2PR(z)) * [p_PLABORz(z) - p_AFLABOR(z) - p_PNLANDz(z)] ;
+    392    
+    393   !price index for mlab+llab for labor !
+    394   E_PLABORz  (all,z,CZ)
+    395   !to be consistent with analytical derivation supply shock is introduced with a - sign!
+    396    p_QLABORz(z) = ELABORa(CZ2PR(z)) * p_PLABORz(z) - s_QLABOR(z);
+    397    
+    398   ! Demand of non-labor by grid (z)!
+    399   E_QNLABORz (all,z,CZ)
+    400       p_QNLABORz(z) + p_AFNLABOR(z)
+    401           = p_QNLANDz(z) - ESUB_LZa(CZ2PR(z)) * [p_PNLABORz(z) - p_AFNLABOR(z) - p_PNLANDz(z)] + s_QNLABORz(z);
+    402    
+    403   E_PNLABORz (all,z,CZ)
+    404    p_QNLABORz(z) = ENLABORr * p_PNLABORz(z) + t_PNLABORz(z);
+    405    
+    406   !price index for lab+nlab water!
+    407    E_PNLANDz  (all,z,CZ)
+    408       p_PNLANDz(z)
+    409        = SHR_LinNLz(z) * [p_PLABORz(z) -  p_AFLABOR(z)]
+    410        + SHR_CinNLz(z) * [p_PNLABORz(z) - p_AFNLABOR(z)] + s_PNLANDz(z);
+    411    
+    412   Update
+    413    (all,z,CZ)  VLABORz(z)   = p_PLABORz(z) * p_QLABORz(z);
+    414    (all,z,CZ)  VNLABORz(z)  = p_PNLABORz(z) *p_QNLABORz(z);
+    415    
+    416   Equation
+    417   !supply of total cropland!
+    418   !to be consistent with analytical derivation supply shock is introduced with a - sign!
+    419   E_PLANDz (all,z,CZ) p_QLANDz(z) = ELANDz(z) *  p_PLANDz(z) - s_QLANDz(z);
+    420    
+    421   !demand of cropland!
+    422   E_QLANDz (all,z,CZ)
+    423     p_QLANDz(z) + p_AFLAND(z)
+    424        = p_QLANDWTRz(z) - EIRRIGz(z) * [p_PLANDz(z) - p_AFLAND(z) - p_PLANDWTRz(z)] ;
+    425    
+    426   !supply of irrigation equipments etc!
+    427   E_PWEQPTz (all,z,CZ) p_QWEQPTz(z) = EWATKLr(CZ2REG(z))  * p_PWEQPTz(z);
+    428    
+    429   !Demand for nitrogen fertilizer input !
+    430   E_QNITROz (all,z,CZ)
+    431     p_QNITROz(z) + p_AFNITRO(z)
+    432        = p_QCROPz(z) - p_AOCROP(z) - ECROPz(z) * [p_PNITROz(z) - p_AFNITRO(z) - p_PCROPz(z)  - p_AOCROP(z) ];
+    433    
+    434   E_PNITROz (all,z,CZ)
+    435    p_QNITROz(z) = ENITROr(CZ2REG(z)) * p_PNITROz(z) + t_PNITROz(z);
+    436    
+    437   !Demand for water (surface water + groundwater) input!
+    438   E_QWATSGz (all,z,CZ) p_QWATSGz(z) + p_AFWATSG(z)
+    439         = p_QWATERz(z)               - ESUB_WKz(z)  * [p_PWATSGz(z) - p_AFWATSG(z) - p_PWATERz(z)] ;
+    440    
+    441   !Demand for irrigation equipments!
+    442   E_QWEQPTz  (all,z,CZ) p_QWEQPTz(z) + p_AFWEQPT(z)
+    443        = p_QWATERz(z)                - ESUB_WKz(z)  * [p_PWEQPTz(z) - p_AFWEQPT(z) - p_PWATERz(z) ] ;
+    444    
+    445   !Demand for other inputs!
+    446   E_QNLANDz (all,z,CZ) p_QNLANDz(z) + p_AFNLAND(z)
+    447        = p_QAUGLANDz(z)              - EAUGLANDz(z) * [p_PNLANDz(z) - p_AFNLAND(z)  - p_PAUGLANDz(z) ] + s_QNLANDz(z) ;
+    448    
+    449   !Quantity index for oth+land+water+eqpt!
+    450   E_QAUGLANDz  (all,z,CZ) p_QAUGLANDz(z)
+    451        = p_QCROPz(z)  - p_AOCROP(z) - ECROPz(z) * [p_PAUGLANDz(z) - p_PCROPz(z) - p_AOCROP(z)] + s_QAUGLANDz(z);
+    452    
+    453   !Quantity index for water+eqpt!
+    454   E_QWATERz   (all,z,CZ) p_QWATERz(z) + p_AFWATER(z)
+    455        = p_QLANDWTRz(z)              - EIRRIGz(z)  * [p_PWATERz(z) - p_AFWATER(z) - p_PLANDWTRz(z)] + s_QWATERz(z);
+    456    
+    457   !Quantity index for land+water+eqpt!
+    458   E_QLANDWTRz (all,z,CZ) p_QLANDWTRz(z) + p_AFLANDWTR(z)
+    459        = p_QAUGLANDz(z)              - EAUGLANDz(z) * [p_PLANDWTRz(z) - p_AFLANDWTR(z) - p_PAUGLANDz(z) ] + s_QLANDWTRz(z);
+    460    
+    461   !price index for irrigation wat+eqpt!
+    462   E_PWATERz  (all,z,CZ)
+    463    p_PWATERz(z) = SHR_WWinWz(z) * [p_PWATSGz(z) - p_AFWATSG(z)]
+    464                 + SHR_WKinWz(z) * [p_PWEQPTz(z) - p_AFWEQPT(z)];
+    465    
+    466   !price index for land+water+eqpt!
+    467   E_PLANDWTRz  (all,z,CZ)
+    468   p_PLANDWTRz(z)
+    469        = SHR_LinLWz(z) * [p_PLANDz(z)  - p_AFLAND(z)]
+    470        + SHR_WinLWz(z) * [p_PWATERz(z) - p_AFWATER(z)];
+    471    
+    472   !price index for oth+land+water+eqpt!
+    473   E_PAUGLANDz  (all,z,CZ)
+    474   p_PAUGLANDz(z)
+    475        = SHR_OinAUGz(z) * [p_PNLANDz(z)- p_AFNLAND(z)]
+    476        + SHR_LinAUGz(z) * [p_PLANDz(z) - p_AFLAND(z) ]
+    477        + SHR_WinAUGz(z) * [p_PWATERz(z)- p_AFWATER(z)] + t_PAUGLANDz(z);
+    478    
+    479   !alternative form of zero profit condition!
+    480   ! SR: omit, redefined in 'start PR'!
+    481   E_QCROPz     (all,z,CZ)
+    482   p_QCROPz(z)
+    483        = SHR_LANDz(z)   * [p_QLANDz(z)   + p_AFLAND(z)  ]
+    484        + SHR_NITROz(z)  * [p_QNITROz(z)  + p_AFNITRO(z) ]
+    485        + SHR_LABORz(z)  * [p_QLABORz(z)  + p_AFLABOR(z)]
+    486        + SHR_NLABORz(z) * [p_QNLABORz(z) + p_AFNLABOR(z)]
+    487        + SHR_WATSGz(z)  * [p_QWATSGz(z)  + p_AFWATSG(z) + p_AFWATER(z)]
+    488        + SHR_WEQPTz(z)  * [p_QWEQPTz(z)  + p_AFWEQPT(z) + p_AFWATER(z)]
+    489        + p_AOCROP(z) + s_QCROPz(z);
+    490    
+    491   ! CZ level clearing of Crop and NIT markets !
+    492   E_PCROPz (all,z,CZ)
+    493   p_PCROPz(z) = s_PCROPz(z);
+    494    
+    495   E_VCROPz (all,z,CZ)
+    496   p_VCROPz(z) = p_QCROPz(z) + p_PCROPz(z);
+    497    
+    498   !
+    499   *****************************************************************************
+    500                    Regional markets: eliminated
+    501   *****************************************************************************
+    502   !
+    503   ![[!
+    504   ! regional aggregates: crops, nitrogen , non-labor !
+    505   Variable
+    506   (all,r,REG)          p_QNITROr(r) # Nitrogen use by reg (in 1000 MT) #;
+    507   (all,r,REG)          p_PNITROr(r) # Price of nitrogen by reg (in USD/MT) #;
+    508   (all,z,CZ)           t_PNITROz(z);
+    509    
+    510   Coefficient
+    511    (all,r,REG)        VNITROr(r) # Value of Nit. fert. by reg (in 1000 USD) #;
+    512    
+    513   Formula
+    514    (all,r,REG)         VNITROr(r) = sum(z, CZ:CZ2REG(z)=r, VNITROz(z));
+    515    
+    516   Equation
+    517   E_PNITROz  (all,z,CZ) p_PNITROz(z) = p_PNITROr(CZ2REG(z)) + t_PNITROz(z);
+    518   E_QNITROr  (all,r,REG) p_QNITROr(r) = ENITROr(r) * p_PNITROr(r);
+    519   E_PNITROr  (all,r,REG) VNITROr(r)*p_QNITROr(r) = sum{z,CZ:CZ2REG(z)=r, VNITROz(z)*p_QNITROz(z)};
+    520    
+    521   ! regional market / price for non-lab fertilizer !
+    522   Variable
+    523   (all,r,REG)          p_QNLABORr(r) # Nitrogen use by reg (in 1000 MT) #;
+    524   (all,r,REG)          p_PNLABORr(r) # Price of nitrogen by reg (in USD/MT) #;
+    525   (all,z,CZ)          t_PNLABORz(z);
+    526    
+    527   Coefficient
+    528    (all,r,REG)        VNLABORr(r) # Value of Nit. fert. by reg (in 1000 USD) #;
+    529    
+    530   Formula
+    531    (all,r,REG)         VNLABORr(r) = sum(z, CZ:CZ2REG(z)=r, VNLABORz(z));
+    532    
+    533   Equation
+    534   E_PNLABORz  (all,z,CZ) p_PNLABORz(z) = p_PNLABORr(CZ2REG(z)) + t_PNLABORz(z);
+    535   E_QNLABORr  (all,r,REG) p_QNLABORr(r) = ENLABORr * p_PNLABORr(r);
+    536   E_PNLABORr  (all,r,REG) VNLABORr(r)*p_QNLABORr(r) = sum{z,CZ:CZ2REG(z)=r, VNLABORz(z)*p_QNLABORz(z)};
+    537    
+    538    
+    539   Variable
+    540   (levels) (all,r,REG) QCROPr(r) # Crop output by reg (in 1000 MT: Corn-eq.) #;
+    541   (levels) (all,r,REG) PCROPr(r)  # Crop price by reg (in USD / MT)#;
+    542   (levels) (all,r,REG) VCROPr(r)  # Value of crop output by reg (in 1000 USD) #;
+    543    
+    544   Formula
+    545    (initial)(all,r,REG)              VCROPr(r)    =  sum(z, CZ:CZ2REG(z) EQ r, VCROPz(z));
+    546    (initial)(all,r,REG)              QCROPr(r)    =  sum(z, CZ:CZ2REG(z) EQ r, QCROPz(z));
+    547    (initial)(all,r,REG)              PCROPr(r)    = VCROPr(r)/QCROPr(r);
+    548    (initial)(all,z,CZ) PCROPz(z) = PCROPr(CZ2REG(z));
+    549    
+    550   Equation
+    551   E_PCROPz  (all,z,CZ) p_PCROPz(z) = p_PCROPr(CZ2REG(z)) ;
+    552   E_QCROPr  (aLL,r,REG)              VCROPr(r)*p_QCROPr(r) = sum{z,CZ:CZ2REG(z)=r, VCROPz(z)*p_QCROPz(z)};
+    553   E_VCROPr  (aLL,r,REG)              p_VCROPr(r) = p_QCROPr(r) + p_PCROPr(r);
+    554   !]]!
+    555    
+    556   !<  --------------------------------------------------------------------
+    557       condensation to make the model solve faster
+    558      --------------------------------------------------------------------    >!
+    559    
+    560   Substitute p_AOCROP  using E_AOCROP;
+    561   Substitute p_AFNITRO using E_AFNITRO;
+    562   Substitute p_AFLAND  using E_AFLAND;
+    563   Substitute p_AFNLAND using E_AFNLAND;
+    564   Substitute p_AFWATER using E_AFWATER;
+    565   Substitute p_AFWATSG using E_AFWATSG;
+    566   Substitute p_AFWEQPT using E_AFWEQPT;
+    567    
+    568   Substitute  p_PWEQPTz using E_PWEQPTz ;
+    569   Substitute  p_QWEQPTz using E_QWEQPTz ;
+    570    
+    571   Substitute  p_QNLANDz using E_QNLANDz ;
+    572    
+    573   Backsolve p_PLANDWTRz using E_PLANDWTRz ;
+    574   Backsolve p_PWATERz   using E_PWATERz ;
+    575    
+    576   Substitute  p_QWATSRFz using E_QWATSRFz ;
+    577   Substitute  p_QWATGRDz using E_QWATGRDz ;
+    578   Substitute  p_PWATSRFz using E_PWATSRFz ;
+    579   Substitute  p_PWATGRDz using E_PWATGRDz ;
+    580    
+    581   Substitute  p_QWATSGz  using E_QWATSGz ;
+    582   Substitute  p_PNLANDz  using E_PNLANDz ;
+    583   Substitute  p_PWATSGz  using E_PWATSGz ;
+    584   Substitute  p_QNITROz  using E_QNITROz ;
+    585   Substitute  p_PNITROz  using E_PNITROz ;
+    586    
+    587   Omit s_QLANDWTRz ;
+    588   Omit s_QCROPz;
+    589    
+    590   ! labor!
+    591   Omit s_QNLANDz;
+    592   Omit s_PNLANDz;
+    593   Omit s_QNLABORz;
+    594   Omit s_QWATGRDz;
+    595   Omit s_QWATSRFz;
+    596    
+    597   ! PFP !
+    598   !Omit p_AFLABORz;
+    599   Omit p_AFNITROz  ;
+    600   Omit p_AFLANDz  ;
+    601   Omit p_AFNLANDz  ;
+    602   Omit p_AFLANDWTRz  ;
+    603   Omit p_AFWATERz  ;
+    604   Omit p_AFWATSGz  ;
+    605   Omit p_AFWEQPTz  ;
+    606   Omit p_AFNLABORz  ;!
+    607    
+    608   !====================================================!
+    609   ! **** Aggregate CZ level results to labor shed **** !
+    610   !====================================================!
+    611    
+    612   ! calculate labor market outcomes at PR!
+    613   Variable (all,z,CZ)  p_VLABORz(z);
+    614   Variable (all,a,PR) p_PLABORa(a);
+    615   Variable (all,a,PR) p_QLABORa(a);
+    616   Variable (all,a,PR) p_VLABORa(a);
+    617    
+    618   Coefficient (all,a,PR) QLABORa(a);
+    619   Coefficient (all,a,PR) VLABORa(a);
+    620   Coefficient (all,z,CZ)  SHR_QLABORz(z);
+    621    
+    622   Formula
+    623     (all,a,PR) QLABORa(a)                    = sum{z, CZ:CZ2PR(z) = a, QLABORz(z)};
+    624     (all,a,PR) VLABORa(a)                    = sum{z, CZ:CZ2PR(z) = a, VLABORz(z)};
+    625     (all,z,CZ)  SHR_QLABORz(z)                = QLABORz(z) / QLABORa(CZ2PR(z));
+    626    
+    627   Equation
+    628   E_VLABORz (all,z,CZ)   p_VLABORz(z)                   = p_QLABORz(z) + p_PLABORz(z) ;
+    629   !E_QLABORa  (all,a,PR) QLABORa(a) * p_QLABORa(a)      = sum{z, CZ:CZ2PR(z) = a, QLABORz(z) * p_QLABORz(z)};!
+    630   E_QLABORa (all,a,PR) p_QLABORa(a) = sum{z, CZ:CZ2PR(z) = a, SHR_QLABORz(z) * p_QLABORz(z)};
+    631   E_VLABORa  (all,a,PR) VLABORa(a) * p_VLABORa(a)      = sum{z, CZ:CZ2PR(z) = a, VLABORz(z) * p_VLABORz(z)};
+    632   E_PLABORa  (all,a,PR) p_VLABORa(a)                   = p_QLABORa(a) + p_PLABORa(a);
+    633    
+    634   ! calculate land market outcomes at PR!
+    635   Variable (all,z,CZ)  p_VLANDz(z);
+    636   Variable (all,a,PR) p_PLANDa(a);
+    637   Variable (all,a,PR) p_QLANDa(a);
+    638   Variable (all,a,PR) p_VLANDa(a);
+    639    
+    640   Coefficient (all,a,PR) QLANDa(a);
+    641   Coefficient (all,a,PR) VLANDa(a);
+    642    
+    643   Formula
+    644     (all,a,PR) QLANDa(a)                    = sum{z, CZ:CZ2PR(z) = a, QLANDz(z)};
+    645     (all,a,PR) VLANDa(a)                    = sum{z, CZ:CZ2PR(z) = a, VLANDz(z)};
+    646    
+    647   Equation
+    648   E_VLANDz (all,z,CZ)   p_VLANDz(z)                   = p_QLANDz(z) + p_PLANDz(z) ;
+    649   E_QLANDa  (all,a,PR) QLANDa(a) * p_QLANDa(a)      = sum{z, CZ:CZ2PR(z) = a, QLANDz(z) * p_QLANDz(z)};
+    650   E_VLANDa  (all,a,PR) VLANDa(a) * p_VLANDa(a)      = sum{z, CZ:CZ2PR(z) = a, VLANDz(z) * p_VLANDz(z)};
+    651   E_PLANDa  (all,a,PR) p_VLANDa(a)                   = p_QLANDa(a) + p_PLANDa(a);
+    652    
+    653   ! calculate non-lab market outcomes at PR!
+    654   Variable (all,z,CZ)  p_VNLABORz(z);
+    655   Variable (all,a,PR) p_PNLABORa(a);
+    656   Variable (all,a,PR) p_QNLABORa(a);
+    657   Variable (all,a,PR) p_VNLABORa(a);
+    658    
+    659   Coefficient (all,a,PR) VNLABORa(a);
+    660    
+    661   Formula
+    662     (all,a,PR) VNLABORa(a)                    = sum{z, CZ:CZ2PR(z) = a, VNLABORz(z)};
+    663    
+    664   Equation
+    665   E_VNLABORz (all,z,CZ)   p_VNLABORz(z)                 = p_QNLABORz(z) + p_PNLABORz(z) ;
+    666   E_VNLABORa  (all,a,PR) VNLABORa(a) * p_VNLABORa(a)   = sum{z, CZ:CZ2PR(z) = a, VNLABORz(z) * p_VNLABORz(z)};
+    667   E_PNLABORa  (all,a,PR) VNLABORa(a) * p_PNLABORa(a)   = sum{z, CZ:CZ2PR(z) = a, VNLABORz(z) * p_PNLABORz(z)};
+    668   E_QNLABORa  (all,a,PR) p_VNLABORa(a)                 = p_QNLABORa(a) + p_PNLABORa(a);
+    669    
+    670   ! calculate non-lab market outcomes at PR!
+    671   Variable (all,z,CZ)  p_VAUGLANDz(z);
+    672   Variable (all,a,PR) p_PAUGLANDa(a);
+    673   Variable (all,a,PR) p_QAUGLANDa(a);
+    674   Variable (all,a,PR) p_VAUGLANDa(a);
+    675    
+    676   Coefficient (all,a,PR) VAUGLANDa(a);
+    677    
+    678   Formula
+    679     (all,a,PR) VAUGLANDa(a)                    = sum{z, CZ:CZ2PR(z) = a, VAUGLANDz(z)};
+    680    
+    681   Equation
+    682   E_VAUGLANDz (all,z,CZ)   p_VAUGLANDz(z)                 = p_QAUGLANDz(z) + p_PAUGLANDz(z) ;
+    683   E_VAUGLANDa  (all,a,PR) VAUGLANDa(a) * p_VAUGLANDa(a)   = sum{z, CZ:CZ2PR(z) = a, VAUGLANDz(z) * p_VAUGLANDz(z)};
+    684   E_PAUGLANDa  (all,a,PR) VAUGLANDa(a) * p_PAUGLANDa(a)   = sum{z, CZ:CZ2PR(z) = a, VAUGLANDz(z) * p_PAUGLANDz(z)};
+    685   E_QAUGLANDa  (all,a,PR) p_VAUGLANDa(a)                 = p_QAUGLANDa(a) + p_PAUGLANDa(a);
+    686    
+    687   ! calculate LW market outcomes at PR!
+    688   Variable (all,z,CZ)  p_VLANDWTRz(z);
+    689   Variable (all,a,PR) p_PLANDWTRa(a);
+    690   Variable (all,a,PR) p_QLANDWTRa(a);
+    691   Variable (all,a,PR) p_VLANDWTRa(a);
+    692    
+    693   Coefficient (all,a,PR) VLANDWTRa(a);
+    694    
+    695   Formula
+    696     (all,a,PR) VLANDWTRa(a)                    = sum{z, CZ:CZ2PR(z) = a, VLNDWTRz(z)};
+    697    
+    698   Equation
+    699   E_VLANDWTRz (all,z,CZ)   p_VLANDWTRz(z)                 = p_QLANDWTRz(z) + p_PLANDWTRz(z) ;
+    700   E_VLANDWTRa  (all,a,PR) VLANDWTRa(a) * p_VLANDWTRa(a)   = sum{z, CZ:CZ2PR(z) = a, VLNDWTRz(z) * p_VLANDWTRz(z)};
+    701   E_PLANDWTRa  (all,a,PR) VLANDWTRa(a) * p_PLANDWTRa(a)   = sum{z, CZ:CZ2PR(z) = a, VLNDWTRz(z) * p_PLANDWTRz(z)};
+    702   E_QLANDWTRa  (all,a,PR) p_VLANDWTRa(a)                 = p_QLANDWTRa(a) + p_PLANDWTRa(a);
+
+ %%WARNING.   No values have been assigned to coefficient
+   'PCROPz' whose values are the pre-simulation levels values
+   associated with the linear variable 'p_PCROPz'.
+  Accordingly, levels results will not be reported for variable 'p_PCROPz'.
+
+
+MESSAGE(S) ABOUT APPARENTLY REDUNDANT STATEMENTS
+------------------------------------------------
+
+ FORMULA for 'SHR_NLANDz' starting at line 251.
+
+ %%WARNING.  This formula appears to be redundant because
+    the coefficient 'SHR_NLANDz' affected by it occurs in no equation
+    update or 'ORIG_LEVEL=' qualifier, nor on the right hand side of any
+    subsequent formula, nor in any subsequent DISPLAY,
+    ZERODIVIDE, WRITE or SET statement.
+
+ READ into 'EWATSGz' starting at line 285.
+
+ %%WARNING.  This read appears to be redundant because
+    the coefficient 'EWATSGz' affected by it occurs in no equation
+    update or 'ORIG_LEVEL=' qualifier, nor on the right hand side of any
+    subsequent formula, nor in any subsequent DISPLAY,
+    ZERODIVIDE, WRITE or SET statement.
+
+COEFFICIENT INITIALIZATION SUMMARY
+----------------------------------
+
+ %% NOTE the 3 WARNING(s) above about coefficients.
+
+MESSAGE(S) ABOUT UNUSED COEFFICIENTS
+------------------------------------
+
+ %%WARNING.  Coefficient 'SHR_QLANDz' is declared but is not used in the linear system.
+
+ %%WARNING.  Coefficient 'SHR_VLANDz' is declared but is not used in the linear system.
+
+ %%WARNING.  Coefficient 'EWATSGz' is declared but is not used in the linear system.
+
+ %%INFORMATION. TABLO has created 1 new sets as follows:
+  S@US # Set with one element US, a subset of REG #
+
+
+
+
+
+ ========================
+ ++ INPUT STATEMENT TABLE
+ ========================
+
+          Starts   Syntax  Semantic
+  Number  at line  Error?   Error?            Description
+  ------------------------------------------------------------
+     1        56     no       no      FILE 'CZSETS'                           
+     2        57     no       no      FILE 'CZDATA'                           
+     3        58     no       no      FILE 'CZPARM'                           
+     4        59     no       no      FILE 'REGPARM'                          
+     5        60     no       no      FILE 'LABMRKT'                          
+     6        61     no       no      FILE 'ESTIPARM'                         
+     7        63     no       no      SET 'REG'                               
+     8        64     no       no      SET 'CZ'                                
+     9        65     no       no      SET 'PR'                                
+    10        67     no       no      MAPPING 'CZ2REG'                        
+    11        68     no       no      READ into 'CZ2REG'                      
+    12        70     no       no      MAPPING 'CZ2PR'                         
+    13        71     no       no      READ into 'CZ2PR'                       
+    14        73     no       no      MAPPING 'PR2REG'                        
+    15        74     no       no      READ into 'PR2REG'                      
+    16        76     no       no      SET 'S@US'                              
+    17        76     no       no      SUBSET 2 'S@US' of 'REG'                
+    18        76     no       no      SET 'US_CZ'                             
+    19        76     no       no      Formula for Set 'US_CZ'                 
+    20        76     no       no      SUBSET 1 'US_CZ' of 'CZ'                
+    21        77     no       no      SET 'US_PR'                             
+    22        77     no       no      Formula for Set 'US_PR'                 
+    23        77     no       no      SUBSET 3 'US_PR' of 'PR'                
+    24        87     no       no      VARIABLE 'p_AOCROPz'                    
+    25        88     no       no      VARIABLE 'p_AFNITROz'                   
+    26        89     no       no      VARIABLE 'p_AFLANDz'                    
+    27        90     no       no      VARIABLE 'p_AFWATERz'                   
+    28        91     no       no      VARIABLE 'p_AFWATSGz'                   
+    29        92     no       no      VARIABLE 'p_AFWEQPTz'                   
+    30        93     no       no      VARIABLE 'p_AFLABORz'                   
+    31        94     no       no      VARIABLE 'p_AFNLABORz'                  
+    32        95     no       no      VARIABLE 'p_AFNLANDz'                   
+    33        96     no       no      VARIABLE 'p_AFLANDWTRz'                 
+    34        99     no       no      VARIABLE 'p_AFNITROa'                   
+    35       100     no       no      VARIABLE 'p_AFNLANDa'                   
+    36       101     no       no      VARIABLE 'p_AFLABORa'                   
+    37       102     no       no      VARIABLE 'p_AFNLABORa'                  
+    38       103     no       no      VARIABLE 'p_AFLANDWTRa'                 
+    39       106     no       no      VARIABLE 'p_AOCROPr'                    
+    40       107     no       no      VARIABLE 'p_AFNITROr'                   
+    41       108     no       no      VARIABLE 'p_AFLANDr'                    
+    42       109     no       no      VARIABLE 'p_AFWATERr'                   
+    43       110     no       no      VARIABLE 'p_AFWATSGr'                   
+    44       111     no       no      VARIABLE 'p_AFWEQPTr'                   
+    45       112     no       no      VARIABLE 'p_AFLABORr'                   
+    46       113     no       no      VARIABLE 'p_AFNLABORr'                  
+    47       114     no       no      VARIABLE 'p_AFNLANDr'                   
+    48       115     no       no      VARIABLE 'p_AFLANDWTRr'                 
+    49       118     no       no      VARIABLE 'p_AOCROP'                     
+    50       119     no       no      VARIABLE 'p_AFNITRO'                    
+    51       120     no       no      VARIABLE 'p_AFLAND'                     
+    52       121     no       no      VARIABLE 'p_AFWATER'                    
+    53       122     no       no      VARIABLE 'p_AFWATSG'                    
+    54       123     no       no      VARIABLE 'p_AFWEQPT'                    
+    55       124     no       no      VARIABLE 'p_AFLABOR'                    
+    56       125     no       no      VARIABLE 'p_AFNLABOR'                   
+    57       126     no       no      VARIABLE 'p_AFNLAND'                    
+    58       127     no       no      VARIABLE 'p_AFLANDWTR'                  
+    59       130     no       no      EQUATION 'E_AOCROP'                     
+    60       132     no       no      EQUATION 'E_AFNITRO'                    
+    61       133     no       no      EQUATION 'E_AFLAND'                     
+    62       134     no       no      EQUATION 'E_AFWATER'                    
+    63       135     no       no      EQUATION 'E_AFWATSG'                    
+    64       136     no       no      EQUATION 'E_AFWEQPT'                    
+    65       137     no       no      EQUATION 'E_AFLABOR'                    
+    66       138     no       no      EQUATION 'E_AFNLABOR'                   
+    67       139     no       no      EQUATION 'E_AFNLAND'                    
+    68       140     no       no      EQUATION 'E_AFLANDWTR'                  
+    69       145     no       no      VARIABLE 's_QLANDz'                     
+    70       147     no       no      VARIABLE 's_QWATERz'                    
+    71       148     no       no      VARIABLE 's_QCROPz'                     
+    72       149     no       no      VARIABLE 's_PCROPz'                     
+    73       150     no       no      VARIABLE 's_QLANDWTRz'                  
+    74       151     no       no      VARIABLE 's_QAUGLANDz'                  
+    75       152     no       no      VARIABLE 's_QNLANDz'                    
+    76       153     no       no      VARIABLE 's_PNLANDz'                    
+    77       154     no       no      VARIABLE 's_QLABORz'                    
+    78       155     no       no      VARIABLE 's_QLABORa'                    
+    79       156     no       no      VARIABLE 's_QLABOR'                     
+    80       157     no       no      VARIABLE 's_QNLABORz'                   
+    81       159     no       no      EQUATION 'E_SQLABOR'                    
+    82       166     no       no      VARIABLE 'p_QLANDz'                     
+    83       166     no       no      COEFFICIENT 'QLANDz'                    
+    84       168     no       no      VARIABLE 'p_QLABORz'                    
+    85       168     no       no      COEFFICIENT 'QLABORz'                   
+    86       170     no       no      VARIABLE 'p_PCROPz'                     
+    87       170     no       no      COEFFICIENT 'PCROPz'                    
+    88       171     no       no      VARIABLE 'p_QCROPz'                     
+    89       171     no       no      COEFFICIENT 'QCROPz'                    
+    90       173     no       no      COEFFICIENT 'VLANDz'                    
+    91       175     no       no      COEFFICIENT 'VLABORz'                   
+    92       176     no       no      COEFFICIENT 'VNLABORz'                  
+    93       177     no       no      COEFFICIENT 'VNITROz'                   
+    94       178     no       no      COEFFICIENT 'VWATSGz'                   
+    95       179     no       no      COEFFICIENT 'VWEQPTz'                   
+    96       181     no       no      READ into 'QLANDz'                      
+    97       183     no       no      READ into 'QLABORz'                     
+    98       185     no       no      READ into 'QCROPz'                      
+    99       187     no       no      READ into 'VLANDz'                      
+   100       188     no       no      READ into 'VLABORz'                     
+   101       189     no       no      READ into 'VNLABORz'                    
+   102       190     no       no      READ into 'VNITROz'                     
+   103       191     no       no      READ into 'VWATSGz'                     
+   104       192     no       no      READ into 'VWEQPTz'                     
+   105       194     no       no      COEFFICIENT 'VCROPz'                    
+   106       196     no       no      COEFFICIENT 'VWATERz'                   
+   107       197     no       no      COEFFICIENT 'VLNDWTRz'                  
+   108       198     no       no      COEFFICIENT 'VNLANDz'                   
+   109       199     no       no      COEFFICIENT 'VAUGLANDz'                 
+   110       201     no       no      Formula for 'VWATERz'                   
+   111       203     no       no      Formula for 'VLNDWTRz'                  
+   112       204     no       no      Formula for 'VNLANDz'                   
+   113       205     no       no      Formula for 'VAUGLANDz'                 
+   114       206     no       no      Formula for 'VCROPz'                    
+   115       208     no       no      COEFFICIENT 'SHR_LinNLz'                
+   116       210     no       no      COEFFICIENT 'SHR_CinNLz'                
+   117       211     no       no      COEFFICIENT 'SHR_LABORz'                
+   118       212     no       no      COEFFICIENT 'SHR_NLABORz'               
+   119       214     no       no      ZERODIVIDE instruction                  
+   120       215     no       no      Formula for 'SHR_LABORz'                
+   121       217     no       no      Formula for 'SHR_NLABORz'               
+   122       218     no       no      Formula for 'SHR_LinNLz'                
+   123       219     no       no      Formula for 'SHR_CinNLz'                
+   124       220     no       no      ZERODIVIDE instruction                  
+   125       223     no       no      COEFFICIENT 'SHR_LANDz'                 
+   126       226     no       no      COEFFICIENT 'SHR_NITROz'                
+   127       227     no       no      COEFFICIENT 'SHR_WATSGz'                
+   128       228     no       no      COEFFICIENT 'SHR_WEQPTz'                
+   129       229     no       no      COEFFICIENT 'SHR_NLANDz'                
+   130       231     no       no      COEFFICIENT 'SHR_OinAUGz'               
+   131       232     no       no      COEFFICIENT 'SHR_LinAUGz'               
+   132       233     no       no      COEFFICIENT 'SHR_WinAUGz'               
+   133       234     no       no      COEFFICIENT 'SHR_LinLWz'                
+   134       235     no       no      COEFFICIENT 'SHR_WinLWz'                
+   135       236     no       no      COEFFICIENT 'SHR_WWinWz'                
+   136       237     no       no      COEFFICIENT 'SHR_WKinWz'                
+   137       241     no       no      COEFFICIENT 'SHR_QLANDz'                
+   138       244     no       no      COEFFICIENT 'SHR_VLANDz'                
+   139       246     no       no      Formula for 'SHR_LANDz'                 
+   140       248     no       no      Formula for 'SHR_NITROz'                
+   141       249     no       no      Formula for 'SHR_WATSGz'                
+   142       250     no       no      Formula for 'SHR_WEQPTz'                
+   143       251     no       no      Formula for 'SHR_NLANDz'                
+   144       253     no       no      ZERODIVIDE instruction                  
+   145       254     no       no      Formula for 'SHR_OinAUGz'               
+   146       256     no       no      Formula for 'SHR_LinAUGz'               
+   147       257     no       no      Formula for 'SHR_WinAUGz'               
+   148       259     no       no      ZERODIVIDE instruction                  
+   149       260     no       no      Formula for 'SHR_WinLWz'                
+   150       262     no       no      Formula for 'SHR_LinLWz'                
+   151       264     no       no      ZERODIVIDE instruction                  
+   152       265     no       no      Formula for 'SHR_WWinWz'                
+   153       267     no       no      Formula for 'SHR_WKinWz'                
+   154       268     no       no      ZERODIVIDE instruction                  
+   155       270     no       no      COEFFICIENT 'ECROPz'                    
+   156       272     no       no      COEFFICIENT 'EIRRIGz'                   
+   157       273     no       no      COEFFICIENT 'EAUGLANDz'                 
+   158       274     no       no      COEFFICIENT 'ESUB_WKz'                  
+   159       275     no       no      COEFFICIENT 'EWATSGz'                   
+   160       276     no       no      COEFFICIENT 'ELANDz'                    
+   161       277     no       no      COEFFICIENT 'ENITROr'                   
+   162       278     no       no      COEFFICIENT 'EWATKLr'                   
+   163       280     no       no      READ into 'ECROPz'                      
+   164       282     no       no      READ into 'EIRRIGz'                     
+   165       283     no       no      READ into 'EAUGLANDz'                   
+   166       284     no       no      READ into 'ESUB_WKz'                    
+   167       285     no       no      READ into 'EWATSGz'                     
+   168       286     no       no      READ into 'ELANDz'                      
+   169       287     no       no      READ into 'ENITROr'                     
+   170       288     no       no      READ into 'EWATKLr'                     
+   171       290     no       no      VARIABLE 'p_QNITROz'                    
+   172       292     no       no      VARIABLE 'p_PNITROz'                    
+   173       293     no       no      VARIABLE 'p_QWATSGz'                    
+   174       294     no       no      VARIABLE 'p_PWATSGz'                    
+   175       295     no       no      VARIABLE 'p_PLANDz'                     
+   176       296     no       no      VARIABLE 'p_QNLANDz'                    
+   177       297     no       no      VARIABLE 'p_PNLANDz'                    
+   178       298     no       no      VARIABLE 'p_QWEQPTz'                    
+   179       299     no       no      VARIABLE 'p_PWEQPTz'                    
+   180       300     no       no      VARIABLE 'p_PAUGLANDz'                  
+   181       301     no       no      VARIABLE 'p_QAUGLANDz'                  
+   182       302     no       no      VARIABLE 'p_PLANDWTRz'                  
+   183       303     no       no      VARIABLE 'p_QLANDWTRz'                  
+   184       304     no       no      VARIABLE 'p_PWATERz'                    
+   185       305     no       no      VARIABLE 'p_QWATERz'                    
+   186       306     no       no      VARIABLE 'p_VCROPz'                     
+   187       308     no       no      UPDATE of 'VLANDz'                      
+   188       310     no       no      UPDATE of 'VNITROz'                     
+   189       311     no       no      UPDATE of 'VWATSGz'                     
+   190       312     no       no      UPDATE of 'VWEQPTz'                     
+   191       317     no       no      COEFFICIENT 'QWATSRFz'                  
+   192       320     no       no      COEFFICIENT 'QWATGRDz'                  
+   193       322     no       no      COEFFICIENT 'SHR_SinSGz'                
+   194       323     no       no      COEFFICIENT 'SHR_GinSGz'                
+   195       325     no       no      READ into 'QWATSRFz'                    
+   196       327     no       no      READ into 'QWATGRDz'                    
+   197       329     no       no      ZERODIVIDE instruction                  
+   198       330     no       no      Formula for 'SHR_SinSGz'                
+   199       332     no       no      Formula for 'SHR_GinSGz'                
+   200       333     no       no      ZERODIVIDE instruction                  
+   201       335     no       no      COEFFICIENT 'ETA_WATSRFz'               
+   202       337     no       no      COEFFICIENT 'ETA_WATGRDz'               
+   203       338     no       no      COEFFICIENT 'ESUB_SGz'                  
+   204       340     no       no      READ into 'ETA_WATSRFz'                 
+   205       342     no       no      READ into 'ETA_WATGRDz'                 
+   206       343     no       no      READ into 'ESUB_SGz'                    
+   207       345     no       no      VARIABLE 'p_QWATSRFz'                   
+   208       347     no       no      VARIABLE 'p_QWATGRDz'                   
+   209       348     no       no      VARIABLE 'p_PWATSRFz'                   
+   210       349     no       no      VARIABLE 'p_PWATGRDz'                   
+   211       350     no       no      VARIABLE 's_QWATSRFz'                   
+   212       351     no       no      VARIABLE 's_QWATGRDz'                   
+   213       352     no       no      VARIABLE 't_PAUGLANDz'                  
+   214       353     no       no      VARIABLE 't_PNITROz'                    
+   215       354     no       no      VARIABLE 't_PNLABORz'                   
+   216       356     no       no      EQUATION 'E_PWATSRFz'                   
+   217       358     no       no      EQUATION 'E_PWATGRDZ'                   
+   218       359     no       no      EQUATION 'E_QWATSRFZ'                   
+   219       360     no       no      EQUATION 'E_QWATGRDz'                   
+   220       362     no       no      EQUATION 'E_PWATSGz'                    
+   221       364     no       no      UPDATE of 'QWATSRFz'                    
+   222       366     no       no      UPDATE of 'QWATGRDz'                    
+   223       371     no       no      COEFFICIENT 'ELABORa'                   
+   224       373     no       no      COEFFICIENT 'ESUB_LZa'                  
+   225       374     no       no      COEFFICIENT 'ENLABORr'                  
+   226       376     no       no      READ into 'ELABORa'                     
+   227       378     no       no      READ into 'ESUB_LZa'                    
+   228       379     no       no      READ into 'ENLABORr'                    
+   229       381     no       no      VARIABLE 'p_QNLABORz'                   
+   230       383     no       no      VARIABLE 'p_PNLABORz'                   
+   231       384     no       no      VARIABLE 'p_PLABORz'                    
+   232       387     no       no      EQUATION 'E_QLABORz'                    
+   233       394     no       no      EQUATION 'E_PLABORz'                    
+   234       399     no       no      EQUATION 'E_QNLABORz'                   
+   235       403     no       no      EQUATION 'E_PNLABORz'                   
+   236       407     no       no      EQUATION 'E_PNLANDz'                    
+   237       412     no       no      UPDATE of 'VLABORz'                     
+   238       414     no       no      UPDATE of 'VNLABORz'                    
+   239       416     no       no      EQUATION 'E_PLANDz'                     
+   240       422     no       no      EQUATION 'E_QLANDz'                     
+   241       427     no       no      EQUATION 'E_PWEQPTz'                    
+   242       430     no       no      EQUATION 'E_QNITROz'                    
+   243       434     no       no      EQUATION 'E_PNITROz'                    
+   244       438     no       no      EQUATION 'E_QWATSGz'                    
+   245       442     no       no      EQUATION 'E_QWEQPTz'                    
+   246       446     no       no      EQUATION 'E_QNLANDz'                    
+   247       450     no       no      EQUATION 'E_QAUGLANDz'                  
+   248       454     no       no      EQUATION 'E_QWATERz'                    
+   249       458     no       no      EQUATION 'E_QLANDWTRz'                  
+   250       462     no       no      EQUATION 'E_PWATERz'                    
+   251       467     no       no      EQUATION 'E_PLANDWTRz'                  
+   252       473     no       no      EQUATION 'E_PAUGLANDz'                  
+   253       481     no       no      EQUATION 'E_QCROPz'                     
+   254       492     no       no      EQUATION 'E_PCROPz'                     
+   255       495     no       no      EQUATION 'E_VCROPz'                     
+   256       560     no       no      SUBSTITUTE for'p_AOCROP'                
+   257       561     no       no      SUBSTITUTE for'p_AFNITRO'               
+   258       562     no       no      SUBSTITUTE for'p_AFLAND'                
+   259       563     no       no      SUBSTITUTE for'p_AFNLAND'               
+   260       564     no       no      SUBSTITUTE for'p_AFWATER'               
+   261       565     no       no      SUBSTITUTE for'p_AFWATSG'               
+   262       566     no       no      SUBSTITUTE for'p_AFWEQPT'               
+   263       568     no       no      SUBSTITUTE for'p_PWEQPTz'               
+   264       569     no       no      SUBSTITUTE for'p_QWEQPTz'               
+   265       571     no       no      SUBSTITUTE for'p_QNLANDz'               
+   266       573     no       no      BACKSOLVE for 'p_PLANDWTRz'             
+   267       574     no       no      BACKSOLVE for 'p_PWATERz'               
+   268       576     no       no      SUBSTITUTE for'p_QWATSRFz'              
+   269       577     no       no      SUBSTITUTE for'p_QWATGRDz'              
+   270       578     no       no      SUBSTITUTE for'p_PWATSRFz'              
+   271       579     no       no      SUBSTITUTE for'p_PWATGRDz'              
+   272       581     no       no      SUBSTITUTE for'p_QWATSGz'               
+   273       582     no       no      SUBSTITUTE for'p_PNLANDz'               
+   274       583     no       no      SUBSTITUTE for'p_PWATSGz'               
+   275       584     no       no      SUBSTITUTE for'p_QNITROz'               
+   276       585     no       no      SUBSTITUTE for'p_PNITROz'               
+   277       587     no       no      OMIT statement                          
+   278       588     no       no      OMIT statement                          
+   279       591     no       no      OMIT statement                          
+   280       592     no       no      OMIT statement                          
+   281       593     no       no      OMIT statement                          
+   282       594     no       no      OMIT statement                          
+   283       595     no       no      OMIT statement                          
+   284       613     no       no      VARIABLE 'p_VLABORz'                    
+   285       614     no       no      VARIABLE 'p_PLABORa'                    
+   286       615     no       no      VARIABLE 'p_QLABORa'                    
+   287       616     no       no      VARIABLE 'p_VLABORa'                    
+   288       618     no       no      COEFFICIENT 'QLABORa'                   
+   289       619     no       no      COEFFICIENT 'VLABORa'                   
+   290       620     no       no      COEFFICIENT 'SHR_QLABORz'               
+   291       622     no       no      Formula for 'QLABORa'                   
+   292       624     no       no      Formula for 'VLABORa'                   
+   293       625     no       no      Formula for 'SHR_QLABORz'               
+   294       627     no       no      EQUATION 'E_VLABORz'                    
+   295       630     no       no      EQUATION 'E_QLABORa'                    
+   296       631     no       no      EQUATION 'E_VLABORa'                    
+   297       632     no       no      EQUATION 'E_PLABORa'                    
+   298       635     no       no      VARIABLE 'p_VLANDz'                     
+   299       636     no       no      VARIABLE 'p_PLANDa'                     
+   300       637     no       no      VARIABLE 'p_QLANDa'                     
+   301       638     no       no      VARIABLE 'p_VLANDa'                     
+   302       640     no       no      COEFFICIENT 'QLANDa'                    
+   303       641     no       no      COEFFICIENT 'VLANDa'                    
+   304       643     no       no      Formula for 'QLANDa'                    
+   305       645     no       no      Formula for 'VLANDa'                    
+   306       647     no       no      EQUATION 'E_VLANDz'                     
+   307       649     no       no      EQUATION 'E_QLANDa'                     
+   308       650     no       no      EQUATION 'E_VLANDa'                     
+   309       651     no       no      EQUATION 'E_PLANDa'                     
+   310       654     no       no      VARIABLE 'p_VNLABORz'                   
+   311       655     no       no      VARIABLE 'p_PNLABORa'                   
+   312       656     no       no      VARIABLE 'p_QNLABORa'                   
+   313       657     no       no      VARIABLE 'p_VNLABORa'                   
+   314       659     no       no      COEFFICIENT 'VNLABORa'                  
+   315       661     no       no      Formula for 'VNLABORa'                  
+   316       664     no       no      EQUATION 'E_VNLABORz'                   
+   317       666     no       no      EQUATION 'E_VNLABORa'                   
+   318       667     no       no      EQUATION 'E_PNLABORa'                   
+   319       668     no       no      EQUATION 'E_QNLABORa'                   
+   320       671     no       no      VARIABLE 'p_VAUGLANDz'                  
+   321       672     no       no      VARIABLE 'p_PAUGLANDa'                  
+   322       673     no       no      VARIABLE 'p_QAUGLANDa'                  
+   323       674     no       no      VARIABLE 'p_VAUGLANDa'                  
+   324       676     no       no      COEFFICIENT 'VAUGLANDa'                 
+   325       678     no       no      Formula for 'VAUGLANDa'                 
+   326       681     no       no      EQUATION 'E_VAUGLANDz'                  
+   327       683     no       no      EQUATION 'E_VAUGLANDa'                  
+   328       684     no       no      EQUATION 'E_PAUGLANDa'                  
+   329       685     no       no      EQUATION 'E_QAUGLANDa'                  
+   330       688     no       no      VARIABLE 'p_VLANDWTRz'                  
+   331       689     no       no      VARIABLE 'p_PLANDWTRa'                  
+   332       690     no       no      VARIABLE 'p_QLANDWTRa'                  
+   333       691     no       no      VARIABLE 'p_VLANDWTRa'                  
+   334       693     no       no      COEFFICIENT 'VLANDWTRa'                 
+   335       695     no       no      Formula for 'VLANDWTRa'                 
+   336       698     no       no      EQUATION 'E_VLANDWTRz'                  
+   337       700     no       no      EQUATION 'E_VLANDWTRa'                  
+   338       701     no       no      EQUATION 'E_PLANDWTRa'                  
+   339       702     no       no      EQUATION 'E_QLANDWTRa'                  
+   340         0     no       no      UPDATE of 'QLANDz'                      
+   341         0     no       no      UPDATE of 'QLABORz'                     
+   342         0     no       no      UPDATE of 'QCROPz'                      
+
+
+
+
+ ============
+ ++ SET TABLE
+ ============
+
+                    Defined   [Max] Inter             Set numbers this
+  Number    Name    at line    Size temp? Elements    is subset of
+  ---------------------------------------------------------------------
+     1  REG            63 [       0]  no   read 
+     2  CZ             64 [       0]  no   read 
+     3  PR             65 [       0]  no   read 
+     5  S@US           76         1   no   fixed     1
+     4  US_CZ          76 [       0]  no   other     2
+     6  US_PR          77 [       0]  no   other     3
+
+
+
+
+ ===============
+ ++ SUBSET TABLE
+ ===============
+
+  Number  Lt Set  Lt Set        Big set  Big set
+          number  name          number   name   
+  ---------------------------------------------------
+       2       5  S@US                1  REG         
+       1       4  US_CZ               2  CZ          
+       3       6  US_PR               3  PR          
+
+
+
+
+ =============
+ ++ FILE TABLE
+ =============
+
+         Logical            Defined  File  File
+  Number  Name              at line  Type  Form  Actual name (if given)
+  --------------------------------------------------------------------
+     1  CZSETS                  56    old  head
+     2  CZDATA                  57    old  head
+     3  CZPARM                  58    old  head
+     4  REGPARM                 59    old  head
+     5  LABMRKT                 60    old  head
+     6  ESTIPARM                61    old  head
+
+
+
+
+ =================
+ ++ VARIABLE TABLE
+ =================
+
+                        Defined  No            Arguments range
+  Number    Name        at line  Args Type     over sets numbered
+  ------------------------------------------------------------
+     1   p_AOCROPz          87     1  perc       2
+     2   p_AFNITROz         88     1  perc       2
+     3   p_AFLANDz          89     1  perc       2
+     4   p_AFWATERz         90     1  perc       2
+     5   p_AFWATSGz         91     1  perc       2
+     6   p_AFWEQPTz         92     1  perc       2
+     7   p_AFLABORz         93     1  perc       2
+     8   p_AFNLABORz        94     1  perc       2
+     9   p_AFNLANDz         95     1  perc       2
+    10   p_AFLANDWTRz       96     1  perc       2
+    11   p_AFNITROa         99     1  perc       3
+    12   p_AFNLANDa        100     1  perc       3
+    13   p_AFLABORa        101     1  perc       3
+    14   p_AFNLABORa       102     1  perc       3
+    15   p_AFLANDWTRa      103     1  perc       3
+    16   p_AOCROPr         106     1  perc       1
+    17   p_AFNITROr        107     1  perc       1
+    18   p_AFLANDr         108     1  perc       1
+    19   p_AFWATERr        109     1  perc       1
+    20   p_AFWATSGr        110     1  perc       1
+    21   p_AFWEQPTr        111     1  perc       1
+    22   p_AFLABORr        112     1  perc       1
+    23   p_AFNLABORr       113     1  perc       1
+    24   p_AFNLANDr        114     1  perc       1
+    25   p_AFLANDWTRr      115     1  perc       1
+    26   p_AOCROP          118     1  perc       2
+    27   p_AFNITRO         119     1  perc       2
+    28   p_AFLAND          120     1  perc       2
+    29   p_AFWATER         121     1  perc       2
+    30   p_AFWATSG         122     1  perc       2
+    31   p_AFWEQPT         123     1  perc       2
+    32   p_AFLABOR         124     1  perc       2
+    33   p_AFNLABOR        125     1  perc       2
+    34   p_AFNLAND         126     1  perc       2
+    35   p_AFLANDWTR       127     1  perc       2
+    36   s_QLANDz          145     1  perc       2
+    37   s_QWATERz         147     1  perc       2
+    38   s_QCROPz          148     1  perc       2
+    39   s_PCROPz          149     1  perc       2
+    40   s_QLANDWTRz       150     1  perc       2
+    41   s_QAUGLANDz       151     1  perc       2
+    42   s_QNLANDz         152     1  perc       2
+    43   s_PNLANDz         153     1  perc       2
+    44   s_QLABORz         154     1  perc       2
+    45   s_QLABORa         155     1  perc       3
+    46   s_QLABOR          156     1  perc       2
+    47   s_QNLABORz        157     1  perc       2
+    48   p_QLANDz          166     1  perc       2
+    49   p_QLABORz         168     1  perc       2
+    50   p_PCROPz          170     1  perc       2
+    51   p_QCROPz          171     1  perc       2
+    52   p_QNITROz         290     1  perc       2
+    53   p_PNITROz         292     1  perc       2
+    54   p_QWATSGz         293     1  perc       2
+    55   p_PWATSGz         294     1  perc       2
+    56   p_PLANDz          295     1  perc       2
+    57   p_QNLANDz         296     1  perc       2
+    58   p_PNLANDz         297     1  perc       2
+    59   p_QWEQPTz         298     1  perc       2
+    60   p_PWEQPTz         299     1  perc       2
+    61   p_PAUGLANDz       300     1  perc       2
+    62   p_QAUGLANDz       301     1  perc       2
+    63   p_PLANDWTRz       302     1  perc       2
+    64   p_QLANDWTRz       303     1  perc       2
+    65   p_PWATERz         304     1  perc       2
+    66   p_QWATERz         305     1  perc       2
+    67   p_VCROPz          306     1  perc       2
+    68   p_QWATSRFz        345     1  perc       2
+    69   p_QWATGRDz        347     1  perc       2
+    70   p_PWATSRFz        348     1  perc       2
+    71   p_PWATGRDz        349     1  perc       2
+    72   s_QWATSRFz        350     1  perc       2
+    73   s_QWATGRDz        351     1  perc       2
+    74   t_PAUGLANDz       352     1  perc       2
+    75   t_PNITROz         353     1  perc       2
+    76   t_PNLABORz        354     1  perc       2
+    77   p_QNLABORz        381     1  perc       2
+    78   p_PNLABORz        383     1  perc       2
+    79   p_PLABORz         384     1  perc       2
+    80   p_VLABORz         613     1  perc       2
+    81   p_PLABORa         614     1  perc       3
+    82   p_QLABORa         615     1  perc       3
+    83   p_VLABORa         616     1  perc       3
+    84   p_VLANDz          635     1  perc       2
+    85   p_PLANDa          636     1  perc       3
+    86   p_QLANDa          637     1  perc       3
+    87   p_VLANDa          638     1  perc       3
+    88   p_VNLABORz        654     1  perc       2
+    89   p_PNLABORa        655     1  perc       3
+    90   p_QNLABORa        656     1  perc       3
+    91   p_VNLABORa        657     1  perc       3
+    92   p_VAUGLANDz       671     1  perc       2
+    93   p_PAUGLANDa       672     1  perc       3
+    94   p_QAUGLANDa       673     1  perc       3
+    95   p_VAUGLANDa       674     1  perc       3
+    96   p_VLANDWTRz       688     1  perc       2
+    97   p_PLANDWTRa       689     1  perc       3
+    98   p_QLANDWTRa       690     1  perc       3
+    99   p_VLANDWTRa       691     1  perc       3
+
+
+
+
+ ====================
+ ++ COEFFICIENT TABLE
+ ====================
+
+                        Defined  No            Arguments range
+  Number    Name        at line  Args Type     over sets numbered
+  ------------------------------------------------------------
+     1    CZ2REG            67     1  int        2
+     2    CZ2PR             70     1  int        2
+     3    PR2REG            73     1  int        3
+     4    QLANDz           166     1  real       2
+     5    QLABORz          168     1  real       2
+     6    PCROPz           170     1  real       2
+     7    QCROPz           171     1  real       2
+     8    VLANDz           173     1  real       2
+     9    VLABORz          175     1  real       2
+    10    VNLABORz         176     1  real       2
+    11    VNITROz          177     1  real       2
+    12    VWATSGz          178     1  real       2
+    13    VWEQPTz          179     1  real       2
+    14    VCROPz           194     1  real       2
+    15    VWATERz          196     1  real       2
+    16    VLNDWTRz         197     1  real       2
+    17    VNLANDz          198     1  real       2
+    18    VAUGLANDz        199     1  real       2
+    19    SHR_LinNLz       208     1  real       2
+    20    SHR_CinNLz       210     1  real       2
+    21    SHR_LABORz       211     1  real       2
+    22    SHR_NLABORz      212     1  real       2
+    23    SHR_LANDz        223     1  real       2
+    24    SHR_NITROz       226     1  real       2
+    25    SHR_WATSGz       227     1  real       2
+    26    SHR_WEQPTz       228     1  real       2
+    27    SHR_NLANDz       229     1  real       2
+    28    SHR_OinAUGz      231     1  real       2
+    29    SHR_LinAUGz      232     1  real       2
+    30    SHR_WinAUGz      233     1  real       2
+    31    SHR_LinLWz       234     1  real       2
+    32    SHR_WinLWz       235     1  real       2
+    33    SHR_WWinWz       236     1  real       2
+    34    SHR_WKinWz       237     1  real       2
+    35    SHR_QLANDz       241     1  real       2
+    36    SHR_VLANDz       244     1  real       2
+    37    ECROPz           270     1  real       2
+    38    EIRRIGz          272     1  real       2
+    39    EAUGLANDz        273     1  real       2
+    40    ESUB_WKz         274     1  real       2
+    41    EWATSGz          275     1  real       2
+    42    ELANDz           276     1  real       2
+    43    ENITROr          277     1  real       1
+    44    EWATKLr          278     1  real       1
+    45    QWATSRFz         317     1  real       2
+    46    QWATGRDz         320     1  real       2
+    47    SHR_SinSGz       322     1  real       2
+    48    SHR_GinSGz       323     1  real       2
+    49    ETA_WATSRFz      335     1  real       2
+    50    ETA_WATGRDz      337     1  real       2
+    51    ESUB_SGz         338     1  real       2
+    52    ELABORa          371     1  real       3
+    53    ESUB_LZa         373     1  real       3
+    54    ENLABORr         374     0  real
+    55    QLABORa          618     1  real       3
+    56    VLABORa          619     1  real       3
+    57    SHR_QLABORz      620     1  real       2
+    58    QLANDa           640     1  real       3
+    59    VLANDa           641     1  real       3
+    60    VNLABORa         659     1  real       3
+    61    VAUGLANDa        676     1  real       3
+    62    VLANDWTRa        693     1  real       3
+
+
+
+
+ =================
+ ++ EQUATION TABLE
+ =================
+
+           Defined     Semantic                        ALL quantifiers range
+  Number   at line      Error?   Equation name         over sets numbered
+  --------------------------------------------------------------------------
+     1         130       no      E_AOCROP                   2
+     2         132       no      E_AFNITRO                  2
+     3         133       no      E_AFLAND                   2
+     4         134       no      E_AFWATER                  2
+     5         135       no      E_AFWATSG                  2
+     6         136       no      E_AFWEQPT                  2
+     7         137       no      E_AFLABOR                  2
+     8         138       no      E_AFNLABOR                 2
+     9         139       no      E_AFNLAND                  2
+    10         140       no      E_AFLANDWTR                2
+    11         159       no      E_SQLABOR                  2
+    12         356       no      E_PWATSRFz                 2
+    13         358       no      E_PWATGRDZ                 2
+    14         359       no      E_QWATSRFZ                 2
+    15         360       no      E_QWATGRDz                 2
+    16         362       no      E_PWATSGz                  2
+    17         387       no      E_QLABORz                  2
+    18         394       no      E_PLABORz                  2
+    19         399       no      E_QNLABORz                 2
+    20         403       no      E_PNLABORz                 2
+    21         407       no      E_PNLANDz                  2
+    22         416       no      E_PLANDz                   2
+    23         422       no      E_QLANDz                   2
+    24         427       no      E_PWEQPTz                  2
+    25         430       no      E_QNITROz                  2
+    26         434       no      E_PNITROz                  2
+    27         438       no      E_QWATSGz                  2
+    28         442       no      E_QWEQPTz                  2
+    29         446       no      E_QNLANDz                  2
+    30         450       no      E_QAUGLANDz                2
+    31         454       no      E_QWATERz                  2
+    32         458       no      E_QLANDWTRz                2
+    33         462       no      E_PWATERz                  2
+    34         467       no      E_PLANDWTRz                2
+    35         473       no      E_PAUGLANDz                2
+    36         481       no      E_QCROPz                   2
+    37         492       no      E_PCROPz                   2
+    38         495       no      E_VCROPz                   2
+    39         627       no      E_VLABORz                  2
+    40         630       no      E_QLABORa                  3
+    41         631       no      E_VLABORa                  3
+    42         632       no      E_PLABORa                  3
+    43         647       no      E_VLANDz                   2
+    44         649       no      E_QLANDa                   3
+    45         650       no      E_VLANDa                   3
+    46         651       no      E_PLANDa                   3
+    47         664       no      E_VNLABORz                 2
+    48         666       no      E_VNLABORa                 3
+    49         667       no      E_PNLABORa                 3
+    50         668       no      E_QNLABORa                 3
+    51         681       no      E_VAUGLANDz                2
+    52         683       no      E_VAUGLANDa                3
+    53         684       no      E_PAUGLANDa                3
+    54         685       no      E_QAUGLANDa                3
+    55         698       no      E_VLANDWTRz                2
+    56         700       no      E_VLANDWTRa                3
+    57         701       no      E_PLANDWTRa                3
+    58         702       no      E_QLANDWTRa                3
+
+
+
+
+ ================
+ ++ FORMULA TABLE
+ ================
+
+           Defined   Semantic      LHS                RHS
+  Number   at line    Error?    coefficient       coefficient numbers
+  -------------------------------------------------------------------
+     1          76     no      Fm for Set         1
+     2          77     no      Fm for Set         3
+     3         201     no      VWATERz           12    13
+     4         203     no      VLNDWTRz          15     8
+     5         204     no      VNLANDz            9    10
+     6         205     no      VAUGLANDz         17    16
+     7         206     no      VCROPz            11    18
+     8         215     no      SHR_LABORz         9    14
+     9         217     no      SHR_NLABORz       10    14
+    10         218     no      SHR_LinNLz         9    17
+    11         219     no      SHR_CinNLz        10    17
+    12         246     no      SHR_LANDz          8    14
+    13         248     no      SHR_NITROz        11    14
+    14         249     no      SHR_WATSGz        12    14
+    15         250     no      SHR_WEQPTz        13    14
+    16         251     no      SHR_NLANDz        17    14
+    17         254     no      SHR_OinAUGz       17    18
+    18         256     no      SHR_LinAUGz        8    18
+    19         257     no      SHR_WinAUGz       15    18
+    20         260     no      SHR_WinLWz        15    16
+    21         262     no      SHR_LinLWz         8    16
+    22         265     no      SHR_WWinWz        12    15
+    23         267     no      SHR_WKinWz        13    15
+    24         330     no      SHR_SinSGz        45    46
+    25         332     no      SHR_GinSGz        46    45
+    26         622     no      QLABORa            2     5
+    27         624     no      VLABORa            2     9
+    28         625     no      SHR_QLABORz        5    55     2
+    29         643     no      QLANDa             2     4
+    30         645     no      VLANDa             2     8
+    31         661     no      VNLABORa           2    10
+    32         678     no      VAUGLANDa          2    18
+    33         695     no      VLANDWTRa          2    16
+
+
+
+
+ ===============
+ ++ UPDATE TABLE
+ ===============
+
+           Defined   Semantic    Updated         RHS coeff/var nos
+  Number   at line    Error?    coefficient       (vars are negative)
+  -------------------------------------------------------------------
+     1         308     no      VLANDz             8   -56   -48
+     2         310     no      VNITROz           11   -53   -52
+     3         311     no      VWATSGz           12   -55   -54
+     4         312     no      VWEQPTz           13   -60   -59
+     5         364     no      QWATSRFz          45   -68
+     6         366     no      QWATGRDz          46   -69
+     7         412     no      VLABORz            9   -79   -49
+     8         414     no      VNLABORz          10   -78   -77
+     9           0     no      QLANDz             4   -48
+    10           0     no      QLABORz            5   -49
+    11           0     no      QCROPz             7   -51
+
+
+
+
+ =============
+ ++ READ TABLE
+ =============
+
+           Defined    Semantic  Coefficient   File number
+  Number   at line     Error?    read into     read from   Header
+  ---------------------------------------------------------------
+     1         68       no      CZ2REG              1       MAP6
+     2         71       no      CZ2PR               5       MAP4
+     3         74       no      PR2REG              5       MP12
+     4        181       no      QLANDz              2       QLND
+     5        183       no      QLABORz             2       QLAB
+     6        185       no      QCROPz              2       QCRP
+     7        187       no      VLANDz              2       VLND
+     8        188       no      VLABORz             2       VLAB
+     9        189       no      VNLABORz            2       VNLB
+    10        190       no      VNITROz             2       VNIT
+    11        191       no      VWATSGz             2       VWTR
+    12        192       no      VWEQPTz             2       VWOR
+    13        280       no      ECROPz              3       ECRP
+    14        282       no      EIRRIGz             3       EIRR
+    15        283       no      EAUGLANDz           3       EAUG
+    16        284       no      ESUB_WKz            3       EWAT
+    17        285       no      EWATSGz             3       EWTR
+    18        286       no      ELANDz              3       ELND
+    19        287       no      ENITROr             4       ENTR
+    20        288       no      EWATKLr             4       EWKL
+    21        325       no      QWATSRFz            2       QSRF
+    22        327       no      QWATGRDz            2       QGRD
+    23        340       no      ETA_WATSRFz         3       ETAS
+    24        342       no      ETA_WATGRDz         3       ETAG
+    25        343       no      ESUB_SGz            3       ESW 
+    26        376       no      ELABORa             6       ELAB
+    27        378       no      ESUB_LZa            6       ESLZ
+    28        379       no      ENLABORr            3       ENL6
+
+
+
+
+ ===================
+ ++ ZERODIVIDE TABLE
+ ===================
+
+           Defined          Coefficient or
+  Number   at line   Type   real value specified
+  -----------------------------------------------
+     1        214     ZDZ   0.20                
+     2        220     ZDZ   (Turned OFF)
+     3        253     ZDZ   0.333333            
+     4        259     ZDZ   0.50                
+     5        264     ZDZ   0.5                 
+     6        268     ZDZ   (Turned OFF)
+     7        329     ZDZ   0.50                
+     8        333     ZDZ   (Turned OFF)
+
+
+   
+ ======================
+ ++ INPUT CHECK SUMMARY
+ ======================
+
+ Total number of statements is 342.
+ There are NO syntax errors or semantic problems.
+
+
+ ******************************************************************************
+ -3-
+ -->                     Starting CONDENSATION
+
+ ******************************************************************************
+
+
+
+ ==================================================
+ +1+
+ ++>Task   1 - omission of   7 variables
+ ==================================================
+
+
+     List of variables to omit :
+     ---------------------------
+
+      1  s_QLANDWTRz    
+      2  s_QCROPz       
+      3  s_QNLANDz      
+      4  s_PNLANDz      
+      5  s_QNLABORz     
+      6  s_QWATGRDz     
+      7  s_QWATSRFz     
+
+     Equations affected by this omission :
+     --------------------------------------
+
+      Equation  Equation name
+      --------------------------
+      This omission was made in the following updates :
+      -------------------------------------------------
+
+         12     E_PWATSRFz          
+         13     E_PWATGRDZ          
+         19     E_QNLABORz          
+         21     E_PNLANDz           
+         29     E_QNLANDz           
+         32     E_QLANDWTRz         
+         36     E_QCROPz            
+      This omission was made in the following updates :
+      -------------------------------------------------
+
+
+ This omission was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 1.
+
+ ==================================================
+ +2+
+ ++> Task   2 - Substituting out variable 'p_AOCROP'
+ ==================================================
+
+
+  >> Equation number   1 selected for substitution.
+     Equation name is 'E_AOCROP'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QNITROz (equation number  25)
+     E_QAUGLANDz (equation number  30)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 2.
+
+ ==================================================
+ +3+
+ ++> Task   3 - Substituting out variable 'p_AFNITRO'
+ ==================================================
+
+
+  >> Equation number   2 selected for substitution.
+     Equation name is 'E_AFNITRO'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QNITROz (equation number  25)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 3.
+
+ ==================================================
+ +4+
+ ++> Task   4 - Substituting out variable 'p_AFLAND'
+ ==================================================
+
+
+  >> Equation number   3 selected for substitution.
+     Equation name is 'E_AFLAND'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QLANDz (equation number  23)
+     E_PLANDWTRz (equation number  34)
+     E_PAUGLANDz (equation number  35)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 4.
+
+ ==================================================
+ +5+
+ ++> Task   5 - Substituting out variable 'p_AFNLAND'
+ ==================================================
+
+
+  >> Equation number   9 selected for substitution.
+     Equation name is 'E_AFNLAND'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QNLANDz (equation number  29)
+     E_PAUGLANDz (equation number  35)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 5.
+
+ ==================================================
+ +6+
+ ++> Task   6 - Substituting out variable 'p_AFWATER'
+ ==================================================
+
+
+  >> Equation number   4 selected for substitution.
+     Equation name is 'E_AFWATER'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QWATERz (equation number  31)
+     E_PLANDWTRz (equation number  34)
+     E_PAUGLANDz (equation number  35)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 6.
+
+ ==================================================
+ +7+
+ ++> Task   7 - Substituting out variable 'p_AFWATSG'
+ ==================================================
+
+
+  >> Equation number   5 selected for substitution.
+     Equation name is 'E_AFWATSG'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QWATSGz (equation number  27)
+     E_PWATERz (equation number  33)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 7.
+
+ ==================================================
+ +8+
+ ++> Task   8 - Substituting out variable 'p_AFWEQPT'
+ ==================================================
+
+
+  >> Equation number   6 selected for substitution.
+     Equation name is 'E_AFWEQPT'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QWEQPTz (equation number  28)
+     E_PWATERz (equation number  33)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 8.
+
+ ==================================================
+ +9+
+ ++> Task   9 - Substituting out variable 'p_PWEQPTz'
+ ==================================================
+
+
+  >> Equation number  24 selected for substitution.
+     Equation name is 'E_PWEQPTz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {-EWATKLr(CZ2REG(z))}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00063(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QWEQPTz (equation number  28)
+     E_PWATERz (equation number  33)
+      This substitution was made in the following updates :
+      -----------------------------------------------------
+
+          4 (update of 'VWEQPTz')
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 9.
+
+ ==================================================
+ +10+
+ ++> Task  10 - Substituting out variable 'p_QWEQPTz'
+ ==================================================
+
+
+  >> Equation number  28 selected for substitution.
+     Equation name is 'E_QWEQPTz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0 + ESUB_WKz(z) * C00063(z)}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00064(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+  (System-initiated backsolve for 'p_QWEQPTz      '
+    using equation 'E_QWEQPTz           ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_PWATERz (equation number  33)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 10.
+
+ ==================================================
+ +11+
+ ++> Task  11 - Substituting out variable 'p_QNLANDz'
+ ==================================================
+
+
+  >> Equation number  29 selected for substitution.
+     Equation name is 'E_QNLANDz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QLABORz (equation number  17)
+     E_QNLABORz (equation number  19)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 11.
+
+ ==================================================
+ +12+
+ ++> Task  12 - Substituting out variable 'p_PLANDWTRz'
+ ==================================================
+
+
+  >> Equation number  34 selected for substitution.
+     Equation name is 'E_PLANDWTRz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QLANDz (equation number  23)
+     E_QWATERz (equation number  31)
+     E_QLANDWTRz (equation number  32)
+     E_VLANDWTRz (equation number  55)
+     E_PLANDWTRa (equation number  57)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 12.
+
+ ==================================================
+ +13+
+ ++> Task  13 - Substituting out variable 'p_PWATERz'
+ ==================================================
+
+
+  >> Equation number  33 selected for substitution.
+     Equation name is 'E_PWATERz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {SHR_WKinWz(z) * C00063(z) * C00064(z) * ESUB_WKz(z) + 1.0}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00065(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QLANDz (equation number  23)
+     E_QWATSGz (equation number  27)
+     E_QWATERz (equation number  31)
+     E_QLANDWTRz (equation number  32)
+     E_PAUGLANDz (equation number  35)
+     E_QCROPz (equation number  36)
+     E_VLANDWTRz (equation number  55)
+     E_PLANDWTRa (equation number  57)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 13.
+
+ ==================================================
+ +14+
+ ++> Task  14 - Substituting out variable 'p_QWATSRFz'
+ ==================================================
+
+
+  >> Equation number  14 selected for substitution.
+     Equation name is 'E_QWATSRFZ'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+  (System-initiated backsolve for 'p_QWATSRFz     '
+    using equation 'E_QWATSRFZ          ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_PWATSRFz (equation number  12)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 14.
+
+ ==================================================
+ +15+
+ ++> Task  15 - Substituting out variable 'p_QWATGRDz'
+ ==================================================
+
+
+  >> Equation number  15 selected for substitution.
+     Equation name is 'E_QWATGRDz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+  (System-initiated backsolve for 'p_QWATGRDz     '
+    using equation 'E_QWATGRDz          ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_PWATGRDZ (equation number  13)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 15.
+
+ ==================================================
+ +16+
+ ++> Task  16 - Substituting out variable 'p_PWATSRFz'
+ ==================================================
+
+
+  >> Equation number  12 selected for substitution.
+     Equation name is 'E_PWATSRFz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {-ESUB_SGz(z) - ETA_WATSRFz(z)}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00066(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QWATSRFZ (equation number  14)
+       (This equation has been ELIMINATED out.)
+     E_PWATSGz (equation number  16)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 16.
+
+ ==================================================
+ +17+
+ ++> Task  17 - Substituting out variable 'p_PWATGRDz'
+ ==================================================
+
+
+  >> Equation number  13 selected for substitution.
+     Equation name is 'E_PWATGRDZ'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {-ESUB_SGz(z) - ETA_WATGRDz(z)}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00067(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QWATGRDz (equation number  15)
+       (This equation has been ELIMINATED out.)
+     E_PWATSGz (equation number  16)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 17.
+
+ ==================================================
+ +18+
+ ++> Task  18 - Substituting out variable 'p_QWATSGz'
+ ==================================================
+
+
+  >> Equation number  27 selected for substitution.
+     Equation name is 'E_QWATSGz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+  (System-initiated backsolve for 'p_QWATSGz      '
+    using equation 'E_QWATSGz           ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_PWATSGz (equation number  16)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 18.
+
+ ==================================================
+ +19+
+ ++> Task  19 - Substituting out variable 'p_PNLANDz'
+ ==================================================
+
+
+  >> Equation number  21 selected for substitution.
+     Equation name is 'E_PNLANDz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QLABORz (equation number  17)
+     E_QNLABORz (equation number  19)
+     E_PAUGLANDz (equation number  35)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 19.
+
+ ==================================================
+ +20+
+ ++> Task  20 - Substituting out variable 'p_PWATSGz'
+ ==================================================
+
+
+  >> Equation number  16 selected for substitution.
+     Equation name is 'E_PWATSGz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {-[-SHR_SinSGz(z) * C00066(z) - SHR_GinSGz(z) * C00067(z)] * [
+
+          ESUB_WKz(z) + ESUB_WKz(z) * C00065(z) * SHR_WWinWz(z)] + 1.0 - 
+
+          SHR_SinSGz(z) * C00066(z) * ESUB_SGz(z) - SHR_GinSGz(z) * C00067(z)
+
+           * ESUB_SGz(z)}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00068(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+  (System-initiated backsolve for 'p_PWATSGz      '
+    using equation 'E_PWATSGz           ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QLANDz (equation number  23)
+     E_QWATERz (equation number  31)
+     E_QLANDWTRz (equation number  32)
+     E_PAUGLANDz (equation number  35)
+     E_QCROPz (equation number  36)
+     E_VLANDWTRz (equation number  55)
+     E_PLANDWTRa (equation number  57)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 20.
+
+ ==================================================
+ +21+
+ ++> Task  21 - Substituting out variable 'p_QNITROz'
+ ==================================================
+
+
+  >> Equation number  25 selected for substitution.
+     Equation name is 'E_QNITROz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {1.0}
+
+  (System-initiated backsolve for 'p_QNITROz      '
+    using equation 'E_QNITROz           ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_PNITROz (equation number  26)
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 21.
+
+ ==================================================
+ +22+
+ ++> Task  22 - Substituting out variable 'p_PNITROz'
+ ==================================================
+
+
+  >> Equation number  26 selected for substitution.
+     Equation name is 'E_PNITROz'
+
+     Coefficient of substituted variable in this equation is :
+     ---------------------------------------------------------
+
+          {-ECROPz(z) - ENITROr(CZ2REG(z))}
+
+
+ %W% Check above coefficient will never be zero.
+
+ (To simplify the rewritten equations, we will set
+ 
+          (ALL,z,CZ) C00069(z)
+
+  equal to  -1.0  divided by the coefficient shown above.)
+ 
+  (System-initiated backsolve for 'p_PNITROz      '
+    using equation 'E_PNITROz           ')
+     This substitution was made in the following equations :
+     -------------------------------------------------------
+
+     E_QCROPz (equation number  36)
+
+ This substitution was SUCCESSFUL
+  and constitutes CONDENSATION ACTION number 22.
+
+ ==================================================
+ --> Summary of CONDENSATION
+ ==================================================
+
+
+
+     ============================
+     List of CONDENSATION actions
+     ============================
+
+     The following  22 condensation actions were performed : 
+
+     Action |  Brief description of action
+     -------|---------------------------------------------------
+            | 
+         1  |  OMISSION
+            |  The following variables were omitted: 
+            |     s_QLANDWTRz    (var. no.  40)
+            |     s_QCROPz       (var. no.  38)
+            |     s_QNLANDz      (var. no.  42)
+            |     s_PNLANDz      (var. no.  43)
+            |     s_QNLABORz     (var. no.  47)
+            |     s_QWATGRDz     (var. no.  73)
+            |     s_QWATSRFz     (var. no.  72)
+            | 
+         2  |  SUBSTITUTION
+            |  Variable 'p_AOCROP       ' (var. no.  26)
+            |  was substituted from the condensed system
+            |  using equation 'E_AOCROP            ' (eq. no.   1)
+            | 
+         3  |  SUBSTITUTION
+            |  Variable 'p_AFNITRO      ' (var. no.  27)
+            |  was substituted from the condensed system
+            |  using equation 'E_AFNITRO           ' (eq. no.   2)
+            | 
+         4  |  SUBSTITUTION
+            |  Variable 'p_AFLAND       ' (var. no.  28)
+            |  was substituted from the condensed system
+            |  using equation 'E_AFLAND            ' (eq. no.   3)
+            | 
+         5  |  SUBSTITUTION
+            |  Variable 'p_AFNLAND      ' (var. no.  34)
+            |  was substituted from the condensed system
+            |  using equation 'E_AFNLAND           ' (eq. no.   9)
+            | 
+         6  |  SUBSTITUTION
+            |  Variable 'p_AFWATER      ' (var. no.  29)
+            |  was substituted from the condensed system
+            |  using equation 'E_AFWATER           ' (eq. no.   4)
+            | 
+         7  |  SUBSTITUTION
+            |  Variable 'p_AFWATSG      ' (var. no.  30)
+            |  was substituted from the condensed system
+            |  using equation 'E_AFWATSG           ' (eq. no.   5)
+            | 
+         8  |  SUBSTITUTION
+            |  Variable 'p_AFWEQPT      ' (var. no.  31)
+            |  was substituted from the condensed system
+            |  using equation 'E_AFWEQPT           ' (eq. no.   6)
+            | 
+         9  |  SUBSTITUTION
+            |  Variable 'p_PWEQPTz      ' (var. no.  60)
+            |  was substituted from the condensed system
+            |  using equation 'E_PWEQPTz           ' (eq. no.  24)
+            | 
+        10  |  SUBSTITUTION
+            |  Variable 'p_QWEQPTz      ' (var. no.  59)
+            |  was substituted from the condensed system
+            |  using equation 'E_QWEQPTz           ' (eq. no.  28)
+            | 
+        11  |  SUBSTITUTION
+            |  Variable 'p_QNLANDz      ' (var. no.  57)
+            |  was substituted from the condensed system
+            |  using equation 'E_QNLANDz           ' (eq. no.  29)
+            | 
+        12  |  BACKSOLVE
+            |  Variable 'p_PLANDWTRz    ' (var. no.  63)
+            |  was made available for backsolving
+            |  using equation 'E_PLANDWTRz         ' (eq. no.  34)
+            | 
+        13  |  BACKSOLVE
+            |  Variable 'p_PWATERz      ' (var. no.  65)
+            |  was made available for backsolving
+            |  using equation 'E_PWATERz           ' (eq. no.  33)
+            | 
+        14  |  SUBSTITUTION
+            |  Variable 'p_QWATSRFz     ' (var. no.  68)
+            |  was substituted from the condensed system
+            |  using equation 'E_QWATSRFZ          ' (eq. no.  14)
+            | 
+        15  |  SUBSTITUTION
+            |  Variable 'p_QWATGRDz     ' (var. no.  69)
+            |  was substituted from the condensed system
+            |  using equation 'E_QWATGRDz          ' (eq. no.  15)
+            | 
+        16  |  SUBSTITUTION
+            |  Variable 'p_PWATSRFz     ' (var. no.  70)
+            |  was substituted from the condensed system
+            |  using equation 'E_PWATSRFz          ' (eq. no.  12)
+            | 
+        17  |  SUBSTITUTION
+            |  Variable 'p_PWATGRDz     ' (var. no.  71)
+            |  was substituted from the condensed system
+            |  using equation 'E_PWATGRDZ          ' (eq. no.  13)
+            | 
+        18  |  SUBSTITUTION
+            |  Variable 'p_QWATSGz      ' (var. no.  54)
+            |  was substituted from the condensed system
+            |  using equation 'E_QWATSGz           ' (eq. no.  27)
+            | 
+        19  |  SUBSTITUTION
+            |  Variable 'p_PNLANDz      ' (var. no.  58)
+            |  was substituted from the condensed system
+            |  using equation 'E_PNLANDz           ' (eq. no.  21)
+            | 
+        20  |  SUBSTITUTION
+            |  Variable 'p_PWATSGz      ' (var. no.  55)
+            |  was substituted from the condensed system
+            |  using equation 'E_PWATSGz           ' (eq. no.  16)
+            | 
+        21  |  SUBSTITUTION
+            |  Variable 'p_QNITROz      ' (var. no.  52)
+            |  was substituted from the condensed system
+            |  using equation 'E_QNITROz           ' (eq. no.  25)
+            | 
+        22  |  SUBSTITUTION
+            |  Variable 'p_PNITROz      ' (var. no.  53)
+            |  was substituted from the condensed system
+            |  using equation 'E_PNITROz           ' (eq. no.  26)
+
+
+
+     =============================
+     Final status of all Equations
+     =============================
+
+  Number |      Equation        | Status of equation             |  Max   
+         |        name          |                                | number 
+ --------|----------------------|--------------------------------|--------
+         |                      |                                |        
+     1   | E_AOCROP             | ELIMINATED from condensed syst |[         0]
+     2   | E_AFNITRO            | ELIMINATED from condensed syst |[         0]
+     3   | E_AFLAND             | ELIMINATED from condensed syst |[         0]
+     4   | E_AFWATER            | ELIMINATED from condensed syst |[         0]
+     5   | E_AFWATSG            | ELIMINATED from condensed syst |[         0]
+     6   | E_AFWEQPT            | ELIMINATED from condensed syst |[         0]
+     7   | E_AFLABOR            | In the condensed system        |         0
+     8   | E_AFNLABOR           | In the condensed system        |         0
+     9   | E_AFNLAND            | ELIMINATED from condensed syst |[         0]
+    10   | E_AFLANDWTR          | In the condensed system        |         0
+    11   | E_SQLABOR            | In the condensed system        |         0
+    12   | E_PWATSRFz           | ELIMINATED from condensed syst |[         0]
+    13   | E_PWATGRDZ           | ELIMINATED from condensed syst |[         0]
+    14   | E_QWATSRFZ           | ELIMINATED from condensed syst |[         0]
+    15   | E_QWATGRDz           | ELIMINATED from condensed syst |[         0]
+    16   | E_PWATSGz            | ELIMINATED from condensed syst |[         0]
+    17   | E_QLABORz            | In the condensed system        |         0
+    18   | E_PLABORz            | In the condensed system        |         0
+    19   | E_QNLABORz           | In the condensed system        |         0
+    20   | E_PNLABORz           | In the condensed system        |         0
+    21   | E_PNLANDz            | ELIMINATED from condensed syst |[         0]
+    22   | E_PLANDz             | In the condensed system        |         0
+    23   | E_QLANDz             | In the condensed system        |         0
+    24   | E_PWEQPTz            | ELIMINATED from condensed syst |[         0]
+    25   | E_QNITROz            | ELIMINATED from condensed syst |[         0]
+    26   | E_PNITROz            | ELIMINATED from condensed syst |[         0]
+    27   | E_QWATSGz            | ELIMINATED from condensed syst |[         0]
+    28   | E_QWEQPTz            | ELIMINATED from condensed syst |[         0]
+    29   | E_QNLANDz            | ELIMINATED from condensed syst |[         0]
+    30   | E_QAUGLANDz          | In the condensed system        |         0
+    31   | E_QWATERz            | In the condensed system        |         0
+    32   | E_QLANDWTRz          | In the condensed system        |         0
+    33   | E_PWATERz            | Used for BACKSOLVING           |[         0]
+    34   | E_PLANDWTRz          | Used for BACKSOLVING           |[         0]
+    35   | E_PAUGLANDz          | In the condensed system        |         0
+    36   | E_QCROPz             | In the condensed system        |         0
+    37   | E_PCROPz             | In the condensed system        |         0
+    38   | E_VCROPz             | In the condensed system        |         0
+    39   | E_VLABORz            | In the condensed system        |         0
+    40   | E_QLABORa            | In the condensed system        |         0
+    41   | E_VLABORa            | In the condensed system        |         0
+    42   | E_PLABORa            | In the condensed system        |         0
+    43   | E_VLANDz             | In the condensed system        |         0
+    44   | E_QLANDa             | In the condensed system        |         0
+    45   | E_VLANDa             | In the condensed system        |         0
+    46   | E_PLANDa             | In the condensed system        |         0
+    47   | E_VNLABORz           | In the condensed system        |         0
+    48   | E_VNLABORa           | In the condensed system        |         0
+    49   | E_PNLABORa           | In the condensed system        |         0
+    50   | E_QNLABORa           | In the condensed system        |         0
+    51   | E_VAUGLANDz          | In the condensed system        |         0
+    52   | E_VAUGLANDa          | In the condensed system        |         0
+    53   | E_PAUGLANDa          | In the condensed system        |         0
+    54   | E_QAUGLANDa          | In the condensed system        |         0
+    55   | E_VLANDWTRz          | In the condensed system        |         0
+    56   | E_VLANDWTRa          | In the condensed system        |         0
+    57   | E_PLANDWTRa          | In the condensed system        |         0
+    58   | E_QLANDWTRa          | In the condensed system        |         0
+
+
+ Maximum number of equations in condensed system is 0
+
+
+
+     =============================
+     Final status of all Variables
+     =============================
+
+  Number |    Variable     | Status of variable                  |   Max  
+         |      name       |                                     |  size  
+ --------|-----------------|-------------------------------------|--------
+         |                 |                                     |
+     1   | p_AOCROPz       | In the condensed system             |         0
+     2   | p_AFNITROz      | In the condensed system             |         0
+     3   | p_AFLANDz       | In the condensed system             |         0
+     4   | p_AFWATERz      | In the condensed system             |         0
+     5   | p_AFWATSGz      | In the condensed system             |         0
+     6   | p_AFWEQPTz      | In the condensed system             |         0
+     7   | p_AFLABORz      | In the condensed system             |         0
+     8   | p_AFNLABORz     | In the condensed system             |         0
+     9   | p_AFNLANDz      | In the condensed system             |         0
+    10   | p_AFLANDWTRz    | In the condensed system             |         0
+    11   | p_AFNITROa      | In the condensed system             |         0
+    12   | p_AFNLANDa      | In the condensed system             |         0
+    13   | p_AFLABORa      | In the condensed system             |         0
+    14   | p_AFNLABORa     | In the condensed system             |         0
+    15   | p_AFLANDWTRa    | In the condensed system             |         0
+    16   | p_AOCROPr       | In the condensed system             |         0
+    17   | p_AFNITROr      | In the condensed system             |         0
+    18   | p_AFLANDr       | In the condensed system             |         0
+    19   | p_AFWATERr      | In the condensed system             |         0
+    20   | p_AFWATSGr      | In the condensed system             |         0
+    21   | p_AFWEQPTr      | In the condensed system             |         0
+    22   | p_AFLABORr      | In the condensed system             |         0
+    23   | p_AFNLABORr     | In the condensed system             |         0
+    24   | p_AFNLANDr      | In the condensed system             |         0
+    25   | p_AFLANDWTRr    | In the condensed system             |         0
+    26   | p_AOCROP        | SUBSTITUTED out of condensed system |[         0]
+    27   | p_AFNITRO       | SUBSTITUTED out of condensed system |[         0]
+    28   | p_AFLAND        | SUBSTITUTED out of condensed system |[         0]
+    29   | p_AFWATER       | SUBSTITUTED out of condensed system |[         0]
+    30   | p_AFWATSG       | SUBSTITUTED out of condensed system |[         0]
+    31   | p_AFWEQPT       | SUBSTITUTED out of condensed system |[         0]
+    32   | p_AFLABOR       | In the condensed system             |         0
+    33   | p_AFNLABOR      | In the condensed system             |         0
+    34   | p_AFNLAND       | SUBSTITUTED out of condensed system |[         0]
+    35   | p_AFLANDWTR     | In the condensed system             |         0
+    36   | s_QLANDz        | In the condensed system             |         0
+    37   | s_QWATERz       | In the condensed system             |         0
+    38   | s_QCROPz        | OMITTED from condensed system       |[         0]
+    39   | s_PCROPz        | In the condensed system             |         0
+    40   | s_QLANDWTRz     | OMITTED from condensed system       |[         0]
+    41   | s_QAUGLANDz     | In the condensed system             |         0
+    42   | s_QNLANDz       | OMITTED from condensed system       |[         0]
+    43   | s_PNLANDz       | OMITTED from condensed system       |[         0]
+    44   | s_QLABORz       | In the condensed system             |         0
+    45   | s_QLABORa       | In the condensed system             |         0
+    46   | s_QLABOR        | In the condensed system             |         0
+    47   | s_QNLABORz      | OMITTED from condensed system       |[         0]
+    48   | p_QLANDz        | In the condensed system             |         0
+    49   | p_QLABORz       | In the condensed system             |         0
+    50   | p_PCROPz        | In the condensed system             |         0
+    51   | p_QCROPz        | In the condensed system             |         0
+    52   | p_QNITROz       | SUBSTITUTED out of condensed system |[         0]
+    53   | p_PNITROz       | SUBSTITUTED out of condensed system |[         0]
+    54   | p_QWATSGz       | SUBSTITUTED out of condensed system |[         0]
+    55   | p_PWATSGz       | SUBSTITUTED out of condensed system |[         0]
+    56   | p_PLANDz        | In the condensed system             |         0
+    57   | p_QNLANDz       | SUBSTITUTED out of condensed system |[         0]
+    58   | p_PNLANDz       | SUBSTITUTED out of condensed system |[         0]
+    59   | p_QWEQPTz       | SUBSTITUTED out of condensed system |[         0]
+    60   | p_PWEQPTz       | SUBSTITUTED out of condensed system |[         0]
+    61   | p_PAUGLANDz     | In the condensed system             |         0
+    62   | p_QAUGLANDz     | In the condensed system             |         0
+    63   | p_PLANDWTRz     | You can BACKSOLVE for its values    |         0B
+    64   | p_QLANDWTRz     | In the condensed system             |         0
+    65   | p_PWATERz       | You can BACKSOLVE for its values    |         0B
+    66   | p_QWATERz       | In the condensed system             |         0
+    67   | p_VCROPz        | In the condensed system             |         0
+    68   | p_QWATSRFz      | SUBSTITUTED out of condensed system |[         0]
+    69   | p_QWATGRDz      | SUBSTITUTED out of condensed system |[         0]
+    70   | p_PWATSRFz      | SUBSTITUTED out of condensed system |[         0]
+    71   | p_PWATGRDz      | SUBSTITUTED out of condensed system |[         0]
+    72   | s_QWATSRFz      | OMITTED from condensed system       |[         0]
+    73   | s_QWATGRDz      | OMITTED from condensed system       |[         0]
+    74   | t_PAUGLANDz     | In the condensed system             |         0
+    75   | t_PNITROz       | In the condensed system             |         0
+    76   | t_PNLABORz      | In the condensed system             |         0
+    77   | p_QNLABORz      | In the condensed system             |         0
+    78   | p_PNLABORz      | In the condensed system             |         0
+    79   | p_PLABORz       | In the condensed system             |         0
+    80   | p_VLABORz       | In the condensed system             |         0
+    81   | p_PLABORa       | In the condensed system             |         0
+    82   | p_QLABORa       | In the condensed system             |         0
+    83   | p_VLABORa       | In the condensed system             |         0
+    84   | p_VLANDz        | In the condensed system             |         0
+    85   | p_PLANDa        | In the condensed system             |         0
+    86   | p_QLANDa        | In the condensed system             |         0
+    87   | p_VLANDa        | In the condensed system             |         0
+    88   | p_VNLABORz      | In the condensed system             |         0
+    89   | p_PNLABORa      | In the condensed system             |         0
+    90   | p_QNLABORa      | In the condensed system             |         0
+    91   | p_VNLABORa      | In the condensed system             |         0
+    92   | p_VAUGLANDz     | In the condensed system             |         0
+    93   | p_PAUGLANDa     | In the condensed system             |         0
+    94   | p_QAUGLANDa     | In the condensed system             |         0
+    95   | p_VAUGLANDa     | In the condensed system             |         0
+    96   | p_VLANDWTRz     | In the condensed system             |         0
+    97   | p_PLANDWTRa     | In the condensed system             |         0
+    98   | p_QLANDWTRa     | In the condensed system             |         0
+    99   | p_VLANDWTRa     | In the condensed system             |         0
+
+
+ Maximum number of variables in condensed system is 0
+
+ 
+
+              Summary of model
+              ----------------
+
+ There are 37 equations left in the CONDENSED model.
+ 19 equations have been used to SUBSTITUTE out variables.
+ 2 equations have been used to BACKSOLVE for variables.
+ The entire model contains 58 equations.
+
+ There are 71 variables left in the CONDENSED model.
+ 19 variables have been SUBSTITUTED out.
+ 7 variables have been OMITTED.
+ You can BACKSOLVE for 2 variables.
+ The entire model contains 99 variables.
+
+
+ ******************************************************************************
+ -3-
+ -->                     Starting CODE GENERATION
+
+ ******************************************************************************
+
+
+
+  CODE OPTIONS CHOSEN
+  -------------------
+
+
+                         TABLO PORTABLE
+               CODE OPTIONS   ( --> indicates those in effect )
+
+      NEQ Do no equations           PGS Prepare output for GEMSIM
+      NDS Do no displays        --> WFP Write a Fortran Program
+      NWR Do no writes                    (i.e. a TABLO-generated program)
+                                --> FC5 Fast Compile TG-prog under LF95
+      ACC All comment lines in      NMS Don't allow simulations
+             code
+                                    CIN Code file name same as
+                                          Information file name
+                                    CDM Old option. Has no effect.
+                                    NRZ No run-time reports re use of
+                                           ZERODIVIDE default values
+                                    NXS No "extra" statements allowed
+
+  Select an option   :  <opt>      Deselect an option      : -<opt>
+  Help for an option : ?<opt>      Help on all options     : ??
+  Redisplay options  : /           Finish option selection : Carriage return
+
+  END OF CODE OPTIONS CHOSEN
+  --------------------------
+  
+! ( Program is 'simplez.for'.)
+ (Total number of lines of code is 49936.)
+
+ This program
+     o can create the Equations file (for the condensed system)
+     o can carry out multi-step simulations
+
+ MXGSRS = 0, MXGSIS = 0.
+ MXGSLG = 0, MXGSIC = 0.
+
+ MXGSOP = 0, MXGSIN = 0.
+ MXGSRC = 0, MXGSNS=0.
+! (Model Information file is 'simplez.min'.)
+
+ (Total number of programs written is 1.)
+
+ *******************************************************************
+ Successful completion of TABLO.
+ The program is
+   'simplez.for'.
+
+ This program
+     o can create the Equations file (for the condensed system)
+     o can carry out multi-step simulations
+
+ *******************************************************************

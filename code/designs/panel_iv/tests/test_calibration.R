@@ -32,6 +32,7 @@ cell <- list(region = "1", year = 2010L, county_codes = c("01001", "01003", "010
   prior = c(.4, .6, 0), moments = list(moment))
 recovered <- iv_recover_cells(list(cell))
 stopifnot(all(recovered$weights$calibrated_center_weight[recovered$weights$county_fips == "01005"] == 0),
+  nrow(recovered$weights) == 3L, all(recovered$weights$specification == IV_PRIMARY_SPEC),
   !any(grepl("draw|simulation|kappa", names(recovered$weights))))
 original_guard <- IV_MAX_ITERATIONS
 IV_MAX_ITERATIONS <- 0L

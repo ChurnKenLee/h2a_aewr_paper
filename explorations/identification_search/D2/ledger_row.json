@@ -1,0 +1,14 @@
+{
+  "strategy_id": "D2",
+  "title": "Jobs where another wage floor binds, as placebo/control groups (falsification module)",
+  "family": "D",
+  "phase_reached": "not_run",
+  "status": "not_run",
+  "kill_phase": "pre-design",
+  "kill_reason": "Not run (lead decision 2026-11-06, per the triage merge note that D2 is a falsification module only, to be frozen against the frozen A1, A3 and N1 registries). Hosts: A1 estimated but failed blind review; A3 and N1 killed at design. With no surviving host strategy, D2 has nothing to falsify. A1 ran its own declared D2-type placebo groups (F5a-F5c) inside its registry.",
+  "registry_path": null,
+  "registry_sha256": null,
+  "pooling_eligible": false,
+  "decided_by": "lead (orchestrating session)",
+  "date": "2026-11-06"
+}

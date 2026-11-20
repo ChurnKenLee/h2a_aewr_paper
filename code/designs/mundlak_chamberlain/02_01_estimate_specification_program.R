@@ -235,18 +235,18 @@ checkpoint_is_current <- function(target) {
   if (identical(checkpoint$status, "estimated")) {
     diagnostics <- checkpoint$diagnostics
     if (
-      all(c("observations", "effective_parameters") %in%
-        names(diagnostics))
+      all(
+        c("observations", "effective_parameters") %in%
+          names(diagnostics)
+      )
     ) {
       resource <- mc_sp_resource_budget(
         diagnostics$observations[[1]],
         diagnostics$effective_parameters[[1]]
       )
       if (
-        resource$dense_matrix_gib >
-          resource$dense_matrix_guard_gib ||
-          resource$estimated_peak_gib >
-            resource$estimated_peak_guard_gib
+        resource$dense_matrix_gib > resource$dense_matrix_guard_gib ||
+          resource$estimated_peak_gib > resource$estimated_peak_guard_gib
       ) {
         return(FALSE)
       }
@@ -257,7 +257,7 @@ checkpoint_is_current <- function(target) {
 
 shared_panel <- read_parquet(
   path_processed("county_year_panel.parquet")
-) |>
+) %>%
   as.data.frame()
 
 load_calendar_panel <- function(calendar_id) {
@@ -340,8 +340,7 @@ estimate_one <- function(
           outcome_id = outcome_id,
           richness_tier = specification$richness_tier,
           horizon_count = specification$horizon_count,
-          polynomial_degree =
-            max(specification$polynomial_degrees),
+          polynomial_degree = max(specification$polynomial_degrees),
           status = "failed",
           rejection_reason = conditionMessage(condition),
           stringsAsFactors = FALSE
@@ -510,7 +509,7 @@ write_csv(
   path_tables("mc_specification_run_progress.csv")
 )
 
-primary_target_ids <- registry_bundle$registry |>
+primary_target_ids <- registry_bundle$registry %>%
   filter(
     .data$horizon_count == 3L,
     .data$preperiod_start == min(MC_BASELINE_YEARS),
@@ -518,24 +517,25 @@ primary_target_ids <- registry_bundle$registry |>
     .data$analysis_start == min(MC_ANALYSIS_YEARS),
     .data$analysis_end == max(MC_ANALYSIS_YEARS),
     .data$polynomial_degree == 2L
-  ) |>
+  ) %>%
   pull(.data$spec_id)
 primary_complete <- all(
   expand.grid(
     spec_id = primary_target_ids,
     outcome_id = MC_OUTCOMES$outcome_id,
     stringsAsFactors = FALSE
-  ) |>
+  ) %>%
     left_join(
-      diagnostics |>
+      diagnostics %>%
         select(
           .data$spec_id,
           .data$outcome_id,
           .data$status
         ),
       by = c("spec_id", "outcome_id")
-    ) |>
-    pull(.data$status) %in% c("estimated", "rejected")
+    ) %>%
+    pull(.data$status) %in%
+    c("estimated", "rejected")
 )
 if (primary_complete) {
   primary_selection <- mc_sp_primary_selection(

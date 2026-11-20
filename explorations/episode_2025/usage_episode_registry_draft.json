@@ -1,0 +1,126 @@
+{
+  "design_id": "episode_2025_usage_extension_v1_draft",
+  "status": "DRAFT, NOT FROZEN. No SHA-256 is recorded and nothing may be estimated under this file. Freeze before the first FY2027 disclosure is read; the late-season windows of the FY2026 Q4 disclosure are declared secondary below.",
+  "drafted": "2026-11-12",
+  "revised": "2026-11-13: user decisions 1 and 2 recorded; legal facts checked against the order and the OFLC notice; windows redrawn after the extension pre-check.",
+  "extends": {
+    "registry": "explorations/identification/track1_registry.json",
+    "registry_sha256": "bbffa053953873aa8a36c04a5af71c012fd15460b2cd0ff84bd378f6e65aafd8",
+    "amendment": "explorations/identification/track1_registry_amendment1.json",
+    "amendment_sha256": "433264ec85845f2ddb97c291073c19585ca9b80e2bb137aa0915fe38e29799e9",
+    "relation": "Both stay frozen and unchanged. This file adds later windows of the same policy episode; it does not re-declare the FY2025-vs-FY2026 Q1-Q3 contrast.",
+    "annotation": "Amendment 1 records the user's statement of 2026-11-02 that legal challenges to the 2025 rule failed. The rule was in fact held unlawful on 2026-08-26 without vacatur. For FY2026 Q1-Q3 the rates applied throughout, which is all that amendment relies on."
+  },
+  "question": "Effect of the statutory AEWR on H-2A program usage, identified from within-former-region differences across states in dated changes of the statewide skill-I rate.",
+  "user_decisions": [
+    {"date": "2026-11-13", "decision": "Primary outcome for windows not yet seen is size-weighted certified hours."},
+    {"date": "2026-11-13", "decision": "Cases filed after the 2026-08-26 ruling are not separated from the others."}
+  ],
+  "prior_exposure": {
+    "seen": "FY2026 Q1-Q3 certified positions, hours and offered wages by county (2025-rule design), plus the FY2026 tabulations listed in markdowns/identification_search_report.md section 6.1.",
+    "not_seen": "Every case decided or received after 2026-06-30; the FY2026 Q4 disclosure; all FY2027 data.",
+    "consequence": "The first-season contrast is reported as estimated under the frozen Track 1 registries and is never re-specified here."
+  },
+  "legal_status": {
+    "source_notes": "explorations/episode_2025/sources/legal_status_notes.md",
+    "verified": [
+      "2026-08-26: the 2025 rule is held unlawful and is not vacated; DOL must promptly produce a new methodology and new AEWRs (UFW v. DOL, No. 1:25-cv-01614-KES-EGC, Doc. 99).",
+      "2026-09-02: OFLC notice; the backpay period starts that day and runs until a new methodology is issued; current AEWRs stay in effect; no present obligation to pay.",
+      "2026-08-03: the 2026-27 rates take effect, 2026-08-17 for entities and states under the Kansas v. DOL order (Federal Register document 2026-15673)."
+    ],
+    "not_verified": [
+      "an order of 2026-10-02 requiring a replacement rule by 2026-12-30, and vacatur taking effect that day (secondary sources only)",
+      "whether DOL has appealed or sought a stay",
+      "the list of states under the Kansas order"
+    ]
+  },
+  "events": [
+    {
+      "id": "E1",
+      "date": "2025-10-02",
+      "dose": "U.S. skill-I rate of 2025-10-02 minus the regional rate in force on 2025-04-01, dollars per hour",
+      "support": "48 states; mean -3.96, SD 1.22; hours-weighted SD 1.07, within former region 0.81 (event_dose_support.csv)"
+    },
+    {
+      "id": "E2",
+      "date": "2026-08-03 (2026-08-17 under the Kansas order)",
+      "dose": "U.S. skill-I rate of 2026-08-03 minus the rate of 2025-10-02",
+      "support": "mean +0.48, SD 0.57; hours-weighted SD 0.45, within former region 0.28; correlation with the E1 dose -0.36 overall and 0.02 within former region",
+      "note": "Not a reversal of E1; about 12% of E1's identifying variance."
+    },
+    {
+      "id": "E3",
+      "date": "not known",
+      "dose": "not declared: no replacement rates are published",
+      "rule": "Added by a dated amendment with its own hash, after the rates are published and before any outcome dated after its effective date is read."
+    }
+  ],
+  "contrasts": {
+    "C1_first_season": "FY2026 decisions 1 Oct - 30 Jun against FY2025, E1 dose. Already estimated under the frozen registries; restated here only as the reference.",
+    "C2_second_season": {
+      "definition": "FY2027 decisions 1 Oct - 30 Jun against the same dates in FY2025, on the cumulative dose (rate in force on 2027-04-01 minus the FY2025 regional rate). If E3 takes effect inside the window, the amendment that declares E3 also declares the cohort-aligned dose by receipt date.",
+      "status": "primary new contrast",
+      "what_it_measures": "the response two seasons after the cut. It answers the one-season caveat; it does not add precision.",
+      "design_stage": "placebo years 2018-2024: second season against base year 0.59; mean of two seasons against base year 0.47; first season alone 0.43, in elasticity units (extension_placebo_summary.csv)"
+    },
+    "C3_late_season_FY2026": {
+      "definition": "cases received 1 Jul - 2 Aug 2026 (E1 rates) and 3 Aug - 30 Sep 2026 (E2 rates), decided inside FY2026, each against the same receipt dates in FY2025",
+      "status": "declared secondary; reported, not powered, not pooled into any headline",
+      "design_stage": "the two windows hold about 5% and 6% of a fiscal year's hours; placebo error 3.6 and 14.5 in elasticity units (extension_placebo_summary.csv, extension_window_shares.csv)"
+    }
+  },
+  "model": {
+    "primary": "county certified hours, Poisson pseudo-maximum likelihood, county and former-region-by-period effects, two periods per contrast. With a state-level dose this is equivalent to the size-weighted state contrast used in the pre-checks.",
+    "secondary_outcomes": ["certified positions (same model)", "certified positions and hours per 2011 farm worker with equal county weights (the Track 1 declared primary, for continuity)"],
+    "sample": "all counties with positive 2011 farm employment in multi-state former AEWR regions, excluding AK, HI and DC (46 states)",
+    "post_ruling_cases": "not separated (user decision). A declared sensitivity drops cases received on or after 2026-09-02, the start of the backpay period, wherever a window contains both kinds.",
+    "inference": "state leave-one-out jackknife primary; state CRV1 and randomization inference permuting state doses within former region also reported (as in amendment 1)",
+    "first_stage": "hours-weighted offered hourly wage on the dose, same effects, reported for every contrast"
+  },
+  "open_decisions": [
+    {
+      "id": 1,
+      "question": "Whether to report a pooled C1-and-C2 estimate at all.",
+      "recommendation": "No. Report C1 and C2 side by side: the mean of two seasons is no more precise than the first season alone in the placebo years, and the two answer different horizons."
+    }
+  ],
+  "design_stage_precision": {
+    "C1_realized": "elasticity MDE 1.12 for PPML hours and 0.90 for PPML positions (state jackknife; markdowns/alternative_identification_exploration.md section 3)",
+    "placebo_years": "Within-region, size-weighted placebo error over FY2018-FY2025 gives 2.8 x RMSE of 0.41 (hours) and 0.45 (positions); with eight placebo years the 95% range of that figure is roughly 0.28 to 0.79. It is not a size-validated MDE.",
+    "expectation": "No window available before a replacement rule adds usable precision. Only an event with within-region dispersion comparable to E1 could bring the size-valid MDE near 0.5."
+  },
+  "rejected_at_design_stage": [
+    {
+      "idea": "use the between-region part of the cut with trend, lagged-growth or factor adjustments",
+      "result": "Size-weighted, the unadjusted full dose carries a placebo bias of about -0.30 elasticity units; trend removal plus two factor loadings leaves -0.13 to -0.22. Placebo error is 0.51 to 0.97 against 0.41 to 0.45 within region (full_cut_placebo_summary.csv).",
+      "script": "explorations/episode_2025/01_usage_full_cut_precheck.R"
+    },
+    {
+      "idea": "range herders as within-state controls",
+      "result": "3.5 million hours against 332 million non-range; 9 states in support holding 21% of treated hours; growth correlation with non-range jobs -0.06; differencing multiplies the growth variance by 3.4 (untouched_support.csv, untouched_comovement.csv).",
+      "script": "explorations/episode_2025/02_usage_untouched_jobs_precheck.R"
+    },
+    {
+      "idea": "piece-rate orders as within-state controls",
+      "result": "85 million hours in 35 states, but growth correlation with other orders is -0.37 and differencing multiplies the growth variance by 15; the field exists only from FY2020.",
+      "script": "explorations/episode_2025/02_usage_untouched_jobs_precheck.R"
+    },
+    {
+      "idea": "pool the late-season FY2026 windows or the August 2026 schedule for precision",
+      "result": "placebo error 3.6 and 14.5 in elasticity units; the August 2026 dose has a third of E1's within-region dispersion",
+      "script": "explorations/episode_2025/07_usage_extension_precheck.R"
+    }
+  ],
+  "falsification": [
+    "each contrast's model on the same dates one and two years earlier with that contrast's dose",
+    "dose-by-FY event study over FY2012-FY2025 for the cumulative dose",
+    "first stage on the placebo dates"
+  ],
+  "threats": [
+    "state-specific FY2026 and FY2027 shocks correlated with the dose, above all immigration enforcement",
+    "from 2026-08-26 employers knew the rule was unlawful and from 2026-09-02 faced possible backpay, so the expected wage in the second season is not simply the statutory rate",
+    "skill-tier choice by employers; the skill-I rate is an intent-to-treat dose",
+    "state minimum wages above the skill-I rate in eight states holding 34% of hours"
+  ],
+  "selection_rule": "No outcome-based selection. Every declared contrast, placebo and sensitivity is reported. Anything else is labeled post-outcome."
+}

@@ -44,9 +44,13 @@ the remaining family and substep numbers are unchanged.
 ## Dependencies
 
 - `01` consumes the final A02 H-2A location outputs and the reviewed A02 v2
-  worksite-business membership artifact. The employer columns keep their
+  worksite-business membership artifact (FY2008--2026 Q3, review pending).
+  The FY2026 release is partial; start-year 2025 totals can be revised by later
+  decisions. Rebuild both `01` and `01b` after refreshing these source records. The employer columns keep their
   historical names but now count positive-certified linked worksite businesses;
-  all non-employer allocation calculations are unchanged.
+  all non-employer allocation formulas are unchanged. Extending the source
+  vintage can revise historical imputed hours (pooled mean) and business counts
+  (full-vintage identity evidence), even when certified positions are unchanged.
 - `02` consumes A06 CDL acres and synthetic price/yield outputs.
 - Run `03_01` before `03_02`, `03_03`, `04`, and `05_01`.
 - `04` also requires A04 annual QCEW. `05_02` requires both A05 OEWS artifacts;
@@ -71,9 +75,26 @@ the remaining family and substep numbers are unchanged.
 
 `01` additionally owns `h2a_case_allocation_source.parquet` (including cases
 outside the positive-certified branch) and `h2a_allocated_worksites.parquet`.
-The latter preserves raw date/staffing evidence and the existing allocation
-before case-modal dates, date exclusions, hours imputation and county splits.
-The historical `h2a_aggregated.parquet` remains the case-date benchmark.
+The latter preserves raw date/staffing evidence, the source-selected employment
+period and its basis, and allocation before date exclusions, hours imputation
+and county splits. The county aggregate uses that employment period without
+case-modal or manual date repairs. Start-only records contribute positions and
+business counts; complete intervals are required for duration measures.
+Application/status counts share the source-selected intended-start cohort.
+Requested-position and requested-hour totals retain missingness if any
+contributing allocation is unknown; only calendars with no allocated records
+receive zero. Rebuild `01`, C01 `05` and `13`, then C02 `01` to propagate this
+distinction. Certified counts and their allocation are unchanged.
+
+`01` also reads the A01 AEWR producer's annual reference, 2023-rule occupation
+rates and 2025-rule skill-tier rates to classify hourly wage offers
+(`cert_hours_with_hourly_wage_and_aewr_start_year` and
+`cert_hours_at_aewr_start_year`). The annual start-year-or-prior-year rule
+applies in every year; from 2023-03-30 a dated occupation or U.S.-worker
+skill-tier rate in force for the job in the year ending on the contract start
+date counts as well. Run the A01 AEWR producer first, then `01`, C01 `05` and
+`13`, and C02 `01`. The rule is stated in the
+[AEWR input contract](../../content/contracts/aewr-inputs.md).
 
 Run `01b` after `01` and the A01 AEWR producer. It reads the allocated-worksite
 artifact and dated FLS references and owns the fiscal-year monthly partitions,

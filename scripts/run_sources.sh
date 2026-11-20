@@ -14,6 +14,7 @@ run_step code/a01_sources/03_03_nass_census_worker_duration.py
 run_step code/a01_sources/04_01_qcew_create_binaries.py
 run_step code/a01_sources/04_02_qcew_quarterly_employment.py --force
 run_step code/a01_sources/04_03_qwi_quarterly_employment.py
+run_step code/a01_sources/04_04_qwi_quarterly_earnings.py
 run_step code/a01_sources/05_01_oews_geographic_crosswalk.py
 run_step code/a01_sources/05_02_oews_binaries.py
 run_step code/a01_sources/06_01_croplandcros_cdl_aggregate_using_exactextract.py

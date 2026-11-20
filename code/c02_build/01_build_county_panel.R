@@ -10,14 +10,10 @@ library(tidyr)
 
 # docs-ground:start shared-panel-construction
 h2a_zero_columns <- c(
-  "nbr_workers_requested_all_years",
   "nbr_workers_certified_all_years",
-  "man_hours_requested_all_years",
   "man_hours_certified_all_years",
   "nbr_applications_all_years",
-  "nbr_workers_requested_start_year",
   "nbr_workers_certified_start_year",
-  "man_hours_requested_start_year",
   "man_hours_certified_start_year",
   "cert_hours_with_hourly_wage_start_year",
   "cert_hours_with_hourly_wage_and_aewr_start_year",
@@ -31,11 +27,15 @@ h2a_zero_columns <- c(
   "nbr_applications_partial_start_year",
   "nbr_applications_denied_start_year",
   "nbr_applications_withdrawn_start_year",
-  "nbr_workers_requested_fiscal_year",
   "nbr_workers_certified_fiscal_year",
-  "man_hours_requested_fiscal_year",
   "man_hours_certified_fiscal_year",
   "nbr_applications_fiscal_year"
+)
+
+h2a_requested_columns <- c(
+  "nbr_workers_requested_all_years", "man_hours_requested_all_years",
+  "nbr_workers_requested_start_year", "man_hours_requested_start_year",
+  "nbr_workers_requested_fiscal_year", "man_hours_requested_fiscal_year"
 )
 
 county_panel <- read_parquet(path_int("county_year_merged.parquet"))
@@ -66,9 +66,9 @@ if (
     employer_linkage_contract$employer_linkage_unit[[1]] !=
       "worksite_business" ||
     employer_linkage_contract$employer_linkage_version[[1]] != "v2" ||
-    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2024L ||
-    employer_linkage_contract$employer_linkage_review_status[[1]] !=
-      "complete" ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2026L ||
+    !employer_linkage_contract$employer_linkage_review_status[[1]] %in%
+      c("complete", "pending") ||
     !grepl(
       "^[0-9a-f]{64}$",
       employer_linkage_contract$employer_linkage_review_report_hash[[1]]
@@ -82,6 +82,11 @@ if (
 
 county_panel <- county_panel %>%
   mutate(
+    # B01 fills calendars with no allocated rows, but preserves unknown
+    # requested totals. Only county-years absent from B01 receive zeros here;
+    # linkage metadata identifies the matched aggregate before it is filled.
+    across(all_of(h2a_requested_columns),
+      ~ if_else(is.na(employer_linkage_unit), 0, .x)),
     across(all_of(h2a_zero_columns), \(value) replace_na(value, 0)),
     employer_linkage_unit = coalesce(
       employer_linkage_unit,
@@ -132,6 +137,18 @@ county_panel <- county_panel %>%
       emp_farm / emp_tot,
       NA_real_
     ),
+    # Continuing-source analogues of the two BEA employment ratios, whose
+    # CAEMP25N source ends in 2022.
+    qcew_emp_pop_ratio = if_else(
+      is.finite(pop_census) & pop_census > 0,
+      qcew_all_sectors_annual_avg_emplvl / pop_census,
+      NA_real_
+    ),
+    farm_earnings_share = if_else(
+      is.finite(earnings_place_of_work) & earnings_place_of_work > 0,
+      farm_earnings / earnings_place_of_work,
+      NA_real_
+    ),
     ln_aewr_ppi = if_else(aewr_ppi > 0, log(aewr_ppi), NA_real_),
     ln_pop_census = if_else(pop_census > 0, log(pop_census), NA_real_),
     share_farm_laborexp_prodexp = if_else(
@@ -180,6 +197,16 @@ county_panel <- county_panel %>%
     emp_pop_ratio_l1 = if_else(
       lag(year) == year - 1L,
       lag(emp_pop_ratio),
+      NA_real_
+    ),
+    qcew_emp_pop_ratio_l1 = if_else(
+      lag(year) == year - 1L,
+      lag(qcew_emp_pop_ratio),
+      NA_real_
+    ),
+    farm_earnings_share_l1 = if_else(
+      lag(year) == year - 1L,
+      lag(farm_earnings_share),
       NA_real_
     )
   ) %>%
@@ -344,9 +371,14 @@ if (
 
 if (
   nrow(county_panel) == 0L ||
-    anyDuplicated(county_panel[c("county_fips", "year")]) > 0L
+    anyDuplicated(county_panel[c("county_fips", "year")]) > 0L ||
+    !setequal(unique(county_panel$year),
+              SHARED_PANEL_START_YEAR:SHARED_PANEL_END_YEAR) ||
+    any(county_panel %>% count(county_fips) %>% pull(n) !=
+        SHARED_PANEL_END_YEAR - SHARED_PANEL_START_YEAR + 1L)
 ) {
-  stop("county_year_panel must have unique county-year keys.", call. = FALSE)
+  stop("county_year_panel must have unique keys and the complete shared calendar.",
+       call. = FALSE)
 }
 
 filled_linkage_contract <- county_panel %>%

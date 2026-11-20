@@ -56,7 +56,8 @@ def test_effective_date_intersections_and_gap_are_exact():
 
 
 def test_cached_sources_preserve_history_and_quarantine_2009():
-    artifacts = build_aewr_artifacts(RAW / "aewr", CODE / "a01_sources/aewr_rate_schedule_manifest.csv")
+    artifacts = build_aewr_artifacts(RAW / "aewr", CODE / "a01_sources/aewr_rate_schedule_manifest.csv",
+                                     RAW / "aewr_2023_oews_occupation" / "flag")
     annual = artifacts["aewr.parquet"]
     assert annual.height == 49 * 36
     assert annual.filter(pl.col("year") == 2009)["aewr"].null_count() == 49
@@ -70,3 +71,20 @@ def test_cached_sources_preserve_history_and_quarantine_2009():
     assert set(skill["worker_category"]) == {"US", "H2A"}
     assert set(skill["skill_level"]) == {1, 2}
     assert skill.filter(pl.col("hourly_aewr") <= 0).is_empty()
+    occupation = artifacts["aewr_oews_occupation_rates.parquet"]
+    assert occupation["effective_start"].n_unique() == 4
+    assert occupation["effective_start"].min() == date(2023, 3, 30)
+    assert occupation["effective_end_exclusive"].max() == date(2025, 8, 29)
+    assert occupation["state_fips"].n_unique() == 54
+    assert occupation.filter(pl.col("soc_code") == "45-2092").is_empty()
+    # Heavy truck drivers in Georgia, May 2022 OEWS: a statewide rate.
+    truck = occupation.filter((pl.col("state_fips") == "13") & (pl.col("soc_code") == "53-3032")
+                              & (pl.col("oews_reference") == "May 2022"))
+    assert truck["rate_basis"].item() == "statewide" and truck["hourly_aewr"].item() > 15
+    # Colorado has no statewide May 2024 rows; the rule gives the national rate.
+    colorado = occupation.filter((pl.col("state_fips") == "08") & (pl.col("oews_reference") == "May 2024"))
+    assert set(colorado["rate_basis"]) <= {"national_fallback", "unavailable"}
+    unavailable = occupation.filter(pl.col("hourly_aewr").is_null())["rate_basis"]
+    assert set(unavailable) <= {"statewide_topcoded_unavailable", "unavailable"}
+    names = {item["name"] for item in artifacts["aewr_source_manifest.json"]["occupation_inputs"]}
+    assert len(names) == 4

@@ -19,10 +19,12 @@ model specification, and defines the predicted share using fixed 2011 farm
 employment.
 
 The same shared-panel contract block independently validates and fills the
-reviewed FY2008--2024 worksite-business v2 provenance. That linkage metadata
-does not enter prediction fitting, scoring, or cutoff selection.
+FY2008--2026 Q3 worksite-business v2 provenance. That linkage metadata
+does not enter prediction fitting, scoring, or cutoff selection. The shared
+contract additionally requires every county to have the complete 2008--2025
+calendar; extending that calendar does not change the 2011 training cutoff.
 
-{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-contract" sha256="b8fd6cf733f2ea700c01ab53c1b5d582073d588ee0707dff590b17387ffd2677" /> }}
+{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-contract" sha256="7998a0df92b2bf71599e1db0ef7bdb9c723b17ee29efc544e3e0bbb897664c29" /> }}
 
 The selected values are metadata carried with the artifact. A stale or mixed
 model specification is rejected rather than silently repaired downstream.

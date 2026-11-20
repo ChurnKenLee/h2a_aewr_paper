@@ -28,10 +28,10 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | --- | --- | --- |
 | `00_crosswalk_harmonization.py` | Normalize the Census county adjacency source | `county_adjacency2010.parquet` |
 | `01_aewr_extract_tables.py` | Assemble historical AEWR tables | `aewr.parquet` |
-| `02_01_h2a_match_locations.py` | Parse FY2008--2025 disclosure and Addendum B files and match worksite locations locally. City fields listing several places are split into pieces, attachment notes are stripped and placeholders (VARIOUS, SEE ADDENDUM) are blanked. Matching order per piece is ZIP, county name, exact normalized Census place name, whole-string ratio fuzzy matching that must beat any other county by 5 points (queries under 4 characters and ambiguous names stay unmatched), then exact unique-county names in Census 2010 county subdivisions and USGS GNIS populated places. Reference lists are sorted so results are reproducible. FY2025 Addendum B adds a reported worksite county used as a match key | `h2a_disclosure_records.parquet`, `h2a_addendum_b_records.parquet`, `h2a_location_pieces.parquet` |
+| `02_01_h2a_match_locations.py` | Parse FY2008--2026 Q3 disclosure and Addendum B files and match worksite locations locally. City fields listing several places are split into pieces, attachment notes are stripped and placeholders (VARIOUS, SEE ADDENDUM) are blanked. Matching order per piece is ZIP, county name, exact normalized Census place name, whole-string ratio fuzzy matching that must beat any other county by 5 points (queries under 4 characters and ambiguous names stay unmatched), then exact unique-county names in Census 2010 county subdivisions and USGS GNIS populated places. Reference lists are sorted so results are reproducible. FY2025 Addendum B reports worksite county; FY2026 Q3 omits it and uses the older schema | `h2a_disclosure_records.parquet`, `h2a_addendum_b_records.parquet`, `h2a_location_pieces.parquet` |
 | `02_02_h2a_resolve_locations_with_apis.py` | Queue unmatched pieces that carry a city or county name; Gemini suggests a cleaned name and Places looks up both names; a county is accepted only when both share it. Cache-only by default | `h2a_location_api_counties.parquet`; appends to Gemini/Places caches only when networking is enabled |
 | `02_03_h2a_assign_worksite_counties.py` | Union piece counties per location (local match, else API answer), attach them to records, then apply record-level fallbacks labeled in `county_fips_fallback_method`: Addendum B coordinates in the address (2010 county polygons, same state only), "within X County" address text, or the case's main-file county in the same state; main-file rows use the case's located Addendum B counties in the same state | `h2a_with_fips.parquet`, `h2a_addendum_b_with_fips.parquet` |
-| `02_04_h2a_match_employers.py` | Build conservative, balanced, and high-recall FY2008--2024 worksite-business identifiers and linkage audits | `h2a_employer_crosswalk.parquet` plus membership, edge, cluster, vintage, and review artifacts |
+| `02_04_h2a_match_employers.py` | Build conservative, balanced, and high-recall FY2008--2026 Q3 worksite-business identifiers and linkage audits | `h2a_employer_crosswalk.parquet` plus membership, edge, cluster, vintage, and review artifacts |
 | `02_05_h2a_geocode_worksites.py` | Prepare actual worksite address batches and parse public Census geocodes with quality/provenance flags | `h2a_worksite_geocodes.parquet` and request/record/address artifacts |
 | `03_01_nass_extract_quickstats.py` | Partition raw QuickStats census and survey extracts | `qs_census_*.parquet`, `qs_survey_*.parquet` |
 | `03_02_nass_select_quickstats_obs.py` | Select and harmonize downstream NASS observations | Selected census and survey Parquet files |
@@ -39,6 +39,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `04_01_qcew_create_binaries.py` | Combine annual QCEW archives | `qcew.parquet` |
 | `04_02_qcew_quarterly_employment.py` | Aggregate all-ownership NAICS 111/112 reference-month employment by county, year, quarter, and industry | `qcew_county_ag_quarterly_employment.parquet` |
 | `04_03_qwi_quarterly_employment.py` | Download private NAICS 111/112 beginning-quarter, stable, and any-quarter QWI employment | `qwi_county_ag_quarterly_employment.parquet` |
+| `04_04_qwi_quarterly_earnings.py` | Download private NAICS 111/112 QWI stable and beginning-quarter employment, their average monthly earnings and quarterly payroll for 2007--2024, each with its QWI status flag. Used only by the panel-IV stage 11 diagnostic | `qwi_county_ag_quarterly_earnings.parquet` |
 | `05_01_oews_geographic_crosswalk.py` | Harmonize OEWS reporting areas to counties | `oews_area_definitions.parquet` |
 | `05_02_oews_binaries.py` | Combine historical OEWS releases | `oews.parquet` |
 | `06_01_croplandcros_cdl_aggregate_using_exactextract.py` | Aggregate CDL rasters to county crop counts | County crop-pixel counts |
@@ -46,8 +47,8 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 | `06_03_croplandcros_cdl_nass_quickstats_crop_crosswalk.py` | Generate candidate NASS-to-CDL mappings | `nass_to_cdl_mappings.jsonl` |
 | `06_04_croplandcros_cdl_calculate_synthetic_price_and_yield.py` | Review mappings and construct synthetic crop series | NASS-CDL crosswalk and synthetic price/yield files |
 | `06_05_croplandcros_cdl_crop_type.py` | Classify CDL crops for analysis | `cdl_crop_type.parquet` |
-| `07_state_minimum_wages.py` | Assemble state-year minimum wages | `state_year_min_wage.parquet` |
-| `08_bea_farm_nonfarm_emp.py` | Extract archived county employment and farm-income tables and map BEA combined areas to canonical counties | Trimmed BEA files and farm employment |
+| `07_state_minimum_wages.py` | Assemble state-year minimum wages (no agricultural coverage coding; see below) | `state_year_min_wage.parquet` |
+| `08_bea_farm_nonfarm_emp.py` | Extract archived county employment and farm-income tables (CAEMP25N and CAINC45, discontinued after 2022), the continuing CAINC5N farm-earnings lines, and map BEA combined areas to canonical counties | Trimmed BEA files and farm employment |
 | `09_01_h2a_prediction_pull_noaa.py` | Build annual county climate predictors | Climate basis Parquet |
 | `09_02_h2a_prediction_pull_gnatsgo.py` | Build county soil predictors | gNATSGO soil-cell Parquet |
 | `10_mymarketnews_get_reports.py` | Download USDA market reports | Manifest, headers, and report partitions |
@@ -58,10 +59,13 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 ## Ordering and credentials
 
 - H-2A location matching runs `02_01`, `02_02`, then `02_03`, once each.
-  `02_02` makes no network calls unless `H2A_RUN_LOCATION_APIS=1`; without it,
-  every answer comes from the caches in `data/intermediate/cache` and the
-  script prints how many Gemini requests (20 locations each, one batch job per
-  source), Places text searches (at most 600 per minute) and Places details
+  `02_02` makes no network calls unless its notebook switch is turned on in
+  `marimo edit` (or `H2A_RUN_LOCATION_APIS=1` is set, which turns the switch on
+  by default and is how runner/exported runs enable it); otherwise every answer
+  comes from the caches in `data/intermediate/cache` and the script prints how
+  many Gemini requests (`GEMINI_MODEL`, low thinking, 20 locations each, one
+  batch job per source; cached answers from other models are ignored but kept),
+  Places text searches (at most 600 per minute) and Places details
   requests (at most 9 per second) a live run needs. There is no automatic
   retry; caches are appended or rewritten in place every 50 requests, and a
   pending Gemini batch job is resumed from its job-ID file on the next run
@@ -69,7 +73,9 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
   after `02_03`; it reads both with-FIPS files without rewriting them,
   classifies source roles without outcomes, and retains raw identity and role
   fields as membership keys. It always writes the seeded 200-pair review
-  sample, then stops without promoting v2 until
+  sample. With `ALLOW_PENDING_REVIEW = True` (the current setting, for the
+  FY2026 Q3 extension) incomplete labels publish v2 with review status `pending`;
+  with `False` it stops without promoting until
   `data/raw/h2a/employer_linkage_review_labels.csv` contains one valid label
   for every pair. See the grounded
   [worksite-business linkage contract](../../content/contracts/employer-linkage.md).
@@ -82,7 +88,7 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
   `qcew_reference_month_emplvl` retained as source diagnostics.
 - FLS quarterly worker and wage rows are selected as a release pair. The
   selected annual-report release is preferred; otherwise the latest paired
-  release no later than it is used. The supported 2010--2021 keys are complete.
+  release no later than it is used. The supported 2010--2023 keys are complete.
   USDA did not conduct the April 2011 survey, so those 17 region rows carry an
   explicit `survey_not_conducted` value status rather than fabricated values.
   The wage artifact retains `fls_field_hourly_wage`,
@@ -98,15 +104,44 @@ The sole numbering normalization is `a04_qcew_create_binaries.py`, now
 
 ## Audited wage and historical labor inputs
 
+`02_01` also owns employment-period harmonization in its local
+`disclosure_date_helpers` cell. It retains certification, requested, employment,
+and job-order source dates separately and publishes `period_begin_date`,
+`period_end_date`, `period_date_basis`, `application_begin_date`, and
+`application_date_basis`. B01 and source-level designs consume these fields
+directly. See the [date mapping](../../content/contracts/h2a-worksite-exposure.md).
+After changing this mapping, rerun `02_01`, cached `02_02`, `02_03`, B01/01 and
+B01/01b. If start-year certified positions changed within the prediction's
+training window, refit B01/07 and rescore B01/08 before rebuilding shared/design
+panels. Archive the old training checkpoint and log first: the optimizer's
+resume check does not detect changed training outcomes. Identity keys are
+unchanged; employer linkage needs rebuilding only if its source identity inputs
+changed.
+
 `01_aewr_extract_tables.py` uses only cached files. Its tracked
 `aewr_rate_schedule_manifest.csv` supplies reviewed source/effective dates;
 `aewr_policy_events.csv` supplies policy events and confounders. It owns
 `aewr.parquet` (1990--2025 annual references), `aewr_rate_schedule.parquet`,
 `aewr_occupation_skill_rates.parquet` (cached 2025--2027 lookup vintages),
+`aewr_oews_occupation_rates.parquet` (2023-rule rates for occupations outside
+the common field-and-livestock group, 2023-03-30 to 2025-08-28, read from the
+cached workbooks in `data/raw/aewr_2023_oews_occupation/flag`),
 `aewr_policy_events.parquet`, `aewr_reference_rate_source_audit.parquet`,
 `aewr_2009_nonstatutory_wages.parquet`, and `aewr_source_manifest.json`.
 The canonical 2009 rate is null. See the
 [AEWR input contract](../../content/contracts/aewr-inputs.md).
+
+The tracked, hand-maintained `state_ag_minwage_coverage.csv` dates each
+state's minimum-wage coverage of hired farmworkers from 2008 on. Each spell
+has an `applicable_floor` (`state_minimum`, `federal_minimum`, or
+`ag_specific_rate` with a numeric `ag_min_wage`), a citation, a source URL,
+and a confidence level. The research notes are in
+`state_ag_minwage_coverage_notes.md`. `code/c01_clean/04_state_minimum_wages.R`
+reads it directly. It replaced an undated exemption list formerly hard-coded
+in `07_state_minimum_wages.py`; a `state_year_min_wage.parquet` built before
+that change still carries the obsolete `agriculture_exemption` column, which
+nothing reads. Edit the table only with a cited source, and rerun the c01
+script and the shared panel afterwards.
 
 The Census hired-labor normalizer retains available 1997 and 2002 history
 alongside 2007--2022, with missing/suppressed totals left missing.
@@ -147,3 +182,20 @@ resume missing batches. The current benchmark/vintage, request/response hashes
 and retrieval time are retained; the moving provider vintage is not represented
 as 2010 geometry. No API key is needed. Address-range matches still require
 coordinate-quality, boundary-vintage and outcome-linkage review before spatial RD.
+
+## Shared baseline through 2025
+
+The main and Addendum B filename registries in `02_01` include the cached
+`H-2A_Disclosure_Data_FY2026_Q3.xlsx` and
+`H-2A_Addendum_B_Employment_FY2026_Q3.xlsx`. FY2026 Q3 is partial and supplies
+later decisions on 2025 starts; it does not establish a complete 2026 calendar.
+Run `02_01` through `02_04`, B01 `01` and `01b`, then the shared-panel runner
+after changing this vintage. FY2026 Addendum B has no reported county column.
+The existing location-cache and pending-review policies continue to apply.
+
+`data/raw/fred/WPU01.csv` includes twelve months for 2025. The public
+[FRED WPU01 table](https://fred.stlouisfed.org/data/WPU01) was retrieved on
+2026-10-26; `WPU01_2025_refresh_source.txt` and
+`WPU01_2025_refresh_manifest.json` in the same raw directory retain the
+source snapshot, hashes and revisions. The refresh replaced only 2025 rows.
+C01 `03` rejects partial required years before computing annual averages.

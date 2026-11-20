@@ -13,14 +13,36 @@ ppi_data <- read_csv(
   show_col_types = FALSE
 )
 
-# average by year
-
 ppi_data <- ppi_data %>%
-  mutate(year = as.numeric(substr(observation_date, 1, 4)))
+  mutate(
+    observation_date = as.Date(observation_date),
+    year = as.integer(format(observation_date, "%Y")),
+    month = as.integer(format(observation_date, "%m"))
+  )
+
+if (anyNA(ppi_data$observation_date) ||
+    anyDuplicated(ppi_data$observation_date) ||
+    any(!is.finite(ppi_data$WPU01) | ppi_data$WPU01 <= 0)) {
+  stop("Farm-product PPI needs unique dates and finite positive observations.",
+       call. = FALSE)
+}
 
 ppi_data <- ppi_data %>%
   group_by(year) %>%
-  summarise(wpu01 = mean(WPU01))
+  summarise(
+    wpu01 = mean(WPU01),
+    complete_year = n() == 12L && setequal(month, 1:12),
+    .groups = "drop"
+  )
+
+required_years <- union(2012L, SHARED_PANEL_START_YEAR:SHARED_PANEL_END_YEAR)
+missing_years <- setdiff(required_years, ppi_data$year[ppi_data$complete_year])
+if (length(missing_years)) {
+  stop("Farm-product PPI lacks twelve months for required years: ",
+       paste(missing_years, collapse = ", "), call. = FALSE)
+}
+# A partial future year is not an annual deflator.
+ppi_data <- ppi_data %>% filter(complete_year)
 
 # change base to 2012
 

@@ -9,7 +9,7 @@ library(arrow)
 library(dplyr)
 library(stringr)
 
-shared_panel_years <- 2008:2022
+shared_panel_years <- SHARED_PANEL_START_YEAR:SHARED_PANEL_END_YEAR
 oews_big_six_occupation_codes <- c(
   "45-2041",
   "45-2091",
@@ -39,6 +39,7 @@ require_columns <- function(data, required, label) {
 oews_long <- read_parquet(
   path_int("oews_county_area_year_occupation.parquet")
 )
+oews_source_years <- intersect(shared_panel_years, unique(oews_long$year))
 require_columns(
   oews_long,
   c(
@@ -370,11 +371,11 @@ assert_geo_columns(
 if (
   nrow(oews_county_year) == 0L ||
     anyNA(oews_county_year$year) ||
-    !setequal(unique(oews_county_year$year), shared_panel_years) ||
+    !setequal(unique(oews_county_year$year), oews_source_years) ||
     anyDuplicated(oews_county_year[c("county_fips", "year")]) > 0L
 ) {
   stop(
-    "oews_county_year must have unique, nonmissing county-year keys.",
+    "oews_county_year must have unique, nonmissing keys for observed source years.",
     call. = FALSE
   )
 }

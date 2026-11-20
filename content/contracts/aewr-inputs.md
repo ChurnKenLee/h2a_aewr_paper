@@ -2,7 +2,7 @@
 title = "AEWR input history and applicability"
 description = "Source-correct annual references, dated wage lookup tables and explicit coverage gaps."
 [extra]
-scopes = ["code/a01_sources/01_aewr_extract_tables.py", "src/h2a/aewr.py", "code/c01_clean", "code/designs"]
+scopes = ["code/a01_sources/01_aewr_extract_tables.py", "src/h2a/aewr.py", "code/b01_derived/01_h2a_aggregation_nodupes.R", "code/c01_clean", "code/designs"]
 +++
 
 The source producer preserves annual FLS reference rates for 49 states from
@@ -11,7 +11,7 @@ from explicitly selected Federal Register state tables. The USDA workbook is
 an independent audit and never selects the output sample. The Hawaii 2003
 correction is sourced to document 03-6559.
 
-{{ <grounding path="code/a01_sources/01_aewr_extract_tables.py" anchor="aewr-source-contract" sha256="036f1457a6c43aa7f815391898b7ab7b07ca67db43e9c44ed4b8276fd79aa24b" /> }}
+{{ <grounding path="code/a01_sources/01_aewr_extract_tables.py" anchor="aewr-source-contract" sha256="10a61361c3bf22179d84329fb283eced41c86e2724d8e236f4076e733207fdc1" /> }}
 
 The 2009 OES regime did not imply one rate per state. Table 1 of the
 [2010 final rule](https://www.govinfo.gov/content/pkg/FR-2010-02-12/pdf/2010-2731.pdf)
@@ -34,8 +34,32 @@ The cached 2025--2027 occupational workbooks retain state, SOC/category, skill,
 U.S./H-2A worker category, hourly rate, source text, source sheet and effective
 interval. The [FLAG archive](https://flag.dol.gov/wage-data/adverse-effect-wage-rates)
 identifies the two release intervals; the current release has no assumed future
-end date. The preceding 2023--2025 other-occupation workbooks were unavailable
-locally and network acquisition failed. Missing lookup cells are not zero.
+end date. Missing lookup cells are not zero.
+
+The preceding 2023--2025 other-occupation workbooks are cached under
+`data/raw/aewr_2023_oews_occupation/flag`, a folder separate from the AEWR raw
+folder. `aewr_oews_occupation_rates.parquet` holds the 2023-rule rate for every
+occupation outside the six common field-and-livestock SOCs, by state and OEWS
+vintage: the statewide OEWS mean hourly wage, or the national mean when no
+statewide wage is published. It covers four vintages effective from 2023-03-30
+until the rule's vacatur was implemented on 2025-08-29, with a later start for
+Kansas-order states and entities in the last vintage. Top-coded and unpublished
+cells stay null with an explicit `rate_basis`. The OEWS-based field rates of
+AK, DC, GU, PR and VI are not in this table. Its workbook hashes are recorded
+under `occupation_inputs` in the manifest, apart from `inputs`.
+
+B01 uses these tables only to classify wage offers. An hourly offer counts as
+AEWR-exposed if it is within five cents of the annual reference for the
+contract start year or the year before, or of a dated occupation or U.S.-worker
+skill-tier rate that applied to the job's occupation at any time in the year
+ending on the contract start date. The occupation is the SOC code on the case
+record, because Addendum B worksite rows carry none. No dated rate exists
+before 2023-03-30, so earlier years rest on the annual rule alone and their
+values did not change when the dated rates were added. The classification does
+not resolve combined-occupation duties, multi-state itineraries or injunction
+membership. Contracts starting after 2025-10-02 fall under the skill-tier
+rule, where fewer offers sit at an AEWR, so the 2025 share is lower for that
+reason and not through misclassification.
 
 Actual obligations additionally require job duties, job-order cohort, range
 status, applicable prevailing and collective-bargaining wages, federal/state

@@ -29,6 +29,8 @@ artifacts directly because the county aggregate omits individual filing dates,
 job titles and wages. They do not reconstruct allocated business worker totals,
 repair county panels, or replace any upstream artifact. Certified positions are
 counted once per case; business outcomes use the role-aware v2 identity map.
+Employment timing consumes A01's `period_begin_date`, `period_end_date` and
+`period_date_basis`; rebuild this branch after changing that source mapping.
 
 The historical FLC archive is identified in `policy_sources.json` but has not
 been recovered locally. No 2009 state-average application wage is used as a

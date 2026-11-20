@@ -9,8 +9,8 @@ scopes = ["code", "scripts"]
 The supported workflow separates source preparation, reusable derived data, a
 design-neutral county-year panel, and empirical-design branches.
 
-Within the source/derived path, the role-aware H-2A matcher uses FY2008--2024
-identity evidence and a completed manual review before B01 constructs the three
+Within the source/derived path, the role-aware H-2A matcher uses FY2008--2025
+identity evidence (manual review of the FY2025 extension pending) before B01 constructs the three
 positive-certified county-year worksite-business counts. Its linkage contract
 is documented separately from any employer-year panel or estimator.
 
@@ -35,7 +35,8 @@ standalone runner is not part of the complete pipeline or manuscript workflow.
 Panel IV runs a single stages01--11 R pipeline for the original moving-wage
 estimator. Calibration is deterministic. The separate experimental extensions
 and diagnostics runner were retired; the branch validator is stage09, followed
-by the stage10--11 Kitagawa instrument-decomposition diagnostic.
+by the stage10 Kitagawa instrument-decomposition diagnostic and the stage11
+QWI wage-granularity diagnostic.
 The border branch retains the v5 audit and adds a bounded local redesign with
 shared-region dependence, signed power/MDE diagnostics and a generated report;
 its runner ends with validation after the new estimation/report stages.
@@ -52,6 +53,14 @@ executable completion from empirical identification and useful precision.
 
 The complete runner executes sources, derived data, the shared panel,
 descriptives, DiD, panel IV, and Mundlak–Chamberlain in that order.
+
+The standalone [2025 policy-shift design](@/designs/policy-2025.md) consumes
+cached H-2A source records, the shared panel, wage references and quarterly
+earnings files. It owns offered-wage and interim covered-earnings analyses,
+with no change to their previously inspected specifications. Its runner
+validates equivalence and publishes retained products from isolated temporary
+work. It performs no source acquisition, excludes the 2013 shutdown analysis
+and remains outside the complete and manuscript runners.
 
 The standalone [historical wage-reform investigation](@/designs/wage-reforms.md)
 reads the owning H-2A source and reviewed business-membership microdata directly;

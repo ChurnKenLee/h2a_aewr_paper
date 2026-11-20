@@ -851,6 +851,13 @@ annual_coefficients <- purrr::map_dfr(seq_along(annual_terms), function(index) {
     wcb_p_value = bootstrap_result$p.value[[1L]],
     wcb_confidence_low = bootstrap_result$conf.low[[1L]],
     wcb_confidence_high = bootstrap_result$conf.high[[1L]],
+    wcb_status = if (any(is.na(c(bootstrap_result$conf.low, bootstrap_result$conf.high)))) {
+      "inversion_failed"
+    } else if (any(is.infinite(c(bootstrap_result$conf.low, bootstrap_result$conf.high)))) {
+      "unbounded"
+    } else {
+      "ok"
+    },
     wcb_method = bootstrap_method,
     wcb_bootstrap_type = bootstrap_type,
     wcb_weights = bootstrap_weights,

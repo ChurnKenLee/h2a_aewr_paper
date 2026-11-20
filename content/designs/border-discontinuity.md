@@ -6,8 +6,11 @@ description = "Bounded local border redesign, preserved benchmarks, dependence a
 scopes = ["code/designs/border_discontinuity", "scripts/run_border_discontinuity.sh"]
 +++
 
-The v6 registry investigates a stricter agricultural border population while
-preserving the complete v5 ring experiment. The structural candidate is
+The v7 baseline extends the regional-reference panel to 2011–2025, as approved
+by the user on 2026-10-26, using the common 2008–2025 panel. FY2026 Q3
+disclosures supply later decisions on 2025 starts; this partial source vintage
+can still be revised. The registry investigates a stricter agricultural border population while
+preserving the v5 ring model families. The structural candidate is
 `ring_h1_screened_disjoint`; its designation follows locality and agricultural
 support, not the estimated coefficient or p-value. Empirical adequacy is a
 separate gate. The generated `outputs/reports/border_redesign.md` reports the
@@ -42,8 +45,9 @@ cross-region edge. All exclusions and unmatched candidates remain in the
 geography audit. The old geographies follow their original construction exactly;
 the new final-locality condition is not retrospectively imposed on them.
 
-The treatment, 2011–2022 period, county/component-year FE, certifications outcome
-and fixed-2011 denominator remain the benchmark convention. Fixed preemployment
+The new baseline uses 2011–2025. Treatment, county/component-year FE,
+certifications outcome and fixed-2011 denominator retain the benchmark
+convention. Earlier model-family labels do not denote frozen historical estimates. Fixed preemployment
 weights change the population-weighted slope; they do not create a ratio of total
 certifications to preemployment. The history term is an explicit additional
 counterfactual trend restriction. With balanced support and time-invariant
@@ -59,7 +63,7 @@ outcome. The full bounded menu, roles, assumptions and choices are recorded in
 `design.json` before new policy-outcome comparisons. Fixes triggered by source
 validation are documented separately from model selection.
 
-{{ <grounding path="code/designs/border_discontinuity/07_estimate_redesign.R" anchor="border-redesign-estimation-contract" sha256="977d64f3bc6431c7f3ae48da30ed2a71e6c5a3217ae24e8dc4c6266bf80f3d5b" /> }}
+{{ <grounding path="code/designs/border_discontinuity/07_estimate_redesign.R" anchor="border-redesign-estimation-contract" sha256="26cafd82f053db6e9061ad96da75a6f6c8f381717fa58cb6e0ca59398a161683" /> }}
 
 ## V6 dependence and precision
 
@@ -138,7 +142,7 @@ precision, including a precise null; significance is not the objective.
 
 ## Preserved v5 estimand and timing
 
-For policy years 2011--2022, the outcome is
+For policy years 2011--2025, the outcome is
 `h2a_cert_share_farm_workers_2011_start_year`: certified H-2A positions divided
 by the county's fixed 2011 farm-employment baseline. The treatment is current
 real AEWR, `aewr_ppi`. The coefficient is the change in certified positions per
@@ -284,7 +288,7 @@ registry does not follow the v6 structural candidate's role label.
 The primary specification has a prespecified diagnostic audit rather than a
 search across new bandwidths, weights, or outcomes. It retains:
 
-- annual 2008--2022 treatment coefficients with standard cluster-robust, wild
+- annual 2008--2025 treatment coefficients with standard cluster-robust, wild
   cluster bootstrap, and delete-one-pair jackknife inference, so the preperiod
   and policy path can be inspected directly;
 - the explicit 2008--2010 placebo;
@@ -343,10 +347,23 @@ sensitivity), and the actual FY2026 and FY2027 statewide rates are used. FY2026
 contains cases decided under the prior rates, so the slope is
 intent-to-treat. The rule's national changes, its housing adjustment and other
 2025 policy changes are not represented in the simulation, and simulated power
-does not establish exogeneity. Estimation needs the upstream producers to parse
-the FY2025 and later disclosure files. The generated finding is
+does not establish exogeneity. Estimation requires alignment to
+the applicable job-order cohorts. FY2026 Q3 disclosures are now parsed
+upstream, while this separate registry remains a power exercise. The generated finding is
 `outputs/reports/border_statewide_power.md`.
 
 Run the branch from the repository root with
 `./scripts/run_border_discontinuity.sh`. Operational inputs, outputs, and stage
 ownership are listed in the branch README.
+
+The 2011--2025 rerun exposed a failed bootstrap confidence inversion in the
+annual benchmark diagnostic. Annual output now records `wcb_status` and
+retains missing endpoints for failed inversion (or infinite endpoints for an
+unbounded interval). Validation requires status-consistent inference; no
+interval is repaired, and bootstrap seeds and repetitions are unchanged.
+
+Requested-position diagnostic levels and totals preserve source missingness.
+The validator reconciles county-year values to the shared panel, requires
+missing totals when any component is unknown, and reconstructs consecutive-year
+changes with missing endpoints retained. Missing requests do not exclude a
+county from the certification-outcome regression.

@@ -1,0 +1,68 @@
+[
+  {
+    "path": "data/raw/qcew/2014_qtrly_singlefile.zip",
+    "sha256": "59cffadb9ea33ae2fd6a775514f458d4982108050acdefe4444b3116191bc6c3",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2014_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2015_qtrly_singlefile.zip",
+    "sha256": "ee1f4b7ca537d735024a446f66847681650629489131aeeb383ff1cb2d26a0d3",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2015_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2016_qtrly_singlefile.zip",
+    "sha256": "ea9c8671603ea0ec4c2a7d106bfbf7fcf30dcc626df143c7b5d7fdec397f9c36",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2016_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2017_qtrly_singlefile.zip",
+    "sha256": "8160295f7c94ef3c0d045e896a8cebd7d3bb1b162378e7d55ee7f3533d3b046d",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2017_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2018_qtrly_singlefile.zip",
+    "sha256": "1f55d28705a40fc91d8425b9df0a8f9312422c44401e8388f609261248fb85b3",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2018_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2019_qtrly_singlefile.zip",
+    "sha256": "6e34c6e1ba43251ecc38fc1761db5707dc33d088230b1750fbeeeaedeca8346f",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2019_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2020_qtrly_singlefile.zip",
+    "sha256": "09f5cdd51d489c44d92ed8d8da12192d79458e8585c7a7ee92886e2af1661c43",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2020_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2021_qtrly_singlefile.zip",
+    "sha256": "5521b535753d50bac0244f218ac84e4d442354b70fa5eec8c359e5f66fbce732",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2021_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2022_qtrly_singlefile.zip",
+    "sha256": "cde0d0b23567d1ad35ca30ff956b0f8ef31a88a6b8c145ccc93acb2e3a0ac25d",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2022_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2023_qtrly_singlefile.zip",
+    "sha256": "0a5f3aa6252ebd1369eef8ba4a3a34e9adc096b2e1a0b22177a3a6d907378960",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2023_qtrly_singlefile.zip",
+    "mode": "pre"
+  },
+  {
+    "path": "data/raw/qcew/2024_qtrly_singlefile.zip",
+    "sha256": "b0a67b5cab3eb662d8772f7802faec606f307674fb611846a64d38ce182923d4",
+    "file": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew/2024_qtrly_singlefile.zip",
+    "mode": "pre"
+  }
+]

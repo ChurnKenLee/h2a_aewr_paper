@@ -1,0 +1,213 @@
+{
+  "id": "policy_2025_v1",
+  "migration_date": "2026-11-16",
+  "authorization": "User: make the 2025 policy shift a new separate design",
+  "status": "Organizational migration after outcomes were inspected; no empirical specification change or new preregistration",
+  "policy_date": "2025-10-02",
+  "wage": {
+    "unit": "filer-state-occupation; R7 candidate filer identifiers; distinct from worksite-business identity",
+    "sample": "Hourly worksite offers in (0,100], positive certified hours, decision October 1-June 30 in each FY; same counties and multi-state former regions as Track 1. Certified hours use original pooled FY2012-25 weekly-hours imputation. Allocate existing worksite rows equally across listed counties, then aggregate to state; never count a master in addition to allocated worksites.",
+    "years": [
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "pairs": [
+      2024,
+      2025,
+      2026
+    ],
+    "dose": "FY2026 US skill-I state AEWR minus April 1 2025 regional AEWR, unchanged for placebos",
+    "primary": "Change in continuing filer-state-occupation mean offer on dose and former-region effects; baseline certified-hours weights",
+    "weights": [
+      "baseline_hours",
+      "equal"
+    ],
+    "identities": [
+      "R7",
+      "R5",
+      "R8",
+      "FEIN"
+    ],
+    "outcomes": [
+      "mean_offer_change",
+      "offer_reduction_gt_005",
+      "old_offer_retained_within_005",
+      "baseline_reference_premium_change",
+      "near_observed_schedule_within_005",
+      "reference_premium_cdf_000",
+      "reference_premium_cdf_025",
+      "reference_premium_cdf_100"
+    ],
+    "fixed_composition": "Filer-state mean wage change on common occupations, using baseline occupation hours shares renormalized over common occupations. Compare unrestricted continuing filer-state response on same and full continuer samples. Report baseline and current hours coverage; common-occupation selection is post-outcome conditioning.",
+    "heterogeneity": "R7 FY2025-26 primary mean-offer change only: interactions of dose with baseline premium >0.25, baseline contractor indicator, and baseline filer total hours above the median. Separate regressions; Holm adjust the three interaction p values and report Bonferroni simultaneous intervals as well as unadjusted intervals. Missing contractor or occupation remains unknown.",
+    "selection": "R7 baseline filer-state continuation in hourly offers and any certified positions; dose, former-region effects; equal and baseline-hours weights. Pre-wage/premium differences by continuation and dose interaction. No inference of random selection from insignificant tests.",
+    "within_filer": "R7 continuing filer-state unrestricted change on dose with filer and former-region effects, equivalent to filer-by-year effects in two-period levels; at least two continuing states per filer; both weights",
+    "floor_audit": "Receipt date is not job-order submission date. Skill, prevailing/collective wage, worker category and itinerary ambiguity prevent exact applicable-floor classification. Missing/unresolved effective floor is NA. Report separately receipt-aligned, five-common-SOC, single-state schedule-envelope comparisons for US/H2A skill-I/II plus observed state minimum; label as reference schedules, not established legal floors or market wages.",
+    "diagnostics": [
+      "matched-window placebos",
+      "all state deletions",
+      "R5/R8/FEIN sensitivity",
+      "FY2025 baseline-only heterogeneity",
+      "multi-state hours coverage",
+      "state shock documentation"
+    ],
+    "inference": "State deletion jackknife with t(G-1); CRV1 secondary. Any nonidentified deletion makes jackknife unavailable, never silently omit failed replicates."
+  },
+  "earnings_base": {
+    "design_id": "episode_2025_domestic_crop_pay_v1",
+    "status": "declared_before_any_QCEW_or_QWI_pay_outcome_for_2025Q4_or_later_was_acquired_opened_or_inspected",
+    "frozen": "2026-11-13",
+    "hashes": "explorations/episode_2025/domestic_wage_registry.sha256 records the SHA-256 of this file, the exposure table, the estimator, the extractor and the helpers. Change any of them only by a dated amendment with its own hash, and only before a pay file for 2025 Q4 or later is opened.",
+    "decided_by": [
+      "user, 2026-11-13: acquisition of the 2025-26 QCEW and QWI files approved once this registry is frozen",
+      "user, 2026-11-13: unsure which pay series should be primary. The series was therefore chosen by the rule stated in the draft of 2026-11-12, applied to pre-period data only (see outcome.primary_choice). The user may reverse it by amendment before any outcome is read."
+    ],
+    "question": "Did the 2025 cut in the statutory AEWR change the pay of crop workers in unemployment-insurance records, more so where H-2A use is heavier?",
+    "blindness": "On the freeze date the repository held QCEW and QWI through 2024 only. No post-policy pay outcome had been downloaded, opened or tabulated. The H-2A side (FY2026 Q1-Q3 usage and offered wages) had been seen and enters only through the pre-period exposure.",
+    "estimand": "beta in: change_c = beta x (S_c x cut_s) + gamma x S_c + state effects + error. It is the differential pay response per unit of H-2A intensity per statutory dollar. A positive beta means pay fell more where intensity and the cut were larger. It is not the H-2A usage elasticity.",
+    "exposure_and_dose": {
+      "file": "explorations/episode_2025/domestic_wage_exposure_frozen.csv (built by 09_domestic_wage_exposure.R from data/processed/county_year_panel.parquet and the AEWR schedules)",
+      "S_c": "mean over start years 2022-2024 of certified positions per 2011 farm worker, winsorized at the 99th percentile across counties (cap 2.099)",
+      "cut_s": "U.S. skill-I rate of 2025-10-02 minus the regional rate in force on 2025-04-01 (mean -3.96, SD 1.22 across 48 states)",
+      "support": "3,041 counties; S median 0.035, 90th percentile 0.32, within-state SD 0.27",
+      "known_weakness": "County assignment of H-2A worksites may be wrong for some cases, which attenuates beta. The commuting-zone sensitivity addresses this."
+    },
+    "outcome": {
+      "primary": "QCEW average weekly wage, private ownership, crop production (NAICS 111), county by quarter",
+      "change_c": "the mean, over 2025 Q4, 2026 Q1 and 2026 Q2, of the year-over-year change in the log average weekly wage",
+      "sample_rule": "county-quarters that are disclosed, have average monthly employment of at least 10 and a positive wage, in both years, for all three quarters; states with at least two such counties",
+      "excluded": "2026 Q3 onward (new schedule on 2026-08-03, ruling of 2026-08-26, backpay period from 2026-09-02). If estimated later it is reported separately and labeled.",
+      "primary_choice": {
+        "rule": "QCEW quarterly is primary if its pre-period precision in this window is close to QWI's; otherwise QWI (draft of 2026-11-12).",
+        "evidence": "Placebo years 2016-2024, equal weights, controlling for S: QCEW window MDE 0.61 of the benchmark, QWI window 0.67. Employment-weighted: 0.80 and 0.54 (domestic_wage_placebo_summary.csv).",
+        "result": "QCEW, equal county weights. It also includes short seasonal jobs and is published sooner."
+      }
+    },
+    "model": {
+      "primary": "change_c on S_winsorized x cut_us and S_winsorized, state effects, equal county weights",
+      "inference": "state leave-one-out jackknife, t(G-1), is primary; state CRV1 also reported",
+      "secondary": "the same model weighted by prior-year employment",
+      "sensitivities": [
+        "H-2A skill-I cash dose in place of the U.S. skill-I dose",
+        "intensity aggregated to the commuting zone (2011-farm-employment-weighted), winsorized at its 99th percentile",
+        "no S control, labeled: it assumes H-2A-heavy counties would otherwise have had the same pay growth"
+      ],
+      "estimator": "explorations/episode_2025/08_domestic_wage_estimate.R with tau = 2026. Run with tau = 2024 it reproduces the support script's placebo estimate exactly (-0.00812, state-clustered SE 0.00823)."
+    },
+    "secondary_series": "QWI NAICS 111 stable-job monthly earnings, same window, model and exposure, reported next to the primary when the three quarters are published. It is not a co-primary.",
+    "data_rules": {
+      "no_interim_look": "Nothing is estimated until the QCEW release that contains 2026 Q2. The estimator stops if any of the three quarters is missing.",
+      "vintage": "The estimate uses the QCEW quarterly files current at estimation time; their SHA-256 and Last-Modified dates are recorded then. Files downloaded earlier are kept unopened and their hashes are in data/raw/qcew_episode_2025_2026/MANIFEST.csv.",
+      "storage": "Post-policy files live in data/raw/qcew_episode_2025_2026/, apart from data/raw/qcew, so the shared QCEW producer and the county panel are unaffected."
+    },
+    "declared_splits": {
+      "what": "States where H-2A workers are covered by state unemployment insurance against states where they are not.",
+      "rule": "The classification is taken from statute and agency guidance, written to a sourced table and hashed by a dated amendment before the estimator is run. If no such table exists by then, the split is not run. The primary estimate pools all states and does not depend on it.",
+      "why": "Where H-2A workers are outside the records the series measures domestic workers and beta is a spillover. Where they are inside, part of beta is mechanical.",
+      "descriptive_evidence_only": "In 2024, H-2A full-time equivalents exceed all state crop and crop-support employment in GA, KY, LA and NC, and exceed crop employment in AR, MS and SC as well; there is no state-level inconsistency in FL, CA or WA (h2a_fte_vs_qcew_excess_states.csv). This motivates the split and does not define it."
+    },
+    "falsification": [
+      "placebo event years 2016-2024 with the same window (run before freezing; mean placebo estimate 0.0005 with the S control, equal weights)",
+      "placebo outcome: all-private county pay, same window and model",
+      "placebo outcome: animal production (NAICS 112) pay, same window and model",
+      "lead: the same window one year earlier (2024 Q4 to 2025 Q2 against the year before) on the dose"
+    ],
+    "design_stage_precision": {
+      "method": "placebo event years 2016-2024 on real pre-period pay changes with the actual dose; MDE = 2.8 x max(mean state-clustered SE, SD of placebo estimates); not a size-validated simulation",
+      "benchmark": "crop pay moving with H-2A offers in proportion to S: 0.66 / 16.60 = 0.040 log points per share-dollar. Where H-2A workers are outside the series this benchmark is generous.",
+      "primary": "MDE 0.024 log points per share-dollar, 0.61 of the benchmark: a pay change of 2.9% for a county at S = 0.3 facing a $4 cut. 1,483 counties in 47 states holding 82% of 2024 certified hours in the last placebo year.",
+      "employment_weighted": "0.032, 0.80 of the benchmark, 3.8%",
+      "source": "domestic_wage_placebo_summary.csv, domestic_wage_coverage.csv"
+    },
+    "threats": [
+      "immigration-enforcement shocks in 2025-26 correlated with H-2A intensity and with cut size",
+      "QCEW suppression: the window sample covers 82% of 2024 certified hours",
+      "the average weekly wage moves with hours and workforce mix, not only the wage rate",
+      "workers employed through labor contractors are classified outside NAICS 111",
+      "one season only"
+    ],
+    "selection_rule": "No outcome-based selection. The primary, the secondary, every declared sensitivity, split and placebo are reported. Anything else is labeled post-outcome."
+  },
+  "earnings_interim": {
+    "date": "2026-11-14",
+    "authorization": "User: partial window estimates are unavoidable. what 2025 files do you need? This supersedes the earlier prohibition on interim outcome access and partial-window estimates.",
+    "timing": "Declared before opening any post-policy earnings. Earlier wage and pre-policy earnings results were already inspected. Original registries and frozen implementation hashes remain intact as historical records.",
+    "files": "Use the existing public 2025 and 2026 quarterly single-file ZIPs under data/raw/qcew_episode_2025_2026, verifying their acquisition manifest hashes. Use existing pre-2025 extracts for prior-year comparisons. No new download is required if quarter coverage passes.",
+    "interim_primary": "Mean YoY log earnings change over 2025Q4 and 2026Q1, requiring both current and prior quarters for each county. If either quarter is absent globally, stop rather than silently selecting another window.",
+    "quarter_diagnostics": "Report 2025Q4 and 2026Q1 separately using each quarter's eligible sample. Also report the primary crop slope for each quarter on the common two-quarter sample.",
+    "preserved": "Private NAICS 111 average weekly earnings, original frozen 2022-2024 H-2A intensity and statutory dose, intensity control and state effects, equal county weights, state deletion jackknife t(G-1). Require positive disclosed earnings and employment >=10 in every required quarter; states have >=2 eligible counties.",
+    "sensitivities": "For crop, retain employment weights, H-2A cash dose, commuting-zone exposure, no-intensity-control specification, and frozen covered/excluded/ambiguous UI splits. All-private and animal-production primary-model diagnostics use the same three interim windows.",
+    "lead": "Complete the previously registered full prior-window lead, 2024Q4-2025Q2 against the year before, for the five crop specifications using the cached annual files.",
+    "matched_placebos": "Run primary crop specification for the same Q4/Q1 two-quarter window in placebo event years 2016-2024. Retain every result.",
+    "QWI": "Run the five secondary crop specifications for the same two-quarter interim window only if the existing source-owned QWI panel contains both current and prior quarters. Otherwise record unavailable coverage; do not substitute a different period.",
+    "vintage": "Cached QCEW ZIPs retrieved 2026-11-14 UTC, source Last-Modified 2026-08-21. Record hashes of every extract and archive. This is an explicitly labeled cached-vintage interim estimate; the full-window estimate remains a later update.",
+    "interpretation": "Exploratory interim evidence. It changes the outcome time window and eligible sample. Quarter-specific estimates and later updates are multiple looks and are not independent confirmatory replications. The future full-window earnings outcome is no longer wholly uninspected after this run.",
+    "reporting": "Retain the earlier report as a historical pre-interim assessment; generate a separate interim report and complete result ledger. No result-based specification selection. No automatic scheduling."
+  },
+  "expected_rows": {
+    "wage": 347,
+    "earnings_pre": 135,
+    "earnings_interim_without_QWI": 46
+  },
+  "equivalence_tolerance": 1e-10,
+  "source_lineage": [
+    {
+      "from": "explorations/chapter_directions/01_build_wages.R",
+      "to": "code/designs/policy_2025/01_build_wages.R",
+      "original_sha256": "37e1b0f6c1e52c843e1efbc29c1f9f9b567feeea24b9e1cf36db63df2b5b5c4b"
+    },
+    {
+      "from": "explorations/chapter_directions/02_estimate_wages.R",
+      "to": "code/designs/policy_2025/02_estimate_wages.R",
+      "original_sha256": "62ae5974bf946c049a499c87a5cf150731f65e5200b7418e94edbc299bd56bbc"
+    },
+    {
+      "from": "explorations/chapter_directions/05_extract_earnings.py",
+      "to": "code/designs/policy_2025/05_extract_earnings.py",
+      "original_sha256": "fd0745dcc108ec4b5052b9b7c94b5af91ef7a9c64407556ed53a630924d663ea"
+    },
+    {
+      "from": "explorations/chapter_directions/06_estimate_earnings.R",
+      "to": "code/designs/policy_2025/06_estimate_earnings.R",
+      "original_sha256": "736af5975b785c8b1eee70f0b8de649f753f4aa8e7b6fdbd56b31564e6bcd50d"
+    },
+    {
+      "from": "explorations/chapter_directions/09_extract_interim.py",
+      "to": "code/designs/policy_2025/09_extract_interim.py",
+      "original_sha256": "53dc110752dcb4fcb5b5cbc9978539f93ec12ac804d8dde10d2fcfcdcac467fb"
+    },
+    {
+      "from": "explorations/chapter_directions/10_estimate_interim.R",
+      "to": "code/designs/policy_2025/10_estimate_interim.R",
+      "original_sha256": "45f9695a6b22cd6412dcd928272854a616660c52ec4b6e387f04de390ac835ed"
+    },
+    {
+      "from": "explorations/chapter_directions/interim_helpers.R",
+      "to": "code/designs/policy_2025/interim_helpers.R",
+      "original_sha256": "e06cda800e9c4113b0e9ba8df349aa3902ca02ad31ad47424a175e77b48f6be6"
+    },
+    {
+      "from": "explorations/chapter_directions/tests/check_interim.R",
+      "to": "code/designs/policy_2025/tests/check_interim.R",
+      "original_sha256": "5178a1912cdb5b8e18dc758c073bea986f8f8a586b0e5aae67b7d8e58d92d8a0"
+    },
+    {
+      "from": "explorations/chapter_directions/tests/test_earnings.py",
+      "to": "code/designs/policy_2025/tests/test_earnings.py",
+      "original_sha256": "cef799e3e8bf5eb75d0769801478e8f87e33cff446e5d87572c5d42fd249ef99"
+    },
+    {
+      "from": "explorations/employer_panel/01_filer_records.py",
+      "to": "code/designs/policy_2025/inputs/01_filer_records.py",
+      "original_sha256": "800a73ab260d0ed600d9cf850d35a06a49bbf2a6c5fc077f7045caa6b4335f69"
+    },
+    {
+      "from": "explorations/employer_panel/02_rule_harness.py",
+      "to": "code/designs/policy_2025/inputs/02_rule_harness.py",
+      "original_sha256": "b9b0532f6b823946b684334db02218011173b12acce868375072678836884fac"
+    }
+  ],
+  "scope": "Current wage-offer and covered crop earnings analyses; 2013 shutdown excluded; historical county decomposition and utilization/power exercises remain archived references"
+}

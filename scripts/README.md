@@ -17,10 +17,11 @@ Devenv shell before rerunning the pipeline.
 | `run_shared_panel.sh` | C01 normalization/merge followed by C02 shared build |
 | `run_descriptives.sh` | Two retained shared figures |
 | `run_did.sh` | DiD panel, four-column results, summary table, one coefficient plot |
-| `run_panel_iv.sh` | Original moving-wage panel-IV construction, estimation, reports and validation through stage 09, all in R |
+| `run_panel_iv.sh` | Original moving-wage panel-IV construction, estimation, reports and validation through stage 09, then the stage 10--11 instrument diagnostics, all in R |
 | `run_border_discontinuity.sh` | Standalone bounded border redesign: retained v5 audit, all-member local screen, four new comparisons, dependence/size/power evidence, report and validation |
 | `run_border_data_inputs.sh` | Cached wage/Census corrections, audited allocation/calendar, geocoding preparation, affected shared/design rebuilds, denominator comparisons, public-data plan/DOL archival draft and validation |
 | `run_wage_reforms.sh` | Standalone local-data investigation of the 2009–2010 reversal and herder phase-in: source/cohort panels, response and support diagnostics, report and validation |
+| `run_policy_2025.sh` | Standalone 2025 policy shift: wage offers, interim covered earnings, complete diagnostics, migration validation and report from cached inputs |
 | `run_mundlak_chamberlain.sh` | Version-4 Wooldridge–Mundlak–Chamberlain continuous-dose registry: DuckDB/Polars panel, full-history and one-lag OLS, constructed estimands, HC3/cluster inference, experimental scalar CCV comparator, and validation |
 | `run_welfare.sh` | Standalone narrow certification-space producer-incidence calculation; requires a frozen, source-traced certified-hours elasticity contract |
 | `run_all.sh` | Sources, derived data, shared panel, descriptives, DiD, panel IV, Mundlak–Chamberlain |
@@ -35,6 +36,7 @@ DRY_RUN=1 ./scripts/run_all.sh
 ./scripts/run_border_discontinuity.sh
 ./scripts/run_border_data_inputs.sh
 ./scripts/run_wage_reforms.sh
+./scripts/run_policy_2025.sh
 ./scripts/run_mundlak_chamberlain.sh
 ./scripts/run_welfare.sh
 ```
@@ -45,8 +47,13 @@ outside `run_all.sh` until its elasticity contract is frozen.
 The historical wage-reform runner also remains outside `run_all.sh`. It reads
 cached H-2A source and reviewed linkage artifacts, exports four Marimo stages
 to the runner's temporary directory, and performs no source refresh.
+The 2025 policy-shift runner is likewise standalone and performs no acquisition.
+It runs stages `00,01,02,05,06,09,10`, interim checks, then `07,08,12` under
+`code/designs/policy_2025`. Publication follows validation and retains its own
+panels, result ledgers, report and provenance. See the branch README for the
+optional hash-verified migration cache and the preserved source-vintage guard.
 
-Panel IV runs its original stages 01--09 entirely with `Rscript --vanilla`.
+Panel IV runs its stages 01--11 entirely with `Rscript --vanilla`.
 Stages03/04 construct the frame and deterministic weights; stage09 validates
 sources, weights, instruments and retained results. The experimental extensions
 and simulated calibration draws have been retired. The border runner orders `01,02,03,04,05,07,08,06`; its final validator
@@ -64,7 +71,7 @@ The normal derived runner now includes `01b` immediately after `01`, so the
 new calendar retains a single producer in the dependency chain.
 
 The source runner's H-2A worksite-business step always materializes its seeded
-review sample, but it stops before promoting the v2 crosswalk unless
-`data/raw/h2a/employer_linkage_review_labels.csv` completely labels all 200
-pairs. No live source refresh is needed to rerun that linkage step against the
+review sample. Unless `data/raw/h2a/employer_linkage_review_labels.csv`
+completely labels all 200 pairs, it publishes the v2 crosswalk with review
+status `pending` while `ALLOW_PENDING_REVIEW` is on, and stops otherwise. No live source refresh is needed to rerun that linkage step against the
 cached with-FIPS inputs.

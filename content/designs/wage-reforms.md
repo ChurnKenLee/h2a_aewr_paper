@@ -58,9 +58,11 @@ The all-case filing audit separately includes nonpositive records with a unique
 valid within-case-year receipt date. Case numbers appearing across multiple
 fiscal vintages are counted and disclosed.
 
-Dates are parsed without hand repairs. Start/end fields use the first observed
-certification, job and requested date, in that priority, accommodating the
-FY2016 disclosure field change. Contract dates must be in fiscal-year±1 and
+Dates consume the source-owned `period_begin_date` and `period_end_date`, with
+their `period_date_basis` retained. The
+[year-specific mapping](@/contracts/h2a-worksite-exposure.md) uses employment
+periods, never job-order dates, and selects complete pairs before labeled
+requested-date fallback. No hand repairs are made. Contract dates must be in fiscal-year±1 and
 end on/after start. Receipt years must be between fiscal-year−2 and fiscal-year.
 Invalid and ambiguous dates are counted. No early requested positions or weekly
 hours are imputed.
@@ -75,7 +77,7 @@ The entire monthly title and pay-unit quality distributions remain available.
 
 The early cohort fixes reviewed v2 balanced worksite businesses in FY2008 and
 follows FY2008–2012. The herder cohort fixes them in FY2011 and follows
-FY2011–2018, with FY2014 as the response reference. Full FY2008–2024 identity
+FY2011–2018, with FY2014 as the response reference. Full FY2008–2025 identity
 evidence follows the existing [linkage contract](@/contracts/employer-linkage.md).
 Baseline rows determine pure monthly herder, pure hourly nonherder, or mixed/
 unclassified type. Future outcomes never reassign type or geography. Absence of

@@ -1,0 +1,149 @@
+{
+  "registry_id": "identification_search_A3_v1",
+  "strategy_id": "A3",
+  "family": "A",
+  "title": "2023 occupation-method AEWR rule for non-field SOCs: pre-rule employer x worksite-state units, share-weighted log-floor dose, receipt FY2020-FY2025, with the 2023-2025 updates, the Teche injunction and the vacatur weeks",
+  "status": "frozen_before_any_estimate",
+  "frozen": "2026-11-05",
+  "author": "Claude Opus 5.5 (Phase 3 A3 designer)",
+  "authority": {
+    "plan": "markdowns/identification_search_agent_plan.md (catalogue A3; Phase 3)",
+    "declarations": "explorations/identification_search/shared/declarations.json (sha256 in shared/declarations.sha256)",
+    "design_note": "markdowns/aewr_2023_rule_change_design.md",
+    "triage": "$S/triage/merged.md section A3 (power P1 merged), power.md, credibility.md",
+    "acquisition": "explorations/identification_search/sources/aewr_2023_2025_occupation_notes.md and the sourced tables aewr_2023_2025_occupation_rates.csv, _regime_periods.csv, _oews_vintages.csv, _oews_field_group_rates.csv, _verification.csv, _offer_match_by_soc.csv (scripts A3/00-01)",
+    "measurement_warnings": "Shared at-AEWR flag omits occupation floors (A1 and F1 reviews, as relayed in the brief; this designer did not read those review files): the flag is not used anywhere in A3. Multi-state itinerary orders: the unit is employer x worksite state, with the shared allocation of each case's hours across its worksite counties; the floor is that of the worksite state. Stale AEWRs as mass points: the dose is the statutory floor in force by receipt date, never an offered-wage mass point.",
+    "scratch_root": "$S = /tmp/claude-1000/-home-ken-Dropbox-projects-H-2A-Paper/1be305e6-0442-48c5-93f4-7023961621fb/scratchpad/identification_search"
+  },
+  "design_decisions": {
+    "unit": "Pre-rule unit u = employer_id_balanced x worksite state (state_fips string). Treatment comes from u's pre-rule job cells (employer x worksite state x disclosure-record SOC) of FY2020-FY2022 receipts; the outcome is u's total certified hours over all job types. Total hours of u are invariant to SOC recoding or job-title relabeling between field and non-field orders inside the unit, so no post-rule SOC, task classifier or confirmation split is needed. Employer ids start FY2020 (Phase 0 employer-unit break), so the pre-period is FY2020-FY2022.",
+    "why_not_cells": "An employer x state x job-type cell panel must assign post-rule orders of mixed units to a type, i.e. use post-rule SOC (relabeling enters the outcome) or a classifier; it is kept as a relabeling-exposed secondary (SD2).",
+    "frequency": "Receipt federal FY, not month. Reasons fixed before any outcome contrast: (i) the declared dose is a predetermined receipt-day-weighted average of the daily statutory floor, so the March 30 cutoff, the July updates, the Kansas-group dates, the Teche date and the vacatur weeks all enter at daily resolution; (ii) unit-month certified hours are lumpy and seasonal (most unit-months are zero), so the harness's AR(1) unit-noise calibration would be misspecified at monthly frequency; (iii) the declared windows (rfy, rq13d) are FY windows. A monthly panel is kept as a descriptive secondary (SD4) for timing and bunching.",
+    "window": "rfy: all cases received in the FY, any decision date (complete FY2020-FY2025; FY2025 receipts decided in FY2026 Q1-Q3 are in the released files). FY2026 is excluded from the primary because (a) under the declarations any comparison with FY2026 must use rq13d for every year, dropping July-September receipts (the vacatur weeks and the 2023/2024/2025 July updates fall in those months); (b) the 2025-10-02 IFR is not an opposite-signed event in log terms: the PPML-weighted non-field log gap over the field floor is 0.284 in FY2025 and 0.260 in FY2026 Q1-Q3 (rq13d), because the field floor fell by a similar proportion; (c) the IFR skill level applied to non-field jobs is not verified; (d) FY2026 is A1's event, so excluding it keeps A3's observations disjoint from A1 in the period of identification. The FY2026 extension is the declared secondary SD1.",
+    "events": "Primary: the 2023-03-30 switch (job orders on/after the cutoff; FY2023 ramp, see dose), the 2023-07-01 (May 2022), 2024-07-08 (May 2023) and 2025-07-11 (May 2024; 2025-07-25 for the 17 Kansas-order states by worksite state) OEWS updates, the Teche Vermilion injunction for a Louisiana sugar cane proxy from 2024-09-20, and the vacatur from 2025-08-29 (non-field floor back to the field floor; inside FY2025 rfy). The Kansas 14-day lags are state-level for the field floor and therefore absorbed by state x FY FE; for the non-field floor only the 2025-07-25 lag enters. The 2025-10-02 IFR enters only SD1.",
+    "external_validity_flag": "TRUE. The estimand is the response of employer-worksite H-2A hours to the floor of the employer's non-field H-2A labor (pre-rule non-field SOCs: construction laborers 47-2061, heavy truck drivers 53-3032, first-line supervisors 45-1011, farm equipment mechanics 49-3041, and others), which held 2.19% of FY2020-FY2022 certified hours. These occupations have domestic outside options (CDL and construction labor markets) unlike field work, the identifying units are mostly non-field-dominant employer-states, and the declarations name a different occupation (A4 range herders) as the example of an external-validity flag. A3 therefore goes to the sensitivity pool, not the headline pool, if it qualifies at all. A6 stacking may include A3 only carrying this flag. Decided from the design and support statistics, before any estimate."
+  },
+  "estimand": {
+    "native": "PPML coefficient eta on the dose x_ut (the pre-rule-share-weighted log statutory floor of unit u in receipt FY t): the elasticity of u's certified H-2A contract hours with respect to its statutory floor, identified within state and within occupation group from the cross-state variation of the 2023-rule occupation rates relative to the field floor.",
+    "primary_estimand": "epsilon_cost = d ln(certified hours) / d ln(C), C = H-2A cost per hour",
+    "conversion_formula": "epsilon_cost = (eta / pi_hat) x ratio_A3; ITT elasticity per statutory log point eta x ratio_A3 reported alongside; epsilon_w = eta / pi_hat. Derivation: d ln C = (w / C) d ln w when non-wage costs per hour do not move with the dose, so eta = pi x epsilon_w = pi x epsilon_cost / ratio.",
+    "ratio_A3": {"central": 1.2127, "low": 1.1877, "high": 1.3407, "extreme": 1.6563,
+      "rule": "Declarations rule: certified-hours-weighted mean of cost_unit_by_fy.csv cost_ratio_* over the estimation years FY2020-FY2025 ($S/shared/cost_unit_summary.csv row 'FY2020-FY2025 hours-weighted'). SD1 (FY2020-FY2026) recomputes it with FY2026 central_vs_h2a_cash.",
+      "nonfield_sensitivity": "S8b: ratio at the non-field floor, 1 + (FY2020-FY2025 hours-weighted non-wage cost per hour) / (PPML-weighted FY2024 non-field floor of units with non-field hours), computed in Phase 5 from cost_unit_by_fy.csv and a3_floors_daily.parquet. Lower than the central ratio because non-field floors are higher."},
+    "assumptions": [
+      "dC = dw: non-wage costs per hour (housing, transport, fees) do not vary with the dose",
+      "Pass-through pi of the statutory log floor to the unit's hours-weighted log offered hourly wage equals pass-through to the H-2A wage paid (FY2020-FY2025 offers are H-2A wages)",
+      "Employers price the floor applicable at filing; receipt date proxies the ETA-790 submission date (ramp over the first 31 days)",
+      "Pre-rule job cells (FY2020-FY2022 SOC mix) describe the unit's exposure; later changes in the job mix are responses",
+      "The 2023 rule was litigated (Teche PI 2024, vacatur 2025): the estimand is a response to a rule employers may have expected to be temporary"
+    ],
+    "sign_convention": "d ln q / d ln C; conventional about -0.3"
+  },
+  "sample": {
+    "rows": "Shared case rows ($S/shared/outcomes_case_rows.parquet) with receipt FY 2020-2025 (window rfy), any status (certified hours are zero for non-certified rows), state_fips not '00'. SOC from h2a_disclosure_records by case_number x fiscal_year (first non-empty soc_code, 7 characters), not the case-row soc7 (blank for many FY2025 hours). SOC was found for 100% of FY2020-FY2022 hours.",
+    "units": "Employer x worksite-state units with positive FY2020-FY2022 rfy certified hours, outside AK, DC, GU, PR, VI (no FLS AEWR before 2023; 0.09% of pre hours): 83,301 units, 81,952 employers, 49 states. Balanced FY2020-FY2025 with zeros; units first appearing after FY2022 are not in the panel (entry is outside the primary estimand; see secondaries).",
+    "pre_rule_cells": "6,654 non-field cells (employer x state x non-field SOC) in 45 states and 282 state x SOC shock cells, with 20.57 million FY2020-FY2022 hours (2.19% of all pre-rule hours); 6,250 cells (246 shock cells, 18.48 million hours, 1.97%) have a positive 2024 floor gap; 404 cells (36 shock cells, 2.09 million hours) have a zero gap (OEWS mean at or below the field floor, or no determinable OEWS hourly mean) and form the placebo group. 6,303 units have any non-field hours; 3,993 are non-field-majority. Field cells: 84,699.",
+    "ppml_weights": "mu_u = mean FY2020-FY2022 rfy certified hours of u (all > 0).",
+    "files_at_freeze": ["$S/A3/a3_units.parquet", "$S/A3/a3_cells.parquet", "$S/A3/a3_unit_dose.parquet", "$S/A3/a3_cell_dose.parquet", "$S/A3/a3_floors_daily.parquet", "$S/A3/a3_pre_outcomes.parquet", "$S/A3/a3_design_frames.rds"]
+  },
+  "dose": {
+    "field_floor": "F_s(d) = max(FLS AEWR_s in force on receipt date d [17 Kansas-order states by worksite state: alternative start 2024-12-30, prior rate until then], state agricultural minimum wage_s(calendar year), from data/intermediate/state_real_minwages.parquet prevailing_ag_min_wage; GA and WY carried forward from 2023). SD1 adds, from 2025-10-02, max(H-2A skill-I (b)(1)(i) FIELD_LIVESTOCK_COMBINED rate, A1's verified FY2026 minimum-wage table: statewide / upstate NY / standard OR).",
+    "nonfield_floor": "N_sg(d) for state s and pre-rule SOC g: F_s(d) before 2023-03-30; from 2023-03-30 to 2025-08-28 max(OEWS statewide H_MEAN_sg [national fallback per the acquired table] of the vintage in force at d (Kansas-group dates by worksite state), F_s(d)); F_s(d) where no hourly mean is determinable (2.8% of state-SOC keys); F_s(d) from 2025-08-29 (vacatur). Teche Vermilion proxy (Louisiana units whose employer name or any pre-rule job title contains 'cane' or 'sugar': 534 units, 585,179 pre-rule non-field hours): N = F from 2024-09-20. SD1 from 2025-10-02: max(H-2A skill-I (b)(1)(ii) rate_sg, F_s(d)), F where the IFR file has no row (13.8% of keys).",
+    "highest_applicable": "max(OEWS, F) treats every non-field H-2A job as also carrying field duties (20 CFR 655.120(b)(5)), so a below-FLS OEWS mean does not lower its floor; the purely statutory primary-SOC rate max(OEWS, state minimum) is sensitivity S4. Disclosures report one SOC, so multi-SOC jobs cannot be identified.",
+    "fy2023_ramp": "Job orders submitted before 2023-03-30 keep the 2010 method and applications follow job orders by up to 30 days: on receipt dates 2023-03-30 to 2023-04-29 the log non-field floor moves linearly from log F to log N (weight k/31 on day k). S5: step at 2023-03-30.",
+    "fy_dose": "x_ut = sum over pre-rule cells c of u of s_c x sum_d omega_d log N_{s,g(c)}(d) (field cells: log F_s(d)), s_c = c's share of u's FY2020-FY2022 hours, omega_d = national FY2020-FY2022 rfy certified-hours share of receipt month (Jan 0.170, Feb 0.127, Mar 0.113, Apr 0.060, May 0.047, Jun 0.065, Jul 0.050, Aug 0.047, Sep 0.061, Oct 0.034, Nov 0.072, Dec 0.153), uniform within month. Predetermined: no post-rule filing timing enters.",
+    "identifying_part": "With unit FE and state x FY FE the common field floor is absorbed; D_ut = x_ut - log F_st = sum_g s_ug (log N_sgt - log F_st) is zero in FY2020-FY2022 by construction. Among units with non-field hours the PPML-weighted non-field gap is 0.090 (FY2023), 0.296 (FY2024), 0.266 (FY2025) log points (SD 0.058, 0.189, 0.171; p10-p90 0.10-0.60 in FY2024). File $S/A3/a3_dose_by_fy.csv.",
+    "controls": "Occupation-group x FY controls, declared because non-field H-2A use was already growing before the rule (power triage national tabulation) and the 2021-22 trucking-wage boom is the named threat: s_ug x 1{FY = t} for t = FY2021-FY2025 and the seven non-field groups g in {53-3032, 53-3033, 53-3052/3053/3058, 47-2061, 49-3041, 45-1011, other 47-xxxx, other non-field}. They absorb national occupation-specific trends in proportion to the unit's pre-rule exposure, so identification comes from the cross-state variation in each occupation's 2023-rule rate relative to the state field floor. In the power harness they are partialled out of the dose (FWL).",
+    "units": "log points of the hourly floor"
+  },
+  "fixed_effects": {
+    "primary": "unit (employer x worksite state) + state x FY, plus the occupation-group share x FY controls",
+    "sensitivities": ["S1 no occupation controls", "S2 one control: non-field share x FY", "SD3 employer x FY FE (multi-state employers only)"]
+  },
+  "outcomes": {
+    "primary": "cert_hours: unit x receipt-FY certified contract hours (shared case rows, window rfy, allocation weights applied), PPML with the FE above.",
+    "co_primary": [],
+    "lead_secondary": "Requested positions (all cases including denied and withdrawn, receipt-dated, rfy), PPML, same specification.",
+    "secondaries": [
+      "certified positions (PPML)",
+      "requested hours (PPML)",
+      "decomposition: log hours = log positions + log weeks + log weekly hours (cert_posweeks)",
+      "exit: 1{no certified hours in FY t} for units with non-field hours, LPM, same FE, equal weights (reported)",
+      "avoidance (reported, not converted): share of u's post-rule certified hours on orders coded with a field SOC among units with non-field pre-rule hours, on the dose (SOC recoding); number of distinct SOCs per unit-FY. Job bundling (multi-SOC orders) is not observable in disclosures.",
+      "entry (reported, outside the primary estimand): state x occupation-group totals of hours of employers absent in FY2020-FY2022, by post-rule SOC (relabeling-exposed)"
+    ]
+  },
+  "first_stage": {
+    "role": "Conversion denominator pi and relevance",
+    "outcome": "Unit x FY hours-weighted mean log offered hourly wage (hourly rows, 0 < wage <= 100), FY2020-FY2025 rfy",
+    "model": "WLS on x_ut with unit + state x FY FE and the occupation controls, weights mu_u x the unit-FY share of hours that are hourly; unit-FYs without hourly hours dropped",
+    "parameter": "pi_hat",
+    "inference": "Same size-valid method as the primary",
+    "weak_rule": "If the first-stage F (primary inference) is below 10, epsilon_cost is reported only as an Anderson-Rubin/Fieller set from the jackknife covariance; if unbounded, A3 is not convertible and not pooling-eligible."
+  },
+  "inference": {
+    "primary_test": "H0: eta = 0 on the PPML fit",
+    "primary_method_rule": "Size-valid order (declarations): state_fips CRV1, state jackknife (CV3J), node CRV1 (node = state x unit type, unit type = the dominant non-field occupation group if the non-field share is at least 0.5, else field: 167 nodes); RI is not available (the dose varies within any assignment unit). The first method passing the size gate under the gate DGP in 04_power.R is primary.",
+    "critical_values": "t(G - 1) as in the harness",
+    "conversion_inference": "Leave-one-state-out jackknife joint covariance of (eta, pi); delta-method SE and Fieller set for epsilon_cost",
+    "multiplicity": "The primary hypothesis enters the cross-strategy Romano-Wolf/Holm family (declarations)"
+  },
+  "falsification": {
+    "gating": [
+      "F1 pre-trend leads: FY2020-FY2022 only, PPML of cert_hours on E_u x 1{FY2020} and E_u x 1{FY2021} (FY2022 reference), E_u = D_u,FY2024 (the unit's FY2024 dose gap), unit + state x FY FE and the occupation controls; joint Wald with the primary inference; fail if p < 0.05.",
+      "F2 placebo cutoff two years early: FY2020-FY2022 only, regressor E_u x r_t with r = (0, 0.090/0.296, 1) for FY2020, FY2021, FY2022 (the FY2023/FY2024 ramp ratio of the real event); fail if p < 0.05."
+    ],
+    "reported_non_gating": [
+      "F3 placebo group: add Z_ut = s_zero,u x post_t to the primary model (s_zero = u's pre-rule share in zero-gap non-field cells; post_t = 0, 0, 0, 0.304, 1, 1 for FY2020-FY2025, 0.304 = FY2023/FY2024 PPML-weighted gap ratio); expected 0. Non-gating because the group is small (36 state x SOC cells, 2.09 million pre hours) and partly collinear with the occupation controls.",
+      "F4 filing timing: weekly receipt counts and requested positions of units with non-field pre-rule hours vs field-only units, 2023-02-27 (final rule published 2023-02-28) to 2023-05-31, against the same calendar weeks of 2021 and 2022; ratio of pre-cutoff (2023-02-28 to 2023-03-29) to post-cutoff weeks. Descriptive; the primary already ramps across the cutoff, and S3 drops FY2023.",
+      "F5 balance: within-state mu-weighted correlations of E_u with FY2020-FY2022 log hours growth (FY2022 vs FY2020, units present both years), log mu_u, non-field share, FY2022 non-field offer premium over the field floor.",
+      "F6 vacatur sign check (from SD4): receipt months 2025-09 vs 2025-06/07, dose-weighted, descriptive."
+    ],
+    "rule": "A failed gating test is reported and excludes A3 from pooling; no post hoc repair unless labeled post-outcome."
+  },
+  "secondary_designs": [
+    "SD1 FY2026 extension: window rq13d FY2020-FY2026 (units with positive rq13d pre hours, 67,292), IFR skill-I floors from 2025-10-02; ratio over FY2020-FY2026; S7 skill II.",
+    "SD2 relabeling-exposed cells: employer x state x {field, non-field} cells, post-rule hours of mixed units assigned by order SOC; cell + state x FY FE (and cell + employer x FY FE for employers with both types).",
+    "SD3 employer x FY FE on units (multi-unit employers, 2,170 units).",
+    "SD4 monthly descriptive panel: unit x receipt month, October 2019 - March 2026, any decision date; event-time means by dose tercile, no regression gate."
+  ],
+  "sensitivities": [
+    "S1 no occupation controls",
+    "S2 non-field share x FY control only",
+    "S3 drop FY2023 (transition year)",
+    "S4 statutory primary-SOC floor max(OEWS, state minimum)",
+    "S5 no ramp (step at 2023-03-30)",
+    "S6 no Teche proxy",
+    "S8 cost ratio low/high/extreme; S8b non-field-floor ratio",
+    "S9 drop South Dakota (largest state leverage, 0.17) and drop Louisiana (largest node, 53-3032 with the Teche proxy)"
+  ],
+  "design_power": {
+    "harness": "explorations/identification_search/shared/power_harness.R ish_power(); PPML linearization: pre outcome y/mu_u - 1 with weights mu_u (ish_ppml_linearize logic)",
+    "outcome_and_calibration": "cert_hours rfy, FY2020-FY2022 only (FE-only residuals: unit + state x FY); policy frame FY2020-FY2025 with the dose residualized on the occupation controls and FE (FWL)",
+    "fe": "unit + state x FY",
+    "clusters": "state_fips (primary CRV1 and jackknife), node (state x unit type) CRV1",
+    "node": "state x unit type (167 nodes); group = unit type (national occupation shock); spatial loading over nodes: same type in adjacent states (county_adjacency2010), coefficient 0.4",
+    "beta_e1": "pi / ratio_A3 (dose in log points); runs at pi = 1, MDE at other pi = MDE(pi = 1) / pi",
+    "pi_design": 0.8,
+    "pi_design_basis": "Predetermined bound from pre-rule offers: if units pay max(their FY2022 offer premium over the field floor, the FY2024 non-field gap), pass-through is 0.907 (4,208 non-field unit-SOC cells, 9.58 million FY2022 hours; mean pre-rule premium 0.032 against a mean gap 0.317 log points; $S/A3/a3_passthrough_bound.csv). Acquisition evidence (prior exposure): 95-96% of non-field hourly offers at or above the acquired rate in the May 2022 and May 2023 windows, 9-11% exactly at FLS. Relabeling within the unit lowers measured pass-through further: 0.907 x 0.95 = 0.86, rounded down to 0.8. Reported also at pi = 1, 0.9, 0.6.",
+    "gate_dgp_rule": "Declarations rule: ish_node_period_share on the calibration outcome with node = state x unit type: observed 0.00939 vs pure-unit-noise 0.00433 (ratio 2.17 > 1.5), so the gate uses the largest size-valid MDE among the three shared DGPs; all four DGPs reported.",
+    "runs": ["P1 primary", "P2 S1 no controls", "P3 S2 non-field share control", "P4 SD1 rq13d FY2020-FY2026", "P5 SD2 cells (state x FY FE, no controls)", "P6 requested positions (lead secondary)"],
+    "decision": "Kill at Phase 3 if the P1 size-valid MDE (gate DGP, epsilon_cost, pi = 0.8, central ratio) exceeds 1.0 (not pooling-eligible; A3 cannot be pooled otherwise); flag if above 0.5. Secondary runs inform reporting only."
+  },
+  "split": {
+    "used": false,
+    "reason": "No data-driven tuning: unit definition, cells, dose, ramp, Teche proxy, controls, FE, weights and inference are fixed a priori in this registry; the relabeling-immune unit outcome removes the need for a task classifier. (45 states with dose and 282 state x SOC shock cells would permit a split.)"
+  },
+  "prior_exposure": "Power triage ($S/triage/power.md): printed the national share of certified positions in non-field SOCs by FY2014-FY2026 Q1-Q3 (0.2% FY2014-18, 1.6% FY2019, 1.8%, 2.1%, 2.3% FY2020-22, 2.7% FY2023, 3.5% FY2024, 3.2% FY2025, 2.4% FY2026 Q1-Q3): a post-period tabulation of the treated group; harness runs on proxy rates with FY2020-FY2022 residual variance. Credibility triage: FY2018-FY2025 certified positions by field vs non-field SOC. Acquisition (aewr_2023_2025_occupation_notes.md section 4; aewr_2023_2025_verification.csv; aewr_2023_2025_offer_match_by_soc.csv): offered hourly wages of non-field cases FY2022-FY2026 matched to the acquired rates by receipt period (70.8% exact in the rule window, none before 2023-03-30, 65% back at FLS in the vacatur window, Louisiana 53-3032 around Teche): a first-stage-like look at offers, no quantity outcome. markdowns/aewr_2023_rule_change_design.md (design only). markdowns/alternative_identification_exploration.md: Track 1 FY2026 vs FY2025 county certified outcomes (section 3) and region-year designs FY2008-FY2025 (sections 1-2); A1 estimated FY2025 vs FY2026 county outcomes (A1/estimates.csv; not read by this designer); these overlap SD1 only. This designer: printed national rq13d certified hours totals by receipt FY2020-FY2026 (all occupations, not by dose or SOC) while checking case-row coverage; read FY2020-FY2022 unit outcomes only for PPML weights and residual variance, FY2020-FY2022 non-field SOC hours by SOC, and FY2022 non-field offered wages for the pass-through bound. No post-rule outcome has been related to the dose.",
+  "support_statistics_at_freeze": {
+    "source": "$S/A3/a3_support.csv, a3_treated_cells.csv, a3_dose_by_fy.csv, a3_node_share.csv, a3_passthrough_bound.csv (03_support.R)",
+    "primary": {"dose_sd_after_fe": 0.00712, "dose_units": "log points (PPML-weighted, all units)", "units": 83301, "units_with_nonfield_hours": 6303, "periods": 6, "states": 49, "states_with_dose": 45, "effective_states": 12.39, "max_state_leverage": 0.173, "max_state": "46 (SD)", "nodes": 167, "effective_nodes": 24.8, "max_node_leverage": 0.113, "max_node": "22 g_53_3032 (LA heavy truck drivers; carries the Teche proxy)", "preperiod_residual_sd": 0.729},
+    "others": "no controls 0.0156 / 13.3 eff. states; non-field share control 0.0089 / 12.1; drop FY2023 0.0077 / 12.5; statutory floor 0.0075 / 11.0; no ramp 0.0071 / 12.4; no Teche 0.0064 / 12.4; SD1 rq13d FY2020-26 0.0076 / 15.8 (skill II 0.0073 / 14.5); requested positions 0.0071 / 12.1 (residual SD 0.766); SD3 employer x FY 0.0054 / 10.0 (2,170 units); SD2 cells state x FY 0.0217 / 9.1 (max state FL 0.29); cells employer x FY 0.0444 / 6.3.",
+    "variance_note": "The occupation controls remove 79% of the dose variance (SD 0.0156 -> 0.0071): most of the dose separates non-field from field units and occupations from each other, not states within an occupation."
+  },
+  "files": {
+    "scripts": ["A3/02_units_dose.R", "A3/03_support.R", "A3/04_power.R (after freeze)", "A3/05_ledger_row.R (after power)"],
+    "sources": ["sources/aewr_2023_2025_occupation_rates.csv", "sources/aewr_2023_2025_oews_vintages.csv", "sources/aewr_2023_2025_regime_periods.csv", "data/intermediate/aewr_rate_schedule.parquet", "data/intermediate/aewr_occupation_skill_rates.parquet", "data/intermediate/state_real_minwages.parquet", "A1/sources/state_ag_minwage_fy2025_2026.csv", "data/intermediate/h2a_disclosure_records.parquet", "$S/shared/outcomes_case_rows.parquet", "data/intermediate/county_adjacency2010.parquet"],
+    "outputs": "$S/A3/"
+  }
+}

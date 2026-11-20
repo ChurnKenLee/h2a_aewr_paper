@@ -25,6 +25,15 @@ models <- list(
   did_event_model(sample_no_border, controls = TRUE)
 )
 
+event_years <- setdiff(
+  SHARED_PANEL_START_YEAR:SHARED_PANEL_END_YEAR,
+  2011L
+)
+event_year_labels <- setNames(
+  paste0("Lagged AEWR vs 25th pct wage gap $\\times$ ", event_years),
+  paste0("year::", event_years, ":aewr_cz_p25_l1")
+)
+
 etable(
   models,
   tex = TRUE,
@@ -33,20 +42,7 @@ etable(
   headers = did_table_headers,
   dict = c(
     did_table_dictionary,
-    "year::2008:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2008",
-    "year::2009:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2009",
-    "year::2010:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2010",
-    "year::2012:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2012",
-    "year::2013:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2013",
-    "year::2014:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2014",
-    "year::2015:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2015",
-    "year::2016:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2016",
-    "year::2017:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2017",
-    "year::2018:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2018",
-    "year::2019:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2019",
-    "year::2020:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2020",
-    "year::2021:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2021",
-    "year::2022:aewr_cz_p25_l1" = "Lagged AEWR vs 25th pct wage gap $\\times$ 2022"
+    event_year_labels
   ),
   signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
   file = path_tables("table_2_event_study.tex"),

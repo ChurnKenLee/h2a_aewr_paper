@@ -38,9 +38,9 @@ if (
     employer_linkage_contract$employer_linkage_unit[[1]] !=
       "worksite_business" ||
     employer_linkage_contract$employer_linkage_version[[1]] != "v2" ||
-    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2024L ||
-    employer_linkage_contract$employer_linkage_review_status[[1]] !=
-      "complete" ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2026L ||
+    !employer_linkage_contract$employer_linkage_review_status[[1]] %in%
+      c("complete", "pending") ||
     !grepl(
       "^[0-9a-f]{64}$",
       employer_linkage_contract$employer_linkage_review_report_hash[[1]]
@@ -103,7 +103,11 @@ if (
 write_parquet(h2a_predict, path_int("h2a_predict.parquet"))
 
 h2a_data <- h2a_data %>%
-  filter(year > 2007, year <= 2022, !is.na(county_fips)) %>%
+  filter(
+    year >= SHARED_PANEL_START_YEAR,
+    year <= SHARED_PANEL_END_YEAR,
+    !is.na(county_fips)
+  ) %>%
   select(-state_fips, -county_code)
 
 write_parquet(h2a_data, path_int("h2a_data_year.parquet"))

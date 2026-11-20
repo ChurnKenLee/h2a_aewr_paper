@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "calendar": [
+    2008,
+    2025
+  ],
+  "rows": 55944,
+  "counties": 3108,
+  "source_vintage": "FY2008-FY2025 plus partial FY2026 Q3",
+  "latest_fiscal_year": 2026,
+  "latest_decision_date": "2026-06-30",
+  "latest_fiscal_year_cases_starting_in_panel_end_year": 1651,
+  "employer_linkage": [
+    {
+      "employer_linkage_unit": "worksite_business",
+      "employer_linkage_version": "v2",
+      "employer_linkage_input_max_year": 2026,
+      "employer_linkage_review_status": "pending",
+      "employer_linkage_review_report_hash": "548dd9dcf6ebd003daf16699bbb5bf75b1e68022784f04a8b763480e66c2754f"
+    }
+  ],
+  "notes": [
+    "FY2026 Q3 is a partial fiscal-year release; later decisions may revise 2025 starts.",
+    "Occupation groups describe recorded SOCs, not legal wage-floor assignment; cases can span groups.",
+    "Job-order submission dates are not available here to classify the October 2025 rule cohort.",
+    "Missing later-year controls and other outcomes remain missing; coverage does not select any design sample."
+  ],
+  "input_sha256": {
+    "data/processed/county_year_panel.parquet": "bff3256f8c2e87afcd643575de8bf969a34788f5b645de30831f1ac0547345d6",
+    "data/intermediate/h2a_aggregated.parquet": "f4a1ec46a16f522147178a8ce56ea10786e1b75af0bd09f2efd616c18b99058f",
+    "data/intermediate/h2a_allocated_worksites.parquet": "9bb0e71fb00800ffcec6aaab6e69420384d43adda62d9c407805efab00b694b2",
+    "data/intermediate/h2a_disclosure_records.parquet": "d351e20ddde9a742afbb72be930f8ff7bd11329296d09ec556208f7bcf36e265",
+    "data/raw/fred/WPU01.csv": "8bc03d26b4f80a96261906a1bbface637e9d299be1dac77b060f2ca1718f401e",
+    "data/raw/h2a/H-2A_Disclosure_Data_FY2026_Q3.xlsx": "1d65712d003b19ad6b6c0f83248c3e0af7887e648cf67ea461e12c8ce0169fdd",
+    "data/raw/h2a/H-2A_Addendum_B_Employment_FY2026_Q3.xlsx": "bcf37bbc6d6ec359eb512ed8e487b973c957d3e67b16807d35067fb39d219961"
+  }
+}

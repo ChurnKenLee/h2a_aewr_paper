@@ -18,7 +18,7 @@ price_data <- price_data %>%
     fisher_index,
     fisher_quantity_index
   ) %>%
-  filter(year >= 2008 & year <= 2022)
+  filter(year >= SHARED_PANEL_START_YEAR & year <= SHARED_PANEL_END_YEAR)
 
 write_parquet(
   price_data,

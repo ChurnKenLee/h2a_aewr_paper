@@ -37,8 +37,9 @@ registry <- rbind(
     control_spec = "none", role = "v5_benchmark"),
   design$redesign$models[, c("model_id", "spec_id", "weight_spec", "control_spec", "role")]
 )
-# Treatment, fixed-2011 denominator, 2011--2022 years and county/component-year
-# FE are unchanged. All-member support/final locality are geography decisions.
+# The user-approved baseline covers 2011--2025. Regional FLS-reference treatment,
+# fixed-2011 denominator and county/component-year FE retain their definitions.
+# All-member support/final locality remain frozen geography decisions.
 # Fixed 2008--2010 employment changes weights only; baseline-history adjustment
 # is the standardized 2008--2010 outcome mean interacted with calendar time.
 # Pair WCR11-FNW/Webb and CV3J are comparisons; dyadic inference is a small-node

@@ -10,4 +10,5 @@ done
 for script in code/c02_build/*.R; do
   run_step "$script"
 done
+run_step code/c02_build/02_validate_source_coverage.py
 # docs-ground:end shared-panel-runner

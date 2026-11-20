@@ -13,23 +13,65 @@ BRANCH_ROOT = Path(__file__).resolve().parents[1]
 if str(BRANCH_ROOT) not in sys.path:
     sys.path.insert(0, str(BRANCH_ROOT))
 
-from mcw.design import Specification
+from mcw.design import PRIMITIVE_OUTCOMES, Specification
 from mcw.estimands import (
     CoefficientLayout,
     RowGradient,
     RowVector,
     TargetPopulation,
 )
+from mcw.fwl import NoFixedEffectProjector, fit_common_ols
 from mcw.pipeline import (
     _average_current_contrast,
     _block_view,
     _current_row_gradient,
     _fixed_observed_mean_metric,
+    _postfit_rows,
     _proportional_outcome_gradient,
 )
 
 
 class ReportingTargetTest(unittest.TestCase):
+    def test_five_outcome_fit_and_ratios_need_no_requested_positions(self) -> None:
+        rng = np.random.default_rng(20261026)
+        years = np.tile([2012, 2013, 2014], 12)
+        n_rows = len(years)
+        causal = np.column_stack([
+            rng.normal(size=n_rows) * (years == year) for year in (2013, 2014)
+        ])
+        names = ("effect_y2013_h2013", "effect_y2014_h2014")
+        values = rng.poisson([5, 3, 10, 100], size=(n_rows, 4)).astype(float)
+        values[:2, 0] = 0
+        outcomes = np.column_stack((values, values[:, 0] > 0))
+        outcome_names = tuple(PRIMITIVE_OUTCOMES)
+        fit = fit_common_ols(
+            NoFixedEffectProjector.from_row_count(n_rows), causal,
+            np.ones((n_rows, 1)), outcomes, names, ("intercept",), outcome_names,
+        )
+        frame = pl.DataFrame({
+            "county_fips": np.repeat([f"{1001 + 2 * i:05d}" for i in range(12)], 3),
+            "year": years,
+            "mc_baseline_farm_employment": np.full(n_rows, 100.0),
+            **{column: outcomes[:, i] for i, column in enumerate(PRIMITIVE_OUTCOMES.values())},
+        })
+        rows = _postfit_rows(
+            self._specification("aewr_log_level", "continuous_raw"),
+            fit.coefficient, fit.design_names, fit.outcome_names,
+            fit.causal_count, frame, design=fit.within_design,
+            residual=fit.residual, bread=fit.bread, leverage=fit.leverage,
+            cluster=np.repeat(np.arange(4), 9), model_rank=fit.model_rank,
+        )
+        estimands = {row["estimand"] for row in rows}
+        self.assertFalse(any("requested" in name for name in estimands))
+        self.assertIn("positions_per_application_ratio_of_aggregates_derivative", estimands)
+        self.assertIn("hours_per_position_ratio_of_aggregates_derivative", estimands)
+        self.assertEqual({row["target_observations"] for row in rows}, {24})
+        # Removing an independent outcome must leave each retained OLS slope intact.
+        reference = np.linalg.lstsq(
+            np.column_stack((causal, np.ones(n_rows))), outcomes, rcond=None
+        )[0]
+        np.testing.assert_allclose(fit.coefficient, reference, rtol=1e-10, atol=1e-10)
+
     @staticmethod
     def _specification(treatment: str, transform: str) -> Specification:
         return Specification(

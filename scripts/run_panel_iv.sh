@@ -11,5 +11,5 @@ run_step code/designs/panel_iv/06_build_county_year_panel.R
 run_step code/designs/panel_iv/07_estimate_panel_iv.R
 run_step code/designs/panel_iv/08_generate_figures.R
 run_step code/designs/panel_iv/09_validate_artifacts.R
-run_step code/designs/panel_iv/10_decompose_instruments.R
-run_step code/designs/panel_iv/11_estimate_instrument_decomposition.R
+run_step code/designs/panel_iv/10_decompose_instrument.R
+run_step code/designs/panel_iv/11_qwi_wage_diagnostics.R

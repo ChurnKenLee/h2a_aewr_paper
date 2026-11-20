@@ -2,7 +2,8 @@
 #   using Gemini name cleanup and Google Places county lookups.
 # Inputs: h2a_location_pieces.parquet (from 02_01) and the Gemini/Places caches
 #   in data/intermediate/cache; GOOGLE_GEMINI_API_KEY and GOOGLE_PLACES_API_KEY
-#   only when H2A_RUN_LOCATION_APIS=1.
+#   only when the notebook's API switch is on (H2A_RUN_LOCATION_APIS=1 turns it
+#   on by default).
 # Outputs: h2a_location_api_counties.parquet (one row per queued piece) and,
 #   with networking enabled, appended Gemini/Places caches.
 #
@@ -27,14 +28,14 @@ def _():
 
     import addfips
     import dotenv
+    import marimo as mo
     import polars as pl
     import us
 
     from h2a.paths import CACHE, INTERMEDIATE
 
     dotenv.load_dotenv()
-    RUN_APIS = os.getenv("H2A_RUN_LOCATION_APIS") == "1"
-    GEMINI_MODEL = "gemini-3-flash-preview"
+    GEMINI_MODEL = "gemini-3.8-flash"
     GEMINI_ROWS_PER_REQUEST = 20
     GEMINI_MAX_WAIT_SECONDS = int(os.getenv("H2A_GEMINI_MAX_WAIT_SECONDS", "3600"))
     PLACES_SEARCH_DELAY_SECONDS = 60 / 600 + 0.01  # at most 600 searches per minute
@@ -66,17 +67,45 @@ def _():
         INTERMEDIATE,
         PLACES_DETAILS_DELAY_SECONDS,
         PLACES_SEARCH_DELAY_SECONDS,
-        RUN_APIS,
         SEARCH_CACHE,
         addfips,
         hashlib,
         json,
         math,
+        mo,
         os,
         pl,
         time,
         us,
     )
+
+
+@app.cell
+def _(mo, os):
+    # Off by default. Turning it on reruns the Gemini and Places cells with
+    # live requests. Exported script runs keep the H2A_RUN_LOCATION_APIS=1 switch.
+    run_apis_switch = mo.ui.switch(
+        value=os.getenv("H2A_RUN_LOCATION_APIS") == "1",
+        label="Make live Gemini/Places API calls",
+    )
+    # Test runs: cap new requests per step (Gemini rows per source, Places
+    # searches, Places details). 0 sends everything. Answers are cached either way.
+    api_limit_input = mo.ui.number(
+        start=0,
+        stop=5000,
+        step=1,
+        value=0,
+        label="Limit new requests per step (0 = all)",
+    )
+    mo.vstack([run_apis_switch, api_limit_input])
+    return api_limit_input, run_apis_switch
+
+
+@app.cell
+def _(api_limit_input, run_apis_switch):
+    RUN_APIS = run_apis_switch.value
+    API_LIMIT = int(api_limit_input.value or 0) or None
+    return API_LIMIT, RUN_APIS
 
 
 @app.cell
@@ -88,7 +117,10 @@ def _(INTERMEDIATE, hashlib, pl):
     queue = (
         pieces.filter(
             (pl.col("matched_county_fips_list") == "")
-            & ((pl.col("xcity").str.strip_chars() != "") | (pl.col("county_list").str.strip_chars() != ""))
+            & (
+                (pl.col("xcity").str.strip_chars() != "")
+                | (pl.col("county_list").str.strip_chars() != "")
+            )
         )
         .select(["source", *PIECE_KEYS])
         .unique()
@@ -104,11 +136,17 @@ def _(INTERMEDIATE, hashlib, pl):
         # which could drop leading zeros; accept either form as a cache hit.
         hashes = [location_hash(city, county, state, zip_code)]
         if zip_code and zip_code.isdigit():
-            hashes.append(location_hash(city, county, state, str(int(zip_code)) if int(zip_code) else ""))
+            hashes.append(
+                location_hash(
+                    city, county, state, str(int(zip_code)) if int(zip_code) else ""
+                )
+            )
         return hashes
 
-    print(f"Queued pieces: {queue.height} ({dict(queue.group_by('source').len().sort('source').rows())})")
-    return PIECE_KEYS, location_hash, location_hashes, queue
+    print(
+        f"Queued pieces: {queue.height} ({dict(queue.group_by('source').len().sort('source').rows())})"
+    )
+    return location_hash, location_hashes, queue
 
 
 @app.cell
@@ -119,12 +157,27 @@ def _(json):
         "items": {
             "type": "OBJECT",
             "properties": {
-                "location_hash": {"type": "STRING", "description": "The unique hash ID of the row from the input data."},
+                "location_hash": {
+                    "type": "STRING",
+                    "description": "The unique hash ID of the row from the input data.",
+                },
                 "city": {"type": "STRING", "description": "Corrected city name."},
-                "county": {"type": "STRING", "description": "County name if present or easily inferable."},
-                "state": {"type": "STRING", "description": "Two-letter state abbreviation (e.g., NY, CA)."},
-                "zipcode": {"type": "STRING", "description": "5-digit zipcode as a string."},
-                "confidence": {"type": "STRING", "description": "High/Medium/Low confidence in the correction."},
+                "county": {
+                    "type": "STRING",
+                    "description": "County name if present or easily inferable.",
+                },
+                "state": {
+                    "type": "STRING",
+                    "description": "Two-letter state abbreviation (e.g., NY, CA).",
+                },
+                "zipcode": {
+                    "type": "STRING",
+                    "description": "5-digit zipcode as a string.",
+                },
+                "confidence": {
+                    "type": "STRING",
+                    "description": "High/Medium/Low confidence in the correction.",
+                },
             },
             "required": ["location_hash", "confidence"],
         },
@@ -147,8 +200,10 @@ def _(json):
             Input Data (JSON): {rows_json}
             """
 
-    def parse_gemini_cache(path):
-        # location_hash -> suggestion dict; later responses replace earlier ones
+    def parse_gemini_cache(path, model):
+        # location_hash -> suggestion dict; later responses replace earlier ones.
+        # Only responses from `model` count, so changing GEMINI_MODEL re-queries
+        # every piece while older answers stay in the file as an archive.
         suggestions = {}
         if not path.exists():
             return suggestions
@@ -158,14 +213,22 @@ def _(json):
                 continue
             try:
                 item = json.loads(line)
+                if not str(item["response"].get("modelVersion", "")).startswith(model):
+                    continue
                 candidates = item["response"].get("candidates", [])
-                rows = json.loads(candidates[0]["content"]["parts"][0]["text"]) if candidates else []
-            except (json.JSONDecodeError, KeyError, IndexError, TypeError):
+                rows = (
+                    json.loads(candidates[0]["content"]["parts"][0]["text"])
+                    if candidates
+                    else []
+                )
+            except json.JSONDecodeError, KeyError, IndexError, TypeError:
                 continue
             for row in rows:
                 if isinstance(row, dict) and row.get("location_hash"):
                     suggestions[row["location_hash"]] = {
-                        key: ("" if row.get(key) in (None, "null") else str(row.get(key)))
+                        key: (
+                            "" if row.get(key) in (None, "null") else str(row.get(key))
+                        )
                         for key in ["city", "county", "state", "zipcode", "confidence"]
                     }
         return suggestions
@@ -175,6 +238,7 @@ def _(json):
 
 @app.cell
 def _(
+    API_LIMIT,
     GEMINI_CACHE,
     GEMINI_JOB_FILE,
     GEMINI_MAX_WAIT_SECONDS,
@@ -208,27 +272,46 @@ def _(
             with GEMINI_REQUEST_FILE[source].open("w", encoding="utf-8") as handle:
                 for start in range(0, len(rows), GEMINI_ROWS_PER_REQUEST):
                     chunk = json.dumps(rows[start : start + GEMINI_ROWS_PER_REQUEST])
-                    handle.write(json.dumps({
-                        "key": f"request_chunk_{start}",
-                        "request": {
-                            "contents": [{"parts": [{"text": gemini_prompt(chunk)}], "role": "user"}],
-                            "generation_config": {
-                                "response_mime_type": "application/json",
-                                "response_schema": GEMINI_SCHEMA,
-                                "temperature": 0.1,
-                            },
-                        },
-                    }) + "\n")
+                    handle.write(
+                        json.dumps(
+                            {
+                                "key": f"request_chunk_{start}",
+                                "request": {
+                                    "contents": [
+                                        {
+                                            "parts": [{"text": gemini_prompt(chunk)}],
+                                            "role": "user",
+                                        }
+                                    ],
+                                    "generation_config": {
+                                        "response_mime_type": "application/json",
+                                        "response_schema": GEMINI_SCHEMA,
+                                        "thinking_config": {"thinking_level": "low"},
+                                    },
+                                },
+                            }
+                        )
+                        + "\n"
+                    )
             upload = client.files.upload(
                 file=GEMINI_REQUEST_FILE[source],
-                config=types.UploadFileConfig(display_name=f"{source}_locations", mime_type="jsonl"),
+                config=types.UploadFileConfig(
+                    display_name=f"{source}_locations", mime_type="jsonl"
+                ),
             )
             job_name = client.batches.create(
-                model=GEMINI_MODEL, src=upload.name, config={"display_name": f"clean_{source}_locations"}
+                model=GEMINI_MODEL,
+                src=upload.name,
+                config={"display_name": f"clean_{source}_locations"},
             ).name
             job_file.write_text(job_name)
             print(f"{source}: submitted Gemini job {job_name}")
-        done = {"JOB_STATE_SUCCEEDED", "JOB_STATE_FAILED", "JOB_STATE_CANCELLED", "JOB_STATE_EXPIRED"}
+        done = {
+            "JOB_STATE_SUCCEEDED",
+            "JOB_STATE_FAILED",
+            "JOB_STATE_CANCELLED",
+            "JOB_STATE_EXPIRED",
+        }
         deadline = time.time() + GEMINI_MAX_WAIT_SECONDS
         job = client.batches.get(name=job_name)
         while job.state.name not in done and time.time() < deadline:
@@ -248,11 +331,17 @@ def _(
 
     suggestion_rows = []
     for _source in ["disclosure", "addendum_b"]:
-        _cached = parse_gemini_cache(GEMINI_CACHE[_source])
+        _cached = parse_gemini_cache(GEMINI_CACHE[_source], GEMINI_MODEL)
         _rows = queue.filter(pl.col("source") == _source).to_dicts()
         _missing = [
-            r for r in _rows
-            if not any(h in _cached for h in location_hashes(r["xcity"], r["county_list"], r["xstate"], r["xzip"]))
+            r
+            for r in _rows
+            if not any(
+                h in _cached
+                for h in location_hashes(
+                    r["xcity"], r["county_list"], r["xstate"], r["xzip"]
+                )
+            )
         ]
         print(
             f"{_source}: {len(_rows)} queued, {len(_missing)} without a Gemini answer "
@@ -263,33 +352,53 @@ def _(
                 _source,
                 [
                     {
-                        "location_hash": location_hash(r["xcity"], r["county_list"], r["xstate"], r["xzip"]),
-                        "city": r["xcity"], "county": r["county_list"], "state": r["xstate"], "zip": r["xzip"],
+                        "location_hash": location_hash(
+                            r["xcity"], r["county_list"], r["xstate"], r["xzip"]
+                        ),
+                        "city": r["xcity"],
+                        "county": r["county_list"],
+                        "state": r["xstate"],
+                        "zip": r["xzip"],
                     }
-                    for r in _missing
+                    for r in _missing[:API_LIMIT]
                 ],
             )
-            _cached = parse_gemini_cache(GEMINI_CACHE[_source])
+            _cached = parse_gemini_cache(GEMINI_CACHE[_source], GEMINI_MODEL)
         for _r in _rows:
             _hit = next(
-                (h for h in location_hashes(_r["xcity"], _r["county_list"], _r["xstate"], _r["xzip"]) if h in _cached),
+                (
+                    h
+                    for h in location_hashes(
+                        _r["xcity"], _r["county_list"], _r["xstate"], _r["xzip"]
+                    )
+                    if h in _cached
+                ),
                 None,
             )
             _s = _cached.get(_hit, {})
-            suggestion_rows.append({
-                **_r,
-                "has_gemini_suggestion": _hit is not None,
-                "city_suggested": _s.get("city", ""),
-                "county_suggested": _s.get("county", ""),
-                "state_suggested": _s.get("state", ""),
-                "suggestion_confidence": _s.get("confidence", ""),
-            })
+            suggestion_rows.append(
+                {
+                    **_r,
+                    "has_gemini_suggestion": _hit is not None,
+                    "city_suggested": _s.get("city", ""),
+                    "county_suggested": _s.get("county", ""),
+                    "state_suggested": _s.get("state", ""),
+                    "suggestion_confidence": _s.get("confidence", ""),
+                }
+            )
     suggestions = pl.DataFrame(
         suggestion_rows,
         schema={
-            "source": pl.String, "xcity": pl.String, "county_list": pl.String, "xstate": pl.String,
-            "xzip": pl.String, "has_gemini_suggestion": pl.Boolean, "city_suggested": pl.String,
-            "county_suggested": pl.String, "state_suggested": pl.String, "suggestion_confidence": pl.String,
+            "source": pl.String,
+            "xcity": pl.String,
+            "county_list": pl.String,
+            "xstate": pl.String,
+            "xzip": pl.String,
+            "has_gemini_suggestion": pl.Boolean,
+            "city_suggested": pl.String,
+            "county_suggested": pl.String,
+            "state_suggested": pl.String,
+            "suggestion_confidence": pl.String,
         },
     )
     return (suggestions,)
@@ -297,6 +406,7 @@ def _(
 
 @app.cell
 def _(
+    API_LIMIT,
     DETAILS_CACHE,
     PLACES_DETAILS_DELAY_SECONDS,
     PLACES_SEARCH_DELAY_SECONDS,
@@ -324,33 +434,48 @@ def _(
     places = suggestions.with_columns(
         state_name=pl.col("xstate").map_elements(state_name, return_dtype=pl.String),
         original_query=pl.struct("xcity", "county_list", "xstate").map_elements(
-            lambda r: query_text(r["xcity"], r["county_list"], r["xstate"]), return_dtype=pl.String
+            lambda r: query_text(r["xcity"], r["county_list"], r["xstate"]),
+            return_dtype=pl.String,
         ),
-        suggested_query=pl.struct("city_suggested", "county_suggested", "state_suggested").map_elements(
-            lambda r: query_text(r["city_suggested"], r["county_suggested"], r["state_suggested"]),
+        suggested_query=pl.struct(
+            "city_suggested", "county_suggested", "state_suggested"
+        ).map_elements(
+            lambda r: query_text(
+                r["city_suggested"], r["county_suggested"], r["state_suggested"]
+            ),
             return_dtype=pl.String,
         ),
     )
     search_cache = json.loads(SEARCH_CACHE.read_text()) if SEARCH_CACHE.exists() else {}
-    details_cache = json.loads(DETAILS_CACHE.read_text()) if DETAILS_CACHE.exists() else {}
+    details_cache = (
+        json.loads(DETAILS_CACHE.read_text()) if DETAILS_CACHE.exists() else {}
+    )
 
     # A query needs at least two components ("city, state"); state-only text is never sent
-    queries = sorted({
-        q for q in places["original_query"].to_list() + places["suggested_query"].to_list() if q and "," in q
-    })
+    queries = sorted(
+        {
+            q
+            for q in places["original_query"].to_list()
+            + places["suggested_query"].to_list()
+            if q and "," in q
+        }
+    )
     new_queries = [q for q in queries if q not in search_cache]
     print(f"Places text searches: {len(queries)} needed, {len(new_queries)} not cached")
     if new_queries and RUN_APIS:
         from google.maps import places_v1
 
-        _client = places_v1.PlacesClient(client_options={"api_key": os.environ["GOOGLE_PLACES_API_KEY"]})
-        for _i, _query in enumerate(new_queries, start=1):
+        _client = places_v1.PlacesClient(
+            client_options={"api_key": os.environ["GOOGLE_PLACES_API_KEY"]}
+        )
+        _to_send = new_queries[:API_LIMIT]
+        for _i, _query in enumerate(_to_send, start=1):
             _response = _client.search_text(
                 request=places_v1.SearchTextRequest(text_query=_query),
                 metadata=[("x-goog-fieldmask", "places.id")],
             )
             search_cache[_query] = [place.id for place in _response.places]
-            if _i % 50 == 0 or _i == len(new_queries):
+            if _i % 50 == 0 or _i == len(_to_send):
                 SEARCH_CACHE.write_text(json.dumps(search_cache))
             time.sleep(PLACES_SEARCH_DELAY_SECONDS)
 
@@ -358,20 +483,29 @@ def _(
     new_place_ids = [pid for pid in place_ids if pid not in details_cache]
     print(
         f"Places details: {len(place_ids)} needed, {len(new_place_ids)} not cached"
-        + ("" if RUN_APIS else " (searches not yet run add more)" if new_queries else "")
+        + (
+            ""
+            if RUN_APIS
+            else " (searches not yet run add more)"
+            if new_queries
+            else ""
+        )
     )
     if new_place_ids and RUN_APIS:
         from google.maps import places_v1
         from google.protobuf.json_format import MessageToDict
 
-        _client = places_v1.PlacesClient(client_options={"api_key": os.environ["GOOGLE_PLACES_API_KEY"]})
-        for _i, _pid in enumerate(new_place_ids, start=1):
+        _client = places_v1.PlacesClient(
+            client_options={"api_key": os.environ["GOOGLE_PLACES_API_KEY"]}
+        )
+        _to_send = new_place_ids[:API_LIMIT]
+        for _i, _pid in enumerate(_to_send, start=1):
             _response = _client.get_place(
                 request=places_v1.GetPlaceRequest(name=f"places/{_pid}"),
                 metadata=[("x-goog-fieldmask", "addressComponents")],
             )
             details_cache[_pid] = MessageToDict(_response._pb)
-            if _i % 50 == 0 or _i == len(new_place_ids):
+            if _i % 50 == 0 or _i == len(_to_send):
                 DETAILS_CACHE.write_text(json.dumps(details_cache, indent=2))
             time.sleep(PLACES_DETAILS_DELAY_SECONDS)
     return details_cache, places, search_cache
@@ -411,12 +545,19 @@ def _(INTERMEDIATE, addfips, details_cache, pl, places, search_cache):
 
     def common_county_fips(original_query, suggested_query, state):
         common = query_counties(original_query) & query_counties(suggested_query)
-        fips = {county_af.get_county_fips(MODERN_TO_2010_COUNTY.get(n, n), state) for n in common} - {None}
+        fips = {
+            county_af.get_county_fips(MODERN_TO_2010_COUNTY.get(n, n), state)
+            for n in common
+        } - {None}
         return ",".join(sorted(fips))
 
     api_counties = places.with_columns(
-        places_county_fips_list=pl.struct("original_query", "suggested_query", "state_name").map_elements(
-            lambda r: common_county_fips(r["original_query"], r["suggested_query"], r["state_name"]),
+        places_county_fips_list=pl.struct(
+            "original_query", "suggested_query", "state_name"
+        ).map_elements(
+            lambda r: common_county_fips(
+                r["original_query"], r["suggested_query"], r["state_name"]
+            ),
             return_dtype=pl.String,
         ),
         # A query that is never sent (empty or state-only) counts as answered
@@ -427,12 +568,18 @@ def _(INTERMEDIATE, addfips, details_cache, pl, places, search_cache):
     ).with_columns(
         api_status=pl.when(pl.col("places_county_fips_list") != "")
         .then(pl.lit("resolved"))
-        .when(~pl.col("has_gemini_suggestion") | ~pl.col("original_query_cached") | ~pl.col("suggested_query_cached"))
+        .when(
+            ~pl.col("has_gemini_suggestion")
+            | ~pl.col("original_query_cached")
+            | ~pl.col("suggested_query_cached")
+        )
         .then(pl.lit("not_queried"))
         .otherwise(pl.lit("no_common_county"))
     )
     api_counties.write_parquet(INTERMEDIATE / "h2a_location_api_counties.parquet")
-    print(api_counties.group_by("source", "api_status").len().sort("source", "api_status"))
+    print(
+        api_counties.group_by("source", "api_status").len().sort("source", "api_status")
+    )
     return
 
 

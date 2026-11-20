@@ -1,0 +1,702 @@
+!===========================================================================!
+!
+SIMPLEZ-US-EST at labor shed level
+This version is designed for Ray et al., 2025 
+For first stage estimation (FSE) and hist. validation and Second stage estimation (SSE)
+Unknown parameters = {AFL,AFZ,AFR,ESLZ,ELAB}, read in from shf/ESTIPARM.har
+Initial values for {AO,AO,AO,0.26, abs[(ql(a)+phil(a))/pl(a)]} 
+All (inputs & outputs) markets clear at the CZ level
+
+**************************************************************************** 
+   Basic model structure is as follows:                                             
+
+**********                                                        
+* DEMAND *                                                        
+********** 
+ Change in production exogenously determined based on CoA Data                                                         
+                                                                     
+                                        |                                   
+********************                 QCROPz                                
+* SUPPLY STRUCTURE *                /      \                                
+********************               /        \                               
+                                  /----------\       <--ces  
+                                 /  ECROPz   \                       
+                                /              \                             
+                          QAUGLANDz         QNITROz                      
+                            /      \                                        
+                           /--------\                 <--ces            
+                          /EAUGLANDz\                                       
+                         /            \                                      
+                        /              \                                     
+                   QNLANDz         QLANDWTRz                                
+                  /       \         /       \                            
+                /-ESUB_LZ-\        /         \                                        
+              /           \       /-----------\        <--ces      
+          LABOR        NLABOR    /  EIRRIGz   \         
+                                /              \        
+                            QLANDz           QWATERz    
+                              /                  \        
+                             / ------------------ \  <--ces
+                           /       ESUB_WKz       \              
+                          /                         \            
+                      QWATSGz                   QWEQPTz
+                     /       \                            
+                    /         \                                        
+                   /-----------\        <--ces      
+                  /  ESUB_SGz  \  
+                /               \       
+            QWATSRFz        QWATGRDz 
+ !
+
+
+
+!<  PRELIMINARIES
+    ====================================================================   >!
+!   Declaration of files & sets (see 'in' folder)                           ! 
+File  CZSETS    # model sets #;
+      CZDATA    # model data #;
+      CZPARM    # model parameters #;
+      REGPARM   # model parameters #;
+      LABMRKT   # file to sepcify the labor market shed for mig. lab #;
+      ESTIPARM  # file with parameters to calibrate #;
+
+Set REG         # regions #                                    read elements from file CZSETS header "REG";
+Set CZ    # domestic labor market shed #                        read elements from file LABMRKT header "CZ";
+Set PR    # production regions #                                read elements from file LABMRKT header "SMKT";
+            
+Mapping CZ2REG from CZ to REG; 
+            read CZ2REG from file  CZSETS header "MAP6";
+
+Mapping CZ2PR from CZ to PR; 
+            read CZ2PR from file  LABMRKT header "MAP4";
+
+Mapping PR2REG from PR to REG; 
+            read PR2REG from file  LABMRKT header "MP12";
+
+Set US_CZ   =(all,z,CZ:  CZ2REG(z)  = "US");
+Set US_PR   =(all,a,PR:  PR2REG(a)  = "US");
+
+!   **********************************
+    Policy levers in Crop CES nest 
+    **********************************   !
+
+!   ****************************************
+    Technical variables in Crop CES nest 
+    ****************************************   !
+! technical change by by CZ !
+Variable  (all,z,CZ) p_AOCROPz(z);
+Variable  (all,z,CZ) p_AFNITROz(z)   # nitrogen eff. index in Crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFLANDz(z)    # land eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFWATERz(z)   # aggregate irrigation eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFWATSGz(z)   # water eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFWEQPTz(z)   # water equipment eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFLABORz(z)   # Labor eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFNLABORz(z)  # Non-labor eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFNLANDz(z)   # NonLand eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFLANDWTRz(z) # Land+water eff. index in crop prod. by CZ (z)#;
+
+! technical change by PR  !
+Variable  (all,a,PR) p_AFNITROa(a)   # N Fert eff. index in crop prod. by PR  #;
+Variable  (all,a,PR) p_AFNLANDa(a)   # NonLand eff. index in crop prod. by PR  #;
+Variable  (all,a,PR) p_AFLABORa(a)   # Labor eff. index in crop prod. by PR  #;
+Variable  (all,a,PR) p_AFNLABORa(a)   # Non-labor eff. index in crop prod. by PR  #;
+Variable  (all,a,PR) p_AFLANDWTRa(a) # Land+water eff. index in crop prod. by PR  #;
+
+! technical change by reg  !
+Variable  (all,r,REG) p_AOCROPr(r) # input-neutral eff. index in Crop prod. by reg  #;
+Variable  (all,r,REG) p_AFNITROr(r) # nitrogen eff. index in Crop prod. by reg  #;
+Variable  (all,r,REG) p_AFLANDr(r) # land eff. index in crop prod. by reg  #;
+Variable  (all,r,REG) p_AFWATERr(r) # aggregate irrigation eff. index in crop prod. by reg #;
+Variable  (all,r,REG) p_AFWATSGr(r) # water eff. index in crop prod. by reg  #;
+Variable  (all,r,REG) p_AFWEQPTr(r) # water equipment eff. index in crop prod. by reg  #;
+Variable  (all,r,REG) p_AFLABORr(r) # Labor eff. index in crop prod. by PR #;
+Variable  (all,r,REG) p_AFNLABORr(r) # Non-labor eff. index in crop prod. by PR #;
+Variable  (all,r,REG) p_AFNLANDr(r) # NonLand eff. index in crop prod. by reg  #;
+Variable  (all,r,REG) p_AFLANDWTRr(r) # Land+water eff. index in crop prod. by reg  #;
+
+! final technical change variable !
+Variable  (all,z,CZ) p_AOCROP(z) # input-neutral eff. index in Crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFNITRO(z) # nitrogen eff. index in Crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFLAND(z) # land eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFWATER(z) # aggregate irrigation eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFWATSG(z) # water eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFWEQPT(z) # water equipment eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFLABOR(z) # Labor eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFNLABOR(z) # Non-labor eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFNLAND(z) # NonLand eff. index in crop prod. by CZ (z)#;
+Variable  (all,z,CZ) p_AFLANDWTR(z) # Land+water eff. index in crop prod. by CZ (z)#;
+
+!   Equation linking regional and grid specific tech change parameters      !
+Equation 
+ E_AOCROP     (all,z,CZ) p_AOCROP(z)    = p_AOCROPz(z)     + p_AOCROPr(CZ2REG(z));
+ E_AFNITRO    (all,z,CZ) p_AFNITRO(z)   = p_AFNITROz(z)    + p_AFNITROa(CZ2PR(z)) + p_AFNITROr(CZ2REG(z));
+ E_AFLAND     (all,z,CZ) p_AFLAND(z)    = p_AFLANDz(z)     + p_AFLANDr(CZ2REG(z));
+ E_AFWATER    (all,z,CZ) p_AFWATER(z)   = p_AFWATERz(z)    + p_AFWATERr(CZ2REG(z));
+ E_AFWATSG    (all,z,CZ) p_AFWATSG(z)   = p_AFWATSGz(z)    + p_AFWATSGr(CZ2REG(z));
+ E_AFWEQPT    (all,z,CZ) p_AFWEQPT(z)   = p_AFWEQPTz(z)    + p_AFWEQPTr(CZ2REG(z));
+ E_AFLABOR    (all,z,CZ) p_AFLABOR(z)   = p_AFLABORz(z)    + p_AFLABORa(CZ2PR(z)) + p_AFLABORr(CZ2REG(z));
+ E_AFNLABOR   (all,z,CZ) p_AFNLABOR(z)  = p_AFNLABORz(z)   + p_AFNLABORa(CZ2PR(z))   + p_AFNLABORr(CZ2REG(z));
+ E_AFNLAND    (all,z,CZ) p_AFNLAND(z)   = p_AFNLANDz(z)    + p_AFNLANDa(CZ2PR(z))   + p_AFNLANDr(CZ2REG(z));
+ E_AFLANDWTR  (all,z,CZ) p_AFLANDWTR(z) = p_AFLANDWTRz(z)  + p_AFLANDWTRa(CZ2PR(z)) + p_AFLANDWTRr(CZ2REG(z));
+
+!   ******************************
+    Control/slack variables 
+    ******************************   !
+Variable 
+ (all,z,CZ)  s_QLANDz(z)     # Slack to control cropland by CZ (z) #;
+ (all,z,CZ)  s_QWATERz(z)    # Slack to control water use by CZ (z) #;
+ (all,z,CZ)  s_QCROPz(z)     # Slack to control crop output by CZ #;
+ (all,z,CZ)  s_PCROPz(z)     # dictate CZ level crop price #;
+ (all,z,CZ)  s_QLANDWTRz(z)  # supply shock to composite land+wtr (z) #;
+ (all,z,CZ)  s_QAUGLANDz(z)  # #;
+ (all,z,CZ)  s_QNLANDz(z)    # QNLAND slack # ;
+ (all,z,CZ)  s_PNLANDz(z)    ;
+ (all,z,CZ)  s_QLABORz(z)    ;
+ (all,a,PR)  s_QLABORa(a)    ;
+ (all,z,CZ)  s_QLABOR(z)    ;
+ (all,z,CZ)  s_QNLABORz(z) # Slack to control non-labor market by grid & ltype #;
+
+Equation 
+ E_SQLABOR     (all,z,CZ) s_QLABOR(z)    = s_QLABORz(z)     + s_QLABORa(CZ2PR(z));
+
+!<  PRODUCTION SYSTEM                                                   
+    ====================================================================   >!
+
+! define main inputs and assign values!
+Variable 
+ (levels) (all,z,CZ) QLANDz(z)     # cropland area by a (z) (1000 HA) #;
+ (levels)(all,z,CZ)  QLABORz(z)    # Labor in a commuting zone (in 1000 hours) #;
+! (levels)(all,z,CZ)  QNLABORz(z)   # Non-Labor in a commuting zone (in 1000 hours) #;!
+ (levels)(all,z,CZ)  PCROPz(z)     # price of crops by CZ ($/kg corn-eq) #;
+ (levels)(all,z,CZ)  QCROPz(z)     # crop output by CZ    (1000 kg) #;
+
+Coefficient
+ (all,z,CZ) VLANDz(z)    # Val land      by a (z) (1000 USD) #;
+ (all,z,CZ) VLABORz(z)   # Val labor     by a (z) (1000 USD) #;
+ (all,z,CZ) VNLABORz(z)  # Val non-labor by a (z) (1000 USD) #;
+ (all,z,CZ) VNITROz(z)   # Val nitr frt  by a (z) (1000 USD) #;
+ (all,z,CZ) VWATSGz(z)   # Val water     by a (z) (1000 USD) #;
+ (all,z,CZ) VWEQPTz(z)   # Val wat eqpt  by a (z) (1000 USD) #;
+
+Read
+ QLANDz   from file CZDATA header "QLND";
+ QLABORz  from file CZDATA header "QLAB";
+! QNLABORz from file CZDATA header "QNLB";!
+ QCROPz   from file CZDATA header "QCRP";
+
+ VLANDz   from file CZDATA header "VLND";
+ VLABORz  from file CZDATA header "VLAB";
+ VNLABORz from file CZDATA header "VNLB";
+ VNITROz  from file CZDATA header "VNIT";
+ VWATSGz  from file CZDATA header "VWTR";
+ VWEQPTz  from file CZDATA header "VWOR";
+
+Coefficient
+(all,z,CZ) VCROPz(z)    # Val crop output   by z (1000 USD) #;
+(all,z,CZ) VWATERz(z)   # Val irrigation    by z (1000 USD) #;
+(all,z,CZ) VLNDWTRz(z)  # Val land+irrig    by z (1000 USD) #;
+(all,z,CZ) VNLANDz(z)   # Val lan+non-lab   by z (1000 USD) #;
+(all,z,CZ) VAUGLANDz(z) # Val oth+lnd+irrig by z (1000 USD) #;
+
+Formula
+(all,z,CZ) VWATERz(z)   = VWATSGz(z) + VWEQPTz(z);
+(all,z,CZ) VLNDWTRz(z)  = VWATERz(z) + VLANDz(z) ;
+(all,z,CZ) VNLANDz(z)   = VLABORz(z) + VNLABORz(z) ;
+(all,z,CZ) VAUGLANDz(z) = VNLANDz(z) + VLNDWTRz(z) ;
+(all,z,CZ) VCROPz(z)    = VNITROz(z) + VAUGLANDz(z) ;
+
+Coefficient
+ (all,z,CZ)  SHR_LinNLz(z)  # shr labor in non-land by CZ #;
+ (all,z,CZ)  SHR_CinNLz(z)  # shr capital in non-land by CZ #;
+ (all,z,CZ)  SHR_LABORz(z)  # shr labor in tot cost by CZ #;
+ (all,z,CZ)  SHR_NLABORz(z) # shr non-labor in tot cost by CZ #;
+
+Zerodivide default 0.20;
+Formula 
+          (all,z,CZ)   SHR_LABORz(z)  = VLABORz(z)  / VCROPz(z);
+          (all,z,CZ)   SHR_NLABORz(z) = VNLABORz(z) / VCROPz(z);
+          (all,z,CZ)   SHR_LinNLz(z)  = VLABORz(z)  / VNLANDz(z);
+          (all,z,CZ)   SHR_CinNLz(z)  = VNLABORz(z) / VNLANDz(z);
+Zerodivide off;
+
+! define share parameters and assign values!
+Coefficient
+! shr: cost shares!
+(all,z,CZ) SHR_LANDz(z)   # shr land  in tot cost by CZ #;
+(all,z,CZ) SHR_NITROz(z)  # shr nitr  in tot cost by CZ #;
+(all,z,CZ) SHR_WATSGz(z)  # shr water S+G   in tot cost by CZ #;
+(all,z,CZ) SHR_WEQPTz(z)  # shr water equipment in tot cost by CZ #;
+(all,z,CZ) SHR_NLANDz(z)  # shr non-land in tot cost by CZ #;
+
+(all,z,CZ) SHR_OinAUGz(z) # shr oth   in aug. land by CZ (z) #;
+(all,z,CZ) SHR_LinAUGz(z) # shr land  in aug. land by CZ (z) #;
+(all,z,CZ) SHR_WinAUGz(z) # shr water in aug. land by CZ (z) #;
+(all,z,CZ) SHR_LinLWz(z)  # shr land  in land+wat+eqpt by CZ (z) #;
+(all,z,CZ) SHR_WinLWz(z)  # shr water in land+wat+eqpt by CZ (z) #;
+(all,z,CZ) SHR_WWinWz(z)  # shr wat S+G in wat+eqpt by CZ (z) #;
+(all,z,CZ) SHR_WKinWz(z)  # shr Weqpt in wat+eqpt by CZ (z) #;
+
+! QCET !
+! shr: quantity shares!
+Coefficient
+(all,z,CZ) SHR_QLANDz(z) # quantity shr of each land type in CET by a #;
+! shr: revenue shares!
+(all,z,CZ) SHR_VLANDz(z) # shr each land type in CET by a #;
+
+Formula
+ (all,z,CZ) SHR_LANDz(z)  = VLANDz(z)  / VCROPz(z);
+ (all,z,CZ) SHR_NITROz(z) = VNITROz(z) / VCROPz(z);
+ (all,z,CZ) SHR_WATSGz(z) = VWATSGz(z) / VCROPz(z);
+ (all,z,CZ) SHR_WEQPTz(z) = VWEQPTz(z) / VCROPz(z);
+ (all,z,CZ) SHR_NLANDz(z) = VNLANDz(z) / VCROPz(z);
+
+Zerodivide default 0.333333;
+Formula 
+ (all,z,CZ) SHR_OinAUGz(z) = VNLANDz(z) / VAUGLANDz(z);
+ (all,z,CZ) SHR_LinAUGz(z) = VLANDz(z)  / VAUGLANDz(z);
+ (all,z,CZ) SHR_WinAUGz(z) = VWATERz(z) / VAUGLANDz(z);
+
+Zerodivide default 0.50;
+Formula
+ (all,z,CZ) SHR_WinLWz(z) = VWATERz(z) / VLNDWTRz(z) ;
+ (all,z,CZ) SHR_LinLWz(z) = VLANDz(z)  / VLNDWTRz(z);
+
+Zerodivide default 0.5;
+Formula
+ (all,z,CZ) SHR_WWinWz(z) = VWATSGz(z) / VWATERz(z);
+ (all,z,CZ) SHR_WKinWz(z) = VWEQPTz(z) / VWATERz(z);
+Zerodivide off;
+
+Coefficient
+ (Parameter) (all,z,CZ)  ECROPz(z)    # Elas. of subs. in crop production by grid & ltype #;
+ (Parameter) (all,z,CZ)  EIRRIGz(z)   # Elas. of subs. between land & water by grid #;
+ (Parameter) (all,z,CZ)  EAUGLANDz(z) # Elas. of subs. between humand and resources by PR #;
+ (Parameter) (all,z,CZ)  ESUB_WKz(z)  # Elas. of subs. in wat+eqpt CES nest by grid & ltype #;
+ (Parameter) (all,z,CZ)  EWATSGz(z)   # supply elas. of water by grid & ltype#;
+ (Parameter) (all,z,CZ)  ELANDz(z)    # supply elas. of land #;
+ (Parameter) (all,r,REG) ENITROr(r)   # supply elas. of nitrogen  by reg #;
+ (Parameter) (all,r,REG) EWATKLr(r)   # supply elas. of irrig eqpt  by reg #;
+
+Read 
+ ECROPz       from file CZPARM   header "ECRP";
+ EIRRIGz      from file CZPARM   header "EIRR";
+ EAUGLANDz    from file CZPARM   header "EAUG"; !=0.5!
+ ESUB_WKz     from file CZPARM   header "EWAT"; ! 0.5 !
+ EWATSGz      from file CZPARM   header "EWTR";
+ ELANDz       from file CZPARM   header "ELND";
+ ENITROr      from file REGPARM header "ENTR";
+ EWATKLr      from file REGPARM header "EWKL";
+
+Variable 
+ (all,z,CZ)  p_QNITROz(z) # nitrogen use by CZ   #;
+ (all,z,CZ)  p_PNITROz(z) # price of nitrogen use by CZ #;
+ (all,z,CZ)  p_QWATSGz(z) # water use by CZ      #;
+ (all,z,CZ)  p_PWATSGz(z) # price of water use by CZ    #;
+ (all,z,CZ)  p_PLANDz(z)  # price of cropland by CZ     #;
+ (all,z,CZ)  p_QNLANDz(z) # other input by CZ           #;
+ (all,z,CZ)  p_PNLANDz(z) # price of other input by CZ  #;
+ (all,z,CZ)  p_QWEQPTz(z) # irrig eqpt by CZ            #;
+ (all,z,CZ)  p_PWEQPTz(z) # price of irrig eqpt by CZ   #;
+ (all,z,CZ)  p_PAUGLANDz(z) # price of aug. land by CZ     #;
+ (all,z,CZ)  p_QAUGLANDz(z) # quantity of aug. land by CZ  #;
+ (all,z,CZ)  p_PLANDWTRz(z) # price of land+irrig by CZ    #;
+ (all,z,CZ)  p_QLANDWTRz(z) # quantity of land+irrig by CZ #;
+ (all,z,CZ)  p_PWATERz(z)  # price of water+eqpt by CZ    #;
+ (all,z,CZ)  p_QWATERz(z)  # quantity of water+eqpt by CZ #;
+ (all,z,CZ)  p_VCROPz(z);
+
+Update
+ (all,z,CZ) VLANDz(z)  = p_PLANDz(z)  * p_QLANDz(z);
+ (all,z,CZ) VNITROz(z) = p_PNITROz(z) * p_QNITROz(z);
+ (all,z,CZ) VWATSGz(z) = p_PWATSGz(z) * p_QWATSGz(z);
+ (all,z,CZ) VWEQPTz(z) = p_PWEQPTz(z) * p_QWEQPTz(z);
+! (all,z,CZ) VNLANDz(z) = p_PNLANDz(z)*p_QNLANDz(z);
+ (all,z,CZ) VLNDWTRz(z) = p_PLANDWTRz(z)*p_QLANDWTRz(z);!
+
+![[! start--- water module by source !]]!
+Coefficient
+! water by source!
+ (all,z,CZ) QWATSRFz(z) # vol surface water by a (xx m3) #;
+ (all,z,CZ) QWATGRDz(z) # vol groundwater   by a (xx m3) #;
+! shr: vol shares!
+ (all,z,CZ) SHR_SinSGz(z) # shr srf  in tot water by g&l #;
+ (all,z,CZ) SHR_GinSGz(z) # shr grd  in tot water by g&l #;
+
+Read
+ QWATSRFz  from file CZDATA header "QSRF";
+ QWATGRDz  from file CZDATA header "QGRD";
+
+Zerodivide default 0.50;
+Formula
+ (all,z,CZ) SHR_SinSGz(z) = QWATSRFz(z)  / [QWATSRFz(z)+QWATGRDz(z)];
+ (all,z,CZ) SHR_GinSGz(z) = QWATGRDz(z)  / [QWATSRFz(z)+QWATGRDz(z)];
+Zerodivide off;
+
+Coefficient
+ (Parameter) (all,z,CZ)  ETA_WATSRFz(z) # supply elasticity of surface water #;
+ (Parameter) (all,z,CZ)  ETA_WATGRDz(z) # supply elasticity of groundwater #;
+ (Parameter) (all,z,CZ)  ESUB_SGz(z)    # substitution elasticity between groundwater and surface water #;
+
+Read 
+ ETA_WATSRFz   from file CZPARM header "ETAS";
+ ETA_WATGRDz   from file CZPARM header "ETAG";
+ ESUB_SGz      from file CZPARM header "ESW";
+
+Variable 
+ (all,z,CZ) p_QWATSRFz(z)  # vol of surface water withdrawal by CZ #;
+ (all,z,CZ) p_QWATGRDz(z)  # vol of groundwater withdrawal by CZ  #;
+ (all,z,CZ) p_PWATSRFz(z)  # price of surface water by CZ #;
+ (all,z,CZ) p_PWATGRDz(z)  # price of groundwater by CZ  #;
+ (all,z,CZ) s_QWATSRFz(z)  # slack for surface water withdrawal by CZ #;
+ (all,z,CZ) s_QWATGRDz(z)  # slack for groundwater withdrawal by CZ  #;
+ (all,z,CZ) t_PAUGLANDz(z) ;
+ (all,z,CZ) t_PNITROz(z);
+ (all,z,CZ) t_PNLABORz(z);
+
+Equation 
+ E_PWATSRFz (all,z,CZ) p_QWATSRFz(z)  = ETA_WATSRFz(z) * p_PWATSRFz(z) + s_QWATSRFz(z); 
+ E_PWATGRDZ (all,z,CZ) p_QWATGRDz(z)  = ETA_WATGRDz(z) * p_PWATGRDz(z) + s_QWATGRDz(z); 
+ E_QWATSRFZ (all,z,CZ) p_QWATSRFz(z)  = p_QWATSGz(z) - ESUB_SGz(z) * [p_PWATSRFz(z) - p_PWATSGz(z)];
+ E_QWATGRDz (all,z,CZ) p_QWATGRDz(z)  = p_QWATSGz(z) - ESUB_SGz(z) * [p_PWATGRDz(z) - p_PWATSGz(z)]; 
+!price index for srf + grd water!
+ E_PWATSGz  (all,z,CZ) p_PWATSGz(z)   = SHR_SinSGz(z) * [p_PWATSRFz(z) ] 
+                                      + SHR_GinSGz(z) * [p_PWATGRDz(z) ];
+Update
+ (all,z,CZ) QWATSRFz(z) = p_QWATSRFz(z);
+ (all,z,CZ) QWATGRDz(z) = p_QWATGRDz(z);
+
+![[! water module by source --- end !]]!
+
+![[! labor module by types  --- start !]]!
+Coefficient 
+ (Parameter) (all,a,PR) ELABORa(a) # calibrating labor ss at the CZ level # ;
+ (Parameter) (all,a,PR) ESUB_LZa(a)   # Elas. of subs. bet. labor and capital in NLAND nest CZ & ltype #;
+ (parameter) ENLABORr ;
+
+Read 
+ ELABORa    from file ESTIPARM header "ELAB"; ! calculated from labor ss equation ! 
+ ESUB_LZa   from file ESTIPARM header "ESLZ"; !0.2!
+ ENLABORr   from file CZPARM   header "ENL6";
+
+Variable
+ (all,z,CZ)  p_QNLABORz(z)       # Change in use of non-labor in a CZ #;
+ (all,z,CZ)  p_PNLABORz(z)       # Change in cost of non-labor in a CZ #;
+ (all,z,CZ)  p_PLABORz(z)        # Change in wages in a CZ #;
+
+! labor market equations!
+Equation 
+! Demand of labor by CZ!
+E_QLABORz (all,z,CZ)                                       
+    p_QLABORz(z) + p_AFLABOR(z)  
+        = p_QNLANDz(z) - ESUB_LZa(CZ2PR(z)) * [p_PLABORz(z) - p_AFLABOR(z) - p_PNLANDz(z)] ; 
+
+!price index for mlab+llab for labor !
+E_PLABORz  (all,z,CZ) 
+!to be consistent with analytical derivation supply shock is introduced with a - sign! 
+ p_QLABORz(z) = ELABORa(CZ2PR(z)) * p_PLABORz(z) - s_QLABOR(z);
+
+! Demand of non-labor by grid (z)!
+E_QNLABORz (all,z,CZ)                                       
+    p_QNLABORz(z) + p_AFNLABOR(z)  
+        = p_QNLANDz(z) - ESUB_LZa(CZ2PR(z)) * [p_PNLABORz(z) - p_AFNLABOR(z) - p_PNLANDz(z)] + s_QNLABORz(z); 
+
+E_PNLABORz (all,z,CZ)
+ p_QNLABORz(z) = ENLABORr * p_PNLABORz(z) + t_PNLABORz(z);
+
+!price index for lab+nlab water!
+ E_PNLANDz  (all,z,CZ) 
+    p_PNLANDz(z)
+     = SHR_LinNLz(z) * [p_PLABORz(z) -  p_AFLABOR(z)]
+     + SHR_CinNLz(z) * [p_PNLABORz(z) - p_AFNLABOR(z)] + s_PNLANDz(z);
+
+Update 
+ (all,z,CZ)  VLABORz(z)   = p_PLABORz(z) * p_QLABORz(z);
+ (all,z,CZ)  VNLABORz(z)  = p_PNLABORz(z) *p_QNLABORz(z);
+
+Equation
+!supply of total cropland!
+!to be consistent with analytical derivation supply shock is introduced with a - sign! 
+E_PLANDz (all,z,CZ) p_QLANDz(z) = ELANDz(z) *  p_PLANDz(z) - s_QLANDz(z);
+
+!demand of cropland!
+E_QLANDz (all,z,CZ) 
+  p_QLANDz(z) + p_AFLAND(z) 
+     = p_QLANDWTRz(z) - EIRRIGz(z) * [p_PLANDz(z) - p_AFLAND(z) - p_PLANDWTRz(z)] ;
+
+!supply of irrigation equipments etc!
+E_PWEQPTz (all,z,CZ) p_QWEQPTz(z) = EWATKLr(CZ2REG(z))  * p_PWEQPTz(z);
+
+!Demand for nitrogen fertilizer input !
+E_QNITROz (all,z,CZ) 
+  p_QNITROz(z) + p_AFNITRO(z) 
+     = p_QCROPz(z) - p_AOCROP(z) - ECROPz(z) * [p_PNITROz(z) - p_AFNITRO(z) - p_PCROPz(z)  - p_AOCROP(z) ];
+
+E_PNITROz (all,z,CZ)
+ p_QNITROz(z) = ENITROr(CZ2REG(z)) * p_PNITROz(z) + t_PNITROz(z);
+
+!Demand for water (surface water + groundwater) input!
+E_QWATSGz (all,z,CZ) p_QWATSGz(z) + p_AFWATSG(z) 
+      = p_QWATERz(z)               - ESUB_WKz(z)  * [p_PWATSGz(z) - p_AFWATSG(z) - p_PWATERz(z)] ;
+
+!Demand for irrigation equipments!
+E_QWEQPTz  (all,z,CZ) p_QWEQPTz(z) + p_AFWEQPT(z)
+     = p_QWATERz(z)                - ESUB_WKz(z)  * [p_PWEQPTz(z) - p_AFWEQPT(z) - p_PWATERz(z) ] ;
+
+!Demand for other inputs!
+E_QNLANDz (all,z,CZ) p_QNLANDz(z) + p_AFNLAND(z)
+     = p_QAUGLANDz(z)              - EAUGLANDz(z) * [p_PNLANDz(z) - p_AFNLAND(z)  - p_PAUGLANDz(z) ] + s_QNLANDz(z) ;
+
+!Quantity index for oth+land+water+eqpt!
+E_QAUGLANDz  (all,z,CZ) p_QAUGLANDz(z) 
+     = p_QCROPz(z)  - p_AOCROP(z) - ECROPz(z) * [p_PAUGLANDz(z) - p_PCROPz(z) - p_AOCROP(z)] + s_QAUGLANDz(z);
+
+!Quantity index for water+eqpt!
+E_QWATERz   (all,z,CZ) p_QWATERz(z) + p_AFWATER(z)
+     = p_QLANDWTRz(z)              - EIRRIGz(z)  * [p_PWATERz(z) - p_AFWATER(z) - p_PLANDWTRz(z)] + s_QWATERz(z);
+
+!Quantity index for land+water+eqpt!
+E_QLANDWTRz (all,z,CZ) p_QLANDWTRz(z) + p_AFLANDWTR(z)  
+     = p_QAUGLANDz(z)              - EAUGLANDz(z) * [p_PLANDWTRz(z) - p_AFLANDWTR(z) - p_PAUGLANDz(z) ] + s_QLANDWTRz(z);
+
+!price index for irrigation wat+eqpt!
+E_PWATERz  (all,z,CZ) 
+ p_PWATERz(z) = SHR_WWinWz(z) * [p_PWATSGz(z) - p_AFWATSG(z)]
+              + SHR_WKinWz(z) * [p_PWEQPTz(z) - p_AFWEQPT(z)];
+
+!price index for land+water+eqpt!
+E_PLANDWTRz  (all,z,CZ) 
+p_PLANDWTRz(z) 
+     = SHR_LinLWz(z) * [p_PLANDz(z)  - p_AFLAND(z)] 
+     + SHR_WinLWz(z) * [p_PWATERz(z) - p_AFWATER(z)];
+
+!price index for oth+land+water+eqpt!
+E_PAUGLANDz  (all,z,CZ) 
+p_PAUGLANDz(z) 
+     = SHR_OinAUGz(z) * [p_PNLANDz(z)- p_AFNLAND(z)] 
+     + SHR_LinAUGz(z) * [p_PLANDz(z) - p_AFLAND(z) ]
+     + SHR_WinAUGz(z) * [p_PWATERz(z)- p_AFWATER(z)] + t_PAUGLANDz(z);
+
+!alternative form of zero profit condition!
+! SR: omit, redefined in 'start PR'!
+E_QCROPz     (all,z,CZ) 
+p_QCROPz(z)   
+     = SHR_LANDz(z)   * [p_QLANDz(z)   + p_AFLAND(z)  ] 
+     + SHR_NITROz(z)  * [p_QNITROz(z)  + p_AFNITRO(z) ] 
+     + SHR_LABORz(z)  * [p_QLABORz(z)  + p_AFLABOR(z)] 
+     + SHR_NLABORz(z) * [p_QNLABORz(z) + p_AFNLABOR(z)]  
+     + SHR_WATSGz(z)  * [p_QWATSGz(z)  + p_AFWATSG(z) + p_AFWATER(z)]  
+     + SHR_WEQPTz(z)  * [p_QWEQPTz(z)  + p_AFWEQPT(z) + p_AFWATER(z)]  
+     + p_AOCROP(z) + s_QCROPz(z);
+
+! CZ level clearing of Crop and NIT markets !
+E_PCROPz (all,z,CZ)
+p_PCROPz(z) = s_PCROPz(z);
+
+E_VCROPz (all,z,CZ)
+p_VCROPz(z) = p_QCROPz(z) + p_PCROPz(z);
+
+!
+*****************************************************************************
+                 Regional markets: eliminated
+*****************************************************************************                
+!
+![[!
+! regional aggregates: crops, nitrogen , non-labor !                                           
+Variable
+(all,r,REG)          p_QNITROr(r) # Nitrogen use by reg (in 1000 MT) #;
+(all,r,REG)          p_PNITROr(r) # Price of nitrogen by reg (in USD/MT) #;
+(all,z,CZ)           t_PNITROz(z);
+
+Coefficient
+ (all,r,REG)        VNITROr(r) # Value of Nit. fert. by reg (in 1000 USD) #;     
+
+Formula 
+ (all,r,REG)         VNITROr(r) = sum(z, CZ:CZ2REG(z)=r, VNITROz(z));
+ 
+Equation 
+E_PNITROz  (all,z,CZ) p_PNITROz(z) = p_PNITROr(CZ2REG(z)) + t_PNITROz(z);
+E_QNITROr  (all,r,REG) p_QNITROr(r) = ENITROr(r) * p_PNITROr(r);
+E_PNITROr  (all,r,REG) VNITROr(r)*p_QNITROr(r) = sum{z,CZ:CZ2REG(z)=r, VNITROz(z)*p_QNITROz(z)};
+
+! regional market / price for non-lab fertilizer !
+Variable
+(all,r,REG)          p_QNLABORr(r) # Nitrogen use by reg (in 1000 MT) #;
+(all,r,REG)          p_PNLABORr(r) # Price of nitrogen by reg (in USD/MT) #;
+(all,z,CZ)          t_PNLABORz(z);
+
+Coefficient
+ (all,r,REG)        VNLABORr(r) # Value of Nit. fert. by reg (in 1000 USD) #;     
+
+Formula 
+ (all,r,REG)         VNLABORr(r) = sum(z, CZ:CZ2REG(z)=r, VNLABORz(z));
+ 
+Equation 
+E_PNLABORz  (all,z,CZ) p_PNLABORz(z) = p_PNLABORr(CZ2REG(z)) + t_PNLABORz(z);
+E_QNLABORr  (all,r,REG) p_QNLABORr(r) = ENLABORr * p_PNLABORr(r);
+E_PNLABORr  (all,r,REG) VNLABORr(r)*p_QNLABORr(r) = sum{z,CZ:CZ2REG(z)=r, VNLABORz(z)*p_QNLABORz(z)};
+
+
+Variable
+(levels) (all,r,REG) QCROPr(r) # Crop output by reg (in 1000 MT: Corn-eq.) #;
+(levels) (all,r,REG) PCROPr(r)  # Crop price by reg (in USD / MT)#;
+(levels) (all,r,REG) VCROPr(r)  # Value of crop output by reg (in 1000 USD) #; 
+
+Formula 
+ (initial)(all,r,REG)              VCROPr(r)    =  sum(z, CZ:CZ2REG(z) EQ r, VCROPz(z));
+ (initial)(all,r,REG)              QCROPr(r)    =  sum(z, CZ:CZ2REG(z) EQ r, QCROPz(z));
+ (initial)(all,r,REG)              PCROPr(r)    = VCROPr(r)/QCROPr(r);
+ (initial)(all,z,CZ) PCROPz(z) = PCROPr(CZ2REG(z));
+
+Equation 
+E_PCROPz  (all,z,CZ) p_PCROPz(z) = p_PCROPr(CZ2REG(z)) ;
+E_QCROPr  (aLL,r,REG)              VCROPr(r)*p_QCROPr(r) = sum{z,CZ:CZ2REG(z)=r, VCROPz(z)*p_QCROPz(z)};
+E_VCROPr  (aLL,r,REG)              p_VCROPr(r) = p_QCROPr(r) + p_PCROPr(r);
+!]]!
+
+!<  --------------------------------------------------------------------
+    condensation to make the model solve faster
+   --------------------------------------------------------------------    >!
+
+Substitute p_AOCROP  using E_AOCROP;
+Substitute p_AFNITRO using E_AFNITRO;
+Substitute p_AFLAND  using E_AFLAND;
+Substitute p_AFNLAND using E_AFNLAND;
+Substitute p_AFWATER using E_AFWATER;
+Substitute p_AFWATSG using E_AFWATSG;
+Substitute p_AFWEQPT using E_AFWEQPT;
+
+Substitute  p_PWEQPTz using E_PWEQPTz ;
+Substitute  p_QWEQPTz using E_QWEQPTz ;
+
+Substitute  p_QNLANDz using E_QNLANDz ;
+
+Backsolve p_PLANDWTRz using E_PLANDWTRz ;
+Backsolve p_PWATERz   using E_PWATERz ;
+
+Substitute  p_QWATSRFz using E_QWATSRFz ;
+Substitute  p_QWATGRDz using E_QWATGRDz ;
+Substitute  p_PWATSRFz using E_PWATSRFz ;
+Substitute  p_PWATGRDz using E_PWATGRDz ;
+
+Substitute  p_QWATSGz  using E_QWATSGz ;
+Substitute  p_PNLANDz  using E_PNLANDz ;
+Substitute  p_PWATSGz  using E_PWATSGz ;
+Substitute  p_QNITROz  using E_QNITROz ;
+Substitute  p_PNITROz  using E_PNITROz ;
+
+Omit s_QLANDWTRz ;
+Omit s_QCROPz;
+
+! labor!
+Omit s_QNLANDz;
+Omit s_PNLANDz;
+Omit s_QNLABORz;
+Omit s_QWATGRDz;
+Omit s_QWATSRFz;
+
+! PFP !
+!Omit p_AFLABORz;
+Omit p_AFNITROz  ;
+Omit p_AFLANDz  ;
+Omit p_AFNLANDz  ;
+Omit p_AFLANDWTRz  ;
+Omit p_AFWATERz  ;
+Omit p_AFWATSGz  ;
+Omit p_AFWEQPTz  ;
+Omit p_AFNLABORz  ;!
+
+!====================================================!
+! **** Aggregate CZ level results to labor shed **** !
+!====================================================!
+
+! calculate labor market outcomes at PR!
+Variable (all,z,CZ)  p_VLABORz(z);
+Variable (all,a,PR) p_PLABORa(a);
+Variable (all,a,PR) p_QLABORa(a);
+Variable (all,a,PR) p_VLABORa(a);
+
+Coefficient (all,a,PR) QLABORa(a);
+Coefficient (all,a,PR) VLABORa(a);
+Coefficient (all,z,CZ)  SHR_QLABORz(z);
+
+Formula 
+  (all,a,PR) QLABORa(a)                    = sum{z, CZ:CZ2PR(z) = a, QLABORz(z)};
+  (all,a,PR) VLABORa(a)                    = sum{z, CZ:CZ2PR(z) = a, VLABORz(z)};
+  (all,z,CZ)  SHR_QLABORz(z)                = QLABORz(z) / QLABORa(CZ2PR(z));
+
+Equation 
+E_VLABORz (all,z,CZ)   p_VLABORz(z)                   = p_QLABORz(z) + p_PLABORz(z) ;
+!E_QLABORa  (all,a,PR) QLABORa(a) * p_QLABORa(a)      = sum{z, CZ:CZ2PR(z) = a, QLABORz(z) * p_QLABORz(z)};!
+E_QLABORa (all,a,PR) p_QLABORa(a) = sum{z, CZ:CZ2PR(z) = a, SHR_QLABORz(z) * p_QLABORz(z)};
+E_VLABORa  (all,a,PR) VLABORa(a) * p_VLABORa(a)      = sum{z, CZ:CZ2PR(z) = a, VLABORz(z) * p_VLABORz(z)};
+E_PLABORa  (all,a,PR) p_VLABORa(a)                   = p_QLABORa(a) + p_PLABORa(a);
+
+! calculate land market outcomes at PR!
+Variable (all,z,CZ)  p_VLANDz(z);
+Variable (all,a,PR) p_PLANDa(a);
+Variable (all,a,PR) p_QLANDa(a);
+Variable (all,a,PR) p_VLANDa(a);
+
+Coefficient (all,a,PR) QLANDa(a);
+Coefficient (all,a,PR) VLANDa(a);
+
+Formula 
+  (all,a,PR) QLANDa(a)                    = sum{z, CZ:CZ2PR(z) = a, QLANDz(z)};
+  (all,a,PR) VLANDa(a)                    = sum{z, CZ:CZ2PR(z) = a, VLANDz(z)};
+
+Equation
+E_VLANDz (all,z,CZ)   p_VLANDz(z)                   = p_QLANDz(z) + p_PLANDz(z) ;
+E_QLANDa  (all,a,PR) QLANDa(a) * p_QLANDa(a)      = sum{z, CZ:CZ2PR(z) = a, QLANDz(z) * p_QLANDz(z)};
+E_VLANDa  (all,a,PR) VLANDa(a) * p_VLANDa(a)      = sum{z, CZ:CZ2PR(z) = a, VLANDz(z) * p_VLANDz(z)};
+E_PLANDa  (all,a,PR) p_VLANDa(a)                   = p_QLANDa(a) + p_PLANDa(a);
+
+! calculate non-lab market outcomes at PR!
+Variable (all,z,CZ)  p_VNLABORz(z);
+Variable (all,a,PR) p_PNLABORa(a);
+Variable (all,a,PR) p_QNLABORa(a);
+Variable (all,a,PR) p_VNLABORa(a);
+
+Coefficient (all,a,PR) VNLABORa(a);
+
+Formula 
+  (all,a,PR) VNLABORa(a)                    = sum{z, CZ:CZ2PR(z) = a, VNLABORz(z)};
+
+Equation
+E_VNLABORz (all,z,CZ)   p_VNLABORz(z)                 = p_QNLABORz(z) + p_PNLABORz(z) ;
+E_VNLABORa  (all,a,PR) VNLABORa(a) * p_VNLABORa(a)   = sum{z, CZ:CZ2PR(z) = a, VNLABORz(z) * p_VNLABORz(z)};
+E_PNLABORa  (all,a,PR) VNLABORa(a) * p_PNLABORa(a)   = sum{z, CZ:CZ2PR(z) = a, VNLABORz(z) * p_PNLABORz(z)};
+E_QNLABORa  (all,a,PR) p_VNLABORa(a)                 = p_QNLABORa(a) + p_PNLABORa(a); 
+
+! calculate non-lab market outcomes at PR!
+Variable (all,z,CZ)  p_VAUGLANDz(z);
+Variable (all,a,PR) p_PAUGLANDa(a);
+Variable (all,a,PR) p_QAUGLANDa(a);
+Variable (all,a,PR) p_VAUGLANDa(a);
+
+Coefficient (all,a,PR) VAUGLANDa(a);
+
+Formula 
+  (all,a,PR) VAUGLANDa(a)                    = sum{z, CZ:CZ2PR(z) = a, VAUGLANDz(z)};
+
+Equation
+E_VAUGLANDz (all,z,CZ)   p_VAUGLANDz(z)                 = p_QAUGLANDz(z) + p_PAUGLANDz(z) ;
+E_VAUGLANDa  (all,a,PR) VAUGLANDa(a) * p_VAUGLANDa(a)   = sum{z, CZ:CZ2PR(z) = a, VAUGLANDz(z) * p_VAUGLANDz(z)};
+E_PAUGLANDa  (all,a,PR) VAUGLANDa(a) * p_PAUGLANDa(a)   = sum{z, CZ:CZ2PR(z) = a, VAUGLANDz(z) * p_PAUGLANDz(z)};
+E_QAUGLANDa  (all,a,PR) p_VAUGLANDa(a)                 = p_QAUGLANDa(a) + p_PAUGLANDa(a); 
+
+! calculate LW market outcomes at PR!
+Variable (all,z,CZ)  p_VLANDWTRz(z);
+Variable (all,a,PR) p_PLANDWTRa(a);
+Variable (all,a,PR) p_QLANDWTRa(a);
+Variable (all,a,PR) p_VLANDWTRa(a);
+
+Coefficient (all,a,PR) VLANDWTRa(a);
+
+Formula 
+  (all,a,PR) VLANDWTRa(a)                    = sum{z, CZ:CZ2PR(z) = a, VLNDWTRz(z)};
+
+Equation
+E_VLANDWTRz (all,z,CZ)   p_VLANDWTRz(z)                 = p_QLANDWTRz(z) + p_PLANDWTRz(z) ;
+E_VLANDWTRa  (all,a,PR) VLANDWTRa(a) * p_VLANDWTRa(a)   = sum{z, CZ:CZ2PR(z) = a, VLNDWTRz(z) * p_VLANDWTRz(z)};
+E_PLANDWTRa  (all,a,PR) VLANDWTRa(a) * p_PLANDWTRa(a)   = sum{z, CZ:CZ2PR(z) = a, VLNDWTRz(z) * p_PLANDWTRz(z)};
+E_QLANDWTRa  (all,a,PR) p_VLANDWTRa(a)                 = p_QLANDWTRa(a) + p_PLANDWTRa(a); 

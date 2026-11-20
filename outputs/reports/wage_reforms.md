@@ -36,8 +36,8 @@ as a causal specification.
 | 2009-01-17 | ±60 days | 2610 | 17 | -1.6% | [-7.2%, +4.3%] |
 | 2009-01-17 | ±90 days | 3363 | 17 | -2.6% | [-7.7%, +2.7%] |
 | 2010-03-15 | ±30 days | 832 | 16 | +9.1% | [-0.1%, +19.2%] |
-| 2010-03-15 | ±60 days | 1809 | 17 | +8.7% | [+1.1%, +16.8%] |
-| 2010-03-15 | ±90 days | 2551 | 17 | +9.9% | [+1.8%, +18.5%] |
+| 2010-03-15 | ±60 days | 1810 | 17 | +8.7% | [+1.1%, +16.8%] |
+| 2010-03-15 | ±90 days | 2552 | 17 | +9.8% | [+1.8%, +18.5%] |
 
 The weekly all-case disclosure count around March 15, 2010 falls from
 **268 in the preceding week to 35 in the following week**.
@@ -107,12 +107,12 @@ not establish changes in the regulatory population.
 
 | FY | Herder positions | % of program positions | Herder businesses | % of program businesses | Herder cases | Median monthly offer |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2013 | 2,180 | 2.21% | 609 | 10.12% | 314 | $750.00 |
-| 2014 | 2,532 | 2.17% | 532 | 8.49% | 385 | $750.00 |
+| 2013 | 2,180 | 2.21% | 608 | 10.11% | 314 | $750.00 |
+| 2014 | 2,532 | 2.17% | 532 | 8.50% | 385 | $750.00 |
 | 2015 | 2,498 | 1.79% | 590 | 8.77% | 389 | $750.00 |
 | 2016 | 2,386 | 1.44% | 469 | 6.64% | 631 | $1,206.31 |
-| 2017 | 2,409 | 1.20% | 455 | 6.03% | 924 | $1,389.67 |
-| 2018 | 2,255 | 0.93% | 470 | 5.66% | 895 | $1,584.22 |
+| 2017 | 2,409 | 1.20% | 454 | 6.01% | 924 | $1,389.67 |
+| 2018 | 2,255 | 0.93% | 470 | 5.67% | 895 | $1,584.22 |
 
 Positions are **certified positions, not unique workers or visas**. Cases are
 counted once using the upstream national-audit singleton/master rule. Employer
@@ -160,14 +160,14 @@ absence from a disclosure year is not proof that a business closed.
 
 | FY | Participation contrast vs FY2014 | Conditional 95% interval | Herder firms | Hourly firms | States | Conditional MDE |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2012 | -10.3 pp | [-19.4, -1.2] pp | 183 | 947 | 11 | 12.6 pp |
-| 2013 | -2.7 pp | [-9.2, +3.7] pp | 183 | 947 | 11 | 8.9 pp |
-| 2015 | -15.6 pp | [-23.7, -7.5] pp | 183 | 947 | 11 | 11.2 pp |
-| 2016 | -18.1 pp | [-29.1, -7.1] pp | 183 | 947 | 11 | 15.1 pp |
-| 2017 | -16.6 pp | [-27.3, -5.8] pp | 183 | 947 | 11 | 14.8 pp |
-| 2018 | -15.5 pp | [-25.0, -5.9] pp | 183 | 947 | 11 | 13.2 pp |
+| 2012 | -10.3 pp | [-19.4, -1.2] pp | 183 | 946 | 11 | 12.6 pp |
+| 2013 | -2.7 pp | [-9.2, +3.7] pp | 183 | 946 | 11 | 8.9 pp |
+| 2015 | -14.8 pp | [-22.9, -6.8] pp | 183 | 946 | 11 | 11.0 pp |
+| 2016 | -17.3 pp | [-28.5, -6.2] pp | 183 | 946 | 11 | 15.3 pp |
+| 2017 | -16.6 pp | [-27.3, -5.8] pp | 183 | 946 | 11 | 14.8 pp |
+| 2018 | -15.5 pp | [-25.0, -5.9] pp | 183 | 946 | 11 | 13.2 pp |
 
-The contrast is already **-15.6 percentage points in FY2015**,
+The contrast is already **-14.8 percentage points in FY2015**,
 which ends September 30, before the November 16 wage increase. By FY2018 it is
 -15.5 points. Thus the apparent post-2015 difference
 largely inherits an earlier decline. Anticipation of the rule or the June 2014
@@ -181,7 +181,7 @@ The original fixed cohort contains 183 geographically
 supported strict herder businesses. By FY2018, 26
 have a positive-certified return under the balanced IDs. Allowing a return
 through any baseline-linked high-recall ID reaches
-**59**; the conservative tier reaches
+**60**; the conservative tier reaches
 5. These are alternative identity
 reachability diagnostics for the **same baseline entities**, not corrected
 business counts or interchangeable causal estimates. Exact nonempty raw

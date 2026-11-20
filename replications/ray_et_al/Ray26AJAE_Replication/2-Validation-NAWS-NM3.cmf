@@ -1,0 +1,129 @@
+! SIMPLEG-LSPR5 = SIMPLEG-LSPR4 
+! run with simplez.tab!
+! except validation vars, and fix sub-reg arm and ESUB-DM (07-06-2023)
+ ! Options
+ ! ------------     
+  start with mmnz = 59000; !50000;
+  dpn = yes ;
+  cpu = yes ;
+!  LU decompose transpose = yes ;      ! default is NO
+ ! -------------------
+
+ ! Input files
+ ! ------------
+  File CZSETS   = in\CZSETS.har    ; !
+  File CZDATA   = in\CZDATA.har    ; !  
+  File REGPARM  = in\REGPARM.har   ; !  parameter data from GRIDPARM PFP\in\GRIDPARM
+  File CZPARM   = in\CZPARM.har    ; !  parameter data calculated in R
+  File LABMRKT  = in\LMS_ERS10.har ; ! LMS = USDA production regions + Western Flank + NAWS data
+  File ESTIPARM = shf\FSE-NAWS_NM.har ; 
+
+ ! Output files
+ ! ------------
+  LOG file      = out\<cmf>.LOG; 
+  Solution file = out\<cmf>;
+  Updated file CZDATA   = out\CZ<cmf>.upd ;
+  condensation information file = out\<cmf>-cond.txt;
+
+
+ ! Closure
+ ! -------
+ !                    EFFICIENCY VARIABLES (also exogenous)
+Exogenous  p_AOCROPz  ;! efficiency index by LMS for CROP
+
+Exogenous  p_AFNITROa ;
+Exogenous  p_AFNLANDa  ;! efficiency index by reg for NLAND
+Exogenous  p_AFLABORa  ;
+Exogenous  p_AFNLABORa  ;
+Exogenous  p_AFLANDWTRa  ;! efficiency index by reg for LAND+WTR
+
+Exogenous  p_AFLABORz  ;
+Exogenous  p_AFNLABORz  ;
+Exogenous  p_AFLANDWTRz  ;! efficiency index by reg for LAND+WTR
+Exogenous  p_AFNITROz  ;
+Exogenous  p_AFLANDz  ;
+Exogenous  p_AFNLANDz  ;
+Exogenous  p_AFWATERz  ;
+Exogenous  p_AFWATSGz  ;
+Exogenous  p_AFWEQPTz  ;
+
+Exogenous  p_AOCROPr  ;! efficiency index by reg for CROP
+Exogenous  p_AFNITROr  ;! efficiency index by reg for NITRO
+Exogenous  p_AFLANDr  ;! efficiency index by reg for LAND
+Exogenous  p_AFNLANDr  ;! efficiency index by reg for NLAND
+Exogenous  p_AFLANDWTRr  ;! efficiency index by reg for LAND+WTR
+Exogenous  p_AFWATERr  ;! efficiency index by reg for WATER
+Exogenous  p_AFWATSGr  ;! efficiency index by reg for WATSG
+Exogenous  p_AFWEQPTr  ;! efficiency index by reg for WEQPT
+Exogenous  p_AFLABORr  ;! efficiency index by grid & ltype for LABOR
+Exogenous  p_AFNLABORr  ;! efficiency index by grid & ltype for NLABOR
+ 
+ !                   POLICY VARIABLES (also exogenous)
+! turn on slack and off p_PCROPr when putting back national model
+Exogenous  s_PCROPz;
+
+!   Land water levers                                             !
+Exogenous  s_QWATERz   ;! Slack to control water use by grid !
+Exogenous  s_QLANDz     ;! Slack to target corn-soy harvested area by grid (in 1000 ha) !;
+Exogenous t_PNLABORz;
+Exogenous t_PNITROz;
+
+Exogenous  s_QAUGLANDz ;
+
+! labor!
+Exogenous  s_QLABORz;
+Exogenous  s_QLABORa;
+
+Exogenous t_PAUGLANDz; ! added 02/20
+REST Endogenous;
+
+Swap p_QAUGLANDz    = s_QAUGLANDz; ! define production exogenously in all CZ 
+Swap p_QWATERz      = s_QWATERz;
+Swap p_PNLABORz     = t_PNLABORz;
+
+
+ ! Verbal description and solution method
+ ! ------------------
+Verbal Description = <cmf>;
+Method = Gragg;
+Steps = 4 6 8;
+subintervals = 5;
+
+ automatic accuracy = No; ! GEMPACK decides how many steps, sub-int rqd to achieve the accuracy
+ accuracy figures = 2;
+ accuracy percent = 95; ! min 80 rqd with YES
+ minimum subinterval length =  0.001; ! default is 0.000001 ( 10-6 )
+ minimum subinterval fails = stop;
+ accuracy criterion = both;
+ LU decompose transpose=yes;
+  
+ 
+! ************** !
+! Shocks Section !
+! ************** !
+! Change in crop production q_agg (2002-2017)  
+Shock p_QAUGLANDz(US_CZ)        = file shf\OBS_DATA.har   header "QAUG";
+
+! add change in water use and rent 
+Shock p_QWATERz(US_CZ)          = file shf\OBS_DATA.har   header "QWAT";
+Shock p_PNLABORz(US_CZ)         = file shf\OBS_DATA.har   header "PNLB";
+
+! add shocks to land and labor
+Shock s_QLANDz(US_CZ)           = file shf\OBS_DATA.har   header "PHIC";
+Shock s_QLABORz(US_CZ)          = file shf\NonAg_M.har    header "PHIL";
+
+! estimated PFP, ESLZ, ELAB
+! PFP
+Shock p_AFLABORz(US_CZ)    = file shf/FSE-NAWS_NM.har header "AFL";
+Shock p_AFNLABORz(US_CZ)   = file shf/FSE-NAWS_NM.har header "AFZ";
+Shock p_AFLANDWTRz(US_CZ)  = file shf/FSE-NAWS_NM.har header "AFR";
+
+! decompose
+Subtotal p_QAUGLANDz(US_CZ) = Q;
+Subtotal p_AFLABORz(US_CZ) = AFL;
+Subtotal p_AFNLABORz(US_CZ) = AFZ;
+Subtotal p_AFLANDWTRz(US_CZ) = AFR;
+Subtotal s_QLANDz(US_CZ) = PHIC;
+Subtotal s_QLABORz(US_CZ) = PHIL;
+Subtotal p_QWATERz(US_CZ) = QW;
+Subtotal p_PNLABORz(US_CZ) = PZ;

@@ -5,7 +5,7 @@
   "interpretation": "Diagnostic response and support investigation; no causal elasticity is authorized by this registry.",
   "known_evidence": "FY2014 title/monthly-pay screening found 2532 certified herder positions and 532 linked businesses; raw low wages conflict with California worksite evidence. Early SOC and requested-position fields are absent.",
   "source_years": [2008, 2019],
-  "linkage": {"unit": "worksite_business", "version": "v2", "tier": "balanced", "input_max_year": 2024, "review_status": "complete"},
+  "linkage": {"unit": "worksite_business", "version": "v2", "tier": "balanced", "input_max_year": 2026, "review_status": "pending"},
   "case_rule": "Positive-certified unique source rows; retain a singleton or the B01 national-audit master flag. Fail on duplicate selected case-year keys or uncovered positive case-years. Do not allocate case totals to employer members.",
   "date_rule": "Parse source ISO dates without repairs. Contract dates use the first observed certification, job, requested date, in that order, accommodating the disclosure field change in FY2016. Receipt dates must lie within fiscal_year minus two through fiscal_year; contract dates must lie within fiscal_year minus one through fiscal_year plus one and end on/after start. Record exclusions. Fiscal cohorts are not policy dates.",
   "wage_rule": "Nominal dollars in the source pay unit. Hourly HOUR/HR and monthly MONTH/MTH only. Wage samples require a positive numeric rate; no imputation, deflation, winsorization, or conversion of monthly wages to hourly wages.",

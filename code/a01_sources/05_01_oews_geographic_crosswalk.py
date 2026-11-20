@@ -230,6 +230,12 @@ def _(oews_path, pl):
         oews_df_1 = oews_df_1.rename(rename_map).with_columns(
             pl.lit(y).cast(pl.Int32).alias("year")
         )
+        # From May 2024, New England areas are county-based and the file has no
+        # township column; each row then covers its whole county ("000").
+        if "oews_township_code" not in oews_df_1.columns:
+            oews_df_1 = oews_df_1.with_columns(
+                pl.lit("000").alias("oews_township_code")
+            )
         oews_df_1 = oews_df_1.select(
             [
                 c

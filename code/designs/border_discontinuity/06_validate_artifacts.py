@@ -46,6 +46,50 @@ def _():
             raise ValueError(f"{name} contains nonfinite values in {', '.join(columns)}")
 
 
+    def validate_annual_bootstrap_intervals(frame) -> None:
+        """Retain declared inversion failures without accepting fabricated intervals."""
+        for row in frame.itertuples(index=False):
+            endpoints = np.asarray([row.wcb_confidence_low, row.wcb_confidence_high], dtype=float)
+            if not np.isfinite(row.wcb_p_value) or not 0 <= row.wcb_p_value <= 1:
+                raise ValueError("annual WCB p-value must remain finite and valid")
+            if row.wcb_status == "ok":
+                valid = np.isfinite(endpoints).all() and endpoints[0] <= endpoints[1]
+            elif row.wcb_status == "unbounded":
+                valid = not np.isnan(endpoints).any() and np.isinf(endpoints).any() and endpoints[0] <= endpoints[1]
+            elif row.wcb_status == "inversion_failed":
+                valid = np.isnan(endpoints).any()
+            else:
+                valid = False
+            if not valid:
+                raise ValueError("annual WCB interval disagrees with its declared status")
+
+
+    def validate_requested_margin(detail, source, source_column) -> None:
+        aligned = detail.merge(
+            source[["county_fips", "year", source_column]].rename(
+                columns={source_column: "source_requested_positions"}
+            ), on=["county_fips", "year"], how="left", validate="one_to_one",
+            indicator=True,
+        )
+        if not aligned["_merge"].eq("both").all() or not np.allclose(
+            aligned["requested_positions"], aligned["source_requested_positions"],
+            equal_nan=True, atol=1e-9, rtol=1e-12,
+        ):
+            raise ValueError("requested-position diagnostics must preserve source values and missingness")
+
+
+    def validate_requested_totals(summary, detail, keys) -> None:
+        expected = detail.groupby(keys)["requested_positions"].agg(
+            lambda values: values.sum(skipna=False)
+        ).rename("expected_requested_positions").reset_index()
+        aligned = summary.merge(expected, on=keys, how="outer", validate="one_to_one", indicator=True)
+        if not aligned["_merge"].eq("both").all() or not np.allclose(
+            aligned["total_requested_positions"], aligned["expected_requested_positions"],
+            equal_nan=True, atol=1e-8, rtol=1e-12,
+        ):
+            raise ValueError("requested-position totals must preserve missing component values")
+
+
     def expected_model_ids(config: dict[str, object]) -> set[str]:
         benchmark_ids = set(config["benchmark_geography_ids"])
         specifications = [
@@ -549,7 +593,9 @@ def _():
         require_finite(calibration, ["sigma", "observed_residual_ss", "expected_unit_residual_ss", "expected_unit_residual_ss_mc_se"], "power calibration")
         if (calibration[["sigma", "observed_residual_ss", "expected_unit_residual_ss"]] <= 0).any().any() or not np.allclose(np.square(calibration["sigma"]), calibration["observed_residual_ss"] / calibration["expected_unit_residual_ss"]):
             raise ValueError("power scale is not calibrated to the declared residual variation")
-        if set(calibration["calibration_repetitions"]) != {settings["calibration_repetitions"]} or set(calibration["seed"]) != {settings["seed"]} or set(calibration["ar1"]) != {settings["ar1"]} or set(calibration["n_preperiod_years"]) != {3} or set(calibration["n_policy_years"]) != {12}:
+        expected_pre_years = config["placebo_end_year"] - config["placebo_start_year"] + 1
+        expected_policy_years = config["policy_end_year"] - config["policy_start_year"] + 1
+        if set(calibration["calibration_repetitions"]) != {settings["calibration_repetitions"]} or set(calibration["seed"]) != {settings["seed"]} or set(calibration["ar1"]) != {settings["ar1"]} or set(calibration["n_preperiod_years"]) != {expected_pre_years} or set(calibration["n_policy_years"]) != {expected_policy_years}:
             raise ValueError("power calibration history or resource guards differ from registry")
         for row in calibration.itertuples(index=False):
             expected_projection = "unit_and_stratum_year_FE_only_no_wage_regressor" if row.scale_information == "preperiod_only" else "unit_and_stratum_year_FE_plus_full_policy_regressors"
@@ -1164,6 +1210,11 @@ def _():
         full_panel = pq.read_table(panel_path).to_pandas()
         if full_panel.empty or full_panel.duplicated(["county_fips", "year"]).any():
             raise ValueError("border panel must have unique, nonempty county-year keys")
+        expected_panel_years = set(range(config["placebo_start_year"], config["policy_end_year"] + 1))
+        if set(full_panel["year"]) != expected_panel_years or not (
+            full_panel.groupby("county_fips")["year"].nunique() == len(expected_panel_years)
+        ).all():
+            raise ValueError("border panel does not cover the complete declared calendar")
         require_columns(
             full_panel,
             set(config["diagnostic_margin_columns"].values()),
@@ -1494,12 +1545,11 @@ def _():
                 "crv3_jackknife_confidence_level",
                 "crv3_jackknife_clusters",
                 "wcb_p_value",
-                "wcb_confidence_low",
-                "wcb_confidence_high",
                 "n_inference_clusters",
             ],
             "annual coefficient output",
         )
+        validate_annual_bootstrap_intervals(annual)
         if (
             set(annual["wcb_method"]) != {bootstrap["method"]}
             or set(annual["wcb_bootstrap_type"]) != {bootstrap["bootstrap_type"]}
@@ -1742,7 +1792,6 @@ def _():
                 "within_outcome",
                 "within_treatment",
                 "model_residual",
-                "requested_positions",
                 "certified_positions",
                 "applications",
                 "balanced_linked_worksite_businesses",
@@ -1805,16 +1854,18 @@ def _():
             set(change_columns),
             "county-year annual-change decomposition",
         )
-        first_year = county_year_decomposition["year"].eq(config["policy_start_year"])
-        if (
-            county_year_decomposition.loc[first_year, change_columns].notna().any().any()
-            or not np.isfinite(
-                county_year_decomposition.loc[~first_year, change_columns]
-                .apply(pd.to_numeric, errors="coerce")
-                .to_numpy()
-            ).all()
-        ):
-            raise ValueError("county-year annual changes do not follow the panel timing")
+        ordered_changes = county_year_decomposition.sort_values(["county_fips", "year"])
+        consecutive = ordered_changes.groupby("county_fips")["year"].diff().eq(1)
+        for change_column in change_columns:
+            base_column = change_column.removesuffix("_annual_change")
+            expected_change = ordered_changes.groupby("county_fips")[base_column].diff().where(consecutive)
+            if not np.allclose(ordered_changes[change_column], expected_change,
+                               equal_nan=True, atol=1e-9, rtol=1e-12):
+                raise ValueError("county-year annual changes do not follow source timing/missingness")
+        validate_requested_margin(
+            county_year_decomposition, full_panel,
+            config["diagnostic_margin_columns"]["requested_positions"],
+        )
 
         county_decomposition = pd.read_csv(
             county_decomposition_path,
@@ -1828,6 +1879,7 @@ def _():
             != set(county_year_decomposition["county_fips"])
         ):
             raise ValueError("county decomposition does not cover the primary sample")
+        validate_requested_totals(county_decomposition, county_year_decomposition, ['county_fips'])
         require_finite(
             county_decomposition,
             [
@@ -1891,13 +1943,13 @@ def _():
             ).any()
         ):
             raise ValueError("stratum-region-year decomposition has an invalid registry")
+        validate_requested_totals(stratum_region_year, county_year_decomposition, ['stratum_id', 'aewr_region_id', 'year'])
         require_finite(
             stratum_region_year,
             [
                 "n_counties",
                 "observed_treatment",
                 "mean_outcome",
-                "total_requested_positions",
                 "total_certified_positions",
                 "total_applications",
                 "summed_balanced_linked_worksite_businesses",
@@ -1943,12 +1995,12 @@ def _():
             != primary_regions
         ):
             raise ValueError("region decomposition has the wrong AEWR registry")
+        validate_requested_totals(region_decomposition, county_year_decomposition, ['aewr_region_id'])
         require_finite(
             region_decomposition,
             [
                 "n_counties",
                 "n_observations",
-                "total_requested_positions",
                 "total_certified_positions",
                 "total_applications",
                 "mean_balanced_linked_worksite_businesses",
@@ -1997,12 +2049,12 @@ def _():
             != primary_pairs
         ):
             raise ValueError("border-pair decomposition has the wrong registry")
+        validate_requested_totals(border_pair_decomposition, county_year_decomposition, ['region_pair_id'])
         require_finite(
             border_pair_decomposition,
             [
                 "n_counties",
                 "n_observations",
-                "total_requested_positions",
                 "total_certified_positions",
                 "total_applications",
                 "mean_balanced_linked_worksite_businesses",

@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>AEWR Identification Notes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~68ch) with charts allowed to run to 860px; two parts, numbered because the derivation is a sequence. */
+:root {
+  --bg: #f7f8f9; --surface: #ffffff; --fg: #15191d; --muted: #5a626b; --rule: #d9dde2;
+  --accent: #1f5f8b; --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --neutral: #c9ccd1;
+  --heat-neg: #2a78d6; --heat-pos: #eb6834; --heat-mid: #e9eaec;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Literata", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171a; --surface: #1b1f23; --fg: #e9ecef; --muted: #a2aab3; --rule: #333a41;
+  --accent: #79b4e0; --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --neutral: #4a525b;
+  --heat-neg: #3987e5; --heat-pos: #d95926; --heat-mid: #2a2f35; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14171a; --surface: #1b1f23; --fg: #e9ecef; --muted: #a2aab3; --rule: #333a41;
+  --accent: #79b4e0; --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --neutral: #4a525b;
+  --heat-neg: #3987e5; --heat-pos: #d95926; --heat-mid: #2a2f35; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.62 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: 2.1rem; margin: 0 0 .4rem; }
+h2 { font-size: 1.45rem; margin: 3.2rem 0 .6rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.12rem; margin: 2rem 0 .4rem; }
+.eyebrow { font-family: var(--mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.08rem; color: var(--muted); }
+p { margin: .7rem 0; }
+code, .num { font-family: var(--mono); font-size: .88em; }
+.num { font-variant-numeric: tabular-nums; }
+.takeaway { border-left: 3px solid var(--accent); padding: .2rem 0 .2rem 1rem; margin: 1.2rem 0; }
+.figure { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; margin: 1.2rem 0; }
+.figure .cap { font-family: var(--display); font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+.figure .sub { color: var(--muted); font-size: .85rem; margin-bottom: 10px; }
+.scroll { overflow-x: auto; }
+svg text { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+svg .lab { fill: var(--fg); }
+table { border-collapse: collapse; font-size: .88rem; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--rule); text-align: right; vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; color: var(--muted); }
+td:first-child, th:first-child { text-align: left; }
+.eq { overflow-x: auto; margin: .8rem 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--muted); margin-top: 8px; font-family: var(--mono); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.panels > div { min-width: 0; }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--fg); border: 1px solid var(--rule);
+  border-radius: 4px; padding: 6px 8px; font: 12px/1.4 var(--mono); box-shadow: 0 2px 8px rgba(0,0,0,.15); z-index: 20; }
+ol.steps li { margin: .35rem 0; }
+.src { font-size: .82rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+
+<main>
+<div class="prose">
+<div class="eyebrow">H-2A paper · panel IV · working note</div>
+<h1>AEWR Identification Notes</h1>
+<p class="lede">Where the identifying variation in the panel IV comes from, and a derivation of why its first stage is strong by construction and what its validity rests on.</p>
+<p>Part 1 describes the data. Part 2 derives the first stage and the bias of OLS and IV in a model with subregion shocks, then tests the key assumption against the data. Every number comes from the retained panel (<code>data/processed/panel_iv_county_year.parquet</code>) and the column 4 specification unless stated otherwise.</p>
+</div>
+
+<h2>Part 1. What the data look like</h2>
+
+<div class="prose">
+<h3>The treatment: 17 regional wages, mostly moving together</h3>
+<p>The real AEWR varies only by AEWR region and year: 17 regions × 14 policy years (2011–2024) give 238 distinct values. County fixed effects absorb each region's level, and year fixed effects absorb the common path. What remains is the only variation the design can use.</p>
+</div>
+
+<div class="figure">
+  <div class="cap">Variance of the real AEWR across 238 region-years</div>
+  <div class="sub">Share explained by year effects, then region effects; the residual is the identifying variation.</div>
+  <div id="decomp"></div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--neutral)"></span>Year effects 74.3%</span>
+    <span><span class="sw" style="background:var(--series-1)"></span>Region effects 21.7%</span>
+    <span><span class="sw" style="background:var(--series-2)"></span>Residual 4.0%</span>
+  </div>
+</div>
+
+<div class="prose">
+<p>The raw SD of the real AEWR is <span class="num">$2.30</span> around a mean of <span class="num">$13.01</span>. After region and year effects the SD is <span class="num">$0.46</span>, about 3.5% of the mean. The residual is persistent: its within-region first-order autocorrelation is <span class="num">0.64</span>. A region that is above trend this year usually stays above trend next year.</p>
+</div>
+
+<div class="figure">
+  <div class="cap">AEWR after removing region and year means (real 2012 $)</div>
+  <div class="sub">Regions sorted by residual SD. Blue is below the region's usual position relative to other regions, orange is above.</div>
+  <div class="scroll"><div id="heat"></div></div>
+  <div class="legend" id="heatlegend"></div>
+</div>
+
+<div class="prose">
+<h3>The regions with the most variation have the fewest counties</h3>
+<p>California, Pacific, Mountain II and Florida have the largest residual movements, and together hold 310 of 3,108 counties. The Plains and Corn Belt regions hold many counties but move little. Every county-year gets equal weight in the regressions, so the county-weighted residual SD is only <span class="num">$0.37</span>, below the <span class="num">$0.46</span> across region-years.</p>
+</div>
+
+<div class="figure">
+  <div class="cap">Residual AEWR SD by region, with counties and share of H-2A certified workers</div>
+  <div class="sub">Certified-worker shares sum 2011–2023 start-year counts.</div>
+  <div class="scroll"><div id="regions"></div></div>
+</div>
+
+<div class="prose">
+<h3>The outcomes: most of their variation is at a level the AEWR cannot reach</h3>
+<p>The table decomposes each outcome in the estimation sample. County and year effects explain one-half to four-fifths of the variance. Of what is left, only 4–9% is common to a region-year. That is the only part a region-year treatment can explain. The other 91–96% is county-specific noise, and it sets the size of the standard errors.</p>
+</div>
+<div class="figure scroll">
+<table>
+<thead><tr><th>Outcome (per 2011 farm worker unless noted)</th><th>County-years</th><th>Mean</th><th>Share zero</th><th>R² of county + year FE</th><th>Region-year share of residual</th><th>Corr. of region-year residual with AEWR residual</th></tr></thead>
+<tbody>
+<tr><td>Certified workers</td><td>36,239</td><td>0.091</td><td>35%</td><td>0.66</td><td>5.1%</td><td>−0.26</td></tr>
+<tr><td>Certified hours</td><td>36,239</td><td>85.1</td><td>35%</td><td>0.68</td><td>3.7%</td><td>−0.26</td></tr>
+<tr><td>Applications</td><td>36,239</td><td>0.0054</td><td>34%</td><td>0.81</td><td>9.0%</td><td>−0.27</td></tr>
+<tr><td>Linked worksite businesses</td><td>36,239</td><td>0.0115</td><td>35%</td><td>0.48</td><td>6.6%</td><td>−0.23</td></tr>
+<tr><td>Positions per application</td><td>23,827</td><td>16.7</td><td>1%</td><td>0.60</td><td>7.0%</td><td>0.02</td></tr>
+<tr><td>Hours per position</td><td>23,550</td><td>1,293</td><td>0%</td><td>0.65</td><td>8.3%</td><td>−0.28</td></tr>
+</tbody></table>
+<p class="src">Region-year shares are the variance of region-year means of the two-way residual over the variance of the residual. Correlations are across region-year means, without controls.</p>
+</div>
+
+<div class="prose">
+<p>H-2A use is concentrated. The top 1% of counties (31) account for 34% of certified workers over 2011–2023, the top 5% for 63%, and 83 counties for half. Only 35% of county-years are zero. That is partly mechanical: 38% of county-year worker counts are non-integer, because multi-county cases are allocated across counties, so many counties carry small fractional amounts. The number of counties with any certified workers rose from 1,223 in 2011 to 2,854 in 2024.</p>
+
+<h3>The instrument: a regional OEWS wage measured on donor subregions</h3>
+<p>About 69% of the instrument's two-way residual variation is common to a region-year. The other 31% differs across target subregions within a region-year, where the AEWR does not vary. That part can only add noise to the first stage. Across region-years, the instrument's residual correlates <span class="num">0.45</span> with the AEWR residual. A plain unweighted average of county OEWS Big-Six wages over the whole region, with no calibration and no donor selection, correlates <span class="num">0.59</span>.</p>
+</div>
+
+<div class="figure">
+  <div class="cap">AEWR residual against two wage predictors, region-years 2012–2024</div>
+  <div class="sub">Both axes after region and year means; real 2012 $. 2011 is missing because the unweighted OEWS mean lacks 2010 source data.</div>
+  <div class="panels"><div id="sc1"></div><div id="sc2"></div></div>
+</div>
+
+<div class="prose takeaway">
+<p><strong>The short version.</strong> The design identifies off about 220 region-year deviations with an SD near 40 cents, concentrated in a handful of western and southern regions. The outcomes are dominated by county noise that the AEWR cannot explain. The instrument predicts the AEWR about as well as a plain regional OEWS average, while leaving out the target's own subregion.</p>
+</div>
+
+<h2>Part 2. Why the first stage is strong, and what makes it valid</h2>
+
+<div class="prose">
+<h3>1. Notation</h3>
+<p>County \(c\) is in AEWR region \(r(c)\) and target subregion \(T = g(c)\). Each region is split into five crop, climate and soil subregions. The target's donors are the two subregions most dissimilar to it, written \(D\). The remaining two are \(N\). Policy year is \(t\). Source year is \(s = t-1\).</p>
+<p>The second and first stages are</p>
+<div class="eq">\[ y_{ct} = \beta A_{r(c)t} + X_{ct}'\gamma + \alpha_c + \delta_t + u_{ct}, \qquad A_{r t} = \pi Z_{T t} + X_{ct}'\phi + a_c + d_t + v_{ct}, \]</div>
+<p>where \(A_{rt}\) is the real AEWR and the instrument is the calibrated average of donor wages from the source year:</p>
+<div class="eq">\[ Z_{Tt} = \sum_{c' \in D} p_{c's}\, \omega_{c's}. \]</div>
+<p>Here \(\omega_{c's}\) is the real OEWS Big-Six hourly wage of the OEWS area containing \(c'\), and \(p_{c's}\) are the entropy-calibrated weights. Donor counties whose OEWS area overlaps the target's get zero weight. A tilde denotes a variable after county and year effects (and controls).</p>
+
+<h3>2. What the AEWR is</h3>
+<p>For field and livestock workers, the AEWR for year \(t\) is the Farm Labor Survey's annual average gross hourly wage for region \(r\) in year \(t-1\). In our data the two agree in all 238 region-years. The FLS wage is a sample estimate of the hours-weighted regional farm wage. Grouping counties by subregion,</p>
+<div class="eq">\[ A_{rt} = \sum_{c \in r} h_{cs}\, w_{cs} + e_{rs} = H_{T}\,\bar w_{Ts} + H_{D}\,\bar w_{Ds} + H_{N}\,\bar w_{Ns} + e_{rs}, \]</div>
+<p>where \(w_{cs}\) is the county farm wage, \(h_{cs}\) the county's share of regional hired farm hours, \(H_k\) the share of subregion group \(k\), \(\bar w_{ks}\) its hours-weighted wage, and \(e_{rs}\) the survey's sampling error. Every subregion, including the target, helps set its own AEWR.</p>
+
+<h3>3. A model with subregion shocks</h3>
+<p>Each county wage has a county level, a national year effect, a shock to its subregion \(\lambda_{ks}\), and a county shock \(\varepsilon_{cs}\):</p>
+<div class="eq">\[ w_{cs} = m_c + b_s + \lambda_{k(c)s} + \varepsilon_{cs}. \]</div>
+<p>Subregion shocks can be correlated within a region; how strongly is the question. The target's shock has a part that also shifts its H-2A demand directly, \(d_{Ts}\), and a part that does not: \(\lambda_{Ts} = \kappa\, d_{Ts} + \eta_{Ts}\). Donor OEWS wages load on the donors' shock with pass-through \(\theta\), plus OEWS-specific noise:</p>
+<div class="eq">\[ \omega_{c's} = m'_{c'} + b'_s + \theta\,\lambda_{Ds} + \mu_{c's}. \]</div>
+<p>After county and year effects, with county shocks averaging out over many counties,</p>
+<div class="eq">\[ \tilde A_{rt} = H_T\tilde\lambda_{Ts} + H_D\tilde\lambda_{Ds} + H_N\tilde\lambda_{Ns} + \tilde e_{rs}, \qquad \tilde Z_{Tt} = \theta\,\tilde\lambda_{Ds} + \bar\mu_{Ts} \;+\; \text{weight terms}, \]</div>
+<div class="eq">\[ \tilde y_{ct} = \beta\,\tilde A_{rt} + \psi\,\tilde d_{Ts} + \tilde u_{ct}. \]</div>
+<p>The sampling error \(e\), the OEWS noise \(\mu\) and the outcome error \(u\) are uncorrelated with everything else. \(\psi \neq 0\) is the source of endogeneity: the shocks behind the target's part of last year's wage persist into this year's demand for workers.</p>
+
+<h3>4. The first stage</h3>
+<div class="eq">\[ \operatorname{Cov}(\tilde A, \tilde Z) = \theta\,\Big[\underbrace{H_D\operatorname{Var}(\lambda_D)}_{\text{donors set part of the AEWR}} + \underbrace{H_T\operatorname{Cov}(\lambda_D,\lambda_T)}_{\text{donors move with the target}} + H_N\operatorname{Cov}(\lambda_D,\lambda_N)\Big]. \]</div>
+<p>Relevance needs no behavioral response and no feature of the calibration. The AEWR is an average of the region's wages, the donors' wages are part of that average, so a measure of donor wages predicts it. That is what "strong by construction" means. It is a statement about relevance only.</p>
+<p>The first term is the useful one: the donors' own shocks feed into the AEWR through their weight in the FLS. The second term is the problem: it is relevance that comes from donors sharing the target's shocks.</p>
+<p>The data agree that relevance comes from wages. The Kitagawa decomposition puts the instrument's strength in the donor-wage component. The weight component alone has F ≤ 3.1 under every calibration target and ρ tried.</p>
+
+<h3>5. The literal mechanical channel through the wage target</h3>
+<p>The wage-only and preferred calibrations also target the FLS wage, which is \(A_{rt}\) itself. With one standardized moment \(x\) (prior mean \(\bar x\), prior SD \(s\)) and soft entropy calibration, the weights are an exponential tilt of the prior \(q\): \(p_{c} \propto q_{c}\exp(\tau x_c/s)\). Minimizing \(\mathrm{KL}(p\|q) + \tfrac{\rho}{2}(\text{moment} - \text{target})^2\) to first order gives</p>
+<div class="eq">\[ \tau \approx \frac{\rho}{1+\rho}\cdot\frac{A_{rt} - \bar x}{s}, \qquad Z_{Tt} \approx \sum_{c'} q_{c'}\omega_{c'} + \tau\,\operatorname{Cov}_q\!\left(\tfrac{x}{s},\, \omega\right). \]</div>
+<p>So the weight component contains a scaled copy of the endogenous variable, \(z^{\text{weight}} \approx k(\rho)\,(A_{rt} - \bar x)\), including the target's own shock. At \(\rho = 0.10\), \(\rho/(1+\rho) = 9.1\%\), and the calibrations close a median 9.1% of the gap. This channel is real but empirically small (weight-only F about 1).</p>
+
+<h3>6. Bias of OLS and IV</h3>
+<div class="eq">\[ \operatorname{plim}\hat\beta_{IV} - \beta = \psi\,\frac{\operatorname{Cov}(\lambda_D, d_T)}{H_D\operatorname{Var}(\lambda_D) + H_T\operatorname{Cov}(\lambda_D,\lambda_T) + H_N\operatorname{Cov}(\lambda_D,\lambda_N)}, \]</div>
+<div class="eq">\[ \operatorname{plim}\hat\beta_{OLS} - \beta = \psi\,\frac{H_T\,\kappa\operatorname{Var}(d_T) + H_D\operatorname{Cov}(\lambda_D, d_T) + H_N\operatorname{Cov}(\lambda_N, d_T)}{\operatorname{Var}(\tilde A)}. \]</div>
+<p>The IV is consistent exactly when the donors' wage shocks are uncorrelated with the target's demand shock, \(\operatorname{Cov}(\lambda_D, d_T) = 0\). This is the logic of Hausman-style instruments that use prices in other markets. Choosing dissimilar donors is meant to make it hold. Two polar cases bracket the possibilities:</p>
+<ol class="steps">
+<li><strong>Independent subregion shocks.</strong> IV bias is zero. OLS is still biased, through the target's own weight \(H_T\) in its AEWR. A subregion is roughly a fifth of a region, so this is not negligible, and the IV fixes something real.</li>
+<li><strong>One region-wide shock</strong> (\(\lambda_T = \lambda_D = \lambda_N\)). The IV bias becomes \(\psi\kappa\sigma^2_d/\sigma^2_\lambda\) and the OLS bias \(\psi\kappa\sigma^2_d/(\sigma^2_\lambda+\sigma^2_e)\). The IV is then at least as biased as OLS, because it discards the FLS sampling error, the one clean part of the AEWR. No choice of same-region donors helps.</li>
+</ol>
+<p>Two points hold in either case. First, \(\theta\) cancels from the IV bias: better donor wages or finer geography improve precision, not validity. Second, which case applies is an empirical question about how much the donor and target subregions co-move.</p>
+
+<h3>7. Testing the assumption</h3>
+<p>If shocks were region-wide, a target would move with its dissimilar donors as much as with the other subregions in its region. The table compares the two, using subregion-year means of the two-way residuals.</p>
+</div>
+
+<div class="figure scroll">
+<table>
+<thead><tr><th>Series (same year)</th><th>Target vs its donors</th><th>Target vs other same-region subregions</th><th>Target vs other regions</th></tr></thead>
+<tbody>
+<tr><td>OEWS log wage</td><td>0.12 [0.04, 0.21]</td><td>0.28 [0.16, 0.37]</td><td>−0.01</td></tr>
+<tr><td>Certified workers per 2011 farm worker</td><td>0.08 [−0.12, 0.22]</td><td>0.25 [0.14, 0.47]</td><td>0.00</td></tr>
+<tr><td>Certified workers, net of the AEWR</td><td>0.08 [−0.03, 0.20]</td><td>0.24 [0.19, 0.49]</td><td>0.01</td></tr>
+<tr><td>Applications, net of the AEWR</td><td>−0.02 [−0.13, 0.13]</td><td>0.30 [0.18, 0.43]</td><td>0.01</td></tr>
+</tbody>
+<thead><tr><th>Direct test: donor wage in \(t-1\) vs target outcome in \(t\)</th><th>Donors</th><th>Other same-region subregions</th><th></th></tr></thead>
+<tbody>
+<tr><td>Certified workers, net of the AEWR</td><td>−0.04 [−0.10, 0.10]</td><td>0.03 [−0.15, 0.25]</td><td></td></tr>
+<tr><td>Applications, net of the AEWR</td><td>−0.05 [−0.14, 0.04]</td><td>0.04 [−0.07, 0.16]</td><td></td></tr>
+</tbody></table>
+<p class="src">Correlations across 170 target–donor and 170 target–non-donor subregion pairs, years 2010–2023 (wages) and 2011–2023 (outcomes). Brackets are 95% intervals from 999 bootstrap draws resampling the 17 regions. "Net of the AEWR" adds the real AEWR to the two-way residualization. The donor–non-donor difference excludes zero for all four same-year series. Scratch diagnostic, not a retained table.</p>
+</div>
+
+<div class="prose">
+<ul>
+<li><strong>The dissimilar-donor choice works.</strong> Most co-movement within a region is between similar subregions, and the donor selection avoids it. Region-wide shocks would make the two columns equal.</li>
+<li><strong>For H-2A use, donors look like another region.</strong> Donor and target outcome shocks are statistically indistinguishable from uncorrelated.</li>
+<li><strong>The direct test finds nothing, but has little power.</strong> Lagged donor wages do not predict target outcomes net of the AEWR. Neither do lagged non-donor wages, so this test cannot tell the two groups apart.</li>
+<li><strong>Wages keep a small common component.</strong> The donor wage correlation of 0.12 excludes zero. Dissimilar crops and climate cannot remove shocks that are regional by nature: state laws and enforcement, the region's shared pool of migrant workers, and competing nonfarm demand. By the formula, this enters the bias only through its correlation with the target's demand shock, which the outcome rows suggest is small.</li>
+</ul>
+<p>The data fit the first polar case much better than the second. The exclusion restriction is defensible and partly testable.</p>
+
+<h3>8. What the IV costs in precision</h3>
+<p>With a single instrument and homoskedastic errors, \(\operatorname{Var}(\hat\beta_{IV}) \approx \operatorname{Var}(\hat\beta_{OLS}) / R^2_{\text{partial}}\). The retained instrument's partial R², after fixed effects and controls, is <span class="num">0.106</span>, which predicts standard errors about \(1/\sqrt{0.106} \approx 3.1\) times OLS. The observed ratios with clustering are 1.8–3.6.</p>
+</div>
+
+<div class="figure scroll">
+<table>
+<thead><tr><th>Outcome</th><th>OLS</th><th>IV, retained instrument</th><th>IV, unweighted regional OEWS mean</th><th>IV SE / OLS SE</th></tr></thead>
+<tbody>
+<tr><td>Certified workers per 2011 farm worker</td><td>−0.040 (0.025)</td><td>−0.081 (0.046)</td><td>−0.079 (0.039)</td><td>1.85</td></tr>
+<tr><td>Certified hours per 2011 farm worker</td><td>−29.0 (16.0)</td><td>−60.5 (29.3)</td><td>−64.0 (26.4)</td><td>1.83</td></tr>
+<tr><td>Applications per 2011 farm worker</td><td>−0.00123 (0.00039)</td><td>−0.00261 (0.00141)</td><td>−0.00205 (0.00090)</td><td>3.61</td></tr>
+<tr><td>Linked businesses per 2011 farm worker</td><td>−0.0041 (0.0017)</td><td>−0.0009 (0.0038)</td><td>−0.0024 (0.0029)</td><td>2.22</td></tr>
+</tbody></table>
+<p class="src">Column 4 controls, county and year FE, CRV1 by target subregion. Common sample of 33,464 county-years (2012–2023) where the unweighted OEWS mean exists. The unweighted mean covers every county in the region, the target subregion included. Scratch diagnostic, not a retained table.</p>
+</div>
+
+<div class="prose">
+<p>The unweighted regional mean includes the target's own subregion, so it carries the invalid channel the donor design removes. It still gives nearly the same estimates. Its first-stage F is 112 with CRV1 by subregion, against 44.7 for the retained instrument on its full sample; clustered by the 17 regions, the two tie at 34. Removing the target's own subregion therefore changes little, which fits small own-subregion feedback. The IV estimates are about twice OLS. OLS bias through \(H_T\) is one possible explanation; the comparison cannot separate it from others.</p>
+
+<h3>9. Where this leaves the IV</h3>
+<p>Validity rests on donor shocks being unrelated to the target's demand, and the data mostly support that. The binding problem is precision: the instrument uses about 11% of an AEWR residual whose SD is already only about 40 cents. Within this design, relevance comes mainly from \(H_D\operatorname{Var}(\lambda_D)\), so the levers are:</p>
+<ul>
+<li><strong>More donor weight.</strong> Adding subregions raises \(H_D\) and the first stage, but the non-donor subregions co-move with the target (0.28 for wages). Each added donor would need to pass the test above.</li>
+<li><strong>Less noise in the donor wage.</strong> Calibration and OEWS noise inflate \(\operatorname{Var}(\tilde Z)\) without adding relevance. Since \(\theta\) cancels from the bias, a cleaner donor wage measure costs no validity.</li>
+<li><strong>Inference built for weak, few-cluster designs.</strong> Anderson–Rubin sets and wild bootstrap by region report what the data rule out, which matters more than point estimates here.</li>
+</ul>
+<p>The exposure design is the other route. It gets county-level variation by comparing how hard the same AEWR binds in different counties.</p>
+</div>
+
+<div class="prose src">
+<h3>Sources</h3>
+<p>Region-year and county statistics: scratch scripts <code>variation_overview.R</code>, <code>partial_r2.R</code>, <code>common_shocks.R</code> and <code>cross_test.R</code> on <code>panel_iv_county_year.parquet</code> and <code>fls_region.parquet</code>. Retained first stage: <code>outputs/tables/iv_preferred_first_stage_estimates.csv</code> (column 4, coefficient 0.170, F 44.7). Weight-component results: <code>markdowns/fls_wage_target_mechanical_relevance.md</code>. Interactive views of the same data: <code>code/descriptives/panel_iv_intuition.py</code>.</p>
+</div>
+</main>
+<div id="tip" hidden></div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] }, svg: { fontCache: "global" } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+<script>
+const DATA = {"heat": [{"id": "1", "name": "Pacific", "year": 2011, "v": -1.159}, {"id": "1", "name": "Pacific", "year": 2012, "v": -1.032}, {"id": "1", "name": "Pacific", "year": 2013, "v": -0.279}, {"id": "1", "name": "Pacific", "year": 2014, "v": -0.788}, {"id": "1", "name": "Pacific", "year": 2015, "v": -0.296}, {"id": "1", "name": "Pacific", "year": 2016, "v": -0.317}, {"id": "1", "name": "Pacific", "year": 2017, "v": 0.063}, {"id": "1", "name": "Pacific", "year": 2018, "v": 0.761}, {"id": "1", "name": "Pacific", "year": 2019, "v": 0.939}, {"id": "1", "name": "Pacific", "year": 2020, "v": 1.098}, {"id": "1", "name": "Pacific", "year": 2021, "v": 0.452}, {"id": "1", "name": "Pacific", "year": 2022, "v": 0.231}, {"id": "1", "name": "Pacific", "year": 2023, "v": -0.06}, {"id": "1", "name": "Pacific", "year": 2024, "v": 0.388}, {"id": "10", "name": "Southeast", "year": 2011, "v": 0.543}, {"id": "10", "name": "Southeast", "year": 2012, "v": 0.665}, {"id": "10", "name": "Southeast", "year": 2013, "v": 0.76}, {"id": "10", "name": "Southeast", "year": 2014, "v": 0.616}, {"id": "10", "name": "Southeast", "year": 2015, "v": 0.251}, {"id": "10", "name": "Southeast", "year": 2016, "v": 0.337}, {"id": "10", "name": "Southeast", "year": 2017, "v": 0.007}, {"id": "10", "name": "Southeast", "year": 2018, "v": 0.196}, {"id": "10", "name": "Southeast", "year": 2019, "v": -0.481}, {"id": "10", "name": "Southeast", "year": 2020, "v": -0.696}, {"id": "10", "name": "Southeast", "year": 2021, "v": -0.724}, {"id": "10", "name": "Southeast", "year": 2022, "v": -0.702}, {"id": "10", "name": "Southeast", "year": 2023, "v": -0.439}, {"id": "10", "name": "Southeast", "year": 2024, "v": -0.333}, {"id": "11", "name": "Florida", "year": 2011, "v": 0.672}, {"id": "11", "name": "Florida", "year": 2012, "v": 0.553}, {"id": "11", "name": "Florida", "year": 2013, "v": 0.685}, {"id": "11", "name": "Florida", "year": 2014, "v": 0.607}, {"id": "11", "name": "Florida", "year": 2015, "v": 0.199}, {"id": "11", "name": "Florida", "year": 2016, "v": 0.209}, {"id": "11", "name": "Florida", "year": 2017, "v": 0.339}, {"id": "11", "name": "Florida", "year": 2018, "v": 0.34}, {"id": "11", "name": "Florida", "year": 2019, "v": -0.612}, {"id": "11", "name": "Florida", "year": 2020, "v": -0.959}, {"id": "11", "name": "Florida", "year": 2021, "v": -0.724}, {"id": "11", "name": "Florida", "year": 2022, "v": -0.643}, {"id": "11", "name": "Florida", "year": 2023, "v": -0.148}, {"id": "11", "name": "Florida", "year": 2024, "v": -0.518}, {"id": "12", "name": "Delta", "year": 2011, "v": 0.402}, {"id": "12", "name": "Delta", "year": 2012, "v": 0.589}, {"id": "12", "name": "Delta", "year": 2013, "v": 0.498}, {"id": "12", "name": "Delta", "year": 2014, "v": 0.503}, {"id": "12", "name": "Delta", "year": 2015, "v": 0.465}, {"id": "12", "name": "Delta", "year": 2016, "v": 0.474}, {"id": "12", "name": "Delta", "year": 2017, "v": -0.264}, {"id": "12", "name": "Delta", "year": 2018, "v": -0.053}, {"id": "12", "name": "Delta", "year": 2019, "v": -0.228}, {"id": "12", "name": "Delta", "year": 2020, "v": -0.536}, {"id": "12", "name": "Delta", "year": 2021, "v": -0.642}, {"id": "12", "name": "Delta", "year": 2022, "v": -0.335}, {"id": "12", "name": "Delta", "year": 2023, "v": -0.424}, {"id": "12", "name": "Delta", "year": 2024, "v": -0.449}, {"id": "13", "name": "Cornbelt II", "year": 2011, "v": -0.157}, {"id": "13", "name": "Cornbelt II", "year": 2012, "v": 0.106}, {"id": "13", "name": "Cornbelt II", "year": 2013, "v": -0.302}, {"id": "13", "name": "Cornbelt II", "year": 2014, "v": 0.111}, {"id": "13", "name": "Cornbelt II", "year": 2015, "v": 0.484}, {"id": "13", "name": "Cornbelt II", "year": 2016, "v": -0.396}, {"id": "13", "name": "Cornbelt II", "year": 2017, "v": 0.312}, {"id": "13", "name": "Cornbelt II", "year": 2018, "v": 0.482}, {"id": "13", "name": "Cornbelt II", "year": 2019, "v": -0.516}, {"id": "13", "name": "Cornbelt II", "year": 2020, "v": 0.133}, {"id": "13", "name": "Cornbelt II", "year": 2021, "v": 0.067}, {"id": "13", "name": "Cornbelt II", "year": 2022, "v": -0.147}, {"id": "13", "name": "Cornbelt II", "year": 2023, "v": 0.138}, {"id": "13", "name": "Cornbelt II", "year": 2024, "v": -0.315}, {"id": "14", "name": "Southern Plains", "year": 2011, "v": 0.198}, {"id": "14", "name": "Southern Plains", "year": 2012, "v": 0.264}, {"id": "14", "name": "Southern Plains", "year": 2013, "v": 0.264}, {"id": "14", "name": "Southern Plains", "year": 2014, "v": 0.563}, {"id": "14", "name": "Southern Plains", "year": 2015, "v": -0.252}, {"id": "14", "name": "Southern Plains", "year": 2016, "v": 0.132}, {"id": "14", "name": "Southern Plains", "year": 2017, "v": 0.27}, {"id": "14", "name": "Southern Plains", "year": 2018, "v": 0.405}, {"id": "14", "name": "Southern Plains", "year": 2019, "v": -0.061}, {"id": "14", "name": "Southern Plains", "year": 2020, "v": -0.417}, {"id": "14", "name": "Southern Plains", "year": 2021, "v": -0.429}, {"id": "14", "name": "Southern Plains", "year": 2022, "v": -0.142}, {"id": "14", "name": "Southern Plains", "year": 2023, "v": -0.323}, {"id": "14", "name": "Southern Plains", "year": 2024, "v": -0.473}, {"id": "15", "name": "Mountain III", "year": 2011, "v": 0.207}, {"id": "15", "name": "Mountain III", "year": 2012, "v": 0.385}, {"id": "15", "name": "Mountain III", "year": 2013, "v": -0.12}, {"id": "15", "name": "Mountain III", "year": 2014, "v": -0.244}, {"id": "15", "name": "Mountain III", "year": 2015, "v": 0.019}, {"id": "15", "name": "Mountain III", "year": 2016, "v": 0.254}, {"id": "15", "name": "Mountain III", "year": 2017, "v": -0.431}, {"id": "15", "name": "Mountain III", "year": 2018, "v": -1.221}, {"id": "15", "name": "Mountain III", "year": 2019, "v": -0.275}, {"id": "15", "name": "Mountain III", "year": 2020, "v": -0.064}, {"id": "15", "name": "Mountain III", "year": 2021, "v": 0.254}, {"id": "15", "name": "Mountain III", "year": 2022, "v": 0.617}, {"id": "15", "name": "Mountain III", "year": 2023, "v": 0.366}, {"id": "15", "name": "Mountain III", "year": 2024, "v": 0.253}, {"id": "16", "name": "Mountain II", "year": 2011, "v": 0.431}, {"id": "16", "name": "Mountain II", "year": 2012, "v": 0.191}, {"id": "16", "name": "Mountain II", "year": 2013, "v": -0.458}, {"id": "16", "name": "Mountain II", "year": 2014, "v": -0.03}, {"id": "16", "name": "Mountain II", "year": 2015, "v": 0.255}, {"id": "16", "name": "Mountain II", "year": 2016, "v": -0.344}, {"id": "16", "name": "Mountain II", "year": 2017, "v": -1.055}, {"id": "16", "name": "Mountain II", "year": 2018, "v": -1.629}, {"id": "16", "name": "Mountain II", "year": 2019, "v": 0.388}, {"id": "16", "name": "Mountain II", "year": 2020, "v": 0.898}, {"id": "16", "name": "Mountain II", "year": 2021, "v": 0.688}, {"id": "16", "name": "Mountain II", "year": 2022, "v": 0.54}, {"id": "16", "name": "Mountain II", "year": 2023, "v": 0.287}, {"id": "16", "name": "Mountain II", "year": 2024, "v": -0.162}, {"id": "17", "name": "California", "year": 2011, "v": -0.804}, {"id": "17", "name": "California", "year": 2012, "v": -1.059}, {"id": "17", "name": "California", "year": 2013, "v": -0.867}, {"id": "17", "name": "California", "year": 2014, "v": -0.973}, {"id": "17", "name": "California", "year": 2015, "v": -0.85}, {"id": "17", "name": "California", "year": 2016, "v": -0.644}, {"id": "17", "name": "California", "year": 2017, "v": -0.247}, {"id": "17", "name": "California", "year": 2018, "v": 0.29}, {"id": "17", "name": "California", "year": 2019, "v": 0.27}, {"id": "17", "name": "California", "year": 2020, "v": 0.46}, {"id": "17", "name": "California", "year": 2021, "v": 0.824}, {"id": "17", "name": "California", "year": 2022, "v": 0.962}, {"id": "17", "name": "California", "year": 2023, "v": 1.164}, {"id": "17", "name": "California", "year": 2024, "v": 1.474}, {"id": "2", "name": "Mountain I", "year": 2011, "v": -0.108}, {"id": "2", "name": "Mountain I", "year": 2012, "v": 0.01}, {"id": "2", "name": "Mountain I", "year": 2013, "v": -0.488}, {"id": "2", "name": "Mountain I", "year": 2014, "v": -0.166}, {"id": "2", "name": "Mountain I", "year": 2015, "v": 0.059}, {"id": "2", "name": "Mountain I", "year": 2016, "v": 0.304}, {"id": "2", "name": "Mountain I", "year": 2017, "v": -0.211}, {"id": "2", "name": "Mountain I", "year": 2018, "v": -0.446}, {"id": "2", "name": "Mountain I", "year": 2019, "v": 0.865}, {"id": "2", "name": "Mountain I", "year": 2020, "v": 0.177}, {"id": "2", "name": "Mountain I", "year": 2021, "v": 0.485}, {"id": "2", "name": "Mountain I", "year": 2022, "v": -0.092}, {"id": "2", "name": "Mountain I", "year": 2023, "v": -0.208}, {"id": "2", "name": "Mountain I", "year": 2024, "v": -0.181}, {"id": "3", "name": "Northern Plains", "year": 2011, "v": -0.334}, {"id": "3", "name": "Northern Plains", "year": 2012, "v": -0.467}, {"id": "3", "name": "Northern Plains", "year": 2013, "v": -0.078}, {"id": "3", "name": "Northern Plains", "year": 2014, "v": 0.589}, {"id": "3", "name": "Northern Plains", "year": 2015, "v": 0.876}, {"id": "3", "name": "Northern Plains", "year": 2016, "v": 0.919}, {"id": "3", "name": "Northern Plains", "year": 2017, "v": 0.426}, {"id": "3", "name": "Northern Plains", "year": 2018, "v": 0.062}, {"id": "3", "name": "Northern Plains", "year": 2019, "v": 0.04}, {"id": "3", "name": "Northern Plains", "year": 2020, "v": -0.05}, {"id": "3", "name": "Northern Plains", "year": 2021, "v": -0.11}, {"id": "3", "name": "Northern Plains", "year": 2022, "v": -0.614}, {"id": "3", "name": "Northern Plains", "year": 2023, "v": -0.721}, {"id": "3", "name": "Northern Plains", "year": 2024, "v": -0.54}, {"id": "4", "name": "Lake", "year": 2011, "v": -0.223}, {"id": "4", "name": "Lake", "year": 2012, "v": -0.258}, {"id": "4", "name": "Lake", "year": 2013, "v": -0.054}, {"id": "4", "name": "Lake", "year": 2014, "v": -0.244}, {"id": "4", "name": "Lake", "year": 2015, "v": -0.334}, {"id": "4", "name": "Lake", "year": 2016, "v": -0.223}, {"id": "4", "name": "Lake", "year": 2017, "v": 0.228}, {"id": "4", "name": "Lake", "year": 2018, "v": 0.407}, {"id": "4", "name": "Lake", "year": 2019, "v": 0.078}, {"id": "4", "name": "Lake", "year": 2020, "v": 0.27}, {"id": "4", "name": "Lake", "year": 2021, "v": -0.208}, {"id": "4", "name": "Lake", "year": 2022, "v": -0.42}, {"id": "4", "name": "Lake", "year": 2023, "v": 0.327}, {"id": "4", "name": "Lake", "year": 2024, "v": 0.655}, {"id": "5", "name": "Northeast I", "year": 2011, "v": -0.35}, {"id": "5", "name": "Northeast I", "year": 2012, "v": -0.223}, {"id": "5", "name": "Northeast I", "year": 2013, "v": -0.184}, {"id": "5", "name": "Northeast I", "year": 2014, "v": -0.253}, {"id": "5", "name": "Northeast I", "year": 2015, "v": -0.411}, {"id": "5", "name": "Northeast I", "year": 2016, "v": -0.312}, {"id": "5", "name": "Northeast I", "year": 2017, "v": 0.042}, {"id": "5", "name": "Northeast I", "year": 2018, "v": 0.387}, {"id": "5", "name": "Northeast I", "year": 2019, "v": -0.013}, {"id": "5", "name": "Northeast I", "year": 2020, "v": 0.391}, {"id": "5", "name": "Northeast I", "year": 2021, "v": 0.309}, {"id": "5", "name": "Northeast I", "year": 2022, "v": 0.057}, {"id": "5", "name": "Northeast I", "year": 2023, "v": 0.254}, {"id": "5", "name": "Northeast I", "year": 2024, "v": 0.305}, {"id": "6", "name": "Northeast II", "year": 2011, "v": 0.326}, {"id": "6", "name": "Northeast II", "year": 2012, "v": -0.127}, {"id": "6", "name": "Northeast II", "year": 2013, "v": 0.092}, {"id": "6", "name": "Northeast II", "year": 2014, "v": -0.093}, {"id": "6", "name": "Northeast II", "year": 2015, "v": -0.063}, {"id": "6", "name": "Northeast II", "year": 2016, "v": -0.094}, {"id": "6", "name": "Northeast II", "year": 2017, "v": 0.132}, {"id": "6", "name": "Northeast II", "year": 2018, "v": -0.231}, {"id": "6", "name": "Northeast II", "year": 2019, "v": 0.184}, {"id": "6", "name": "Northeast II", "year": 2020, "v": -0.452}, {"id": "6", "name": "Northeast II", "year": 2021, "v": -0.289}, {"id": "6", "name": "Northeast II", "year": 2022, "v": 0.28}, {"id": "6", "name": "Northeast II", "year": 2023, "v": 0.234}, {"id": "6", "name": "Northeast II", "year": 2024, "v": 0.102}, {"id": "7", "name": "Cornbelt I", "year": 2011, "v": -0.122}, {"id": "7", "name": "Cornbelt I", "year": 2012, "v": -0.063}, {"id": "7", "name": "Cornbelt I", "year": 2013, "v": 0.254}, {"id": "7", "name": "Cornbelt I", "year": 2014, "v": -0.233}, {"id": "7", "name": "Cornbelt I", "year": 2015, "v": -0.404}, {"id": "7", "name": "Cornbelt I", "year": 2016, "v": -0.287}, {"id": "7", "name": "Cornbelt I", "year": 2017, "v": 0.412}, {"id": "7", "name": "Cornbelt I", "year": 2018, "v": 0.127}, {"id": "7", "name": "Cornbelt I", "year": 2019, "v": -0.381}, {"id": "7", "name": "Cornbelt I", "year": 2020, "v": 0.291}, {"id": "7", "name": "Cornbelt I", "year": 2021, "v": 0.24}, {"id": "7", "name": "Cornbelt I", "year": 2022, "v": -0.146}, {"id": "7", "name": "Cornbelt I", "year": 2023, "v": 0.059}, {"id": "7", "name": "Cornbelt I", "year": 2024, "v": 0.253}, {"id": "8", "name": "Appalachian II", "year": 2011, "v": 0.439}, {"id": "8", "name": "Appalachian II", "year": 2012, "v": 0.18}, {"id": "8", "name": "Appalachian II", "year": 2013, "v": 0.305}, {"id": "8", "name": "Appalachian II", "year": 2014, "v": 0.238}, {"id": "8", "name": "Appalachian II", "year": 2015, "v": 0.086}, {"id": "8", "name": "Appalachian II", "year": 2016, "v": 0.18}, {"id": "8", "name": "Appalachian II", "year": 2017, "v": -0.112}, {"id": "8", "name": "Appalachian II", "year": 2018, "v": 0.007}, {"id": "8", "name": "Appalachian II", "year": 2019, "v": -0.36}, {"id": "8", "name": "Appalachian II", "year": 2020, "v": -0.33}, {"id": "8", "name": "Appalachian II", "year": 2021, "v": -0.081}, {"id": "8", "name": "Appalachian II", "year": 2022, "v": 0.281}, {"id": "8", "name": "Appalachian II", "year": 2023, "v": -0.419}, {"id": "8", "name": "Appalachian II", "year": 2024, "v": -0.411}, {"id": "9", "name": "Appalachian I", "year": 2011, "v": 0.039}, {"id": "9", "name": "Appalachian I", "year": 2012, "v": 0.285}, {"id": "9", "name": "Appalachian I", "year": 2013, "v": -0.028}, {"id": "9", "name": "Appalachian I", "year": 2014, "v": -0.201}, {"id": "9", "name": "Appalachian I", "year": 2015, "v": -0.084}, {"id": "9", "name": "Appalachian I", "year": 2016, "v": -0.193}, {"id": "9", "name": "Appalachian I", "year": 2017, "v": 0.09}, {"id": "9", "name": "Appalachian I", "year": 2018, "v": 0.116}, {"id": "9", "name": "Appalachian I", "year": 2019, "v": 0.164}, {"id": "9", "name": "Appalachian I", "year": 2020, "v": -0.216}, {"id": "9", "name": "Appalachian I", "year": 2021, "v": -0.111}, {"id": "9", "name": "Appalachian I", "year": 2022, "v": 0.274}, {"id": "9", "name": "Appalachian I", "year": 2023, "v": -0.088}, {"id": "9", "name": "Appalachian I", "year": 2024, "v": -0.047}], "scatter": [{"name": "Pacific", "year": 2012, "a": -1.122, "z": -0.91, "n": -1.041}, {"name": "Pacific", "year": 2013, "a": -0.368, "z": -0.675, "n": -0.623}, {"name": "Pacific", "year": 2014, "a": -0.878, "z": -0.705, "n": -0.648}, {"name": "Pacific", "year": 2015, "a": -0.385, "z": -0.482, "n": -0.432}, {"name": "Pacific", "year": 2016, "a": -0.406, "z": -0.08, "n": 0.062}, {"name": "Pacific", "year": 2017, "a": -0.027, "z": 0.593, "n": 0.433}, {"name": "Pacific", "year": 2018, "a": 0.672, "z": 0.538, "n": 0.64}, {"name": "Pacific", "year": 2019, "a": 0.85, "z": 0.466, "n": 0.577}, {"name": "Pacific", "year": 2020, "a": 1.009, "z": 0.488, "n": 0.672}, {"name": "Pacific", "year": 2021, "a": 0.363, "z": 0.87, "n": 0.534}, {"name": "Pacific", "year": 2022, "a": 0.142, "z": 0.042, "n": 0.06}, {"name": "Pacific", "year": 2023, "a": -0.149, "z": -0.025, "n": -0.003}, {"name": "Pacific", "year": 2024, "a": 0.299, "z": -0.12, "n": -0.231}, {"name": "Southeast", "year": 2012, "a": 0.707, "z": 0.311, "n": 0.64}, {"name": "Southeast", "year": 2013, "a": 0.802, "z": 0.903, "n": 0.661}, {"name": "Southeast", "year": 2014, "a": 0.657, "z": 1.243, "n": 0.607}, {"name": "Southeast", "year": 2015, "a": 0.293, "z": 0.907, "n": 0.384}, {"name": "Southeast", "year": 2016, "a": 0.379, "z": 1.291, "n": -0.048}, {"name": "Southeast", "year": 2017, "a": 0.049, "z": -0.881, "n": -0.11}, {"name": "Southeast", "year": 2018, "a": 0.237, "z": -0.777, "n": -0.323}, {"name": "Southeast", "year": 2019, "a": -0.439, "z": -1.119, "n": -0.274}, {"name": "Southeast", "year": 2020, "a": -0.654, "z": -0.702, "n": -0.388}, {"name": "Southeast", "year": 2021, "a": -0.682, "z": -0.029, "n": -0.541}, {"name": "Southeast", "year": 2022, "a": -0.661, "z": -0.376, "n": -0.203}, {"name": "Southeast", "year": 2023, "a": -0.397, "z": -0.107, "n": -0.112}, {"name": "Southeast", "year": 2024, "a": -0.292, "z": -0.665, "n": -0.293}, {"name": "Florida", "year": 2012, "a": 0.604, "z": 0.431, "n": 0.553}, {"name": "Florida", "year": 2013, "a": 0.737, "z": 0.366, "n": 0.605}, {"name": "Florida", "year": 2014, "a": 0.658, "z": 0.31, "n": 0.622}, {"name": "Florida", "year": 2015, "a": 0.251, "z": 0.096, "n": 0.465}, {"name": "Florida", "year": 2016, "a": 0.261, "z": -0.192, "n": 0.035}, {"name": "Florida", "year": 2017, "a": 0.391, "z": -0.326, "n": -0.385}, {"name": "Florida", "year": 2018, "a": 0.392, "z": -0.392, "n": -0.517}, {"name": "Florida", "year": 2019, "a": -0.561, "z": 0.124, "n": -0.166}, {"name": "Florida", "year": 2020, "a": -0.907, "z": 0.154, "n": -0.24}, {"name": "Florida", "year": 2021, "a": -0.672, "z": 0.083, "n": -0.286}, {"name": "Florida", "year": 2022, "a": -0.591, "z": -0.335, "n": -0.282}, {"name": "Florida", "year": 2023, "a": -0.096, "z": -0.066, "n": -0.147}, {"name": "Florida", "year": 2024, "a": -0.466, "z": -0.253, "n": -0.257}, {"name": "Delta", "year": 2012, "a": 0.62, "z": 2.564, "n": 0.4}, {"name": "Delta", "year": 2013, "a": 0.529, "z": 0.71, "n": 0.677}, {"name": "Delta", "year": 2014, "a": 0.534, "z": 0.205, "n": 0.676}, {"name": "Delta", "year": 2015, "a": 0.496, "z": 0.507, "n": 0.51}, {"name": "Delta", "year": 2016, "a": 0.505, "z": 0.236, "n": 0.308}, {"name": "Delta", "year": 2017, "a": -0.234, "z": 0.407, "n": 0.348}, {"name": "Delta", "year": 2018, "a": -0.022, "z": -0.49, "n": -0.028}, {"name": "Delta", "year": 2019, "a": -0.197, "z": -0.218, "n": -0.122}, {"name": "Delta", "year": 2020, "a": -0.505, "z": -0.013, "n": -0.475}, {"name": "Delta", "year": 2021, "a": -0.611, "z": -1.705, "n": -0.16}, {"name": "Delta", "year": 2022, "a": -0.304, "z": -0.879, "n": -0.533}, {"name": "Delta", "year": 2023, "a": -0.394, "z": -0.49, "n": -0.586}, {"name": "Delta", "year": 2024, "a": -0.418, "z": -0.834, "n": -1.016}, {"name": "Cornbelt II", "year": 2012, "a": 0.094, "z": -0.58, "n": -0.155}, {"name": "Cornbelt II", "year": 2013, "a": -0.314, "z": -0.411, "n": -0.535}, {"name": "Cornbelt II", "year": 2014, "a": 0.099, "z": 0.116, "n": -0.249}, {"name": "Cornbelt II", "year": 2015, "a": 0.472, "z": -0.379, "n": 0.129}, {"name": "Cornbelt II", "year": 2016, "a": -0.408, "z": -0.316, "n": -0.32}, {"name": "Cornbelt II", "year": 2017, "a": 0.3, "z": -0.488, "n": -0.401}, {"name": "Cornbelt II", "year": 2018, "a": 0.47, "z": 0.426, "n": 0.272}, {"name": "Cornbelt II", "year": 2019, "a": -0.529, "z": 0.797, "n": 0.581}, {"name": "Cornbelt II", "year": 2020, "a": 0.121, "z": 0.693, "n": 0.47}, {"name": "Cornbelt II", "year": 2021, "a": 0.055, "z": 0.431, "n": 0.575}, {"name": "Cornbelt II", "year": 2022, "a": -0.159, "z": -0.276, "n": -0.072}, {"name": "Cornbelt II", "year": 2023, "a": 0.126, "z": -0.096, "n": -0.188}, {"name": "Cornbelt II", "year": 2024, "a": -0.327, "z": 0.083, "n": -0.107}, {"name": "Southern Plains", "year": 2012, "a": 0.279, "z": 0.345, "n": 0.344}, {"name": "Southern Plains", "year": 2013, "a": 0.279, "z": 0.239, "n": 0.087}, {"name": "Southern Plains", "year": 2014, "a": 0.579, "z": 0.124, "n": 0.269}, {"name": "Southern Plains", "year": 2015, "a": -0.237, "z": 0.152, "n": 0.077}, {"name": "Southern Plains", "year": 2016, "a": 0.148, "z": -0.009, "n": 0.424}, {"name": "Southern Plains", "year": 2017, "a": 0.285, "z": 0.305, "n": 0.413}, {"name": "Southern Plains", "year": 2018, "a": 0.421, "z": 0.053, "n": 0.132}, {"name": "Southern Plains", "year": 2019, "a": -0.046, "z": 0.191, "n": -0.186}, {"name": "Southern Plains", "year": 2020, "a": -0.402, "z": -0.136, "n": -0.658}, {"name": "Southern Plains", "year": 2021, "a": -0.414, "z": -0.049, "n": -0.509}, {"name": "Southern Plains", "year": 2022, "a": -0.127, "z": -0.469, "n": -0.106}, {"name": "Southern Plains", "year": 2023, "a": -0.308, "z": -0.354, "n": -0.152}, {"name": "Southern Plains", "year": 2024, "a": -0.457, "z": -0.392, "n": -0.135}, {"name": "Mountain III", "year": 2012, "a": 0.401, "z": -0.375, "n": 0.313}, {"name": "Mountain III", "year": 2013, "a": -0.104, "z": -0.144, "n": -0.04}, {"name": "Mountain III", "year": 2014, "a": -0.228, "z": -0.384, "n": 0.009}, {"name": "Mountain III", "year": 2015, "a": 0.035, "z": 1.394, "n": 0.364}, {"name": "Mountain III", "year": 2016, "a": 0.27, "z": -0.972, "n": -0.306}, {"name": "Mountain III", "year": 2017, "a": -0.415, "z": -0.802, "n": -0.13}, {"name": "Mountain III", "year": 2018, "a": -1.205, "z": -0.399, "n": 0.093}, {"name": "Mountain III", "year": 2019, "a": -0.259, "z": -0.267, "n": -0.711}, {"name": "Mountain III", "year": 2020, "a": -0.048, "z": -0.044, "n": -0.051}, {"name": "Mountain III", "year": 2021, "a": 0.27, "z": 0.655, "n": -0.086}, {"name": "Mountain III", "year": 2022, "a": 0.633, "z": 0.516, "n": 0.028}, {"name": "Mountain III", "year": 2023, "a": 0.382, "z": 0.377, "n": 0.08}, {"name": "Mountain III", "year": 2024, "a": 0.269, "z": 0.446, "n": 0.439}, {"name": "Mountain II", "year": 2012, "a": 0.224, "z": -0.072, "n": 0.198}, {"name": "Mountain II", "year": 2013, "a": -0.425, "z": 0.279, "n": 0.135}, {"name": "Mountain II", "year": 2014, "a": 0.003, "z": 0.046, "n": -0.021}, {"name": "Mountain II", "year": 2015, "a": 0.288, "z": -0.35, "n": -0.167}, {"name": "Mountain II", "year": 2016, "a": -0.31, "z": -0.472, "n": -0.466}, {"name": "Mountain II", "year": 2017, "a": -1.022, "z": -1.064, "n": -0.958}, {"name": "Mountain II", "year": 2018, "a": -1.596, "z": -0.529, "n": -0.182}, {"name": "Mountain II", "year": 2019, "a": 0.422, "z": -0.168, "n": -0.279}, {"name": "Mountain II", "year": 2020, "a": 0.931, "z": 0.303, "n": 0.116}, {"name": "Mountain II", "year": 2021, "a": 0.721, "z": 0.47, "n": 0.32}, {"name": "Mountain II", "year": 2022, "a": 0.573, "z": 0.689, "n": 0.389}, {"name": "Mountain II", "year": 2023, "a": 0.32, "z": 0.388, "n": 0.437}, {"name": "Mountain II", "year": 2024, "a": -0.129, "z": 0.479, "n": 0.478}, {"name": "California", "year": 2012, "a": -1.12, "z": -0.986, "n": -0.992}, {"name": "California", "year": 2013, "a": -0.929, "z": -0.761, "n": -0.863}, {"name": "California", "year": 2014, "a": -1.035, "z": -0.425, "n": -0.692}, {"name": "California", "year": 2015, "a": -0.911, "z": -0.422, "n": -0.794}, {"name": "California", "year": 2016, "a": -0.705, "z": 0.106, "n": -0.379}, {"name": "California", "year": 2017, "a": -0.309, "z": 1.03, "n": 0.234}, {"name": "California", "year": 2018, "a": 0.228, "z": 0.378, "n": 0.207}, {"name": "California", "year": 2019, "a": 0.208, "z": -0.264, "n": -0.056}, {"name": "California", "year": 2020, "a": 0.398, "z": -0.25, "n": -0.158}, {"name": "California", "year": 2021, "a": 0.762, "z": 0.391, "n": 0.736}, {"name": "California", "year": 2022, "a": 0.9, "z": 0.39, "n": 0.92}, {"name": "California", "year": 2023, "a": 1.103, "z": 0.273, "n": 0.818}, {"name": "California", "year": 2024, "a": 1.412, "z": 0.54, "n": 1.019}, {"name": "Mountain I", "year": 2012, "a": 0.002, "z": 0.455, "n": 0.292}, {"name": "Mountain I", "year": 2013, "a": -0.496, "z": 0.314, "n": -0.038}, {"name": "Mountain I", "year": 2014, "a": -0.175, "z": 0.218, "n": 0.088}, {"name": "Mountain I", "year": 2015, "a": 0.051, "z": -0.284, "n": -0.135}, {"name": "Mountain I", "year": 2016, "a": 0.295, "z": -0.053, "n": -0.039}, {"name": "Mountain I", "year": 2017, "a": -0.219, "z": 0.703, "n": 0.215}, {"name": "Mountain I", "year": 2018, "a": -0.454, "z": 0.807, "n": -0.126}, {"name": "Mountain I", "year": 2019, "a": 0.856, "z": -0.302, "n": -0.103}, {"name": "Mountain I", "year": 2020, "a": 0.169, "z": -0.936, "n": -0.532}, {"name": "Mountain I", "year": 2021, "a": 0.476, "z": -0.734, "n": -0.602}, {"name": "Mountain I", "year": 2022, "a": -0.1, "z": -0.214, "n": 0.155}, {"name": "Mountain I", "year": 2023, "a": -0.216, "z": 0.0, "n": 0.474}, {"name": "Mountain I", "year": 2024, "a": -0.189, "z": 0.025, "n": 0.351}, {"name": "Northern Plains", "year": 2012, "a": -0.492, "z": -1.29, "n": -0.731}, {"name": "Northern Plains", "year": 2013, "a": -0.104, "z": -1.445, "n": -0.348}, {"name": "Northern Plains", "year": 2014, "a": 0.563, "z": -0.396, "n": -0.396}, {"name": "Northern Plains", "year": 2015, "a": 0.85, "z": -0.222, "n": -0.094}, {"name": "Northern Plains", "year": 2016, "a": 0.894, "z": 0.925, "n": 0.735}, {"name": "Northern Plains", "year": 2017, "a": 0.4, "z": 0.488, "n": 0.372}, {"name": "Northern Plains", "year": 2018, "a": 0.037, "z": 0.444, "n": 0.281}, {"name": "Northern Plains", "year": 2019, "a": 0.014, "z": 1.037, "n": 0.657}, {"name": "Northern Plains", "year": 2020, "a": -0.075, "z": 0.865, "n": 0.747}, {"name": "Northern Plains", "year": 2021, "a": -0.136, "z": 0.064, "n": -0.132}, {"name": "Northern Plains", "year": 2022, "a": -0.64, "z": 0.225, "n": -0.335}, {"name": "Northern Plains", "year": 2023, "a": -0.746, "z": -0.124, "n": -0.356}, {"name": "Northern Plains", "year": 2024, "a": -0.565, "z": -0.57, "n": -0.399}, {"name": "Lake", "year": 2012, "a": -0.275, "z": -0.518, "n": -0.173}, {"name": "Lake", "year": 2013, "a": -0.071, "z": -0.377, "n": -0.197}, {"name": "Lake", "year": 2014, "a": -0.261, "z": -0.235, "n": -0.327}, {"name": "Lake", "year": 2015, "a": -0.351, "z": -0.434, "n": -0.474}, {"name": "Lake", "year": 2016, "a": -0.24, "z": -0.084, "n": -0.268}, {"name": "Lake", "year": 2017, "a": 0.211, "z": 0.012, "n": -0.111}, {"name": "Lake", "year": 2018, "a": 0.39, "z": 0.172, "n": 0.038}, {"name": "Lake", "year": 2019, "a": 0.061, "z": 0.072, "n": 0.329}, {"name": "Lake", "year": 2020, "a": 0.253, "z": 0.38, "n": 0.642}, {"name": "Lake", "year": 2021, "a": -0.225, "z": 0.655, "n": 0.6}, {"name": "Lake", "year": 2022, "a": -0.437, "z": -0.094, "n": 0.048}, {"name": "Lake", "year": 2023, "a": 0.309, "z": 0.026, "n": -0.081}, {"name": "Lake", "year": 2024, "a": 0.638, "z": 0.425, "n": -0.027}, {"name": "Northeast I", "year": 2012, "a": -0.25, "z": -0.91, "n": -0.697}, {"name": "Northeast I", "year": 2013, "a": -0.211, "z": -0.554, "n": -0.534}, {"name": "Northeast I", "year": 2014, "a": -0.28, "z": -0.479, "n": -0.395}, {"name": "Northeast I", "year": 2015, "a": -0.438, "z": -0.473, "n": -0.122}, {"name": "Northeast I", "year": 2016, "a": -0.339, "z": 0.006, "n": 0.179}, {"name": "Northeast I", "year": 2017, "a": 0.016, "z": 0.073, "n": 0.28}, {"name": "Northeast I", "year": 2018, "a": 0.36, "z": 0.48, "n": 0.604}, {"name": "Northeast I", "year": 2019, "a": -0.04, "z": 0.295, "n": 0.37}, {"name": "Northeast I", "year": 2020, "a": 0.364, "z": 0.37, "n": 0.243}, {"name": "Northeast I", "year": 2021, "a": 0.282, "z": 0.226, "n": 0.323}, {"name": "Northeast I", "year": 2022, "a": 0.03, "z": 0.377, "n": 0.008}, {"name": "Northeast I", "year": 2023, "a": 0.227, "z": 0.176, "n": -0.168}, {"name": "Northeast I", "year": 2024, "a": 0.278, "z": 0.413, "n": -0.091}, {"name": "Northeast II", "year": 2012, "a": -0.102, "z": -0.219, "n": 0.057}, {"name": "Northeast II", "year": 2013, "a": 0.117, "z": 0.138, "n": 0.148}, {"name": "Northeast II", "year": 2014, "a": -0.068, "z": -0.111, "n": 0.085}, {"name": "Northeast II", "year": 2015, "a": -0.038, "z": 0.106, "n": -0.037}, {"name": "Northeast II", "year": 2016, "a": -0.069, "z": -0.095, "n": -0.013}, {"name": "Northeast II", "year": 2017, "a": 0.157, "z": 0.283, "n": -0.231}, {"name": "Northeast II", "year": 2018, "a": -0.206, "z": -0.039, "n": -0.216}, {"name": "Northeast II", "year": 2019, "a": 0.209, "z": -0.4, "n": -0.085}, {"name": "Northeast II", "year": 2020, "a": -0.427, "z": -0.216, "n": 0.144}, {"name": "Northeast II", "year": 2021, "a": -0.264, "z": -0.014, "n": -0.076}, {"name": "Northeast II", "year": 2022, "a": 0.306, "z": 0.405, "n": 0.082}, {"name": "Northeast II", "year": 2023, "a": 0.259, "z": 0.059, "n": 0.056}, {"name": "Northeast II", "year": 2024, "a": 0.127, "z": 0.104, "n": 0.087}, {"name": "Cornbelt I", "year": 2012, "a": -0.072, "z": 1.02, "n": 0.116}, {"name": "Cornbelt I", "year": 2013, "a": 0.245, "z": 0.312, "n": 0.118}, {"name": "Cornbelt I", "year": 2014, "a": -0.242, "z": -0.065, "n": -0.07}, {"name": "Cornbelt I", "year": 2015, "a": -0.413, "z": -0.421, "n": -0.199}, {"name": "Cornbelt I", "year": 2016, "a": -0.297, "z": -0.3, "n": -0.103}, {"name": "Cornbelt I", "year": 2017, "a": 0.403, "z": 0.189, "n": -0.13}, {"name": "Cornbelt I", "year": 2018, "a": 0.117, "z": 0.018, "n": -0.259}, {"name": "Cornbelt I", "year": 2019, "a": -0.39, "z": -0.32, "n": -0.15}, {"name": "Cornbelt I", "year": 2020, "a": 0.282, "z": -0.74, "n": -0.048}, {"name": "Cornbelt I", "year": 2021, "a": 0.231, "z": -0.306, "n": 0.273}, {"name": "Cornbelt I", "year": 2022, "a": -0.156, "z": 0.262, "n": 0.096}, {"name": "Cornbelt I", "year": 2023, "a": 0.049, "z": 0.052, "n": 0.03}, {"name": "Cornbelt I", "year": 2024, "a": 0.244, "z": 0.298, "n": 0.326}, {"name": "Appalachian II", "year": 2012, "a": 0.213, "z": 0.534, "n": 0.603}, {"name": "Appalachian II", "year": 2013, "a": 0.338, "z": 0.719, "n": 0.347}, {"name": "Appalachian II", "year": 2014, "a": 0.271, "z": 0.286, "n": -0.048}, {"name": "Appalachian II", "year": 2015, "a": 0.12, "z": 0.186, "n": 0.146}, {"name": "Appalachian II", "year": 2016, "a": 0.214, "z": 0.199, "n": -0.048}, {"name": "Appalachian II", "year": 2017, "a": -0.078, "z": -0.184, "n": 0.099}, {"name": "Appalachian II", "year": 2018, "a": 0.041, "z": -0.63, "n": -0.274}, {"name": "Appalachian II", "year": 2019, "a": -0.327, "z": 0.058, "n": -0.049}, {"name": "Appalachian II", "year": 2020, "a": -0.297, "z": 0.035, "n": 0.236}, {"name": "Appalachian II", "year": 2021, "a": -0.048, "z": -0.443, "n": -0.319}, {"name": "Appalachian II", "year": 2022, "a": 0.315, "z": -0.344, "n": -0.253}, {"name": "Appalachian II", "year": 2023, "a": -0.386, "z": -0.296, "n": -0.224}, {"name": "Appalachian II", "year": 2024, "a": -0.378, "z": -0.121, "n": -0.216}, {"name": "Appalachian I", "year": 2012, "a": 0.288, "z": 0.201, "n": 0.275}, {"name": "Appalachian I", "year": 2013, "a": -0.025, "z": 0.386, "n": 0.399}, {"name": "Appalachian I", "year": 2014, "a": -0.198, "z": 0.252, "n": 0.489}, {"name": "Appalachian I", "year": 2015, "a": -0.081, "z": 0.119, "n": 0.379}, {"name": "Appalachian I", "year": 2016, "a": -0.191, "z": -0.19, "n": 0.246}, {"name": "Appalachian I", "year": 2017, "a": 0.093, "z": -0.338, "n": 0.062}, {"name": "Appalachian I", "year": 2018, "a": 0.119, "z": -0.061, "n": -0.341}, {"name": "Appalachian I", "year": 2019, "a": 0.167, "z": 0.016, "n": -0.333}, {"name": "Appalachian I", "year": 2020, "a": -0.213, "z": -0.252, "n": -0.72}, {"name": "Appalachian I", "year": 2021, "a": -0.108, "z": -0.566, "n": -0.649}, {"name": "Appalachian I", "year": 2022, "a": 0.277, "z": 0.082, "n": -0.001}, {"name": "Appalachian I", "year": 2023, "a": -0.085, "z": 0.208, "n": 0.123}, {"name": "Appalachian I", "year": 2024, "a": -0.044, "z": 0.142, "n": 0.071}], "regions": [{"aewr_region_id": "17", "region_name": "California", "mean_aewr_ppi": 14.027019, "resid_sd": 0.884208, "growth_real": 0.605469, "counties": 58, "h2a_share": 0.086145}, {"aewr_region_id": "1", "region_name": "Pacific", "mean_aewr_ppi": 14.6808, "resid_sd": 0.70046, "growth_real": 0.522013, "counties": 75, "h2a_share": 0.097148}, {"aewr_region_id": "16", "region_name": "Mountain II", "mean_aewr_ppi": 12.967124, "resid_sd": 0.691433, "growth_real": 0.329917, "counties": 110, "h2a_share": 0.029182}, {"aewr_region_id": "11", "region_name": "Florida", "mean_aewr_ppi": 11.715803, "resid_sd": 0.5837, "growth_real": 0.303018, "counties": 67, "h2a_share": 0.132599}, {"aewr_region_id": "10", "region_name": "Southeast", "mean_aewr_ppi": 11.453178, "resid_sd": 0.55092, "growth_real": 0.34904, "counties": 272, "h2a_share": 0.133824}, {"aewr_region_id": "3", "region_name": "Northern Plains", "mean_aewr_ppi": 14.804892, "resid_sd": 0.53239, "growth_real": 0.332805, "counties": 317, "h2a_share": 0.028079}, {"aewr_region_id": "12", "region_name": "Delta", "mean_aewr_ppi": 11.439034, "resid_sd": 0.461471, "growth_real": 0.357584, "counties": 221, "h2a_share": 0.084246}, {"aewr_region_id": "15", "region_name": "Mountain III", "mean_aewr_ppi": 12.283751, "resid_sd": 0.458201, "growth_real": 0.424763, "counties": 48, "h2a_share": 0.034519}, {"aewr_region_id": "2", "region_name": "Mountain I", "mean_aewr_ppi": 12.908113, "resid_sd": 0.363107, "growth_real": 0.400212, "counties": 123, "h2a_share": 0.024383}, {"aewr_region_id": "14", "region_name": "Southern Plains", "mean_aewr_ppi": 12.344179, "resid_sd": 0.34234, "growth_real": 0.350506, "counties": 331, "h2a_share": 0.028002}, {"aewr_region_id": "4", "region_name": "Lake", "mean_aewr_ppi": 13.766006, "resid_sd": 0.327254, "growth_real": 0.459959, "counties": 242, "h2a_share": 0.045771}, {"aewr_region_id": "13", "region_name": "Cornbelt II", "mean_aewr_ppi": 14.122321, "resid_sd": 0.314845, "growth_real": 0.351743, "counties": 214, "h2a_share": 0.019021}, {"aewr_region_id": "5", "region_name": "Northeast I", "mean_aewr_ppi": 13.511259, "resid_sd": 0.290473, "growth_real": 0.455425, "counties": 129, "h2a_share": 0.045315}, {"aewr_region_id": "8", "region_name": "Appalachian II", "mean_aewr_ppi": 11.928673, "resid_sd": 0.290339, "growth_real": 0.338478, "counties": 270, "h2a_share": 0.052023}, {"aewr_region_id": "7", "region_name": "Cornbelt I", "mean_aewr_ppi": 13.891269, "resid_sd": 0.269598, "growth_real": 0.405588, "counties": 282, "h2a_share": 0.031984}, {"aewr_region_id": "6", "region_name": "Northeast II", "mean_aewr_ppi": 13.195863, "resid_sd": 0.230161, "growth_real": 0.359929, "counties": 115, "h2a_share": 0.02072}, {"aewr_region_id": "9", "region_name": "Appalachian I", "mean_aewr_ppi": 12.142974, "resid_sd": 0.16663, "growth_real": 0.424763, "counties": 234, "h2a_share": 0.10704}]};
+const NS = "http://www.w3.org/2000/svg";
+const tip = document.getElementById("tip");
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svg(w, h, host) {
+  const s = el("svg", { viewBox: `0 0 ${w} ${h}`, width: "100%", role: "img" });
+  s.style.maxWidth = w + "px"; s.style.display = "block";
+  document.getElementById(host).appendChild(s);
+  return s;
+}
+function hover(node, html) {
+  node.addEventListener("mousemove", ev => {
+    tip.innerHTML = html; tip.hidden = false;
+    const x = Math.min(ev.clientX + 12, window.innerWidth - tip.offsetWidth - 8);
+    tip.style.left = x + "px"; tip.style.top = (ev.clientY + 12) + "px";
+  });
+  node.addEventListener("mouseleave", () => { tip.hidden = true; });
+}
+const fmt = (v, d = 2) => (v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+
+// Variance decomposition bar
+(function () {
+  const s = svg(820, 40, "decomp");
+  const parts = [["Year effects", .743, "var(--neutral)"], ["Region effects", .217, "var(--series-1)"], ["Residual", .040, "var(--series-2)"]];
+  let x = 0;
+  parts.forEach(([name, v, c]) => {
+    const w = v * 820;
+    const r = el("rect", { x: x + 1, y: 4, width: Math.max(w - 2, 2), height: 30, rx: 3, fill: c }, s);
+    hover(r, `${name}: ${(v * 100).toFixed(1)}% of variance`);
+    x += w;
+  });
+})();
+
+// Heatmap
+(function () {
+  const order = DATA.regions.map(r => r.region_name);
+  const years = [...new Set(DATA.heat.map(d => d.year))].sort();
+  const L = 118, T = 22, cw = 47, ch = 22;
+  const s = svg(L + cw * years.length + 4, T + ch * order.length + 4, "heat");
+  const css = getComputedStyle(document.documentElement);
+  const hex = n => css.getPropertyValue(n).trim();
+  const mix = (a, b, t) => {
+    const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const A = p(a), B = p(b);
+    return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",")})`;
+  };
+  const M = 1.6;
+  function color(v) {
+    const t = Math.min(Math.abs(v) / M, 1);
+    return mix(hex("--heat-mid"), hex(v < 0 ? "--heat-neg" : "--heat-pos"), t);
+  }
+  years.forEach((y, j) => el("text", { x: L + cw * j + cw / 2, y: 14, "text-anchor": "middle" }, s, y));
+  order.forEach((name, i) => el("text", { x: L - 6, y: T + ch * i + 15, "text-anchor": "end", class: "lab" }, s, name));
+  const cells = [];
+  DATA.heat.forEach(d => {
+    const i = order.indexOf(d.name), j = years.indexOf(d.year);
+    const r = el("rect", { x: L + cw * j + 1, y: T + ch * i + 1, width: cw - 2, height: ch - 2, rx: 2 }, s);
+    cells.push([r, d.v]);
+    hover(r, `${d.name}, ${d.year}<br>Residual AEWR ${fmt(d.v)} $`);
+  });
+  const paint = () => cells.forEach(([r, v]) => r.setAttribute("fill", color(v)));
+  paint();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => setTimeout(paint, 0));
+  new MutationObserver(() => setTimeout(paint, 0)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  document.getElementById("heatlegend").innerHTML =
+    `<span><span class="sw" style="background:var(--heat-neg)"></span>−$1.60 or lower</span>` +
+    `<span><span class="sw" style="background:var(--heat-mid);border:1px solid var(--rule)"></span>$0</span>` +
+    `<span><span class="sw" style="background:var(--heat-pos)"></span>+$1.60 or higher</span>`;
+})();
+
+// Region bars
+(function () {
+  const rows = DATA.regions, L = 118, W = 420, R = 200, rh = 24, T = 22;
+  const s = svg(L + W + R, T + rh * rows.length + 6, "regions");
+  const max = 0.9;
+  [0, .3, .6, .9].forEach(v => {
+    const x = L + v / max * W;
+    el("line", { x1: x, x2: x, y1: T - 4, y2: T + rh * rows.length, stroke: "var(--rule)" }, s);
+    el("text", { x, y: 12, "text-anchor": "middle" }, s, "$" + v.toFixed(2));
+  });
+  el("text", { x: L + W + 60, y: 12, "text-anchor": "end" }, s, "Counties");
+  el("text", { x: L + W + 150, y: 12, "text-anchor": "end" }, s, "H-2A share");
+  rows.forEach((r, i) => {
+    const y = T + rh * i;
+    el("text", { x: L - 6, y: y + 15, "text-anchor": "end", class: "lab" }, s, r.region_name);
+    const b = el("rect", { x: L, y: y + 5, width: r.resid_sd / max * W, height: 13, rx: 3, fill: "var(--series-1)" }, s);
+    hover(b, `${r.region_name}<br>Residual SD $${r.resid_sd.toFixed(2)}<br>${r.counties} counties · ${(r.h2a_share * 100).toFixed(1)}% of certified workers`);
+    el("text", { x: L + W + 60, y: y + 15, "text-anchor": "end", class: "lab" }, s, r.counties);
+    el("text", { x: L + W + 150, y: y + 15, "text-anchor": "end", class: "lab" }, s, (r.h2a_share * 100).toFixed(1) + "%");
+  });
+})();
+
+// Scatter panels
+function scatter(host, key, title, corr) {
+  const W = 400, H = 330, L = 46, B = 40, T = 26, Rm = 12;
+  const s = svg(W, H, host);
+  const lim = 1.8;
+  const sx = v => L + (v + lim) / (2 * lim) * (W - L - Rm);
+  const sy = v => T + (lim - v) / (2 * lim) * (H - T - B);
+  [-1.5, -1, -.5, 0, .5, 1, 1.5].forEach(v => {
+    el("line", { x1: sx(v), x2: sx(v), y1: T, y2: H - B, stroke: "var(--rule)", "stroke-opacity": v === 0 ? 1 : .5 }, s);
+    el("line", { x1: L, x2: W - Rm, y1: sy(v), y2: sy(v), stroke: "var(--rule)", "stroke-opacity": v === 0 ? 1 : .5 }, s);
+  });
+  [-1.5, 0, 1.5].forEach(v => {
+    el("text", { x: sx(v), y: H - B + 16, "text-anchor": "middle" }, s, fmt(v, 1));
+    el("text", { x: L - 6, y: sy(v) + 4, "text-anchor": "end" }, s, fmt(v, 1));
+  });
+  el("text", { x: L, y: 14, class: "lab" }, s, title + ` · corr ${corr}`);
+  el("text", { x: (L + W - Rm) / 2, y: H - 6, "text-anchor": "middle" }, s, "Predictor residual ($)");
+  el("text", { x: 12, y: (T + H - B) / 2, transform: `rotate(-90 12 ${(T + H - B) / 2})`, "text-anchor": "middle" }, s, "AEWR residual ($)");
+  const pts = DATA.scatter;
+  const mx = pts.reduce((a, p) => a + p[key], 0) / pts.length, my = pts.reduce((a, p) => a + p.a, 0) / pts.length;
+  let sxy = 0, sxx = 0; pts.forEach(p => { sxy += (p[key] - mx) * (p.a - my); sxx += (p[key] - mx) ** 2; });
+  const b = sxy / sxx;
+  pts.forEach(p => {
+    if (Math.abs(p[key]) > lim || Math.abs(p.a) > lim) return;
+    const c = el("circle", { cx: sx(p[key]), cy: sy(p.a), r: 4, fill: "var(--series-1)", "fill-opacity": .7, stroke: "var(--surface)", "stroke-width": 1 }, s);
+    hover(c, `${p.name}, ${p.year}<br>AEWR ${fmt(p.a)} · predictor ${fmt(p[key])}`);
+  });
+  const x0 = -lim, x1 = lim;
+  el("line", { x1: sx(x0), y1: sy(my + b * (x0 - mx)), x2: sx(x1), y2: sy(my + b * (x1 - mx)), stroke: "var(--series-2)", "stroke-width": 2 }, s);
+}
+scatter("sc1", "z", "Retained instrument", "0.45");
+scatter("sc2", "n", "Unweighted regional OEWS mean", "0.59");
+</script>
+
+</body>
+</html>

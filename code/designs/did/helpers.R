@@ -42,6 +42,10 @@ did_event_model <- function(data, controls = FALSE) {
     control_terms,
     " | county_fips + year"
   ))
+  # Apply the existing complete-case rule before i() expands calendar levels.
+  # fixest otherwise fails when an entire calendar year has no usable regressor.
+  model_columns <- unique(c(all.vars(formula), all.vars(did_cluster_formula)))
+  data <- data[stats::complete.cases(data[, model_columns]), , drop = FALSE]
   fixest::feols(
     formula,
     data = data,

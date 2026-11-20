@@ -2,7 +2,7 @@
 
 Version 4 replaces the former three-lag polynomial specification program.  It
 keeps every declared treatment-history coordinate linear and separate, fits
-only OLS models, and constructs ratios and elasticities after fitting the six
+only OLS models, and constructs ratios and elasticities after fitting the five
 primitive outcomes on one common design.
 """
 
@@ -15,7 +15,7 @@ from typing import Final, Literal
 import polars as pl
 
 # docs-ground:start mundlak-design-contract
-DESIGN_VERSION: Final = "4.0.0"
+DESIGN_VERSION: Final = "4.1.0"
 DEFAULT_STAGE: Final = "compact"
 BASELINE_YEARS: Final = (2008, 2009, 2010)
 FROZEN_WINDOWS: Final = {
@@ -47,10 +47,12 @@ FULL_HISTORY_REFERENCE_PATH_YEARS: Final = tuple(
 # target years for the one-lag comparison.
 CURRENT_EFFECT_REPORTING_YEARS: Final = tuple(range(2013, 2023))
 
+# Requested positions are unavailable in part of the analysis calendar. They
+# are excluded from the baseline outcomes; the common county-year sample stays
+# fixed and does not depend on requested-position availability.
 PRIMITIVE_OUTCOMES: Final = {
     "applications": "mc_y_applications",
     "linked_worksite_businesses": "mc_y_linked_worksite_businesses_balanced",
-    "requested_positions": "mc_y_requested_positions",
     "certified_positions": "mc_y_certified_positions",
     "certified_hours": "mc_y_certified_hours",
     "any_application": "mc_y_any_application",
@@ -59,13 +61,12 @@ PRIMITIVE_OUTCOMES: Final = {
 EMPLOYER_LINKAGE_CONTRACT: Final = {
     "employer_linkage_unit": "worksite_business",
     "employer_linkage_version": "v2",
-    "employer_linkage_input_max_year": 2024,
-    "employer_linkage_review_status": "complete",
+    "employer_linkage_input_max_year": 2026,
+    "employer_linkage_review_status": "pending",
 }
 
 CONSTRUCTED_OUTCOMES: Final = (
     "applications_per_1000_baseline_farm_workers",
-    "requested_positions_per_1000_baseline_farm_workers",
     "certified_positions_per_1000_baseline_farm_workers",
     "certified_hours_per_baseline_farm_worker",
     "positions_per_application_ratio_of_aggregates",

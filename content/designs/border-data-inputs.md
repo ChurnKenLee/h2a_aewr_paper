@@ -22,7 +22,7 @@ improvements in economically comparable precision.
 
 Each denominator is estimated on its native eligible sample and on one common
 sample with all four denominators. The comparison holds the screened h1
-geography, 2011--2022 current real AEWR, county/component-year fixed effects,
+geography, 2011--2025 current real AEWR, county/component-year fixed effects,
 equal county-year weights and certification numerator fixed. It retains pair
 CRV1/CV3J and shared-endpoint dyadic diagnostics, including nonpositive raw
 variances. The 2011 benchmark retains its original role; there is no selection
@@ -48,7 +48,8 @@ Available source history extends to 1990 for annual wage references, 1997 for
 county Census hired labor, 2001 for cleaned BEA farm employment and 2000 for
 local QCEW. Source/year/AEWR-region audits retain missing and suppressed cells.
 QCEW covered jobs exclude proprietors and parts of agricultural employment.
-The shared outcome backbone remains 2008--2022. Earlier missing H-2A outcomes
+The user-approved shared baseline and this design now cover 2008--2025.
+Policy comparisons use 2011--2025 and retain their fixed denominators. Earlier missing H-2A outcomes
 are not filled with zeros; later disclosed cases do not automatically extend
 the treatment regime. The sourced policy-event ledger records concurrent
 changes without assuming that regional wage movements are exogenous.

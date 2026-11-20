@@ -4,9 +4,9 @@
 panel_iv_read_specification <- function(path) {
   specification <- jsonlite::read_json(path, simplifyVector = TRUE)
   required <- c(
-    "version", "policy_years", "endogenous", "fixed_effects",
-    "primary_inference_cluster", "dependence_sensitivity_cluster",
-    "controls", "models", "primary_outcome", "derived_outcomes", "outcomes"
+    "version", "policy_years", "endogenous", "instrument", "fixed_effects",
+    "primary_inference_cluster", "controls", "models", "preferred_column",
+    "primary_outcome", "derived_outcomes", "outcomes"
   )
   missing <- setdiff(required, names(specification))
   if (length(missing)) {
@@ -18,19 +18,21 @@ panel_iv_read_specification <- function(path) {
       anyDuplicated(outcomes$outcome) || !specification$primary_outcome %in% outcomes$outcome) {
     stop("Panel-IV outcome registry must contain twelve unique declared outcomes.", call. = FALSE)
   }
-  if (!identical(as.integer(specification$policy_years), c(2011L, 2022L)) ||
+  expected_years <- c(DISSIMILARITY_IV_POLICY_START_YEAR, DISSIMILARITY_IV_ESTIMATION_END_YEAR)
+  if (!identical(as.integer(specification$policy_years), expected_years) ||
       !identical(as.character(specification$fixed_effects), c("county_fips", "year"))) {
     stop("Panel-IV timing or fixed effects changed without a design revision.", call. = FALSE)
   }
+  if (!identical(specification$instrument, "z_wage_seasonal_composition_real") ||
+      !identical(as.character(specification$controls), DISSIMILARITY_IV_CONTROL_TERMS)) {
+    stop("Panel-IV instrument or controls changed without a design revision.", call. = FALSE)
+  }
   models <- tibble::as_tibble(specification$models)
-  expected_model_columns <- c(
-    "column", "instrument", "moment_targets", "controls",
-    "first_stage_header", "second_stage_header"
-  )
-  if (!identical(names(models), expected_model_columns) ||
-      !identical(as.integer(models$column), 1:4) ||
-      !identical(as.logical(models$controls), c(FALSE, FALSE, TRUE, TRUE))) {
-    stop("Panel-IV model registry must contain the four ordered declared columns.", call. = FALSE)
+  if (!identical(names(models), c("column", "controls", "header", "file_stub")) ||
+      !identical(as.integer(models$column), 1:2) ||
+      !identical(as.logical(models$controls), c(FALSE, TRUE)) ||
+      !identical(as.integer(specification$preferred_column), 2L)) {
+    stop("Panel-IV model registry must contain the two ordered declared columns.", call. = FALSE)
   }
   specification$models <- models
   specification$outcomes <- outcomes

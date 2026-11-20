@@ -6,7 +6,7 @@ description = "Version-4 treatment registry, linear-history OLS, estimands, infe
 scopes = ["code/designs/mundlak_chamberlain", "scripts/run_mundlak_chamberlain.sh"]
 +++
 
-{{ <grounding path="code/designs/mundlak_chamberlain/mcw/design.py" anchor="mundlak-design-contract" sha256="beca009639b4dc04dd572e09869cb0b4cb0ce6c90112e2fb62eb946b2235bb91" /> }}
+{{ <grounding path="code/designs/mundlak_chamberlain/mcw/design.py" anchor="mundlak-design-contract" sha256="cab1980b1699b44ddd46f93e438301aa3fe9d505224b22bb429a3cf6efef509c" /> }}
 
 The cross-design distinction between causal outcomes and required model inputs
 is maintained in [Causal outcomes and model inputs](@/contracts/causal-outcomes-and-model-inputs.md).
@@ -31,7 +31,7 @@ Version 4 implements the conflict-resolved late decisions in `ckl_12Aug`:
 - DuckDB for schema-aware source scans, Polars for relational construction,
   frames, and artifacts, and bounded NumPy/SciPy linear algebra after FWL
   compression;
-- six primitive outcomes on one common design and sample, with ratios, rates,
+- five primitive outcomes on one common design and sample, with ratios, rates,
   raw-log-AEWR elasticities, and other treatment-unit-normalized effects formed
   after estimation; and
 - analytic HC3/cluster covariance plus a transparently experimental continuous
@@ -70,7 +70,7 @@ the same guard.
 ## Data and calendar
 
 The county is the outcome unit. The shared design-neutral panel supplies 2008
-through 2022 data and string-valued county, state, commuting-zone, and AEWR
+through 2025 data and string-valued county, state, commuting-zone, and AEWR
 region identifiers. The frozen baseline is 2008–2010. Treatment history begins
 in 2011, the first clean regional coordinate after that boundary; outcome rows
 cover 2012–2022, as explicitly approved in the archive. This does not make
@@ -185,21 +185,34 @@ coefficient.
 
 ## Outcomes and constructed estimands
 
-The common OLS fit contains six primitive H-2A outcomes:
+The common OLS fit contains five primitive H-2A outcomes:
 
 1. application count;
 2. balanced v2 linked-worksite-business count;
-3. requested-position count;
-4. certified-position count;
-5. certified-hour count; and
-6. $1[\text{applications}>0]$, estimated as a linear probability outcome.
+3. certified-position count;
+4. certified-hour count; and
+5. $1[\text{applications}>0]$, estimated as a linear probability outcome.
+
+Version 4.1.0 removes requested positions and their derived rate from the
+baseline, by user instruction. Calendar 2012--2014 contains known source gaps
+for requested positions. Neither the panel builder nor the five-outcome fit
+requires that field. Eligibility, calendar, treatment histories, baseline
+controls/moderators, weights, fixed effects, clusters, leverage and inference
+remain unchanged. Shared requested-position values and missingness remain
+available upstream; no zero-fill or outcome-availability sample restriction
+is introduced. The design version and code hashes invalidate old six-outcome
+fits and reports.
+
+The business count requires the panel's single employer-linkage contract to
+match `EMPLOYER_LINKAGE_CONTRACT` in `mcw/design.py`: worksite-business v2
+with FY2008–2026 Q3 identity evidence and review status `pending` until the
+FY2026 Q3 extension's review pairs are labeled.
 
 For comparability, the branch reports both models' average current-coordinate
 effects over the common identified target 2013–2022. The one-lag model's
 identified 2012 current coefficient remains in the coefficient artifact but is
 not silently added to that cross-model average. The branch then constructs
-applications, requested positions,
-and certified positions per baseline farm worker; hours per baseline farm worker;
+applications and certified positions per baseline farm worker; hours per baseline farm worker;
 positions per application; hours per position; raw-log-AEWR elasticities; and
 percentage-of-observed-mean effects per declared treatment unit. A ratio of
 aggregate fitted totals and an average of unit-level ratios are different

@@ -1,0 +1,229 @@
+Report of Systematic Sensitivity Analysis varying Shocks.
+Stroud quadrature, 72 solves.
+Solution file containing means is: D:\Models\Labor\PFP\RR2\ssa\3_SSA_wTRIM_SHK_FLS_C_m1.sl4
+Solution file containing standard deviations is: D:\Models\Labor\PFP\RR2\ssa\3_SSA_wTRIM_SHK_FLS_C_sd.sl4
+This report is: D:\Models\Labor\PFP\RR2\ssa\3_SSA_wTRIM_SHK_FLS_C_m1.srp
+ 
++++ Summary of the Variations (from Sensitivity Choice Form) +++
+Vary p_AFLABORa("Heartland")   = 9.8;CI TD
+Vary p_AFLABORa("NorthCrescen")   = 5.9;CI TD
+Vary p_AFLABORa("NorthGreatPl")   = 9.8;CI TD
+Vary p_AFLABORa("PrairieGatew")   = 9.8;CI TD
+Vary p_AFLABORa("EastUplands")   = 17.6;CI TD
+Vary p_AFLABORa("SouthSeabr")   = 3.9;CI TD
+Vary p_AFLABORa("FruitfulRim")   = 2.0;CI TD
+Vary p_AFLABORa("BasinaRange")   = 7.8;CI TD
+Vary p_AFLABORa("MississippiP")   = 13.7;CI TD
+
+Vary p_AFNLABORa("Heartland")  = 2.0;CI TD
+Vary p_AFNLABORa("NorthCrescen")  = 2.0;CI TD
+Vary p_AFNLABORa("NorthGreatPl")  = 2.0;CI TD
+Vary p_AFNLABORa("PrairieGatew")  = 2.0;CI TD
+Vary p_AFNLABORa("EastUplands")  = 2.0;CI TD
+Vary p_AFNLABORa("SouthSeabr")  = 29.4;CI TD
+Vary p_AFNLABORa("FruitfulRim")  = 2.0;CI TD
+Vary p_AFNLABORa("BasinaRange")  = 2.0;CI TD
+Vary p_AFNLABORa("MississippiP")  = 19.6;CI TD
+
+Vary p_AFLANDWTRa("Heartland") = 2.0;CI TD
+Vary p_AFLANDWTRa("NorthCrescen") = 11.8;CI TD
+Vary p_AFLANDWTRa("NorthGreatPl") = 2.0;CI TD
+Vary p_AFLANDWTRa("PrairieGatew") = 2.0;CI TD
+Vary p_AFLANDWTRa("EastUplands") = 29.4;CI TD
+Vary p_AFLANDWTRa("SouthSeabr") = 5.9;CI TD
+Vary p_AFLANDWTRa("FruitfulRim") = 3.9;CI TD
+Vary p_AFLANDWTRa("BasinaRange") = 2.0;CI TD
+Vary p_AFLANDWTRa("MississippiP") = 3.9;CI TD
+
+Vary s_QLABORa("Heartland")    = 11.9;CI TD
+Vary s_QLABORa("NorthCrescen")    = 8.0;CI TD
+Vary s_QLABORa("NorthGreatPl")    = 1.0;CI TD
+Vary s_QLABORa("PrairieGatew")    = 5.3;CI TD
+Vary s_QLABORa("EastUplands")    = 3.2;CI TD
+Vary s_QLABORa("SouthSeabr")    = 10.7;CI TD
+Vary s_QLABORa("FruitfulRim")    = 12.6;CI TD
+Vary s_QLABORa("BasinaRange")    = 6.6;CI TD
+Vary s_QLABORa("MississippiP")    = 1.9;CI TD
++++ End of Summary of the Variations (from Sensitivity Choice Form) +++
+ 
+The following SSA Details file is relevant to these SSA runs:
+  D:\Models\Labor\PFP\RR2\R\outpar_111925\out\3_SSA_SHK_FLS_C.txt
+[This file may have been loaded or saved while specifying this SSA job.]
+ 
+ These results were calculated 25-Mar-26 4:45:32 PM
+ 
++++ Command File for the Original Simulation Follows +++
+! This Command file
+! D:\Models\Labor\PFP\RR2\sim1.cmf
+! was written by RunGEM (Version 12.20 built 28/Apr/2025)
+!
+! Auxiliary files (i.e., which model)
+! ---------------
+!
+Auxiliary files = D:\Models\Labor\PFP\RR2\simplez ;
+closure information file = C:\Users\srabashi.ray\AppData\Local\Temp\GPTEMP\rungem\solve1.cli ;
+!
+! Original Data files
+! -------------------
+!
+File CZSETS = D:\Models\Labor\PFP\RR2\in\CZSETS.har ; !  model sets
+File CZDATA = D:\Models\Labor\PFP\RR2\in\czdata.har ; !  model data
+File CZPARM = D:\Models\Labor\PFP\RR2\in\czparm.har ; !  model parameters
+File REGPARM = D:\Models\Labor\PFP\RR2\in\REGPARM.HAR ; !  model parameters
+File LABMRKT = D:\Models\Labor\PFP\RR2\in\LMS_ERS10.HAR ; !  file to sepcify the labor market shed for mig. lab
+File ESTIPARM = D:\Models\Labor\PFP\RR2\shf\FSE-FLS_CM.har ; !  file with parameters to calibrate
+!
+! Output files
+! ------------
+!
+Solution file = sim1 ;
+Updated file CZDATA = sim1.upd ;
+Extrapolation Accuracy File = yes ;
+dpn = yes ;
+!
+! Closure
+! -------
+!
+ ! Closure
+ ! -------
+ !                   KEY EXOGENOUS VARIABLES 
+! Exogenous  p_INC_PC   ;!per capita income by inc. reg.
+! Exogenous  p_POP      ;!population by inc. reg.
+! Exogenous  p_QCRPBIOFr ;!crop demand for global biofuel use
+! Exogenous  s_QCRPBIOFr ;!crop demand for biofuel use | alternative
+
+! Exogenous  p_P(NFOOD_COMM,REG) ;!price of non-food commodities by inc. reg.
+! Exogenous  p_PNCRPFEED ;!price of non-feed inputs used in livestock prod.
+! Exogenous  p_PNCRPFOOD ;!price of non-crop inputs used in proc. food prod.
+
+ !                      Livestock Sector
+! Exogenous  p_AOCRPFEED   ;!hicks-neutral eff. index in livestock prod.
+! Exogenous  p_AFCRPFEEDW  ;!sub-component of feed eff. index by inc. reg. (global)
+! Exogenous  p_AFCRPFEEDr  ;!sub-component of feed eff. index by inc. reg. (reg. specific)
+! Exogenous  p_AFNCRPFEEDW ;!sub-component of non-feed eff. index by inc. reg. (global)
+! Exogenous  p_AFNCRPFEEDr ;!sub-component of non-feed eff. index by inc. reg. (reg. specific)
+ 
+ !                      Processed Food Sector
+! Exogenous  p_AOCRPFOOD   ;!hicks-neutral eff. index in proc. food prod.
+! Exogenous  p_AFNCRPFOODW ;!sub-component of eff. index of non-crop inputs in proc. food prod. by inc. reg. (global)
+! Exogenous  p_AFCRPFOODW  ;!sub-component of eff. index of crops in proc. food prod. by inc. reg. (global)
+! Exogenous  p_AFCRPFOODr  ;!sub-component of eff. index of crops in proc. food prod. by inc. reg. (reg. specific)
+! Exogenous  p_AFNCRPFOODr ;!sub-component of eff. index of non-crop inputs in proc. food prod. by inc. reg. (reg. specific)
+
+ !                    EFFICIENCY VARIABLES (also exogenous)
+Exogenous  p_AOCROPz  ;! efficiency index by LMS for CROP
+
+Exogenous  p_AFNITROa ;
+Exogenous  p_AFNLANDa  ;! efficiency index by reg for NLAND
+Exogenous  p_AFLABORa  ;
+Exogenous  p_AFNLABORa  ;
+Exogenous  p_AFLANDWTRa  ;! efficiency index by reg for LAND+WTR
+
+Exogenous  p_AFLABORz  ;
+Exogenous  p_AFNLABORz  ;
+Exogenous  p_AFLANDWTRz  ;! efficiency index by reg for LAND+WTR
+Exogenous  p_AFNITROz  ;
+Exogenous  p_AFLANDz  ;
+Exogenous  p_AFNLANDz  ;
+Exogenous  p_AFWATERz  ;
+Exogenous  p_AFWATSGz  ;
+Exogenous  p_AFWEQPTz  ;
+
+Exogenous  p_AOCROPr  ;! efficiency index by reg for CROP
+Exogenous  p_AFNITROr  ;! efficiency index by reg for NITRO
+Exogenous  p_AFLANDr  ;! efficiency index by reg for LAND
+Exogenous  p_AFNLANDr  ;! efficiency index by reg for NLAND
+Exogenous  p_AFLANDWTRr  ;! efficiency index by reg for LAND+WTR
+Exogenous  p_AFWATERr  ;! efficiency index by reg for WATER
+Exogenous  p_AFWATSGr  ;! efficiency index by reg for WATSG
+Exogenous  p_AFWEQPTr  ;! efficiency index by reg for WEQPT
+Exogenous  p_AFLABORr  ;! efficiency index by grid & ltype for LABOR
+Exogenous  p_AFNLABORr  ;! efficiency index by grid & ltype for NLABOR
+ 
+ !                   POLICY VARIABLES (also exogenous)
+! turn on slack and off p_PCROPr when putting back national model
+!Exogenous  p_PCROPr;
+Exogenous  s_PCROPz;
+
+!   Land water levers                                             !
+Exogenous  s_QWATERz   ;! Slack to control water use by grid !
+Exogenous  s_QLANDz     ;! Slack to target corn-soy harvested area by grid (in 1000 ha) !;
+Exogenous t_PNLABORz;
+Exogenous t_PNITROz;
+
+!Exogenous  s_QLANDWTRz ;
+Exogenous  s_QAUGLANDz ;
+
+! labor!
+!Exogenous  s_QNLANDz;
+!Exogenous  s_PNLANDz;
+Exogenous  s_QLABORz;
+Exogenous  s_QLABORa;
+
+Exogenous t_PAUGLANDz; ! added 02/20
+REST Endogenous;
+
+! hold production constant in all CZ !
+Swap p_QAUGLANDz       = s_QAUGLANDz;
+Swap p_PAUGLANDz       = t_PAUGLANDz;
+!Swap p_PLABORz      = s_QLABORz;
+Swap p_QWATERz      = s_QWATERz;
+Swap p_PNLABORz     = t_PNLABORz;
+!
+! Verbal description
+! ------------------
+!
+Verbal Description =
+;
+!
+! Solution method
+! ---------------
+!
+Method = Gragg;
+Steps = 2 4 6;
+subintervals = 1;
+!
+! Miscellaneous info
+! ------------------
+!
+!
+! Shocks
+! ------
+!
+! ************** !
+! Shocks Section !
+! ************** !
+! df.known
+! Change in crop production q_agg (2002-2017)  
+Shock p_QAUGLANDz(US_CZ)        = file shf\OBS_DATA_TRIM.har   header "QAUG";
+Shock p_PAUGLANDz(US_CZ)        = file shf\OBS_DATA_TRIM.har   header "PAUG";
+Shock s_PCROPz(US_CZ)           = file shf\OBS_DATA_TRIM.har   header "PAGG";
+
+! add change in water use and rent 
+Shock p_QWATERz(US_CZ)          = file shf\OBS_DATA_TRIM.har    header "QWAT";
+Shock p_PNLABORz(US_CZ)         = file shf\OBS_DATA_TRIM.har    header "PNLB";
+
+! add shocks to land and labor
+Shock s_QLANDz(US_CZ)           = file shf\OBS_DATA_TRIM.har    header "PHIC";
+Shock s_QLABORz(US_CZ)          = file shf\ConSe_M_TRIM.har      header "PHIL";
+
+! estimated PFP, ESLZ, ELAB
+! PFP
+Shock p_AFLABORz(US_CZ)    = file shf/FSE-FLS_CM_TRIM.har header "AFL";
+Shock p_AFNLABORz(US_CZ)   = file shf/FSE-FLS_CM_TRIM.har header "AFZ";
+Shock p_AFLANDWTRz(US_CZ)  = file shf/FSE-FLS_CM_TRIM.har header "AFR";
+
+! decompose
+Subtotal p_QAUGLANDz(US_CZ) = Q;
+Subtotal p_AFLABORz(US_CZ) = AFL;
+Subtotal p_AFNLABORz(US_CZ) = AFZ;
+Subtotal p_AFLANDWTRz(US_CZ) = AFR;
+Subtotal s_QLANDz(US_CZ) = PHIC;
+Subtotal s_QLABORz(US_CZ) = PHIL;
+Subtotal p_QWATERz(US_CZ) = QW;
+Subtotal p_PNLABORz(US_CZ) = PZ;
+
+!Shock p_AFLANDWTRa(SHPR) = file shf\ESTIPARM-FLS_C.har header "AFR";
+!Shock p_AFLABORa(SHPR)   = file shf\ESTIPARM-FLS_C.har header "AFL";
+!Shock p_AFNLABORa(SHPR)  = file shf\ESTIPARM-FLS_C.har header "AFZ";
++++ Command File for the Original Simulation Ends +++

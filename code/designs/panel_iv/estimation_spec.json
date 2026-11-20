@@ -1,11 +1,11 @@
 {
-  "version": "panel_iv_estimation_v1",
+  "version": "panel_iv_estimation_v2",
   "status": "single_source_of_truth_for_panel_iv_estimation",
-  "policy_years": [2011, 2022],
+  "policy_years": [2011, 2023],
   "endogenous": "aewr_ppi",
+  "instrument": "z_wage_seasonal_composition_real",
   "fixed_effects": ["county_fips", "year"],
   "primary_inference_cluster": "aewr_iv_cluster_id",
-  "dependence_sensitivity_cluster": "aewr_region_id",
   "weights": "equal_county_year_observations",
   "controls": [
     "ln_pop_census_l1",
@@ -17,37 +17,18 @@
   "models": [
     {
       "column": 1,
-      "instrument": "z_wage_only_real",
-      "moment_targets": "Wage only",
       "controls": false,
-      "first_stage_header": "Basic",
-      "second_stage_header": "Wage only"
+      "header": "No controls",
+      "file_stub": "spec1_no_controls"
     },
     {
       "column": 2,
-      "instrument": "z_wage_seasonal_composition_real",
-      "moment_targets": "Wage + seasonal/composition",
-      "controls": false,
-      "first_stage_header": "Basic + seasonal/composition",
-      "second_stage_header": "Seasonal/composition"
-    },
-    {
-      "column": 3,
-      "instrument": "z_wage_only_real",
-      "moment_targets": "Wage only",
       "controls": true,
-      "first_stage_header": "Controls",
-      "second_stage_header": "Wage only + controls"
-    },
-    {
-      "column": 4,
-      "instrument": "z_wage_seasonal_composition_real",
-      "moment_targets": "Wage + seasonal/composition",
-      "controls": true,
-      "first_stage_header": "Controls + seasonal/composition",
-      "second_stage_header": "Seasonal/composition + controls"
+      "header": "Controls",
+      "file_stub": "spec2_preferred"
     }
   ],
+  "preferred_column": 2,
   "primary_outcome": "h2a_cert_share_farm_workers_2011_start_year",
   "derived_outcomes": {
     "farm_cashandinc_ppi_per_farm_worker": {

@@ -6,7 +6,7 @@ description = "Design-neutral ownership, prediction semantics, and artifact inva
 scopes = ["code/c01_clean", "code/c02_build", "code/descriptives", "code/designs"]
 +++
 
-{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-contract" sha256="b8fd6cf733f2ea700c01ab53c1b5d582073d588ee0707dff590b17387ffd2677" /> }}
+{{ <grounding path="code/c02_build/01_build_county_panel.R" anchor="shared-panel-contract" sha256="7998a0df92b2bf71599e1db0ef7bdb9c723b17ee29efc544e3e0bbb897664c29" /> }}
 
 For the complete C01 merge, C02 transformation, validation, and rebuild path,
 see [Generating the shared county-year panel](@/architecture/shared-panel-generation.md).
@@ -36,7 +36,7 @@ divide by that same stored exposure.
 The shared H-2A business outcome uses the raw balanced v2 count of
 positive-certified linked worksite businesses. Conservative and high-recall
 counts remain in the panel for linkage-sensitivity analyses. C02 requires the
-reviewed FY2008--2024 linkage metadata and fills its unit, version, vintage,
+FY2008--2026 Q3 linkage metadata (review status `complete` or `pending`) and fills its unit, version, vintage,
 review status, and review-report hash across H-2A zero-use county-years.
 
 The shared panel carries BEA CAEMP25N employment totals, including all-industry
@@ -59,7 +59,8 @@ for effective dates, occupational lookups, gaps and competing floors.
 Border stage04 explicitly reconstructs its historical contaminated comparator
 from the named nonstatutory field; stage07 uses canonical wages and retains
 2008--2010 outcomes for FE-only calibration without requiring a wage value.
-The 2011--2022 policy treatment is unchanged. Panel IV uses moving OEWS wages
+The user-approved common baseline covers 2008--2025; the border design uses
+2011--2025 with the same regional annual-reference treatment definition. Panel IV uses moving OEWS wages
 from source year t-1; its former frozen-2009 loading exercise is retired.
 
 The shared panel also carries nominal OEWS Big-Six mean hourly- and annual-wage
@@ -81,3 +82,9 @@ Manual command:
 ```sh
 Rscript --vanilla code/c02_build/01_build_county_panel.R
 ```
+
+The producer enforces the complete 2008--2025 calendar for every county.
+The shared coverage validator reports observed and finite values by year and
+checks certifications against B01; missing later-year source values remain
+missing. Full-vintage linkage can revise earlier business counts, and pooled
+hours imputation can revise earlier hours when disclosures are refreshed.

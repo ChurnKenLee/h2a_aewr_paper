@@ -145,7 +145,9 @@ def _(list_obs, pl):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Add agricultural worker exemption data
+    Add state FIPS codes. Agricultural coverage is not coded here: the dated,
+    sourced coverage table `code/a01_sources/state_ag_minwage_coverage.csv` is
+    read by `code/c01_clean/04_state_minimum_wages.R`.
     """)
     return
 
@@ -154,33 +156,7 @@ def _(mo):
 def _(INTERMEDIATE, RAW, df, pl):
     from h2a.geography import assert_geo_columns, geo_expr
 
-    ag_exemption_list = [
-        "AK",
-        "DE",
-        "GA",
-        "IN",
-        "KS",
-        "KY",
-        "ME",
-        "MA",
-        "NE",
-        "NH",
-        "NJ",
-        "OK",
-        "RI",
-        "VT",
-        "VA",
-        "WA",
-        "WV",
-        "WY",
-    ]
-
-    # Add FIPS code and export
-    min_wage_df = df.with_columns(
-        pl.col("state_abbreviation")
-        .is_in(ag_exemption_list)
-        .alias("agriculture_exemption")
-    )
+    min_wage_df = df
 
     state_fips_lookup = (
         pl.read_csv(RAW / "geographic_crosswalks" / "phil" / "fips_codes.csv")

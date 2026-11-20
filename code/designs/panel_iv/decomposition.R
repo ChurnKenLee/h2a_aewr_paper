@@ -1,4 +1,4 @@
-# Plain helpers for the Kitagawa instrument-decomposition diagnostic.
+# Plain helper for the Kitagawa instrument-decomposition diagnostic.
 #
 # For a target cluster g and source year t with balanced donor weights p_ct
 # (summing to one) and donor wages w_ct, fix reference values p_bar_c (the
@@ -9,7 +9,6 @@
 # Callers are responsible for loading dplyr.
 
 IV_DECOMPOSITION_BASE_WAGE_YEARS <- 2008:2010
-IV_DECOMPOSITION_VERSION <- "panel_iv_kitagawa_decomposition_v1"
 IV_DECOMPOSITION_IDENTITY_TOLERANCE <- 1e-9
 
 iv_kitagawa_components <- function(data, group_columns) {
@@ -65,8 +64,6 @@ iv_kitagawa_components <- function(data, group_columns) {
       .groups = "drop"
     ) %>%
     dplyr::mutate(
-      z_weight_shapley = .data$z_weight + .data$z_interaction / 2,
-      z_wage_shapley = .data$z_wage + .data$z_interaction / 2,
       identity_residual = .data$z_balanced -
         (.data$z_constant + .data$z_weight + .data$z_wage + .data$z_interaction)
     )
@@ -77,58 +74,83 @@ iv_kitagawa_components <- function(data, group_columns) {
   components
 }
 
-# Anderson-Rubin confidence set for a just-identified model. The AR
-# statistic for beta0 is (pi_y - beta0 pi_x)^2 / Var(pi_y - beta0 pi_x), where
-# pi_y and pi_x are reduced-form and first-stage coefficients on the instrument
-# and the variance is quadratic in beta0.
-iv_ar_confidence_set <- function(pi_y, pi_x, var_y, var_x, cov_yx, critical_value) {
-  a <- pi_x^2 - critical_value * var_x
-  b <- pi_y * pi_x - critical_value * cov_yx
-  c <- pi_y^2 - critical_value * var_y
-  discriminant <- b^2 - a * c
-  if (!all(is.finite(c(a, b, c)))) {
-    return(list(lower = NA_real_, upper = NA_real_, type = "undefined"))
-  }
-  if (a > 0) {
-    root <- sqrt(max(discriminant, 0))
-    return(list(lower = (b - root) / a, upper = (b + root) / a, type = "bounded"))
-  }
-  if (a < 0 && discriminant > 0) {
-    root <- sqrt(discriminant)
-    roots <- sort(c((b - root) / a, (b + root) / a))
-    return(list(lower = roots[[1]], upper = roots[[2]], type = "complement_of_interval"))
-  }
-  list(lower = -Inf, upper = Inf, type = "unbounded")
+# Real donor wage by county and year, with stage 05's donor-wage selection and
+# source-year PPI deflation. Callers source design.R and helpers.R.
+iv_real_donor_wages <- function(county_panel, ppi) {
+  wages <- dplyr::mutate(county_panel, source_year = as.integer(.data$year))
+  dplyr::bind_cols(
+    wages,
+    select_panel_iv_donor_wage(
+      wages$oews_big_six_mean_hourly_wage,
+      wages$oews_wage_observed
+    )
+  ) %>%
+    dplyr::left_join(ppi, by = "source_year", relationship = "many-to-one") %>%
+    dplyr::transmute(
+      .data$county_fips,
+      .data$source_year,
+      real_hourly_wage = dplyr::if_else(
+        is.finite(.data$donor_nominal_hourly_wage) &
+          is.finite(.data$source_year_ppi_2012) & .data$source_year_ppi_2012 > 0,
+        .data$donor_nominal_hourly_wage / .data$source_year_ppi_2012,
+        NA_real_
+      )
+    )
 }
 
-# Cluster-robust two-step GMM and Hansen J on data already partialled of
-# fixed effects and exogenous controls. Returns the first-step 2SLS estimate,
-# which equals the fixest 2SLS coefficient on the same partialled data.
-iv_cluster_hansen_j <- function(y, x, z, cluster) {
-  z <- as.matrix(z)
-  x <- as.matrix(x)
-  if (nrow(z) != length(y) || nrow(x) != length(y) || length(cluster) != length(y)) {
-    stop("Hansen J inputs must have matching rows.", call. = FALSE)
+# Mean real donor wage in the base years.
+iv_decomposition_base_wages <- function(county_panel, ppi) {
+  iv_real_donor_wages(county_panel, ppi) %>%
+    dplyr::filter(.data$source_year %in% IV_DECOMPOSITION_BASE_WAGE_YEARS) %>%
+    dplyr::group_by(.data$county_fips) %>%
+    dplyr::summarise(
+      base_real_hourly_wage = finite_mean(.data$real_hourly_wage),
+      .groups = "drop"
+    )
+}
+
+# Balanced donor set and its Kitagawa components. A donor is balanced when it
+# is `eligible` in every source year and has a base wage; its `weight` is
+# renormalized over that set. A group is supported when every selected donor
+# cluster contributes in every source year, mirroring the instrument's rule.
+iv_balanced_components <- function(frame, group_columns, source_years, donor_clusters) {
+  required <- c(
+    group_columns, "county_fips", "source_year", "donor_cluster", "eligible",
+    "weight", "donor_real_hourly_wage", "base_real_hourly_wage"
+  )
+  missing <- setdiff(required, names(frame))
+  if (length(missing)) {
+    stop("Balanced-donor input missing: ", paste(missing, collapse = ", "), call. = FALSE)
   }
-  overidentification <- ncol(z) - ncol(x)
-  if (overidentification < 1L) {
-    stop("Hansen J requires more instruments than endogenous regressors.", call. = FALSE)
-  }
-  zx <- crossprod(z, x)
-  zy <- crossprod(z, y)
-  zz_inverse <- solve(crossprod(z))
-  beta_2sls <- solve(t(zx) %*% zz_inverse %*% zx, t(zx) %*% zz_inverse %*% zy)
-  residual_2sls <- as.vector(y - x %*% beta_2sls)
-  scores <- rowsum(z * residual_2sls, cluster, reorder = FALSE)
-  weight <- solve(crossprod(scores))
-  beta_gmm <- solve(t(zx) %*% weight %*% zx, t(zx) %*% weight %*% zy)
-  moment <- crossprod(z, as.vector(y - x %*% beta_gmm))
-  statistic <- as.numeric(t(moment) %*% weight %*% moment)
+  balanced <- frame %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(group_columns, "county_fips")))) %>%
+    dplyr::filter(
+      dplyr::n_distinct(.data$source_year[.data$eligible]) == length(source_years),
+      is.finite(dplyr::first(.data$base_real_hourly_wage))
+    ) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(group_columns, "source_year")))) %>%
+    dplyr::mutate(
+      decomposition_weight = .data$weight / sum(.data$weight),
+      balanced_donor_clusters = dplyr::n_distinct(.data$donor_cluster),
+      balanced_donor_counties = dplyr::n_distinct(.data$county_fips)
+    ) %>%
+    dplyr::ungroup()
+  supported_groups <- balanced %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_columns))) %>%
+    dplyr::summarise(
+      decomposition_supported =
+        all(.data$balanced_donor_clusters == donor_clusters) &
+          dplyr::n_distinct(.data$source_year) == length(source_years),
+      .groups = "drop"
+    )
+  supported <- dplyr::semi_join(
+    balanced,
+    dplyr::filter(supported_groups, .data$decomposition_supported),
+    by = group_columns
+  )
   list(
-    beta_2sls = as.numeric(beta_2sls),
-    beta_gmm = as.numeric(beta_gmm),
-    statistic = statistic,
-    df = overidentification,
-    p_value = stats::pchisq(statistic, overidentification, lower.tail = FALSE)
+    balanced = balanced,
+    supported_groups = supported_groups,
+    components = iv_kitagawa_components(supported, group_columns)
   )
 }

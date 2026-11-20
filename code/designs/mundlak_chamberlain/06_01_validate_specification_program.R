@@ -173,19 +173,20 @@ if (
   all(resource_columns %in% names(diagnostics)) &&
     any(
       diagnostics$status == "estimated" &
-        (
-          diagnostics$dense_matrix_gib >
-            diagnostics$dense_matrix_guard_gib + 1e-12 |
-            diagnostics$estimated_peak_gib >
-              diagnostics$estimated_peak_guard_gib + 1e-12
-        ),
+        (diagnostics$dense_matrix_gib >
+          diagnostics$dense_matrix_guard_gib + 1e-12 |
+          diagnostics$estimated_peak_gib >
+            diagnostics$estimated_peak_guard_gib + 1e-12),
       na.rm = TRUE
     )
 ) {
-  stop("An estimated model exceeded its computational memory guard.", call. = FALSE)
+  stop(
+    "An estimated model exceeded its computational memory guard.",
+    call. = FALSE
+  )
 }
 
-estimated <- diagnostics |>
+estimated <- diagnostics %>%
   filter(.data$status == "estimated")
 if (
   nrow(common_basis) != nrow(estimated) * (MC_CCV_REFERENCE_STATES - 1L) ||
@@ -193,11 +194,14 @@ if (
     any(common_basis$missing_coefficient_count != 0L) ||
     any(estimated$ccv_covariance_rank > MC_CCV_DF) ||
     any(abs(estimated$maximum_observed_state_error) > 1e-12) ||
-    any(abs(
-      estimated$df_multiplier -
-        estimated$observations /
-          (estimated$observations - estimated$effective_parameters)
-    ) > 1e-10)
+    any(
+      abs(
+        estimated$df_multiplier -
+          estimated$observations /
+            (estimated$observations - estimated$effective_parameters)
+      ) >
+        1e-10
+    )
 ) {
   stop("Common-basis or adjusted-dcCCV contract failed.", call. = FALSE)
 }
@@ -211,9 +215,9 @@ if (
 }
 for (outcome_id in MC_OUTCOMES$outcome_id) {
   selected <- primary[primary$outcome_id == outcome_id, , drop = FALSE]
-  admissible <- diagnostics |>
+  admissible <- diagnostics %>%
     inner_join(
-      registry |>
+      registry %>%
         filter(
           .data$horizon_count == 3L,
           .data$preperiod_start == min(MC_BASELINE_YEARS),
@@ -221,10 +225,10 @@ for (outcome_id in MC_OUTCOMES$outcome_id) {
           .data$analysis_start == min(MC_ANALYSIS_YEARS),
           .data$analysis_end == max(MC_ANALYSIS_YEARS),
           .data$polynomial_degree == 2L
-        ) |>
+        ) %>%
         select(.data$spec_id, .data$richness_tier),
       by = c("spec_id", "richness_tier")
-    ) |>
+    ) %>%
     filter(
       .data$outcome_id == outcome_id,
       .data$status == "estimated"
@@ -254,39 +258,59 @@ metadata <- panel_bundle$metadata
 if (
   nrow(metadata$quadratic_lookup) != 78L ||
     anyDuplicated(metadata$quadratic_lookup$constructed_column) > 0L ||
-    any(grepl("^mc_r_", c(
-      metadata$mean_causal_columns,
-      metadata$trajectory_causal_columns,
-      metadata$bite_three_way_columns
-    ))) ||
+    any(grepl(
+      "^mc_r_",
+      c(
+        metadata$mean_causal_columns,
+        metadata$trajectory_causal_columns,
+        metadata$bite_three_way_columns
+      )
+    )) ||
     metadata$bite_mean_column != "mc_z" ||
     !identical(
       panel_bundle$panel$mc_y_employers,
       panel_bundle$panel$nbr_employers_balanced_start_year
     )
 ) {
-  stop("Moderator dictionary or raw employer outcome contract failed.", call. = FALSE)
+  stop(
+    "Moderator dictionary or raw employer outcome contract failed.",
+    call. = FALSE
+  )
 }
 
 finite_columns <- c(
-  "estimate", "raw_standard_error", "standard_error",
-  "conf_low", "conf_high", "df_multiplier"
+  "estimate",
+  "raw_standard_error",
+  "standard_error",
+  "conf_low",
+  "conf_high",
+  "df_multiplier"
 )
 if (
   any(!is.finite(as.matrix(effects[, finite_columns]))) ||
     any(effects$standard_error + 1e-12 < effects$raw_standard_error) ||
-    any(abs(
-      effects$standard_error /
-        pmax(effects$raw_standard_error, .Machine$double.eps) -
-        sqrt(effects$df_multiplier)
-    ) > 1e-7 & effects$raw_standard_error > 1e-12) ||
+    any(
+      abs(
+        effects$standard_error /
+          pmax(effects$raw_standard_error, .Machine$double.eps) -
+          sqrt(effects$df_multiplier)
+      ) >
+        1e-7 &
+        effects$raw_standard_error > 1e-12
+    ) ||
     any(!influence$omitted_state %in% 0:(MC_CCV_REFERENCE_STATES - 1L)) ||
-    any(abs(
-      influence$critical_value -
-        stats::qt(0.975, df = MC_CCV_DF - 1L)
-    ) > 1e-12)
+    any(
+      abs(
+        influence$critical_value -
+          stats::qt(0.975, df = MC_CCV_DF - 1L)
+      ) >
+        1e-12
+    )
 ) {
-  stop("Effect projection, df adjustment, or leave-one-out contract failed.", call. = FALSE)
+  stop(
+    "Effect projection, df adjustment, or leave-one-out contract failed.",
+    call. = FALSE
+  )
 }
 
 if (
@@ -294,19 +318,18 @@ if (
     any(gradient_audit$unresolved_causal_terms != 0L) ||
     any(gradient_audit$unexpected_causal_terms != 0L) ||
     any(
-      gradient_audit$maximum_gradient_error >
-        MC_SPEC_GRADIENT_TOLERANCE
+      gradient_audit$maximum_gradient_error > MC_SPEC_GRADIENT_TOLERANCE
     ) ||
     any(gradient_audit$estimate_error > 1e-7)
 ) {
   stop("Named delta-method gradient contract failed.", call. = FALSE)
 }
 
-employer_finite <- finite_effects |>
+employer_finite <- finite_effects %>%
   filter(.data$outcome_id == "employers")
-employer_ames <- ames |>
+employer_ames <- ames %>%
   filter(.data$outcome_id == "employers")
-employer_totals <- employer_finite |>
+employer_totals <- employer_finite %>%
   filter(.data$standardization == "sample_period_total")
 if (
   nrow(employer_finite) == 0L ||
@@ -366,9 +389,12 @@ validation_summary <- data.frame(
   detail = c(
     "648 records over 54 calendars; exactly one predeclared target.",
     paste0(
-      "Stage ", execution_bundle$execution_stage,
-      " runs the declared subset with ", execution_bundle$workers,
-      " worker(s) and ", execution_bundle$fixest_threads,
+      "Stage ",
+      execution_bundle$execution_stage,
+      " runs the declared subset with ",
+      execution_bundle$workers,
+      " worker(s) and ",
+      execution_bundle$fixest_threads,
       " fixest thread(s)."
     ),
     "Every year-specific assignment block uses at most 16 coordinates.",

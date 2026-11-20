@@ -1,0 +1,87 @@
+{
+  "design_id": "identification_track1_employer_decomposition_v1",
+  "status": "declared_before_any_FY2026_row_was_split_by_employer_continuity_in_this_exploration",
+  "frozen": "2026-11-13",
+  "hashes": "explorations/identification/track1_employer_decomposition_registry.sha256 records the SHA-256 of this file, the estimator, its helpers and the base Track 1 registry. The estimator refuses to run with tau = 2026 unless all of them match.",
+  "decided_by": [
+    "user, 2026-11-13: approved re-estimating the Track 1 offered-wage pass-through on employers that file in both years, bounding the composition effect, and testing for selection, under a registry written first",
+    "Claude, 2026-11-13: the unit, component, bound and test definitions below. They were fixed after the placebo-year run (tau = 2025) and before the tau = 2026 run. The user did not review them individually."
+  ],
+  "question": "Track 1 found that county mean offered wages fell $0.66 per statutory dollar of the 2025 cut (jackknife SE 0.095). How much of that is the same employers offering less, and how much is a change in which employers file?",
+  "what_this_is_not": "It is not a new design for the AEWR effect on H-2A use. The identifying variation is Track 1's: the within-former-region dispersion of the FY2026 statewide rates. Every threat to Track 1 carries over.",
+  "blindness": {
+    "seen_before_freezing": [
+      "Track 1 county-level FY2026 outcomes and the 0.66 first stage (markdowns/alternative_identification_exploration.md section 3)",
+      "A1 review, post-outcome: FY2025-to-FY2026 offered-wage changes for employer x state incumbents by FY2025 at-AEWR share (about -$2.3 in every bin), and exit by that share (explorations/identification_search/A1/review.md)",
+      "the full output of this estimator for the placebo pair FY2024-FY2025 (tau = 2025), which reads no row after FY2025"
+    ],
+    "not_seen_before_freezing": "any count, share or wage of FY2026 rows by continuing, entering or exiting employer, and any regression of those on the dose"
+  },
+  "inherited_from_track1": {
+    "registries": "explorations/identification/track1_registry.json and track1_registry_amendment1.json, unchanged",
+    "rows": "h2a_allocated_worksites rows with a period begin date, equal split across listed counties, decisions dated 1 Oct - 30 Jun (Q1-Q3) in each fiscal year, as built in 08_track1_estimate.R",
+    "offered_wage_rows": "Q1-Q3 rows with an hourly wage in (0, 100] and finite certified hours; weight = certified hours x county share",
+    "sample": "counties with positive 2011 farm employment in multi-state former AEWR regions, excluding AK, HI and DC",
+    "dose": "FY2026 statewide U.S. skill-I rate minus the FY2025 regional rate, each as in force on April 1; nominal dollars; one value per state",
+    "model": "change from FY2025 to FY2026 on the dose with former-region effects. With two years this equals Track 1's county and former-region x FY fixed-effects regression.",
+    "inference": "state leave-one-out jackknife, t(G-1), is primary; state CRV1 is also reported"
+  },
+  "employer_identity": {
+    "primary": "employer_id_balanced on the worksite row. All rows with an identifier are used, including association and agent filers, so that the county totals equal Track 1's.",
+    "unlinked_rows": "rows without an identifier (0.3% of FY2024 and 0.9% of FY2025 hourly hours) count as exits in the base year and entries in the later year in the county decomposition, and are left out of the employer x state estimates",
+    "sensitivity": "employer_id_high_recall, mapped from the balanced identifier through h2a_employer_record_membership (each balanced identifier has exactly one). It merges more records and so counts fewer false exits and entries. The conservative tier cannot be mapped from the worksite rows and is not run."
+  },
+  "estimates": {
+    "P1_county_decomposition": {
+      "role": "primary",
+      "cells": "employer x county. A cell continues (C) if it has offered-wage hours in both years, exits (X) if only in FY2025, enters (N) if only in FY2026.",
+      "identity": "W1 - W0 = within + between + entry + exit + no_continuer, exactly, for each county, where W is the hours-weighted mean offered wage. within = FY2025-hours-weighted mean wage change of continuing cells. between = change in the continuing cells' mean wage minus within (reweighting among them). entry = FY2026 hours share of entrants x (entrant mean - continuer mean in FY2026). exit = FY2025 hours share of exiters x (continuer mean - exiter mean in FY2025). In a county with no continuing cell the first four are zero and no_continuer is the whole change.",
+      "regressions": "each component and the total on the dose with former-region effects, equal county weights, counties with an offered wage in both years. The component slopes sum to the total slope.",
+      "checks_enforced_in_code": "the identity holds to 1e-9 in every county; the component slopes sum to the total; with the Track 1 scratch directory supplied, the total equals Track 1's first-stage estimate to 1e-8",
+      "reported": "the six slopes, the within share of the total slope, the county means of each component, and the hours share of continuing cells"
+    },
+    "P2_continuer_pass_through": {
+      "role": "secondary",
+      "units": "employer x state, linked rows only, with offered-wage hours in both years",
+      "model": "change in the unit's hours-weighted mean offered wage on the dose with former-region effects; equal unit weights, and FY2025 hours weights",
+      "why_state_units": "the dose is a state rate, and a job order split across ten counties should not count ten times"
+    },
+    "P3_selection_margins": {
+      "role": "secondary",
+      "exit": "among FY2025 employer x state units with offered-wage hours: indicator for no offered-wage hours in FY2026, on the dose with former-region effects; equal and FY2025 hours weights. A second indicator uses no certified Q1-Q3 positions of any wage unit.",
+      "entry": "among FY2026 units with offered-wage hours: indicator for none in FY2025, same model; equal and FY2026 hours weights. This is conditional on filing in FY2026 and is descriptive.",
+      "placebo": "the same regressions one year earlier (tau = 2025), already run"
+    },
+    "P4_selection_test": {
+      "role": "secondary",
+      "what": "among FY2025 employer x state units: (a) the FY2025 offer minus the FY2025 floor, and (b) the FY2024-to-FY2025 wage change where the unit also filed in FY2024, each on dose, stay and stay x (dose minus its mean across states), with former-region effects, equal weights. stay = 1 if the unit has offered-wage hours in FY2026.",
+      "reading": "the stay coefficient asks whether units that keep filing already differed; stay x dose asks whether that difference is larger where the cut was deeper, which is what would bias the continuer estimate",
+      "why_not_the_textbook_test": "Wooldridge's variable-addition test adds next period's selection indicator to the fixed-effects regression. Here the treatment varies only in FY2026 and FY2027 filing is not yet observed, so the lead indicator exists only for untreated years. The test is therefore run on pre-change outcomes."
+    },
+    "P5_trimming_bounds": {
+      "role": "secondary; bounds on P2, equal unit weights, balanced identifiers",
+      "method": "Lee (2009) trimming within each former region and then averaged. A state is 'deep' if its dose is below the unweighted mean of the state doses in its region. Within a region, the arm with the higher continuation rate is trimmed from the top or the bottom of its wage-change distribution by the share (p_high - p_low) / p_high, with a fractional weight on the boundary observation. Regions are averaged with weights incumbents x min(p_deep, p_other). The contrast is divided by the same-weighted difference in mean dose to give dollars per statutory dollar.",
+      "assumption": "within a region, a deeper cut moves every employer's decision to keep filing in the same direction",
+      "inference": "state jackknife standard error for each bound, with the deep indicator held fixed; a region that loses an arm drops out of that replicate. Rough.",
+      "known_limit": "the dose is continuous and is made binary here; region-level differences in continuation that have nothing to do with the cut also widen the bounds (see design_stage_evidence)"
+    }
+  },
+  "design_stage_evidence": {
+    "source": "tau = 2025 run: FY2024 vs FY2025 with the FY2026 dose; no row after FY2025 read",
+    "reproduction": "the county total equals Track 1's placebo first stage exactly (0.0030321922)",
+    "placebo_component_slopes_balanced": "within 0.019 (jackknife SE 0.027), between -0.004 (0.006), entry 0.010 (0.050), exit -0.028 (0.031), no_continuer 0.006 (0.015); total 0.003 (0.057)",
+    "placebo_continuer_slope": "equal weights -0.056 (0.079); hours weights 0.012 (0.033)",
+    "placebo_selection": "exit on dose 0.009 (0.024) equal, 0.011 (0.011) hours-weighted; entrant share -0.001 (0.020) equal, 0.008 (0.008) hours-weighted",
+    "turnover_without_a_policy_change": "36% of FY2024 employer x state units have no FY2025 offered-wage hours (15% of hours); 33% and 12% with high-recall identifiers. Continuing employer x county cells hold 84% of FY2024 hours. 37 of 2,655 counties have no continuing cell.",
+    "placebo_trimming_bounds": "per statutory dollar [-0.146, 0.125] around a point of 0.010; mean trimming share 0.165 although the average continuation gap is -0.009. The bounds are therefore about 0.27 wide before any policy effect."
+  },
+  "no_gate": "No pass or fail threshold. The output is a description of an estimate already reported. A within share is reported with its jackknife interval; nothing is promoted or dropped on the result.",
+  "threats": [
+    "every Track 1 threat: one season, 11.1 effective states, FY2026 shocks correlated with the size of the cut",
+    "a failed employer link looks like an exit plus an entry; the high-recall run addresses merges only",
+    "the Q1-Q3 decision window: an employer whose FY2026 decision falls after 30 June counts as an exit; October 2025 has almost no decisions",
+    "FY2026 cases received before 2025-10-02 carry the old rate (Track 1 sensitivity S4); they are not treated separately here",
+    "a continuing employer can change its mix of jobs; 'within' holds the employer fixed, not the job"
+  ],
+  "selection_rule": "No outcome-based selection. Every estimate above is reported for both identifier tiers where declared. Anything else is labeled post-outcome."
+}

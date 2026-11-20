@@ -53,8 +53,11 @@ the rolling frame and its diagnostics;04 owns deterministic county features,
 weights and calibration/moment diagnostics;05 owns donor accounting and
 cluster-year instruments;06 owns `panel_iv_county_year.parquet`;07 owns the
 retained estimates/tables and email exports;08 owns diagnostic figures and
-plotting-data CSVs;09 validates without writing another copy. The default
-runner ends at09. Experimental revision outputs and simulated draw partitions
+plotting-data CSVs;09 validates without writing another copy;10 owns the
+instrument-decomposition parquet and its support and variance tables;11 owns
+the QWI wage-granularity diagnostic tables and writes no instrument artifact.
+A01 `04_04` owns the QWI earnings input of stage11. Experimental revision
+outputs and simulated draw partitions
 have been deleted by user instruction. Shared inputs and other designs remain
 outside this retirement.
 
@@ -91,3 +94,15 @@ owns local wage, cohort response and state-deletion CSVs; stage03 owns
 `outputs/reports/wage_reforms.md`, PNG/PDF figures and provenance; stage04
 validates them. These source-level diagnostics do not replace B01's county
 aggregates or allocate joint-case positions to individual businesses.
+
+The separate `code/designs/policy_2025` branch owns the current 2025 wage-offer
+and interim covered-earnings work. Its inputs stages own the design-specific
+filer reconstruction;01 owns the occupation/certification panels and wage
+audits;02 owns wage fits;05/09 own earnings extracts;06/10 own pre-policy and
+interim fits;07 validates;08 generates the integrated report and complete
+ledger;12 publishes validated artifacts and their hashes. Filer exchange
+artifacts live under `data/intermediate/policy_2025`, analysis panels under
+`data/processed/policy_2025`, CSVs under `outputs/tables/policy_2025`, and
+reports/provenance under `outputs/reports`. Earlier exploratory code and
+reports remain historical evidence. The original exposure file is retained
+verbatim as a frozen design input, not reconstructed from later outcomes.

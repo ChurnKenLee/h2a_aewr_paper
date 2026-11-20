@@ -489,6 +489,9 @@ def _():
         2023: "H-2A_Disclosure_Data_FY2023_Q4.xlsx",
         2024: "H-2A_Disclosure_Data_FY2024_Q4.xlsx",
         2025: "H-2A_Disclosure_Data_FY2025_Q4.xlsx",
+        # Decisions in FY2026 include employment starts in calendar 2025.
+        # Q3 is a partial fiscal vintage, not a complete 2026 outcome year.
+        2026: "H-2A_Disclosure_Data_FY2026_Q3.xlsx",
     }
 
     # Names of H-2A program Addendum B files from the DOL-OFLC
@@ -500,6 +503,7 @@ def _():
         2024: "H-2A_Addendum_B_Employment_Record_FY2024_Q4.xlsx",
         # DOL shortened the FY2025 Addendum B file name
         2025: "H-2A_Addendum_B_Employ_FY2025_Q4.xlsx",
+        2026: "H-2A_Addendum_B_Employment_FY2026_Q3.xlsx",
     }
     return add_b_filenames_dict, h2a_filenames_dict
 
@@ -525,12 +529,11 @@ def _(pl):
     add_cols_dict = {}
     remove_cols_dict = {}
 
-    add_cols_dict[2011] = [
-        "BASIC_NUMBER_OF_HOURS",
-        "NBR_WORKERS_REQUESTED",
+    add_cols_dict[2009] = [
         "REQUESTED_END_DATE_OF_NEED",
         "REQUESTED_START_DATE_OF_NEED",
     ]
+    add_cols_dict[2011] = ["BASIC_NUMBER_OF_HOURS", "NBR_WORKERS_REQUESTED"]
     remove_cols_dict[2013] = ["NBR_WORKERS_REQUESTED"]
     # SOC_CODE_ID first appears in FY2014 and is renamed SOC_CODE in FY2015.
     add_cols_dict[2014] = [
@@ -543,6 +546,8 @@ def _(pl):
         "CASE_NUMBER",
         "EMPLOYER_PHONE",
         "NBR_WORKERS_REQUESTED",
+        "JOB_START_DATE",
+        "JOB_END_DATE",
         "SOC_CODE",
         "WORKSITE_CITY",
         "WORKSITE_POSTAL_CODE",
@@ -557,8 +562,6 @@ def _(pl):
         "WORKSITE_LOCATION_STATE",
     ]
     add_cols_dict[2016] = [
-        "JOB_END_DATE",
-        "JOB_START_DATE",
         "PRIMARY/SUB",
         "REQUESTED_END_DATE_OF_NEED",
         "REQUESTED_START_DATE_OF_NEED",
@@ -674,6 +677,8 @@ def _(s_map):
     add_b_cols_dict[2024] = add_b_cols_dict[2020]
     # FY2025 adds the worksite county, which pre-2025 Addendum B files lack
     add_b_cols_dict[2025] = add_b_cols_dict[2020] + ["PLACE_OF_EMPLOYMENT_COUNTY"]
+    # The FY2026 Q3 release omits the county column again.
+    add_b_cols_dict[2026] = add_b_cols_dict[2020]
 
     for _y, _cols in add_b_cols_dict.items():
         add_b_schema_dict[_y] = s_map(_cols)
@@ -712,10 +717,10 @@ def _():
         "CERTIFICATION_END_DATE": "certification_end_date",
         "REQUESTED_BEGIN_DATE": "requested_begin_date",
         "REQUESTED_END_DATE": "requested_end_date",
-        "EMPLOYMENT_BEGIN_DATE": "job_begin_date",
-        "EMPLOYMENT_END_DATE": "job_end_date",
-        "JOB_START_DATE": "job_begin_date",
-        "JOB_END_DATE": "job_end_date",
+        "EMPLOYMENT_BEGIN_DATE": "employment_begin_date",
+        "EMPLOYMENT_END_DATE": "employment_end_date",
+        "JOB_START_DATE": "job_order_begin_date",
+        "JOB_END_DATE": "job_order_end_date",
         "JOB_TITLE": "job_title",
         "BASIC_NUMBER_OF_HOURS": "number_of_hours",
         "ANTICIPATED_NUMBER_OF_HOURS": "number_of_hours",
@@ -785,6 +790,75 @@ def _(mo, pl):
 
 
 @app.cell
+def disclosure_date_helpers(pl):
+    # docs-ground:start h2a-disclosure-dates
+    def harmonize_disclosure_dates(frame: pl.DataFrame) -> pl.DataFrame:
+        """Keep raw dates; select whole pairs with an explicit source basis."""
+        fiscal_year = pl.col("fiscal_year")
+
+        def parsed(column):
+            return pl.col(column).str.to_date("%Y-%m-%d", strict=False)
+
+        def plausible(value):
+            return value.is_not_null() & ((value.dt.year() - fiscal_year).abs() <= 1)
+
+        begin = (
+            pl.when(fiscal_year <= 2015).then(parsed("certification_begin_date"))
+            .when(fiscal_year <= 2019).then(parsed("requested_begin_date"))
+            .otherwise(parsed("employment_begin_date"))
+        )
+        end = (
+            pl.when(fiscal_year <= 2015).then(parsed("certification_end_date"))
+            .when(fiscal_year <= 2019).then(parsed("requested_end_date"))
+            .otherwise(parsed("employment_end_date"))
+        )
+        basis = (
+            pl.when(fiscal_year <= 2015).then(pl.lit("certification_dates"))
+            .when(fiscal_year <= 2017).then(pl.lit("legacy_need_dates"))
+            .when(fiscal_year <= 2019).then(pl.lit("granted_need_dates"))
+            .otherwise(pl.lit("employment_dates"))
+        )
+        requested_begin = parsed("requested_begin_date")
+        requested_end = parsed("requested_end_date")
+        valid_pair = (plausible(begin) & plausible(end) & (end >= begin)).fill_null(False)
+        requested_pair = (
+            plausible(requested_begin) & plausible(requested_end)
+            & (requested_end >= requested_begin)
+        ).fill_null(False)
+
+        # A missing/invalid end does not erase a usable start-year position count.
+        # Endpoints are never spliced from different source pairs.
+        frame = frame.with_columns(
+            pl.when(valid_pair).then(begin)
+            .when(requested_pair).then(requested_begin)
+            .when(plausible(begin)).then(begin)
+            .when(plausible(requested_begin)).then(requested_begin)
+            .otherwise(None).alias("period_begin_date"),
+            pl.when(valid_pair).then(end)
+            .when(requested_pair).then(requested_end)
+            .otherwise(None).alias("period_end_date"),
+            pl.when(valid_pair).then(basis)
+            .when(requested_pair).then(pl.lit("requested_fallback"))
+            .when(plausible(begin)).then(basis + pl.lit("_start_only"))
+            .when(plausible(requested_begin)).then(pl.lit("requested_fallback_start_only"))
+            .otherwise(pl.lit("missing")).alias("period_date_basis"),
+        )
+        # All application statuses use the same intended-start cohort. In eras
+        # without a separate requested field, use the available period start.
+        return frame.with_columns(
+            pl.when(plausible(requested_begin)).then(requested_begin)
+            .otherwise(pl.col("period_begin_date")).alias("application_begin_date"),
+            pl.when(plausible(requested_begin)).then(pl.lit("dates_of_need"))
+            .otherwise(pl.col("period_date_basis")).alias("application_date_basis"),
+        ).with_columns(
+            pl.col("period_begin_date", "period_end_date", "application_begin_date")
+            .dt.to_string("%Y-%m-%d")
+        )
+    # docs-ground:end h2a-disclosure-dates
+    return (harmonize_disclosure_dates,)
+
+
+@app.cell
 def _(
     add_b_cols_dict,
     add_b_filenames_dict,
@@ -794,6 +868,7 @@ def _(
     h2a_filenames_dict,
     h2a_path,
     h2a_rename_dict,
+    harmonize_disclosure_dates,
     pl,
     read_h2a_excel,
     schema_dict,
@@ -809,6 +884,8 @@ def _(
         h2a_df = pl.concat(items=[h2a_df, _df], how="diagonal")
         h2a_df = h2a_df.with_columns(pl.col(pl.String).fill_null(""))
 
+    h2a_df = harmonize_disclosure_dates(h2a_df)
+
     # Same with Addendum B files
     # Read the H-2A performance data files
     add_b_df = pl.DataFrame()
@@ -823,7 +900,7 @@ def _(
 
         add_b_df = pl.concat(items=[add_b_df, _df], how="diagonal")
         add_b_df = add_b_df.with_columns(pl.col(pl.String).fill_null(""))
-    # Files before FY2025 have no worksite county; keep the key column explicit
+    # Only FY2025 reports an Addendum B county; keep missing vintages explicit.
     if "worksite_county" not in add_b_df.columns:
         add_b_df = add_b_df.with_columns(pl.lit("").alias("worksite_county"))
     return add_b_df, h2a_df
@@ -851,7 +928,7 @@ def _(add_b_df, h2a_df):
     h2a_worksite_locations = h2a_df.select(
         ["worksite_city", "worksite_county", "worksite_state", "worksite_zip"]
     ).unique()
-    # Addendum B county is reported from FY2025 and empty before
+    # Addendum B county is reported in FY2025 and empty in other cached vintages.
     add_b_worksite_locations = add_b_df.select(
         ["worksite_city", "worksite_county", "worksite_state", "worksite_zip"]
     ).unique()

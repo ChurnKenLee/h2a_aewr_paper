@@ -1,0 +1,145 @@
+{
+  "registry_id": "identification_search_A2_v1",
+  "strategy_id": "A2",
+  "family": "A",
+  "title": "2009 OES-based AEWR switch and 2010 return to FLS: within-state OES-area effective-floor dose, employer-location county x receipt FY, FY2006-FY2011",
+  "status": "frozen_before_any_estimate",
+  "frozen": "2026-11-05",
+  "author": "Claude Opus 5.5 (Phase 3 A2 designer)",
+  "authority": {
+    "plan": "markdowns/identification_search_agent_plan.md (catalogue A2; Phase 3)",
+    "declarations": "explorations/identification_search/shared/declarations.json (sha256 in shared/declarations.sha256)",
+    "triage": "$S/triage/merged.md section 2 (A2), credibility.md, power.md",
+    "acquisition": "explorations/identification_search/sources/aewr_2009_oes_notes.md and the four sourced tables; scripts A2/00-02",
+    "measurement_warnings": "explorations/identification_search/A1/review.md (shared at-AEWR flag unreliable; pi = 1 premise rejected), F1/review.md (multi-state itinerary floors, stale AEWRs). The shared at-AEWR flag is not used anywhere in A2.",
+    "scratch_root": "$S = /tmp/claude-1000/-home-ken-Dropbox-projects-H-2A-Paper/1be305e6-0442-48c5-93f4-7023961621fb/scratchpad/identification_search"
+  },
+  "change_from_catalogue": {
+    "statement": "Geography is the employer's address (ZIP -> county) in every year, not the worksite county of the shared panel. Timing is receipt FY with a predetermined receipt-month weighting of the regimes. Both follow from the data: FY2006-07 disclosures carry no worksite, and the regime attaches to the filing/recruitment date.",
+    "basis": "Support statistics and data structure only (no outcome contrast). Without FY2006-07 the worksite panel has one pre-year, so neither pre-trends nor pre-period residual variance exist for it.",
+    "pooling_family": "statutory_2009_oes_switch (distinct event and contrast from A1/A3)"
+  },
+  "estimand": {
+    "native": "PPML semi-elasticity eta of county certified H-2A contract hours per dollar of the effective statutory hourly floor in force, identified within state from the OES-area variation of the 2009-10 floor (county FE + state x FY FE).",
+    "primary_estimand": "epsilon_cost = d ln(certified hours) / d ln(C), C = H-2A cost per hour",
+    "conversion_formula": "epsilon_cost = (eta / pi_hat) x C_bar; ITT per statutory dollar eta x C_bar reported alongside; epsilon_w = epsilon_cost / ratio_A2",
+    "w_bar": 8.7083,
+    "w_bar_definition": "PPML-weighted mean of the dose x over the primary frame (weights = FY2006-08 mean county hours), $S/A2/a2_support.csv mean_dose_w",
+    "ratio_A2": {"central": 1.2455, "low": 1.2105, "high": 1.3915, "extreme": 1.76,
+      "rule": "mean over FY2006-FY2011 of cost_unit_by_fy.csv cost_ratio_* with FY2006-07 set to FY2008 (series starts FY2008) and FY2009 = mean(FY2008, FY2010) (declarations: no FY2009 ratio). Years weighted equally (national hours within 20% across years)."},
+    "C_bar": 10.846,
+    "assumptions": [
+      "dC = d(floor): non-wage costs per hour do not vary with the within-state OES dose",
+      "Pass-through pi to the disclosed offered hourly wage equals pass-through to the H-2A wage paid (the offer is the H-2A wage in this era)",
+      "Employers price the floor applicable at filing (receipt date proxies the wage-determination date)",
+      "A temporary, legally contested cut (suspension proposed spring 2009, enjoined; return proposed 2009-09-04): the estimand is a short-run response to an expected-temporary price change, flagged as such"
+    ],
+    "sign_convention": "d ln q / d ln C; conventional about -0.3"
+  },
+  "sample": {
+    "unit": "county of the employer's address (2010 FIPS string), from employer ZIP via the 2010 ZCTA-county relationship file (largest ZCTA population share); fallbacks: city+state to Census place/county subdivision, then nearest ZCTA in state. 99.5% of certified workers located.",
+    "rows": "Positive-certified rows with a 'Certified' status from disclosure files FY2006-FY2012; association masters dropped (organization flag, or certified = sum of other rows); latest file kept for case numbers in several files; valid begin/end dates; monthly-paid rows (herders, special procedures outside OWL) excluded.",
+    "periods": "Receipt federal FY 2006-2011 (receipt dates decoded from case numbers in FY2006-07). Pre FY2006-FY2008; OES regime weight 0.713 in FY2009 and 0.596 in FY2010; FLS in FY2011.",
+    "estimation_sample": "Counties in the 49 states with an FLS AEWR (AK, DC, PR, GU, VI out), with OES areas in both wage years, a published 45-2092 Level I cell in both wage years (74 counties in blank-cell areas excluded; Fresno, Bakersfield, Madera, Modesto, El Centro, Brownsville, McAllen, etc.), QCEW controls, and positive FY2006-08 mean hours (PPML weights). Balanced: 1,393 counties x 6 FY, 432 OES areas, 49 states.",
+    "files_at_freeze": ["$S/A2/a2_rows.parquet", "$S/A2/a2_county_rfy_panel.parquet", "$S/A2/a2_county_dose.parquet", "$S/A2/a2_county_controls.parquet", "$S/A2/a2_design_frames.rds"]
+  },
+  "dose": {
+    "floor": "On receipt date d, county c in state s: FLS periods (before 2009-01-17 and from 2010-03-15): max(FLS AEWR_s in force, state agricultural minimum wage_s(calendar year)). OES periods: max(OWL 45-2092 Level I of c's OES area for the wage year, 7.25, state agricultural minimum wage_s(calendar year)); wage year 7/2008-6/2009 (OES May 2007) for receipts 2009-01-17 to 2009-06-30, 7/2009-6/2010 (OES May 2008) for 2009-07-01 to 2010-03-14.",
+    "fy_dose": "x_ct = sum over days d of FY t of omega_d x floor_c(d); omega = national FY2006-08 share of certified hours by receipt month (Jan 0.180, Feb 0.167, Mar 0.121, Apr 0.072, May 0.059, Jun 0.043, Jul 0.046, Aug 0.037, Sep 0.079, Oct 0.043, Nov 0.065, Dec 0.086), uniform within month. Predetermined: the 2009-10 filing spikes do not enter.",
+    "occupation_and_skill": "Every case is assigned 45-2092 (crop farmworkers) Level I: the statutory intent-to-treat floor. SOC is blank in FY2006-FY2011 disclosures; 73% of 2009 applicants chose Level I (2010 rule). Livestock (45-2093), other occupations, higher levels, prevailing wages, CBAs and multi-state itinerary floors make the actual floor differ; that is absorbed in pi.",
+    "blank_cells": "Primary: counties whose OES area has no published 45-2092 Level I cell in either wage year are excluded (dose unknown; the NPC's rule is undocumented). Sensitivity S3: fill from the same area's other wage year, then 45-2099 L1, then 45-2091 L1.",
+    "multi_area_counties": "41 New England counties spanning several OES areas are assigned to the area with the most towns (ties: lowest code).",
+    "identifying_variation": "With county FE and state x FY FE, the FLS AEWR, the state minimum wage and the national regime shares are absorbed; only within-state differences in max(L1_area, state floor) during the OES regimes identify. FY2009-10 is the cut (onset), FY2011 the return (symmetric second event).",
+    "exposure_for_tests": "E09_c = x_c,2009 - x_c,2008 and E10_c = x_c,2010 - x_c,2008 (time-invariant within-state exposure), used only in falsification and event-study secondaries.",
+    "units": "dollars per hour (nominal)",
+    "recession_controls": "QCEW 2006-07 mean private employment share in construction (NAICS 23) and manufacturing (NAICS 31-33) of the county, each interacted with FY indicators (FY2008 reference). Suppressed cells imputed with the state's share (386 / 375 counties), fixed before any outcome contrast."
+  },
+  "fixed_effects": {
+    "primary": "county + state x FY",
+    "sensitivities": ["state x nonmetro-OES-area x FY (S5)", "no recession controls (S2)"]
+  },
+  "outcomes": {
+    "primary": "cert_hours_c: county x receipt-FY certified contract hours = certified positions x (end - begin)/7 x 40, employer-location rows, non-monthly pay; PPML. Weekly hours are missing for every FY2008-FY2010 case, so a constant weekly-hours factor is used in every year; the outcome is therefore certified position-weeks up to scale and carries no weekly-hours margin.",
+    "co_primary": [],
+    "lead_secondary": "Requested positions do not exist in FY2008-FY2010 disclosures: not available. Lead secondary is certified positions (same frame, PPML).",
+    "secondaries": [
+      "certified positions (PPML)",
+      "extensive margin: any certified use in the county-FY (LPM, same FE, equal weights over counties with any FY2006-08 use)",
+      "worksite-county frame: shared outcomes_county_fy cert_hours_rfy, FY2008-FY2011, county + state x FY FE, FY2008 hours weights (one pre-year; reported, not gating)",
+      "decomposition: log hours = log positions + log weeks (weekly hours constant)"
+    ]
+  },
+  "first_stage": {
+    "role": "Conversion denominator pi and relevance check",
+    "outcome": "County hours-weighted mean offered hourly wage (hourly-pay rows, 0 < wage <= 100), same frame, receipt FY",
+    "model": "WLS on x with county + state x FY FE and the recession controls, PPML calibration weights x share of hours that are hourly; counties-FY without hourly hours dropped",
+    "parameter": "pi_hat",
+    "inference": "state CRV1 (size-valid order as below)",
+    "weak_rule": "If first-stage F < 10 (state CRV1), epsilon_cost is reported only as an Anderson-Rubin/Fieller set from the jackknife covariance; if that set is unbounded, A2 is declared not convertible and not pooling-eligible.",
+    "case_level_timing_secondary": "Offered hourly wage of individual hourly cases on the case's own effective floor (by worksite-free employer county and receipt date) within +-60 days of 2009-01-17 and 2010-03-15, state x receipt-month FE; same calendar dates in 2011 and 2012 as placebo cutoffs. Descriptive (filing dates are manipulable)."
+  },
+  "inference": {
+    "primary_test": "H0: eta = 0 on the PPML fit",
+    "primary_method_rule": "Size-valid order from the declarations: state_fips CRV1, state jackknife (CV3J), OES-area RI within state (only where the dose is constant within area x FY, i.e. without county-level controls), area CRV1; the first method passing the size gate under the gate DGP in 07_power.R is primary.",
+    "critical_values": "t(G - 1) as in the harness",
+    "conversion_inference": "Jackknife (leave-one-state-out) joint covariance of (eta, pi); delta-method SE and Fieller set for epsilon_cost",
+    "multiplicity": "Declarations: the primary hypothesis enters the cross-strategy Romano-Wolf/Holm family"
+  },
+  "falsification": {
+    "gating": [
+      "F1 pre-trends: FY2006-FY2008 only, PPML of cert_hours_c on E09_c x 1{FY2006} and E09_c x 1{FY2007} (FY2008 reference), county + state x FY FE, recession controls; joint Wald with the primary inference method; fail if p < 0.05.",
+      "F2 placebo date: FY2006-FY2008 only, the dose path shifted back three FY (x_c,2009 assigned to FY2006, x_c,2010 to FY2007, FLS to FY2008, i.e. regressor E09 x 1{FY2006} + E10 x 1{FY2007}); fail if p < 0.05."
+    ],
+    "reported_non_gating": [
+      "F3 return symmetry: event study of E09_c x FY dummies FY2006-FY2011 (FY2008 reference); a pure differential trend predicts FY2011 continuing the FY2009-10 sign; a price response predicts reversal toward zero. Reported with the test of equal and opposite onset (FY2009-10 vs FY2008) and return (FY2011 vs FY2010) coefficients; hysteresis from sunk entry costs is a stated alternative.",
+      "F4 balance: within-state weighted correlations of E09_c with construction share, manufacturing share, nonmetro area, FY2006-08 log hours growth, FY2008 offered wage minus FLS",
+      "F5 first-stage placebo: offered wage on the shifted dose of F2 in FY2006-08 (expected zero)"
+    ],
+    "rule": "A failed gating test is reported and excludes A2 from pooling; no post hoc repair unless labeled post-outcome."
+  },
+  "secondary_designs": [
+    "SD1 onset only: FY2006-FY2010",
+    "SD2 return only: FY2009-FY2011",
+    "SD3 OES-area unit (area FE + state x FY FE)",
+    "SD4 worksite-county frame FY2008-FY2011 (shared panel)"
+  ],
+  "sensitivities": [
+    "S2 no recession controls",
+    "S3 blank cells filled",
+    "S4 equal county weights: OLS of y/mu_i - 1 on x with equal weights (same FE, controls)",
+    "S5 state x nonmetro x FY FE",
+    "S6 drop NC (largest state leverage, 0.17) and drop FL",
+    "S7 drop rows with employer county not equal to any worksite county where both exist (FY2008+ only; reported)",
+    "S8 cost ratio low/high/extreme"
+  ],
+  "design_power": {
+    "harness": "explorations/identification_search/shared/power_harness.R ish_power(), PPML linearization ish_ppml_linearize()",
+    "outcome_and_calibration": "cert_hours_c, FY2006-FY2008 only (FE-only residuals); policy frame FY2006-FY2011 with the dose; dose residualized on the recession controls x FY and FE (FWL) for the primary",
+    "fe": "county_fips + state x FY",
+    "clusters": "state_fips (primary CRV1 and jackknife), area_id (OES area x state) CRV1",
+    "node": "area_id (OES area x state): sub-state shared shocks; state shocks are absorbed by state x FY FE. group = NULL. Spatial loading from county adjacency mapped to areas, coefficient 0.4.",
+    "beta_e1": "pi / C_bar with C_bar = 10.846; runs at pi = 1, MDE at other pi = MDE(pi = 1) / pi",
+    "pi_design": 0.4,
+    "pi_design_basis": "Evidence seen before this registry: 41.6% (Jan-Jun 2009) and 37.5% (Jul 2009-Mar 2010) of hourly cases offered exactly an OWL 45-2092 Level I rate of the worksite area (acquisition verification); 60% of 2008-rule applications certified above the AEWR (2010 rule); prior proxy-floor slope 0.29 (SE 0.06) (wage_reversal exploration section 3); employer-location assignment adds misclassification (12% of FY2008 position-weeks have employer county outside the worksite counties). Floor-payers pass through 1:1, others about 0, so pi about 0.4. Reported also at pi = 1, 0.6, 0.3.",
+    "gate_dgp_rule": "Declarations rule: ish_node_period_share on the calibration outcome with node = area_id: observed 0.434 vs pure-unit-noise 0.322 (ratio 1.35 <= 1.5), so the gate uses county_serial; all four DGPs reported.",
+    "runs": ["P1 primary", "P2 no controls with area RI within state", "P3 OES-area unit", "P4 blank-filled dose"],
+    "decision": "Kill at Phase 3 if the size-valid primary MDE (gate DGP, epsilon_cost, pi = 0.4, central ratio) exceeds 1.0 (not pooling-eligible); flag if above 0.5."
+  },
+  "split": {
+    "used": false,
+    "reason": "No data-driven tuning: dose, occupation/skill, blank-cell rule, weights, controls, FE and inference are fixed a priori in this registry. (49 states and 432 areas would permit a split.)"
+  },
+  "prior_exposure": "markdowns/wage_reversal_2009_2010_exploration.md: section 2 (filing spikes, share below FLS by regime, partial compliance), section 3 (proxy-floor exposure, offered-wage slopes 0.29 under the 2008 rule), section 4 (county PPML of certified workers and applications on proxy exposure x FY2009-2013 with region x FY FE: positive coefficients rising through 2013, read as a differential trend). outputs/reports/wage_reforms.md section 1 (local wage discontinuities at 2009-01-17 and 2010-03-15, weekly filing counts) and outputs/tables/wage_reforms/cohort_responses.csv (early FY2008 cohort participation FY2009-2012, herder vs hourly). Power triage: FY2011-14 residual variance on a proxy dose. Acquisition: case-level matches of offered wages to OWL rates by receipt regime (aewr_2009_oes_notes.md). Phase 0: national totals by FY. This designer read outcomes only for FY2006-FY2008 (residual variance, PPML weights, receipt-month weights) and FY2008 employer-vs-worksite geography agreement. FY2006-07 outcomes and the exact-schedule within-state dose have never been related to any outcome.",
+  "support_statistics_at_freeze": {
+    "source": "$S/A2/a2_support.csv, a2_truncation.csv, a2_node_share.csv (06_support.R)",
+    "primary": {"dose_sd_after_fe": 0.1415, "units": 1393, "periods": 6, "states": 49, "states_with_dose": 49, "areas": 432, "effective_states": 13.31, "max_state_leverage": 0.175, "max_state": "37 (NC)", "effective_areas": 34.0, "max_area_leverage": 0.091, "preperiod_residual_sd": 0.385},
+    "untruncated_counterfactual_dose_sd_after_fe": 0.1702,
+    "truncation": "Hours-weighted within-state SD of the area floor: 2008-09 wage year $0.59 raw L1 -> $0.45 after 7.25/state-minimum truncation (58.5% of variance survives; 48% of counties and 64% of pre-period hours truncated); 2009-10 $0.54 -> $0.48 (77% survives; 35% / 42% truncated). The time weighting (OES share 0.71 / 0.60) and FE reduce the FY dose SD to $0.14.",
+    "others": "no controls 0.142 / 13.0 states; blank-filled 0.140 / 13.4; state x nonmetro x FY 0.128 / 11.6 (max leverage 0.20); equal weights 0.173 / 23.3; area unit 0.141 / 13.6; worksite-county FY2008-11 0.149 / 16.6 (support only)"
+  },
+  "files": {
+    "scripts": ["A2/03_rows_panel.R", "A2/04_dose.R", "A2/05_controls.R", "A2/06_support.R", "A2/07_power.R (after freeze)"],
+    "sources": ["sources/aewr_2009_oes_schedule.csv", "sources/oes_area_county_crosswalk_2009.csv", "sources/h2a_disclosures_fy2006_2007.csv", "data/intermediate/h2a_disclosure_records.parquet", "data/intermediate/aewr_rate_schedule.parquet", "data/intermediate/state_real_minwages.parquet", "data/raw/qcew 2006-2007", "data/raw/geographic_crosswalks/census"],
+    "outputs": "$S/A2/"
+  }
+}

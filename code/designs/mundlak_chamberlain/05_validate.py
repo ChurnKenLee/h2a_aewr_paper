@@ -448,7 +448,7 @@ def _validate_causal_metadata(
         if observed != expected_outcomes:
             raise ValueError(
                 f"Coefficient outcomes for {specification_id} are not the exact "
-                f"common six-outcome set: {sorted(observed)}."
+                f"declared common outcome set: {sorted(observed)}."
             )
     term_coverage = coefficients.group_by("specification_id", "term").agg(
         pl.len().alias("rows"),

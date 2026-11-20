@@ -1,0 +1,227 @@
+================================================================================
+  ANALYSIS WORKFLOW: Farm Labor Scarcity and Its Uneven Impacts on U.S. Crop Producers
+  Ray, Haqiqi, Hill, Taylor, and Hertel
+================================================================================
+
+--------------------------------------------------------------------------------
+SETUP: PATH & PACKAGES
+--------------------------------------------------------------------------------
+Script: 0_SetPath_Packages.R
+
+Goal: One-time, per-session setup. Sets the replication folder as the working
+      directory and installs/loads all required R packages. All later scripts
+      (0a, 1, 2) inherit this working directory via getwd() -- they do NOT
+      reset the path themselves, so 0_SetPath_Packages.R must be run first in
+      every fresh R session.
+
+Action required from replicator:
+  Edit line 7 and paste the local path to the unzipped replication folder:
+      project_root <- "D:/Models/Labor/PFP/Ray26AJAE_Replication"  # <-- CHANGE THIS
+
+Packages installed/loaded:
+  rlang, readxl, tidyr, writexl, sf, ggplot2, RColorBrewer, viridis, scales,
+  cowplot, ggrepel, dplyr, ipumsr, readstata13, HARr, doParallel, doRNG,
+  patchwork
+
+--------------------------------------------------------------------------------
+PRE-STAGE: DATABASE CONSTRUCTION (2002 & 2017 Benchmark)
+--------------------------------------------------------------------------------
+Script: 0a_PRESTAGE.R
+
+Goal: Build the complete FIPS, CZ and PR level picture of the US crop
+      sector in 2002 and 2017 -- input use (land, labor, water, fertilizers
+      and other inputs), cost of inputs, and crop production -- ready for
+      first-stage estimation.
+
+Input sources (read from in/<source>/):
+  - Census of Agriculture (CoA), via USDA QuickStats extracts    [crop output/VCROP by subgroup,
+                                                                     harvested cropland, land rents,
+                                                                     payroll costs, intermediate inputs]
+  - National Agricultural Workers Survey (NAWS)                 [worker-reported hourly wages, datasets constructed by Alexandra E Hill 
+						  - aggregating data from the US Census of Agriculture, Farm Labor Survey, QCEW, 						  - NAWS, and H-2A programmatic data. For code to compile these data sources, 
+						  - contact alihill@berkeley.edu]
+
+  - Farm Labor Survey (FLS)                                      [hourly wages for hired workers,
+                                                                     alternative to NAWS, 1997-2024]
+  - Quarterly Census of Employment and Wages (QCEW / BLS)        [real wages in non-farm sectors]
+  - NLCD & MIrAD (satellite)                                     [cropland area]
+  - USGS                                                          [water withdrawal data]
+  - Fair Market Rent (HUD)                                       [housing rental costs, used for
+                                                                     H-2A and non-wage cost estimation]
+  - SIMPLE-G GRID/CZ database (.har files, read via HARr)         [2010 benchmark cost shares]
+  - Charlton & Taylor (2016)                                      [immigrant labor supply shock:
+                                                                     central estimate ~1% annual decline]
+  - BLS CPI tables (hardcoded conversion factors in-script)       [inflation adjustment to 2002$/2017$]
+
+Crosswalks (in/Crosswalk/):
+  - GRID_FIPS_STATE.xlsx        SIMPLE-G grid <--> FIPS <--> State
+  - FIPS2CZ_251024.xlsx         3,100+ counties --> 605 Commuting Zones (CZs)
+  - CZ2PR.xlsx                  605 CZs --> 9 Farm Resource Regions (Heimlich 2000)
+  - FIPS2PR_071024.xlsx         FIPS counties --> Farm Resource Regions
+  - CZ_names.xlsx, GRID2PR.xlsx, GRID2FIPS2LS.xlsx, GRID2FIPS2CZ.xlsx
+
+Processing steps (in-script section numbers):
+  1.1  Read crosswalks, GRID/FIPS/CZ/PR reference tables
+  1.2  Estimate 2010 benchmark input cost-shares from GRIDDATA.har / CZDATA.har
+  1.3  Construct price indices (commodity groups, CPI conversion factors, fuel price)
+  2.1  OUTPUT data: combine Census VCROP sub-group sales (grain/F&N/vegetable/other),
+       long-term-average and quality-adjust, aggregate to FIPS, CZ, and PR (QC_CZ, QC_PR)
+  2.2  LABOR data: FLS/NAWS wage series (1997-2024, CPI-adjusted), employment hours,
+       hourly hiring cost by data source and shock scenario
+  2.3  INTERMEDIATE INPUTS (chemicals, seed, fuel, machinery, other -- QZ/VZ)
+  2.4  RESOURCES: land (harvested cropland, rental rates) and water (USGS withdrawals)
+  2.5  Labor supply shocks (SS Shocks: immigrant decline scenarios, PHIL)
+  2.6  Land + water resource aggregation
+  2.7  TFP change calculation
+  3    Assemble final estimation inputs: data_fips, data_cz, data_pr
+       + 36 labor scenarios (NAWS/FLS wage source x low/med/high shock x
+         ConSe/NonAg non-farm pull proxy), consolidated for Steps 1-2
+
+Output files (saved to temp/, inputs to Step 1 -- filenames carry the run date,
+currently "071326"):
+  temp/0_shares2010_071326.xlsx      CZ-level 2010 benchmark input cost-shares
+  temp/0_data_fips_071326.xlsx       Observable data at FIPS level [crop output,
+                                        cropland, land rents, intermediate input
+                                        expenditures, 2002 & 2017]
+  temp/0_data_cz_071326.xlsx         Same variables aggregated to 605 CZs
+  temp/0_data_pr_071326.xlsx         Same variables aggregated to 9 Farm Resource Regions
+  temp/0_QLABOR_FIPS_071326.xlsx     Labor market outcomes at FIPS level [employment
+                                        (hours) and hourly hiring costs, NAWS- and
+                                        FLS-based, 2002 & 2017]
+  temp/0_QLABOR_CZ_071326.xlsx       Labor market outcomes aggregated to CZ
+  temp/0_QLABOR_PR_071326.xlsx       Labor market outcomes aggregated to PR
+  temp/0_labz_scenarios_071326.RDS   List of 36 labor-scenario data frames at CZ level
+  temp/0_laba_scenarios_071326.RDS   Same at PR level
+  temp/0_PHILz_071326.RDS            Labor supply shift parameter (PHIL) scenarios, CZ level
+  temp/0_PHILa_071326.RDS            Same at PR level
+
+--------------------------------------------------------------------------------
+STEP 1: FIRST-STAGE ESTIMATION OF UNKNOWN PARAMETERS
+--------------------------------------------------------------------------------
+Script: 1_FIRST_STEP.R  (sources scripts/NM_obj_function.R, scripts/FSE_PP.R,
+                          scripts/PLOT_FSE.R)
+
+Goal:
+  Simultaneously estimate, for each of the 9 Farm Resource Regions (F):
+    AFL   -- % change in labor-biased partial factor productivity (PFP)
+    AFZ   -- % change in intermediate input-biased PFP
+    AFR   -- % change in resource-biased PFP (land & water)
+    ESLZ  -- price elasticity of labor-land/water substitutability (sigma)
+    ELAB  -- price elasticity of labor supply (eta)
+
+Method:
+  Constrained Nelder-Mead optimization (scripts/NM_obj_function.R, Equation 9)
+  Objective: cost-share-weighted sum of squared deviations between observed
+             and SIMPLE-G-CZ-simulated input use for each Production Region
+  Constraints: bounds on AFL/AFZ/AFR in [5,200], ESLZ in [0.5,1.5]xmean_sig,
+               ELAB in [0.1, 1.01]
+  Runs: 30 independent runs per scenario x 36 scenarios (scripts/FSE_PP.R),
+        each run calling GEMPACK (simplez.exe -cmf ...) per region/iteration
+  Note: FSE_PP.R is long-running and is commented out by default in
+        1_FIRST_STEP.R for routine reruns -- pre-computed estimates are read
+        from in/fse/1_list_est.rds by PLOT_FSE.R instead. Uncomment the
+        source("scripts/FSE_PP.R") line to regenerate estimates from scratch.
+
+Input files:
+  temp/0_data_cz_071326.xlsx, temp/0_data_pr_071326.xlsx,
+  temp/0_data_fips_071326.xlsx, temp/0_shares2010_071326.xlsx,
+  temp/0_labz_scenarios_071326.RDS, temp/0_laba_scenarios_071326.RDS  (see Pre-Stage)
+
+Output files:
+  temp/1_list_est.rds                Raw Nelder-Mead estimates (all runs/scenarios),
+                                        written only when FSE_PP.R is (re-)run
+  temp/PR##/PR##_pfp.xlsx            Per-region intermediate estimate files (PLOT_FSE.R)
+  temp/1_pfp_est_pr.xlsx             Median + MAD parameter estimates by Region and
+                                        scenario group (AFL/AFZ/AFR/ESLZ/ELAB) --
+                                        primary input to Step 2
+  plots/Figure6/*.png                Visualization of calibrated parameter
+                                        distributions across regions/scenarios
+
+--------------------------------------------------------------------------------
+STEP 2: HISTORICAL VALIDATION, DECOMPOSITION & COEFFICIENT IDENTIFICATION
+--------------------------------------------------------------------------------
+Script: 2_SECOND_STEP.R  (sources scripts/Data_plots.R)
+
+Goal:
+  (a) Validate: confirm SIMPLE-G-CZ with Step 1 estimates reproduces observed
+      2017 employment and hourly hiring costs
+  (b) Decompose: attribute observed changes (2002-2017) to drivers -- expansion
+      effect (Q), factor-biased productivity changes (AFL/AFZ/AFR), labor supply
+      shock (PHIL_L), non-farm pull (PHIL_C), water (QW) and input price (PZ) --
+      using the Harrison, Horridge & Pearson (1999) decomposition
+  (c) Identify coefficients: responsiveness of employment and wages to a 1%
+      change in each driver, by Farm Resource Region, with 95% CIs from a
+      729-run (3^6) bounding analysis over low/median/high first-stage estimates
+
+Method / run sequence:
+  i.   Write exogenous controls and labor-supply-shock .har files to shf/
+       (OBS_DATA.har, NonAg_[L/M/H].har, ConSe_[L/M/H].har, FSE-<group>M.har)
+  ii.  Run GEMPACK median simulations via run.simple() -> system() calls:
+         simplez.exe -cmf 2-Validation-FLS-NM3.cmf
+         simplez.exe -cmf 2-Validation-NAWS-NM3.cmf
+         simplez.exe -cmf 2-Validation-FLS-CM3.cmf
+         simplez.exe -cmf 2-Validation-NAWS-CM3.cmf
+  iii. Generate CI text files for the stochastic (SSA) bounding runs
+       (temp/3_SSA_SHK_*.txt, temp/3_SSA_PARM_*.txt) -- these drive the
+       external 729-combination SSA batch (run separately in GEMPACK; results
+       read back from ssa/ and in/ssa/)
+  iv.  Read back .sl4 solution files, build historical validation figures
+       (Figure 7) and the decomposition tables (Table 4)
+  v.   Read pre-computed 729-run beta coefficients (in/ssa/3_ssa_<source>-
+       <phil>_beta_[pl/ql]_729.xlsx) and plot Figure 8 (coefficient estimates
+       with 95% CIs, expansion-effect panel)
+
+Input files:
+  temp/0_data_cz_071326.xlsx, temp/0_data_pr_071326.xlsx,
+  temp/0_data_fips_071326.xlsx, temp/0_shares2010_071326.xlsx                 (Pre-Stage)
+  temp/0_labz_scenarios_071326.RDS, temp/0_laba_scenarios_071326.RDS         (Pre-Stage)
+  temp/0_PHILz_071326.RDS, temp/0_PHILa_071326.RDS                           (Pre-Stage)
+  temp/0_QLABOR_FIPS_071326.xlsx, temp/0_QLABOR_CZ_071326.xlsx,
+  temp/0_QLABOR_PR_071326.xlsx                                                (Pre-Stage)
+  temp/1_pfp_est_pr.xlsx                                                      (Step 1)
+  in/ssa/3_ssa_<source>-<phil>_beta_pl_729.xlsx,
+  in/ssa/3_ssa_<source>-<phil>_beta_ql_729.xlsx                               (external SSA batch)
+  in/List_CZ.xlsx                                                             (CZ outlier drop list)
+  2-Validation-<FLS/NAWS>-<N/C>M3.cmf                                         (GEMPACK control files)
+
+Output files:
+  shf/OBS_DATA.har, shf/NonAg_*.har, shf/ConSe_*.har, shf/FSE-*.har           GEMPACK inputs
+  out/2-Validation-<source>-<phil>M3.sl4                                     GEMPACK solution files
+  temp/3_SSA_SHK_<source>_<phil>.txt, temp/3_SSA_PARM_<source>_<phil>.txt    CI specs for SSA batch
+  temp/3_pl_decomp_<source>-<phil>.xlsx, temp/3_ql_decomp_<source>-<phil>.xlsx  Decomposition detail
+  plots/Figure7/hist_vali_lab_<sel/oth>_<source>_<phil>.png                  Observed vs. simulated
+                                                                                wages & employment (2017)
+  plots/Figure8/<source>_<phil>_ed.png                                       Coefficient estimates
+                                                                                (wage & employment
+                                                                                responsiveness) with CIs
+  Table 4 (tab_pl, tab_ql, in-console; export commented out by default)      Decomposition table
+
+--------------------------------------------------------------------------------
+REPLICATION SCRIPTS
+--------------------------------------------------------------------------------
+  0_SetPath_Packages.R        SET PROJECT_ROOT, install/load required packages
+  
+  Run 0a, 1 and 2 scripts using run_replication.R a single batch file:
+
+  0a_PRESTAGE.R                Build database: crosswalks, cost shares, price
+                                 indices, output/labor/input/resource data;
+                                 writes temp/0_*.xlsx and temp/0_*.RDS
+  1_FIRST_STEP.R               First-stage Nelder-Mead estimation (region-level
+                                 parameters); sources:
+                                   scripts/NM_obj_function.R   objective function (Eq. 9)
+                                   scripts/FSE_PP.R             Nelder-Mead loop (30 runs x
+                                                                  36 scenarios; long-running,
+                                                                  commented out by default)
+                                   scripts/PLOT_FSE.R           reads in/fse/1_list_est.rds,
+                                                                  writes temp/1_pfp_est_pr.xlsx
+                                                                  and plots/Figure6
+  2_SECOND_STEP.R               Historical validation, decomposition, coefficient
+                                 identification; sources:
+                                   scripts/Data_plots.R         Figures 4 & 5 (descriptive maps
+                                                                  /bar charts of observed change)
+
+Software requirements:
+  GEMPACK (Horridge et al. 2025) -- free six-month trial license available
+                                     from Centre of Policy Studies, Monash University
+  R or RStudio
+================================================================================

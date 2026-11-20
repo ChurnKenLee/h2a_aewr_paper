@@ -94,7 +94,21 @@ county_panel <- read_parquet(path_int("county_df_year.parquet")) %>%
     relationship = "one-to-one"
   ) %>%
   left_join(
-    read_year_panel("bea_cainc45_data_year.parquet"),
+    read_year_panel("bea_cainc45_data_year.parquet") %>%
+      select(-ppi_2012),
+    by = c("county_fips", "year"),
+    relationship = "one-to-one"
+  ) %>%
+  # The deflator is annual and must not inherit BEA farm-income coverage,
+  # which ends in 2022.
+  left_join(
+    ppi %>%
+      transmute(year = as.integer(year), ppi_2012),
+    by = "year",
+    relationship = "many-to-one"
+  ) %>%
+  left_join(
+    read_year_panel("bea_cainc5n_data_year.parquet"),
     by = c("county_fips", "year"),
     relationship = "one-to-one"
   ) %>%

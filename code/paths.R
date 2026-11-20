@@ -27,6 +27,12 @@ H2A_PREDICTION_CUTOFF_YEAR <- 2011L
 H2A_PREDICTION_MODEL_SPEC <- "climate_norm_static_v1"
 # docs-ground:end prediction-selection
 
+# Calendar of the balanced shared county-year backbone. Sources that end
+# earlier (BEA county employment and farm income stop at 2022) stay missing in
+# later years; each design declares its own estimation window.
+SHARED_PANEL_START_YEAR <- 2008L
+SHARED_PANEL_END_YEAR <- 2025L
+
 env_file <- here::here(".env")
 if (file.exists(env_file)) {
   dotenv::load_dot_env(file = env_file)

@@ -49,8 +49,8 @@ placebo_directory <- file.path(
 )
 dir.create(placebo_directory, recursive = TRUE, showWarnings = FALSE)
 
-selected_registry <- primary_selection |>
-  select(.data$outcome_id, .data$spec_id) |>
+selected_registry <- primary_selection %>%
+  select(.data$outcome_id, .data$spec_id) %>%
   left_join(registry, by = "spec_id")
 if (
   nrow(selected_registry) != nrow(MC_OUTCOMES) ||
@@ -77,15 +77,15 @@ treatment_columns <- c(
   unname(MC_DYNAMIC_HORIZONS),
   "mc_dose_lead1"
 )
-treatment_cells <- panel |>
+treatment_cells <- panel %>%
   distinct(
     .data$aewr_region_id,
     .data$year,
     across(all_of(treatment_columns))
   )
 
-treatment_support <- treatment_cells |>
-  group_by(.data$year) |>
+treatment_support <- treatment_cells %>%
+  group_by(.data$year) %>%
   summarise(
     assignment_cells = n(),
     mean = mean(.data$mc_dose_current),
@@ -143,7 +143,7 @@ write_csv(
   path_tables("mc_counterfactual_support.csv")
 )
 
-hierarchy_units <- panel |>
+hierarchy_units <- panel %>%
   distinct(
     .data$county_fips,
     .data$mc_market_id,
@@ -161,8 +161,8 @@ hierarchy_rows <- list(
   )
 )
 add_hierarchy <- function(level, child, parent, parent_label) {
-  counts <- hierarchy_units |>
-    distinct(.data[[parent]], .data[[child]]) |>
+  counts <- hierarchy_units %>%
+    distinct(.data[[parent]], .data[[child]]) %>%
     count(.data[[parent]], name = "children")
   data.frame(
     level = level,
@@ -174,13 +174,22 @@ add_hierarchy <- function(level, child, parent, parent_label) {
   )
 }
 hierarchy_rows[[2L]] <- add_hierarchy(
-  "State", "state_fips", "aewr_region_id", "AEWR region"
+  "State",
+  "state_fips",
+  "aewr_region_id",
+  "AEWR region"
 )
 hierarchy_rows[[3L]] <- add_hierarchy(
-  "Market cell", "mc_market_id", "state_fips", "State"
+  "Market cell",
+  "mc_market_id",
+  "state_fips",
+  "State"
 )
 hierarchy_rows[[4L]] <- add_hierarchy(
-  "County", "county_fips", "mc_market_id", "Market cell"
+  "County",
+  "county_fips",
+  "mc_market_id",
+  "Market cell"
 )
 write_csv(
   bind_rows(hierarchy_rows),
@@ -253,12 +262,11 @@ mc_sp_multiple_correlation <- function(
   total <- sum((response - mean(response))^2)
   residual <- sum(fit$residuals^2)
   r_squared <- if (total > 0) 1 - residual / total else NA_real_
-  adjusted <- if (
-    is.finite(r_squared) && length(response) > rank + 1L
-  ) {
-    1 - (1 - r_squared) *
-      (length(response) - 1L) /
-      (length(response) - rank - 1L)
+  adjusted <- if (is.finite(r_squared) && length(response) > rank + 1L) {
+    1 -
+      (1 - r_squared) *
+        (length(response) - 1L) /
+        (length(response) - rank - 1L)
   } else {
     NA_real_
   }
@@ -363,10 +371,8 @@ for (selection_index in seq_len(nrow(selected_registry))) {
             na.rm = TRUE
           )),
           r_squared = unname(aligned[["r_squared"]]),
-          adjusted_r_squared =
-            unname(aligned[["adjusted_r_squared"]]),
-          partial_r_squared =
-            unname(aligned[["partial_r_squared"]]),
+          adjusted_r_squared = unname(aligned[["adjusted_r_squared"]]),
+          partial_r_squared = unname(aligned[["partial_r_squared"]]),
           partial_correlation = sqrt(max(
             unname(aligned[["partial_r_squared"]]),
             0,
@@ -465,20 +471,21 @@ if (length(placebo_results) > 0L) {
   lead_placebos <- bind_rows(lapply(
     placebo_results,
     function(result) {
-      result$effects |>
+      result$effects %>%
         filter(
           .data$treatment_column == "mc_dose_lead1",
           .data$estimand == "finite_dose_change",
           .data$dose_change == 5
-        ) |>
+        ) %>%
         mutate(
           model_id = "selected_primary_lead_test",
           primary_spec_id = result$primary_spec_id,
           t_statistic = .data$estimate / .data$standard_error,
-          p_value = 2 * stats::pt(
-            -abs(.data$t_statistic),
-            df = MC_CCV_DF
-          )
+          p_value = 2 *
+            stats::pt(
+              -abs(.data$t_statistic),
+              df = MC_CCV_DF
+            )
         )
     }
   ))
@@ -488,17 +495,17 @@ if (length(placebo_results) > 0L) {
   )
 }
 
-support_long <- treatment_cells |>
+support_long <- treatment_cells %>%
   select(
     .data$year,
     .data$aewr_region_id,
     all_of(unname(MC_DYNAMIC_HORIZONS))
-  ) |>
+  ) %>%
   pivot_longer(
     cols = all_of(unname(MC_DYNAMIC_HORIZONS)),
     names_to = "treatment_column",
     values_to = "dose"
-  ) |>
+  ) %>%
   mutate(
     horizon = recode(
       .data$treatment_column,

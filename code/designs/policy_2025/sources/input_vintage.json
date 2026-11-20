@@ -1,0 +1,111 @@
+{
+  "source_recorded_at": "2026-11-15T05:59:55.586379+00:00",
+  "migration_date": "2026-11-16",
+  "inputs": [
+    {
+      "path": "data/processed/county_year_panel.parquet",
+      "sha256": "bff3256f8c2e87afcd643575de8bf969a34788f5b645de30831f1ac0547345d6"
+    },
+    {
+      "path": "data/intermediate/h2a_allocated_worksites.parquet",
+      "sha256": "9bb0e71fb00800ffcec6aaab6e69420384d43adda62d9c407805efab00b694b2"
+    },
+    {
+      "path": "data/intermediate/h2a_disclosure_records.parquet",
+      "sha256": "d351e20ddde9a742afbb72be930f8ff7bd11329296d09ec556208f7bcf36e265"
+    },
+    {
+      "path": "data/intermediate/h2a_employer_record_membership.parquet",
+      "sha256": "7642e1efc288a06c699482c4d178ef1df8e585e65ea8cb42747c9e80d94adf11"
+    },
+    {
+      "path": "data/intermediate/aewr_rate_schedule.parquet",
+      "sha256": "42f309c7d63e79fe857c744295ddd9ad95942eeae62bc8e88632f09241b2d75b"
+    },
+    {
+      "path": "data/intermediate/aewr_occupation_skill_rates.parquet",
+      "sha256": "c8d952ac670b4874a67cbdbd63247e2dcace491ba824e1e96f2ab4602fe3175d"
+    },
+    {
+      "path": "data/intermediate/state_real_minwages.parquet",
+      "sha256": "c9de6b5afbafc985b5dd3445b9d98a10215a52c4f94618b1ac2a1aeff930a2d8"
+    },
+    {
+      "path": "data/intermediate/qwi_county_ag_quarterly_earnings.parquet",
+      "sha256": "38d2986f2aef4f7a734e9d5404f9afe14fd312d8ab6920a3c9159e99ce6e2420"
+    },
+    {
+      "path": "data/raw/qcew/2014_qtrly_singlefile.zip",
+      "sha256": "59cffadb9ea33ae2fd6a775514f458d4982108050acdefe4444b3116191bc6c3"
+    },
+    {
+      "path": "data/raw/qcew/2015_qtrly_singlefile.zip",
+      "sha256": "ee1f4b7ca537d735024a446f66847681650629489131aeeb383ff1cb2d26a0d3"
+    },
+    {
+      "path": "data/raw/qcew/2016_qtrly_singlefile.zip",
+      "sha256": "ea9c8671603ea0ec4c2a7d106bfbf7fcf30dcc626df143c7b5d7fdec397f9c36"
+    },
+    {
+      "path": "data/raw/qcew/2017_qtrly_singlefile.zip",
+      "sha256": "8160295f7c94ef3c0d045e896a8cebd7d3bb1b162378e7d55ee7f3533d3b046d"
+    },
+    {
+      "path": "data/raw/qcew/2018_qtrly_singlefile.zip",
+      "sha256": "1f55d28705a40fc91d8425b9df0a8f9312422c44401e8388f609261248fb85b3"
+    },
+    {
+      "path": "data/raw/qcew/2019_qtrly_singlefile.zip",
+      "sha256": "6e34c6e1ba43251ecc38fc1761db5707dc33d088230b1750fbeeeaedeca8346f"
+    },
+    {
+      "path": "data/raw/qcew/2020_qtrly_singlefile.zip",
+      "sha256": "09f5cdd51d489c44d92ed8d8da12192d79458e8585c7a7ee92886e2af1661c43"
+    },
+    {
+      "path": "data/raw/qcew/2021_qtrly_singlefile.zip",
+      "sha256": "5521b535753d50bac0244f218ac84e4d442354b70fa5eec8c359e5f66fbce732"
+    },
+    {
+      "path": "data/raw/qcew/2022_qtrly_singlefile.zip",
+      "sha256": "cde0d0b23567d1ad35ca30ff956b0f8ef31a88a6b8c145ccc93acb2e3a0ac25d"
+    },
+    {
+      "path": "data/raw/qcew/2023_qtrly_singlefile.zip",
+      "sha256": "0a5f3aa6252ebd1369eef8ba4a3a34e9adc096b2e1a0b22177a3a6d907378960"
+    },
+    {
+      "path": "data/raw/qcew/2024_qtrly_singlefile.zip",
+      "sha256": "b0a67b5cab3eb662d8772f7802faec606f307674fb611846a64d38ce182923d4"
+    },
+    {
+      "path": "data/raw/qcew_episode_2025_2026/2025_qtrly_singlefile.zip",
+      "sha256": "207db563cdd331055b55140786d8209da1e6ef5fbcfa61f039718db5e4f4afb2"
+    },
+    {
+      "path": "data/raw/qcew_episode_2025_2026/2026_qtrly_singlefile.zip",
+      "sha256": "27a5d0eeaca62c1823cb0cde06310fd8dd24524cf91d5ce5894e21cb7948fd96"
+    },
+    {
+      "path": "data/raw/qcew_episode_2025_2026/MANIFEST.csv",
+      "sha256": "dba21f3aaa766b4ca61d1f16ddfb9a0252c4f58f8b0f3419f035d5b254aa8787"
+    }
+  ],
+  "reusable_caches": [
+    {
+      "relative_path": "filer/filer_cases.parquet",
+      "sha256": "caa718000917cb640ddafa0e93e2f5c30378ba87e7e0a764c7f9fd201ace5e06",
+      "destination": "data/intermediate/policy_2025/filer/filer_cases.parquet"
+    },
+    {
+      "relative_path": "filer/filer_ids.parquet",
+      "sha256": "adfb4895c2d33bebb2988e18ecdb8e9ffab60d123dfd6516633f239615106cca",
+      "destination": "data/intermediate/policy_2025/filer/filer_ids.parquet"
+    },
+    {
+      "relative_path": "earnings_pre.parquet",
+      "sha256": "94f1e5204e123301586ac6436bce06155b0991549d2f93cd1c426f8d61617ca4",
+      "destination": "data/processed/policy_2025/earnings_pre.parquet"
+    }
+  ]
+}

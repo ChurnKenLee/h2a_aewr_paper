@@ -72,7 +72,7 @@ normalizers, path helpers, source producers and common inputs remain upstream.
 Stages 12--13 implement the separately registered statewide-AEWR design
 (`statewide_design.json`); they reuse `geography.py` and `power.R` and read
 no post-policy outcome. The diagnostic business margin remains reviewed balanced v2 worksite-business
-counts, with the inherited FY2024 evidence and review-report provenance.
+counts, with FY2008--2026 Q3 identity evidence and pending-review provenance.
 
 ## Principal artifacts
 
@@ -104,7 +104,11 @@ New retained outputs are:
 The upstream correction makes canonical 2009 wages null. Stage04 alone uses
 `v5_aewr_ppi_comparator` to reproduce the contaminated historical audit.
 Stage07 uses canonical wages, 2008/2010 wage diagnostics and all three outcome
-years for FE-only noise calibration. The 2011--2022 treatment is unchanged.
+years for FE-only noise calibration. The user-approved baseline now uses 2011--2025; treatment, denominator,
+frozen geography, weights, fixed effects and inference remain unchanged.
+The common upstream panel covers 2008--2025. FY2026 Q3 is a partial release,
+so later decisions may revise 2025 starts. Historical model-family labels
+remain identifiers; retained estimates are regenerated for the new window.
 
 Stage09 owns `data/intermediate/border_data_input_denominators.parquet`, the
 unique `data/processed/border_data_input_county_year.parquet`, and the
@@ -145,3 +149,14 @@ The full branch run is the retained-artifact check. Run the ordinary branch
 after any shared-panel rebuild and stages09--11 after calendar or denominator
 input changes. Grounding verification and Zola checks remain required after
 documentation changes.
+
+Annual diagnostic bootstrap intervals carry `wcb_status`. Failed inversion
+retains the observed coefficient and p-value with missing interval endpoints;
+unbounded intervals remain infinite. The validator checks these states rather
+than requiring every inversion to succeed. Seeds and inference are unchanged.
+
+Requested-position diagnostic levels and totals preserve source missingness.
+The validator reconciles county-year values to the shared panel, requires
+missing totals when any component is unknown, and reconstructs consecutive-year
+changes with missing endpoints retained. Missing requests do not exclude a
+county from the certification-outcome regression.

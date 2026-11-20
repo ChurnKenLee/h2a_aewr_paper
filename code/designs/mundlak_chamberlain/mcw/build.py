@@ -133,7 +133,6 @@ SOURCE_OUTCOME_COLUMNS: Mapping[str, str] = MappingProxyType(
     {
         "applications": "nbr_applications_start_year",
         "linked_worksite_businesses": "nbr_employers_balanced_start_year",
-        "requested_positions": "nbr_workers_requested_start_year",
         "certified_positions": "nbr_workers_certified_start_year",
         "certified_hours": "man_hours_certified_start_year",
     }
@@ -142,7 +141,6 @@ OUTCOME_COLUMNS: Mapping[str, str] = MappingProxyType(
     {
         "applications": "mc_y_applications",
         "linked_worksite_businesses": "mc_y_linked_worksite_businesses_balanced",
-        "requested_positions": "mc_y_requested_positions",
         "certified_positions": "mc_y_certified_positions",
         "certified_hours": "mc_y_certified_hours",
         "any_application": "mc_y_any_application",
@@ -791,8 +789,8 @@ def _assert_output_contract(frame: pl.DataFrame) -> None:
     if (
         row["employer_linkage_unit"] != "worksite_business"
         or row["employer_linkage_version"] != "v2"
-        or int(row["employer_linkage_input_max_year"]) != 2024
-        or row["employer_linkage_review_status"] != "complete"
+        or int(row["employer_linkage_input_max_year"]) != 2026
+        or row["employer_linkage_review_status"] != "pending"
         or not re.fullmatch(
             r"[0-9a-f]{64}", row["employer_linkage_review_report_hash"]
         )

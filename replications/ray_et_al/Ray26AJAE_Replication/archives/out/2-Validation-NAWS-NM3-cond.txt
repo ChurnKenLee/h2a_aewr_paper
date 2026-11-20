@@ -1,0 +1,312 @@
+====================================================
+Final status of Equations (in decreasing size order)
+====================================================
+      Equation name   |   Size     | Status of equation
+----------------------|------------|--------------------
+ E_QLANDz             |        620 |In condensed system
+ E_QAUGLANDz          |        620 |In condensed system
+ E_QWATERz            |        620 |In condensed system
+ E_QLANDWTRz          |        620 |In condensed system
+ E_PAUGLANDz          |        620 |In condensed system
+ E_AFNLABOR           |        620 |In condensed system
+ E_AFLANDWTR          |        620 |In condensed system
+ E_SQLABOR            |        620 |In condensed system
+ E_PLANDz             |        620 |In condensed system
+ E_QLABORz            |        620 |In condensed system
+ E_PLABORz            |        620 |In condensed system
+ E_QNLABORz           |        620 |In condensed system
+ E_PNLABORz           |        620 |In condensed system
+ E_AFLABOR            |        620 |In condensed system
+ E_VLANDWTRz          |        620 |In condensed system
+ E_VAUGLANDz          |        620 |In condensed system
+ E_VLANDz             |        620 |In condensed system
+ E_VNLABORz           |        620 |In condensed system
+ E_QCROPz             |        620 |In condensed system
+ E_PCROPz             |        620 |In condensed system
+ E_VCROPz             |        620 |In condensed system
+ E_VLABORz            |        620 |In condensed system
+ E_PAUGLANDa          |         24 |In condensed system
+ E_PNLABORa           |         24 |In condensed system
+ E_VLANDWTRa          |         24 |In condensed system
+ E_QNLABORa           |         24 |In condensed system
+ E_VAUGLANDa          |         24 |In condensed system
+ E_QAUGLANDa          |         24 |In condensed system
+ E_PLANDWTRa          |         24 |In condensed system
+ E_PLABORa            |         24 |In condensed system
+ E_QLABORa            |         24 |In condensed system
+ E_VLABORa            |         24 |In condensed system
+ E_QLANDWTRa          |         24 |In condensed system
+ E_VNLABORa           |         24 |In condensed system
+ E_QLANDa             |         24 |In condensed system
+ E_VLANDa             |         24 |In condensed system
+ E_PLANDa             |         24 |In condensed system
+ E_QWEQPTz            |[       620]|Used for BACKSOLVING
+ E_QNITROz            |[       620]|Used for BACKSOLVING
+ E_PNITROz            |[       620]|Used for BACKSOLVING
+ E_QWATSGz            |[       620]|Used for BACKSOLVING
+ E_PWATERz            |[       620]|Used for BACKSOLVING
+ E_PLANDWTRz          |[       620]|Used for BACKSOLVING
+ E_QWATGRDz           |[       620]|Used for BACKSOLVING
+ E_QWATSRFZ           |[       620]|Used for BACKSOLVING
+ E_PWATSGz            |[       620]|Used for BACKSOLVING
+ E_AFLAND             |[         0]|ELIMINATED from system
+ E_AFWATER            |[         0]|ELIMINATED from system
+ E_AOCROP             |[         0]|ELIMINATED from system
+ E_AFWATSG            |[         0]|ELIMINATED from system
+ E_AFNITRO            |[         0]|ELIMINATED from system
+ E_QNLANDz            |[         0]|ELIMINATED from system
+ E_AFWEQPT            |[         0]|ELIMINATED from system
+ E_AFNLAND            |[         0]|ELIMINATED from system
+ E_PWATSRFz           |[         0]|ELIMINATED from system
+ E_PWATGRDZ           |[         0]|ELIMINATED from system
+ E_PNLANDz            |[         0]|ELIMINATED from system
+ E_PWEQPTz            |[         0]|ELIMINATED from system
+
+ Number of equations in condensed system is 14000
+==============================================
+Status of Variables (in decreasing size order)
+==============================================
+    Variable     |  Size      | Status of variable
+-----------------|------------|--------------------
+ p_QCROPz        |        620 | In condensed system
+ s_QLABORz       |        620 | In condensed system
+ s_QLABOR        |        620 | In condensed system
+ p_QLANDz        |        620 | In condensed system
+ p_QLABORz       |        620 | In condensed system
+ p_PCROPz        |        620 | In condensed system
+ s_QAUGLANDz     |        620 | In condensed system
+ p_PLANDz        |        620 | In condensed system
+ p_PAUGLANDz     |        620 | In condensed system
+ p_QAUGLANDz     |        620 | In condensed system
+ p_QLANDWTRz     |        620 | In condensed system
+ p_QWATERz       |        620 | In condensed system
+ p_VCROPz        |        620 | In condensed system
+ p_AFNLABORz     |        620 | In condensed system
+ p_AFNITROz      |        620 | In condensed system
+ p_AFLANDz       |        620 | In condensed system
+ p_AFWATERz      |        620 | In condensed system
+ p_AFWATSGz      |        620 | In condensed system
+ p_AFWEQPTz      |        620 | In condensed system
+ p_AFLABORz      |        620 | In condensed system
+ s_PCROPz        |        620 | In condensed system
+ p_AFNLANDz      |        620 | In condensed system
+ p_AFLANDWTRz    |        620 | In condensed system
+ p_AFLABOR       |        620 | In condensed system
+ p_AFNLABOR      |        620 | In condensed system
+ p_AFLANDWTR     |        620 | In condensed system
+ s_QLANDz        |        620 | In condensed system
+ s_QWATERz       |        620 | In condensed system
+ p_AOCROPz       |        620 | In condensed system
+ p_VLANDz        |        620 | In condensed system
+ p_PLABORz       |        620 | In condensed system
+ p_PNLABORz      |        620 | In condensed system
+ p_QNLABORz      |        620 | In condensed system
+ t_PNLABORz      |        620 | In condensed system
+ p_VAUGLANDz     |        620 | In condensed system
+ p_VLABORz       |        620 | In condensed system
+ p_VLANDWTRz     |        620 | In condensed system
+ p_VNLABORz      |        620 | In condensed system
+ t_PNITROz       |        620 | In condensed system
+ t_PAUGLANDz     |        620 | In condensed system
+ p_PLABORa       |         24 | In condensed system
+ p_AFLANDWTRa    |         24 | In condensed system
+ p_VLANDWTRa     |         24 | In condensed system
+ p_VLANDa        |         24 | In condensed system
+ p_QLANDa        |         24 | In condensed system
+ s_QLABORa       |         24 | In condensed system
+ p_QLABORa       |         24 | In condensed system
+ p_PLANDa        |         24 | In condensed system
+ p_VLABORa       |         24 | In condensed system
+ p_PNLABORa      |         24 | In condensed system
+ p_PAUGLANDa     |         24 | In condensed system
+ p_QLANDWTRa     |         24 | In condensed system
+ p_PLANDWTRa     |         24 | In condensed system
+ p_VAUGLANDa     |         24 | In condensed system
+ p_QAUGLANDa     |         24 | In condensed system
+ p_AFNLABORa     |         24 | In condensed system
+ p_AFNITROa      |         24 | In condensed system
+ p_AFLABORa      |         24 | In condensed system
+ p_AFNLANDa      |         24 | In condensed system
+ p_VNLABORa      |         24 | In condensed system
+ p_QNLABORa      |         24 | In condensed system
+ p_AFWEQPTr      |         16 | In condensed system
+ p_AFNLABORr     |         16 | In condensed system
+ p_AFLABORr      |         16 | In condensed system
+ p_AFNLANDr      |         16 | In condensed system
+ p_AFWATSGr      |         16 | In condensed system
+ p_AFLANDWTRr    |         16 | In condensed system
+ p_AFWATERr      |         16 | In condensed system
+ p_AFLANDr       |         16 | In condensed system
+ p_AFNITROr      |         16 | In condensed system
+ p_AOCROPr       |         16 | In condensed system
+ p_PLANDWTRz     |[       620]| BACKSOLVED for
+ p_PWATERz       |[       620]| BACKSOLVED for
+ p_AFNLAND       |[       620]| SUBSTITUTED out
+ p_QWATSRFz      |[       620]| SUBSTITUTED out
+ p_PWEQPTz       |[       620]| SUBSTITUTED out
+ p_PWATSGz       |[       620]| SUBSTITUTED out
+ p_QNLANDz       |[       620]| SUBSTITUTED out
+ p_PNLANDz       |[       620]| SUBSTITUTED out
+ p_QWEQPTz       |[       620]| SUBSTITUTED out
+ p_QWATSGz       |[       620]| SUBSTITUTED out
+ s_QWATGRDz      |[       620]| OMITTED
+ s_QWATSRFz      |[       620]| OMITTED
+ p_PWATGRDz      |[       620]| SUBSTITUTED out
+ p_PWATSRFz      |[       620]| SUBSTITUTED out
+ p_QWATGRDz      |[       620]| SUBSTITUTED out
+ p_AOCROP        |[       620]| SUBSTITUTED out
+ p_AFWEQPT       |[       620]| SUBSTITUTED out
+ p_AFNITRO       |[       620]| SUBSTITUTED out
+ p_AFLAND        |[       620]| SUBSTITUTED out
+ p_AFWATER       |[       620]| SUBSTITUTED out
+ p_AFWATSG       |[       620]| SUBSTITUTED out
+ p_PNITROz       |[       620]| SUBSTITUTED out
+ s_QCROPz        |[       620]| OMITTED
+ s_QLANDWTRz     |[       620]| OMITTED
+ s_QNLANDz       |[       620]| OMITTED
+ s_PNLANDz       |[       620]| OMITTED
+ s_QNLABORz      |[       620]| OMITTED
+ p_QNITROz       |[       620]| SUBSTITUTED out
+
+
+ Number of variables in condensed system is 25464
+ Number of extra variables from backsolving is 1240
+ 
+
+======================================================
+Matching Variables to Equations (for closure analysis)
+======================================================
+
+Only variables and equations in the condensed system are
+compared -- not those substituted, backsolved or omitted.
+
+======== Direct or 1-to-1 Equation to Variable Matching
+
+ Linear Variable Size  Equation        Size
+ --------------- ----  --------        ----
+ p_QLANDz         620  E_QLANDz         620
+ p_QLABORz        620  E_QLABORz        620
+ p_PCROPz         620  E_PCROPz         620
+ p_QCROPz         620  E_QCROPz         620
+
+ So far, found 0 size differences.
+
+ ======== Loosely Matching one or more Equations to one Variable
+
+ Linear Variable Size  Equation        Size
+ --------------- ----  --------        ----
+
+ Found 0 size differences.
+
+ ======== Unmatched Equations
+
+ Equation        Size
+ --------------- ----
+ E_AFLABOR        620
+ E_AFNLABOR       620
+ E_AFLANDWTR      620
+ E_SQLABOR        620
+ E_PLABORz        620
+ E_QNLABORz       620
+ E_PNLABORz       620
+ E_PLANDz         620
+ E_QAUGLANDz      620
+ E_QWATERz        620
+ E_QLANDWTRz      620
+ E_PAUGLANDz      620
+ E_VCROPz         620
+ E_VLABORz        620
+ E_QLABORa         24
+ E_VLABORa         24
+ E_PLABORa         24
+ E_VLANDz         620
+ E_QLANDa          24
+ E_VLANDa          24
+ E_PLANDa          24
+ E_VNLABORz       620
+ E_VNLABORa        24
+ E_PNLABORa        24
+ E_QNLABORa        24
+ E_VAUGLANDz      620
+ E_VAUGLANDa       24
+ E_PAUGLANDa       24
+ E_QAUGLANDa       24
+ E_VLANDWTRz      620
+ E_VLANDWTRa       24
+ E_PLANDWTRa       24
+ E_QLANDWTRa       24
+
+ Found 33 unmatched equations.
+
+======== Unmatched Variables: maybe exogenous
+
+ 33 equations were NOT matched to variables.
+Hence, the list below of unmatched variables will NOT be
+a valid closure of the model.
+ p_AFWATERr    !    16 aggregate irrigation eff. index in crop prod. by reg
+ p_AFWATSGr    !    16 water eff. index in crop prod. by reg
+ p_AFWEQPTr    !    16 water equipment eff. index in crop prod. by reg
+ p_AFLABORr    !    16 Labor eff. index in crop prod. by PR
+ p_AFNLABORr   !    16 Non-labor eff. index in crop prod. by PR
+ p_AFNLANDr    !    16 NonLand eff. index in crop prod. by reg
+ p_AFLANDWTRr  !    16 Land+water eff. index in crop prod. by reg
+ p_AFLANDr     !    16 land eff. index in crop prod. by reg
+ p_AFNLABOR    !   620 Non-labor eff. index in crop prod. by CZ (z)
+ p_AFLANDWTR   !   620 Land+water eff. index in crop prod. by CZ (z)
+ p_AOCROPz     !   620
+ p_AFLABOR     !   620 Labor eff. index in crop prod. by CZ (z)
+ p_AFNITROz    !   620 nitrogen eff. index in Crop prod. by CZ (z)
+ p_AFLANDz     !   620 land eff. index in crop prod. by CZ (z)
+ p_AFWATERz    !   620 aggregate irrigation eff. index in crop prod. by CZ (z)
+ p_AFWATSGz    !   620 water eff. index in crop prod. by CZ (z)
+ p_AFWEQPTz    !   620 water equipment eff. index in crop prod. by CZ (z)
+ p_AFLABORz    !   620 Labor eff. index in crop prod. by CZ (z)
+ p_AFNLABORz   !   620 Non-labor eff. index in crop prod. by CZ (z)
+ p_AFNITROr    !    16 nitrogen eff. index in Crop prod. by reg
+ p_AOCROPr     !    16 input-neutral eff. index in Crop prod. by reg
+ p_AFLANDWTRa  !    24 Land+water eff. index in crop prod. by PR
+ p_AFNLABORa   !    24 Non-labor eff. index in crop prod. by PR
+ p_AFLABORa    !    24 Labor eff. index in crop prod. by PR
+ p_AFNLANDz    !   620 NonLand eff. index in crop prod. by CZ (z)
+ p_AFNLANDa    !    24 NonLand eff. index in crop prod. by PR
+ p_AFNITROa    !    24 N Fert eff. index in crop prod. by PR
+ p_AFLANDWTRz  !   620 Land+water eff. index in crop prod. by CZ (z)
+ p_PNLABORz    !   620 Change in cost of non-labor in a CZ
+ p_PLABORz     !   620 Change in wages in a CZ
+ p_VLABORz     !   620
+ p_QNLABORz    !   620 Change in use of non-labor in a CZ
+ p_QLABORa     !    24
+ p_VLABORa     !    24
+ p_PLABORa     !    24
+ p_VCROPz      !   620
+ p_QWATERz     !   620 quantity of water+eqpt by CZ
+ p_VLANDz      !   620
+ p_QLANDWTRa   !    24
+ p_PLANDWTRa   !    24
+ p_VLANDWTRz   !   620
+ p_VAUGLANDa   !    24
+ p_QAUGLANDa   !    24
+ p_PAUGLANDa   !    24
+ p_VAUGLANDz   !   620
+ p_PLANDa      !    24
+ p_QNLABORa    !    24
+ p_PNLABORa    !    24
+ p_VNLABORz    !   620
+ p_VLANDa      !    24
+ p_QLANDa      !    24
+ p_VNLABORa    !    24
+ p_PLANDz      !   620 price of cropland by CZ
+ p_VLANDWTRa   !    24
+ p_QLANDWTRz   !   620 quantity of land+irrig by CZ
+ p_QAUGLANDz   !   620 quantity of aug. land by CZ
+ p_PAUGLANDz   !   620 price of aug. land by CZ
+ s_QLABORa     !    24
+ s_PCROPz      !   620 dictate CZ level crop price
+ s_QLABORz     !   620
+ s_QAUGLANDz   !   620
+ s_QLABOR      !   620
+ s_QLANDz      !   620 Slack to control cropland by CZ (z)
+ s_QWATERz     !   620 Slack to control water use by CZ (z)
+ t_PNLABORz    !   620
+ t_PAUGLANDz   !   620
+ t_PNITROz     !   620

@@ -34,6 +34,7 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Wooldridge–Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | DuckDB/Polars linear-history OLS registry, constructed estimands, and analytic inference diagnostics |
 | AEWR-border ring | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Standalone bounded local redesign, preserved ring benchmarks, dependence/power audit and report |
 | Historical wage reforms | [`code/designs/wage_reforms`](code/designs/wage_reforms/) | Reversal and herder wage, participation, assignment-support and linkage diagnostics |
+| 2025 policy shift | [`code/designs/policy_2025`](code/designs/policy_2025/) | Offered-wage and interim covered-earnings estimates, diagnostics and integrated report |
 | Narrow welfare | [`code/welfare`](code/welfare/) | Certification-space producer incidence from one frozen certified-hours elasticity |
 
 The shared panel owns normalized source measures, reusable outcomes and
@@ -62,6 +63,7 @@ Run only a supported C-side branch:
 ./scripts/run_panel_iv.sh
 ./scripts/run_border_discontinuity.sh
 ./scripts/run_wage_reforms.sh
+./scripts/run_policy_2025.sh
 ./scripts/run_mundlak_chamberlain.sh
 ./scripts/run_welfare.sh
 ```
@@ -78,9 +80,14 @@ and the explicit public-geocoding option.
 The historical wage-reform runner is standalone and consumes cached source
 microdata; it writes `outputs/reports/wage_reforms.md` with explicit causal
 identification and data-recovery limits.
+The separate 2025 policy-shift runner consumes cached inputs and writes
+`outputs/reports/policy_2025.md`. It preserves the inspected wage and
+2025Q4–2026Q1 earnings specifications, validates migration equivalence, and
+does not run the 2013 shutdown analysis. It remains outside `run_all.sh`.
 The panel-IV runner executes stages 01--11 in R and retains the original
-moving-wage estimator with deterministic calibration; stages 10--11 add a
-diagnostic Kitagawa decomposition of its instruments.
+moving-wage estimator with deterministic calibration; stages 10--11 are a
+diagnostic Kitagawa decomposition of its instrument and its sensitivity to
+county-level QWI donor wages.
 
 Set `DRY_RUN=1` before a command to print its execution order without running
 it. See [`scripts/README.md`](scripts/README.md) for source/derived runners and
@@ -96,7 +103,9 @@ expected outputs.
   its findings do not automatically enter the manuscript or welfare.
 - Geographic identifiers follow
   [`content/contracts/geographic-codes.md`](content/contracts/geographic-codes.md).
-- H-2A employer IDs and counts follow the reviewed FY2008--2024
+- The common county-year baseline covers 2008--2025; each design retains its
+  own declared estimation sample. The border baseline uses 2011--2025.
+- H-2A employer IDs and counts follow the FY2008--2026 Q3 (review pending)
   [worksite-business linkage contract](content/contracts/employer-linkage.md).
 - Old local Parquets may remain on disk, but only the artifacts documented
   above are supported.

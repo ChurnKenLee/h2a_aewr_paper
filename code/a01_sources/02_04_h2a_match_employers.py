@@ -1,4 +1,4 @@
-# Purpose: Link role-classified H-2A worksite businesses using FY2008--2024 evidence.
+# Purpose: Link role-classified H-2A worksite businesses using FY2008--2026 Q3 evidence.
 # Inputs: h2a_with_fips.parquet, h2a_addendum_b_with_fips.parquet, and manual labels.
 # Outputs: canonical v2 crosswalk plus membership, edge, cluster, vintage, and review audits.
 
@@ -24,11 +24,17 @@ def _():
         TIERS,
         build_linkage_artifacts,
         finalize_linkage_artifacts,
+        finalize_pending_review_linkage_artifacts,
         read_review_labels,
     )
     from h2a.paths import INTERMEDIATE, RAW
 
+    # The FY2026 Q3 extension is published before the new review pairs are labeled.
+    # While True, an incomplete label file stamps review status "pending"
+    # instead of stopping. Set False to require a complete manual review.
+    ALLOW_PENDING_REVIEW = True
     return (
+        ALLOW_PENDING_REVIEW,
         INPUT_MAX_YEAR,
         INTERMEDIATE,
         LINKAGE_UNIT,
@@ -38,6 +44,7 @@ def _():
         TIERS,
         build_linkage_artifacts,
         finalize_linkage_artifacts,
+        finalize_pending_review_linkage_artifacts,
         mo,
         os,
         pl,
@@ -51,7 +58,7 @@ def _(mo):
     mo.md(r"""
     # H-2A worksite-business linkage v2
 
-    This producer uses FY2008--2024 identity evidence to create three nested,
+    This producer uses FY2008--2026 Q3 identity evidence to create three nested,
     deterministic worksite-business partitions. Application outcomes, worker
     counts, wages, hours, and downstream design fields never enter matching.
 
@@ -153,15 +160,35 @@ def _(INTERMEDIATE, review_sample, write_csv_atomic, write_parquet_atomic):
 
 
 @app.cell
-def _(RAW, read_review_labels):
+def _(ALLOW_PENDING_REVIEW, RAW, read_review_labels):
     review_labels_path = RAW / "h2a" / "employer_linkage_review_labels.csv"
-    review_labels = read_review_labels(review_labels_path)
+    review_labels = (
+        read_review_labels(review_labels_path)
+        if review_labels_path.exists() or not ALLOW_PENDING_REVIEW
+        else None
+    )
     return review_labels, review_labels_path
 
 
 @app.cell
-def _(candidate_artifacts, finalize_linkage_artifacts, review_labels):
-    finalized_artifacts = finalize_linkage_artifacts(candidate_artifacts, review_labels)
+def _(
+    ALLOW_PENDING_REVIEW,
+    candidate_artifacts,
+    finalize_linkage_artifacts,
+    finalize_pending_review_linkage_artifacts,
+    review_labels,
+):
+    try:
+        if review_labels is None:
+            raise ValueError("no review labels")
+        finalized_artifacts = finalize_linkage_artifacts(candidate_artifacts, review_labels)
+    except ValueError as error:
+        if not ALLOW_PENDING_REVIEW:
+            raise
+        print(f"Manual review incomplete ({error}); publishing with review status 'pending'")
+        finalized_artifacts = finalize_pending_review_linkage_artifacts(
+            candidate_artifacts, review_labels
+        )
     return (finalized_artifacts,)
 
 

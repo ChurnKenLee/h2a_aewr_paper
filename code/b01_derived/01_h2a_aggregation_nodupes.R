@@ -1,5 +1,7 @@
 # Purpose: Aggregate matched H-2A worksite records without duplicating case totals.
-# Inputs: h2a_with_fips.parquet and h2a_addendum_b_with_fips.parquet.
+# Inputs: h2a_with_fips.parquet and h2a_addendum_b_with_fips.parquet; the AEWR
+#         annual reference, 2023-rule occupation rates and 2025-rule skill-tier
+#         rates for the wage-offer exposure flags.
 # Outputs: data/intermediate/h2a_aggregated.parquet.
 
 here::i_am("code/paths.R")
@@ -11,14 +13,16 @@ library(tidylog, warn.conflicts = FALSE)
 library(janitor)
 
 AEWR_OFFER_TOLERANCE <- 0.05
+# A job order is filed before its contract starts, so a dated rate counts if it
+# was in force at any time in the year ending on the contract start date. This
+# mirrors the annual rule, which accepts the start-year rate or its lag.
+AEWR_LOOKBACK_DAYS <- 365L
 
-Mode <- function(x, na.rm = FALSE) {
-  if (na.rm) {
-    x <- x[!is.na(x)]
-  }
-
-  ux <- unique(x)
-  return(ux[which.max(tabulate(match(x, ux)))])
+# A requested total is unknown if any contributing allocation is unknown.
+# In particular, FY2008--2010 and FY2013--2014 lack requested worker counts.
+# Do not present either an all-missing group as zero or a partial sum as a total.
+SumRequested <- function(x) {
+  if (any(!is.finite(x))) NA_real_ else sum(x)
 }
 
 FirstNonempty <- function(x) {
@@ -33,6 +37,45 @@ PlausibleCaseDate <- function(value, fiscal_year) {
   value_year <- as.integer(format(value, "%Y"))
   value[!is.na(value_year) & abs(value_year - fiscal_year) > 1L] <- as.Date(NA)
   value
+}
+
+# One row per distinct state, occupation, contract start date and hourly offer
+# for which a dated AEWR existed, with whether the offer equals one of them.
+# `soc_rates` apply to one occupation; `state_rates` apply to every job.
+DatedAewrMatch <- function(jobs, soc_rates, state_rates, lookback_days, tolerance) {
+  keys <- jobs %>%
+    filter(
+      !is.na(hourly_offered_wage),
+      !is.na(begin_date),
+      !is.na(state_fips),
+      begin_date >= min(soc_rates$rate_start, state_rates$rate_start)
+    ) %>%
+    distinct(state_fips, soc7, begin_date, hourly_offered_wage)
+  InForce <- function(candidates) {
+    candidates %>%
+      filter(
+        rate_start <= begin_date,
+        is.na(rate_end) | rate_end > begin_date - lookback_days
+      )
+  }
+  bind_rows(
+    keys %>%
+      inner_join(
+        soc_rates,
+        by = c("state_fips", "soc7" = "soc_code"),
+        relationship = "many-to-many"
+      ) %>%
+      InForce(),
+    keys %>%
+      inner_join(state_rates, by = "state_fips", relationship = "many-to-many") %>%
+      InForce()
+  ) %>%
+    group_by(state_fips, soc7, begin_date, hourly_offered_wage) %>%
+    summarise(
+      dated_aewr_known = TRUE,
+      at_dated_aewr = any(abs(hourly_offered_wage - dated_aewr) <= tolerance),
+      .groups = "drop"
+    )
 }
 
 AssertNestedHours <- function(total, hourly, aewr_observed, at_aewr, label) {
@@ -114,9 +157,9 @@ if (
     employer_linkage_contract$employer_linkage_unit[[1]] !=
       "worksite_business" ||
     employer_linkage_contract$employer_linkage_version[[1]] != "v2" ||
-    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2024L ||
-    employer_linkage_contract$employer_linkage_review_status[[1]] !=
-      "complete" ||
+    employer_linkage_contract$employer_linkage_input_max_year[[1]] != 2026L ||
+    !employer_linkage_contract$employer_linkage_review_status[[1]] %in%
+      c("complete", "pending") ||
     !grepl(
       "^[0-9a-f]{64}$",
       employer_linkage_contract$employer_linkage_review_report_hash[[1]]
@@ -245,13 +288,14 @@ for (column in c(
 }
 
 
+# The annual reference is the rate for every non-range job until the rule of
+# 2023-03-30, and for the common field-and-livestock occupations afterwards.
 aewr_rates <- read_parquet(path_int("aewr.parquet")) %>%
   transmute(
     state_fips = state_fips(state_fips),
     year = as.integer(year),
     nominal_aewr = as.numeric(aewr)
   ) %>%
-  filter(year <= 2022L) %>%
   distinct() %>%
   arrange(state_fips, year) %>%
   group_by(state_fips) %>%
@@ -260,6 +304,46 @@ aewr_rates <- read_parquet(path_int("aewr.parquet")) %>%
 
 if (anyDuplicated(aewr_rates[c("state_fips", "year")]) > 0L) {
   stop("AEWR rates must have unique state-year keys.", call. = FALSE)
+}
+
+# Dated rates that the annual reference does not carry:
+#   2023 rule: statewide rates for occupations outside the common group
+#     (2023-03-30 until the vacatur was implemented on 2025-08-29);
+#   2025 rule: skill-tier rates offered to U.S. workers, for the combined
+#     field-and-livestock group and for single occupations.
+# Disclosed offers are U.S.-worker rates, so H-2A cash rates are not candidates.
+aewr_skill_rates <- read_parquet(path_int("aewr_occupation_skill_rates.parquet")) %>%
+  filter(worker_category == "US", !is.na(hourly_aewr)) %>%
+  transmute(
+    state_fips = state_fips(state_fips),
+    soc_code,
+    dated_aewr = as.numeric(hourly_aewr),
+    rate_start = as.Date(effective_start),
+    rate_end = as.Date(effective_end_exclusive)
+  )
+aewr_dated_soc_rates <- read_parquet(path_int("aewr_oews_occupation_rates.parquet")) %>%
+  filter(!is.na(hourly_aewr)) %>%
+  transmute(
+    state_fips = state_fips(state_fips),
+    soc_code,
+    dated_aewr = as.numeric(hourly_aewr),
+    rate_start = as.Date(effective_start),
+    rate_end = as.Date(effective_end_exclusive)
+  ) %>%
+  bind_rows(aewr_skill_rates %>% filter(soc_code != "FIELD_LIVESTOCK_COMBINED")) %>%
+  distinct()
+aewr_dated_state_rates <- aewr_skill_rates %>%
+  filter(soc_code == "FIELD_LIVESTOCK_COMBINED") %>%
+  select(-soc_code) %>%
+  distinct()
+
+if (
+  nrow(aewr_dated_soc_rates) == 0L ||
+    nrow(aewr_dated_state_rates) == 0L ||
+    anyNA(aewr_dated_soc_rates$rate_start) ||
+    anyNA(aewr_dated_state_rates$rate_start)
+) {
+  stop("Dated AEWR rate tables are empty or lack effective dates.", call. = FALSE)
 }
 
 # Handle master entries that include worker counts in all sub entries
@@ -274,6 +358,21 @@ h2a_df <- h2a_df %>%
 # exported as a separate case-level dataset.
 h2a_case_source <- h2a_df
 
+# One occupation code per case, from the case record. Addendum B worksite rows
+# carry none of their own, so the wage-offer flags read it from here.
+case_soc <- h2a_case_source %>%
+  transmute(
+    case_number,
+    fiscal_year,
+    soc7 = substr(gsub("[^0-9-]", "", coalesce(soc_code, "")), 1, 7)
+  ) %>%
+  filter(soc7 != "") %>%
+  distinct()
+
+if (anyDuplicated(case_soc[c("case_number", "fiscal_year")]) > 0L) {
+  stop("A case carries more than one occupation code.", call. = FALSE)
+}
+
 # Source coverage includes applications absent from the positive-certified
 # allocation branch. This audit is not a second producer of case allocations.
 write_parquet(
@@ -281,8 +380,10 @@ write_parquet(
     case_number, fiscal_year, allocation_source_row, primary_sub,
     organization_flag, nbr_workers_certified, nbr_workers_requested,
     county_fips_list, case_status, certification_begin_date,
-    certification_end_date, job_begin_date, job_end_date,
-    requested_begin_date, requested_end_date
+    certification_end_date, employment_begin_date, employment_end_date,
+    job_order_begin_date, job_order_end_date, requested_begin_date, requested_end_date,
+    period_begin_date, period_end_date, period_date_basis,
+    application_begin_date, application_date_basis
   ),
   path_int("h2a_case_allocation_source.parquet")
 )
@@ -559,8 +660,11 @@ h2a_duped_post2020 <- h2a_duped_post2020 %>%
     number_of_hours,
     wage_rate,
     wage_unit,
-    job_begin_date,
-    job_end_date
+    certification_begin_date, certification_end_date,
+    employment_begin_date, employment_end_date,
+    job_order_begin_date, job_order_end_date,
+    requested_begin_date, requested_end_date,
+    period_begin_date, period_end_date, period_date_basis
   ) %>%
   ungroup()
 
@@ -739,9 +843,7 @@ h2a_case_df <- h2a_case_source %>%
     case_status = FirstNonempty(case_status),
     case_received_date = FirstNonempty(case_received_date),
     decision_date = FirstNonempty(decision_date),
-    certification_begin_date = FirstNonempty(certification_begin_date),
-    job_begin_date = FirstNonempty(job_begin_date),
-    requested_begin_date = FirstNonempty(requested_begin_date),
+    application_begin_date = FirstNonempty(application_begin_date),
     emergency_filing = FirstNonempty(emergency_filing),
     .groups = "drop"
   ) %>%
@@ -750,9 +852,7 @@ h2a_case_df <- h2a_case_source %>%
       c(
         case_received_date,
         decision_date,
-        certification_begin_date,
-        job_begin_date,
-        requested_begin_date
+        application_begin_date
       ),
       \(value) as.Date(value)
     ),
@@ -760,17 +860,11 @@ h2a_case_df <- h2a_case_source %>%
       c(
         case_received_date,
         decision_date,
-        certification_begin_date,
-        job_begin_date,
-        requested_begin_date
+        application_begin_date
       ),
       \(value) PlausibleCaseDate(value, fiscal_year)
     ),
-    case_begin_date = coalesce(
-      certification_begin_date,
-      job_begin_date,
-      requested_begin_date
-    ),
+    case_begin_date = application_begin_date,
     case_start_year = as.integer(format(case_begin_date, "%Y")),
     case_start_year = coalesce(case_start_year, as.integer(fiscal_year)),
     case_status_upper = str_to_upper(case_status),
@@ -949,10 +1043,9 @@ h2a_combined <- h2a_combined %>%
   )
 
 # docs-ground:start h2a-worksite-allocation-audit
-# Preserve the existing allocation before any case-modal date replacement,
+# Preserve allocation and the source-owned employment-period date basis before
 # date exclusion, hours imputation, or geographic splitting. The separate
-# worksite-month producer uses site dates and labels fallback/uncertainty;
-# h2a_aggregated remains the historical case-date certification benchmark.
+# worksite-month producer prefers site dates and labels its case-date fallback.
 write_parquet(
   h2a_combined %>%
     mutate(
@@ -972,7 +1065,9 @@ write_parquet(
       nbr_workers_requested, source_worksite_workers_requested,
       case_nbr_workers_certified, master_n_workers_certified,
       certification_begin_date, certification_end_date,
-      job_begin_date, job_end_date, requested_begin_date, requested_end_date,
+      employment_begin_date, employment_end_date,
+      job_order_begin_date, job_order_end_date, requested_begin_date, requested_end_date,
+      period_begin_date, period_end_date, period_date_basis,
       worksite_requested_begin_date, worksite_requested_end_date,
       number_of_hours, source_number_of_hours, wage_rate, wage_unit,
       soc_code, case_status_harmonized, employer_record_role,
@@ -984,145 +1079,15 @@ write_parquet(
 )
 # docs-ground:end h2a-worksite-allocation-audit
 
-# Create harmonized dates for the retained case-date benchmark.
+# Consume the source-owned whole-pair selection. No job-order dates, modal
+# replacements, or hand repairs enter employment timing. Start-only rows count
+# toward start-year positions/businesses; duration measures require an end date.
 h2a_combined <- h2a_combined %>%
   mutate(
-    begin_date = if_else(
-      is.na(certification_begin_date) | certification_begin_date == '',
-      job_begin_date,
-      certification_begin_date
-    )
+    begin_date = as.Date(period_begin_date),
+    end_date = as.Date(period_end_date)
   ) %>%
-  mutate(
-    end_date = if_else(
-      is.na(certification_begin_date) | certification_end_date == '',
-      job_end_date,
-      certification_end_date
-    )
-  ) %>%
-  filter(!is.na(begin_date) & !is.na(end_date))
-
-# Case dates
-h2a_combined <- h2a_combined %>%
-  group_by(case_number, fiscal_year) %>%
-  mutate(group_begin_date = Mode(begin_date, na.rm = TRUE)) %>%
-  mutate(group_end_date = Mode(end_date, na.rm = TRUE)) %>%
-  ungroup()
-
-# Correct typos using group begin and end dates
-h2a_combined <- h2a_combined %>%
-  mutate(begin_date_error = (begin_date != group_begin_date)) %>%
-  mutate(end_date_error = (end_date != group_end_date)) %>%
-  mutate(
-    begin_date = case_when(
-      begin_date_error & n_entries > 2 ~ group_begin_date,
-      .default = begin_date
-    )
-  ) %>%
-  mutate(
-    end_date = case_when(
-      end_date_error & n_entries > 2 ~ group_end_date,
-      .default = end_date
-    )
-  )
-
-# Set time to POSIX time to calculate weighting within and across years
-h2a_combined <- h2a_combined %>%
-  mutate(
-    posix_begin_date = as.POSIXct(begin_date, tz = "UTC", format = "%Y-%m-%d")
-  ) %>%
-  mutate(posix_end_date = as.POSIXct(end_date, tz = "UTC", format = "%Y-%m-%d"))
-
-# Drop entries with missing dates
-h2a_combined <- h2a_combined %>%
-  filter(!is.na(posix_begin_date)) %>%
-  filter(!is.na(posix_end_date))
-
-# Check for obvious transposing errors
-errors <- h2a_combined %>%
-  mutate(begin_year = year(posix_begin_date)) %>%
-  mutate(
-    begin_date_error = abs(as.numeric(begin_year) - as.numeric(fiscal_year))
-  ) %>%
-  mutate(end_year = year(posix_end_date)) %>%
-  mutate(end_date_error = abs(as.numeric(end_year) - as.numeric(fiscal_year)))
-
-begin_date_error <- errors %>%
-  select(
-    case_number,
-    fiscal_year,
-    begin_date,
-    end_date,
-    begin_date_error,
-    end_date_error
-  ) %>%
-  filter(begin_date_error > 1) %>%
-  arrange(begin_date_error)
-
-# Many of these are simple year transposition errors
-# Fix these manually
-h2a_combined <- h2a_combined %>%
-  mutate(
-    begin_date = case_when(
-      case_number == "H-300-18325-715722" &
-        begin_date == "2028-11-21" ~ "2018-11-21",
-      case_number == "H-300-19017-003849" &
-        begin_date == "2029-01-22" ~ "2019-01-22",
-      case_number == "H-300-19044-363875" &
-        begin_date == "2029-03-08" ~ "2019-03-08",
-      case_number == "H-300-18229-549625" &
-        begin_date == "2008-09-13" ~ "2018-09-13",
-      case_number == "H-300-13135-069256" &
-        begin_date == "2031-07-01" ~ "2013-07-31",
-      case_number == "H-300-18141-758942" &
-        begin_date == "2108-05-22" ~ "2018-05-22",
-      case_number == "H-300-19090-126428" &
-        begin_date == "2109-03-31" ~ "2019-03-31",
-      case_number == "H-300-16082-567927" &
-        begin_date == "3016-03-25" ~ "2017-03-25",
-      case_number == "H-300-19207-740828" &
-        begin_date == "3019-08-23" ~ "2019-08-23",
-      .default = begin_date
-    )
-  )
-
-end_date_error <- errors %>%
-  select(
-    case_number,
-    fiscal_year,
-    begin_date,
-    end_date,
-    begin_date_error,
-    end_date_error
-  ) %>%
-  filter(end_date_error > 1) %>%
-  arrange(end_date_error)
-
-h2a_combined <- h2a_combined %>%
-  mutate(
-    end_date = case_when(
-      case_number == "H-300-19057-031168" &
-        end_date == "2010-08-01" ~ "2020-08-01",
-      case_number == "H-300-19034-745829" &
-        end_date == "2049-08-17" ~ "2019-08-17",
-      case_number == "H-300-16011-375074" &
-        end_date == "2106-07-21" ~ "2016-07-21",
-      case_number == "H-300-24194-193164" &
-        end_date == "3025-06-20" ~ "2025-06-20",
-      .default = end_date
-    )
-  )
-
-# Set data variable again with errors manually corrected
-h2a_combined <- h2a_combined %>%
-  mutate(
-    posix_begin_date = as.POSIXct(begin_date, tz = "UTC", format = "%Y-%m-%d")
-  ) %>%
-  mutate(posix_end_date = as.POSIXct(end_date, tz = "UTC", format = "%Y-%m-%d"))
-
-# These 214 cases have a start date after the end date; drop these
-h2a_combined <- h2a_combined %>%
-  filter(posix_end_date >= posix_begin_date)
+  filter(!is.na(begin_date))
 
 # Export cleaned H-2A dataset for further analysis
 h2a_combined <- h2a_combined %>%
@@ -1224,6 +1189,7 @@ silly_employer <- h2a_cleaned_df %>% filter(wage_rate == 0)
 # We now calculate the number of days within each year for each application, to apportion the workers and man hours to the appropriate year
 # Start and end year for each application
 h2a_all_years_df <- h2a_cleaned_df %>%
+  filter(!is.na(end_date)) %>%
   mutate(date_int = interval(begin_date, end_date)) %>%
   mutate(year = map2(year(begin_date), year(end_date), seq))
 
@@ -1312,17 +1278,15 @@ h2a_all_years_df <- h2a_all_years_df %>%
 h2a_all_years_aggregated_df <- h2a_all_years_df %>%
   group_by(county_fips_list, year) %>%
   summarise(
-    nbr_workers_requested_all_years = sum(
-      county_year_weighted_nbr_workers_requested,
-      na.rm = TRUE
+    nbr_workers_requested_all_years = SumRequested(
+      county_year_weighted_nbr_workers_requested
     ),
     nbr_workers_certified_all_years = sum(
       county_year_weighted_nbr_workers_certified,
       na.rm = TRUE
     ),
-    man_hours_requested_all_years = sum(
-      county_year_weighted_man_hours_requested,
-      na.rm = TRUE
+    man_hours_requested_all_years = SumRequested(
+      county_year_weighted_man_hours_requested
     ),
     man_hours_certified_all_years = sum(
       county_year_weighted_man_hours_certified,
@@ -1368,9 +1332,34 @@ h2a_start_year_df <- h2a_start_year_df %>%
     state_fips = state_from_county_fips(county_fips_list)
   ) %>%
   left_join(
+    case_soc,
+    by = c("case_number", "fiscal_year"),
+    relationship = "many-to-one"
+  ) %>%
+  mutate(soc7 = coalesce(soc7, "")) %>%
+  left_join(
     aewr_rates,
     by = c("state_fips", "start_year" = "year"),
     relationship = "many-to-one"
+  )
+
+dated_aewr_match <- DatedAewrMatch(
+  h2a_start_year_df,
+  aewr_dated_soc_rates,
+  aewr_dated_state_rates,
+  AEWR_LOOKBACK_DAYS,
+  AEWR_OFFER_TOLERANCE
+)
+
+h2a_start_year_df <- h2a_start_year_df %>%
+  left_join(
+    dated_aewr_match,
+    by = c("state_fips", "soc7", "begin_date", "hourly_offered_wage"),
+    relationship = "many-to-one"
+  ) %>%
+  mutate(
+    dated_aewr_known = coalesce(dated_aewr_known, FALSE),
+    at_dated_aewr = coalesce(at_dated_aewr, FALSE)
   ) %>%
   mutate(county_nbr_workers_requested = nbr_workers_requested / n_counties) %>%
   mutate(county_nbr_workers_certified = nbr_workers_certified / n_counties) %>%
@@ -1379,7 +1368,10 @@ h2a_start_year_df <- h2a_start_year_df %>%
   mutate(
     county_n_applications = (1 / n_entries) / n_counties,
     # Job orders can be filed before the annual rate update, so an offer at
-    # either the contract start-year AEWR or its lag is AEWR-exposed.
+    # either the contract start-year AEWR or its lag is AEWR-exposed. From
+    # 2023-03-30 an offer at a dated occupation or skill-tier rate in force
+    # for the job is AEWR-exposed as well. No dated rate exists before then,
+    # so earlier years depend on the annual rule alone.
     cert_hours_with_hourly_wage = if_else(
       !is.na(hourly_offered_wage),
       county_man_hours_certified,
@@ -1387,7 +1379,7 @@ h2a_start_year_df <- h2a_start_year_df %>%
     ),
     cert_hours_with_hourly_wage_and_aewr = if_else(
       !is.na(hourly_offered_wage) &
-        (!is.na(nominal_aewr) | !is.na(lag_nominal_aewr)),
+        (!is.na(nominal_aewr) | !is.na(lag_nominal_aewr) | dated_aewr_known),
       county_man_hours_certified,
       0
     ),
@@ -1397,7 +1389,8 @@ h2a_start_year_df <- h2a_start_year_df %>%
           abs(hourly_offered_wage - nominal_aewr) <= AEWR_OFFER_TOLERANCE) |
           (!is.na(lag_nominal_aewr) &
             abs(hourly_offered_wage - lag_nominal_aewr) <=
-              AEWR_OFFER_TOLERANCE)),
+              AEWR_OFFER_TOLERANCE) |
+          at_dated_aewr),
       county_man_hours_certified,
       0
     ),
@@ -1474,17 +1467,15 @@ h2a_start_year_df <- h2a_start_year_df %>%
 h2a_start_year_aggregated_df <- h2a_start_year_df %>%
   group_by(county_fips_list, start_year) %>%
   summarise(
-    nbr_workers_requested_start_year = sum(
-      county_nbr_workers_requested,
-      na.rm = TRUE
+    nbr_workers_requested_start_year = SumRequested(
+      county_nbr_workers_requested
     ),
     nbr_workers_certified_start_year = sum(
       county_nbr_workers_certified,
       na.rm = TRUE
     ),
-    man_hours_requested_start_year = sum(
-      county_man_hours_requested,
-      na.rm = TRUE
+    man_hours_requested_start_year = SumRequested(
+      county_man_hours_requested
     ),
     man_hours_certified_start_year = sum(
       county_man_hours_certified,
@@ -1576,17 +1567,15 @@ h2a_fiscal_year_df <- h2a_fiscal_year_df %>%
 h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_df %>%
   group_by(county_fips_list, fiscal_year) %>%
   summarise(
-    nbr_workers_requested_fiscal_year = sum(
-      county_nbr_workers_requested,
-      na.rm = TRUE
+    nbr_workers_requested_fiscal_year = SumRequested(
+      county_nbr_workers_requested
     ),
     nbr_workers_certified_fiscal_year = sum(
       county_nbr_workers_certified,
       na.rm = TRUE
     ),
-    man_hours_requested_fiscal_year = sum(
-      county_man_hours_requested,
-      na.rm = TRUE
+    man_hours_requested_fiscal_year = SumRequested(
+      county_man_hours_requested
     ),
     man_hours_certified_fiscal_year = sum(
       county_man_hours_certified,
@@ -1632,7 +1621,11 @@ h2a_all_years_aggregated_df <- h2a_all_years_aggregated_df %>%
   ) %>%
   select(-county_fips_list) %>%
   group_by(county_fips, year) %>%
-  summarise_all(sum, na.rm = TRUE) %>%
+  summarise(
+    across(matches("^(nbr_workers|man_hours)_requested_"), SumRequested),
+    across(-matches("^(nbr_workers|man_hours)_requested_"), ~ sum(.x, na.rm = TRUE)),
+    .groups = "drop"
+  ) %>%
   ungroup()
 
 h2a_start_year_aggregated_df <- h2a_start_year_aggregated_df %>%
@@ -1645,7 +1638,11 @@ h2a_start_year_aggregated_df <- h2a_start_year_aggregated_df %>%
   ) %>%
   select(-county_fips_list) %>%
   group_by(county_fips, year) %>%
-  summarise_all(sum, na.rm = TRUE) %>%
+  summarise(
+    across(matches("^(nbr_workers|man_hours)_requested_"), SumRequested),
+    across(-matches("^(nbr_workers|man_hours)_requested_"), ~ sum(.x, na.rm = TRUE)),
+    .groups = "drop"
+  ) %>%
   ungroup() %>%
   mutate(
     share_cert_hours_with_hourly_wage_start_year = if_else(
@@ -1694,24 +1691,41 @@ h2a_fiscal_year_aggregated_df <- h2a_fiscal_year_aggregated_df %>%
   ) %>%
   select(-county_fips_list) %>%
   group_by(county_fips, year) %>%
-  summarise_all(sum, na.rm = TRUE) %>%
+  summarise(
+    across(matches("^(nbr_workers|man_hours)_requested_"), SumRequested),
+    across(-matches("^(nbr_workers|man_hours)_requested_"), ~ sum(.x, na.rm = TRUE)),
+    .groups = "drop"
+  ) %>%
   ungroup()
 
 # Merge
+# Track absence separately for each calendar. A county-year without allocated
+# rows has zero requested positions/hours; a contributing row with an unknown
+# requested amount must retain NA. These join markers are temporary only.
 h2a_aggregated_df <- h2a_all_years_aggregated_df %>%
-  full_join(h2a_start_year_aggregated_df) %>%
-  full_join(h2a_fiscal_year_aggregated_df) %>%
+  mutate(has_all_years = TRUE) %>%
+  full_join(h2a_start_year_aggregated_df %>% mutate(has_start_year = TRUE),
+    by = c("county_fips", "year")) %>%
+  full_join(h2a_fiscal_year_aggregated_df %>% mutate(has_fiscal_year = TRUE),
+    by = c("county_fips", "year")) %>%
   full_join(
     h2a_case_start_year_aggregated_df,
     by = c("county_fips", "year")
   ) %>%
   mutate(
+    across(matches("^(nbr_workers|man_hours)_requested_all_years$"),
+      ~ if_else(is.na(has_all_years), 0, .x)),
+    across(matches("^(nbr_workers|man_hours)_requested_start_year$"),
+      ~ if_else(is.na(has_start_year), 0, .x)),
+    across(matches("^(nbr_workers|man_hours)_requested_fiscal_year$"),
+      ~ if_else(is.na(has_fiscal_year), 0, .x)),
     nbr_applications_start_year = coalesce(
       nbr_applications_case_start_year,
       0
     )
   ) %>%
-  select(-nbr_applications_case_start_year)
+  select(-nbr_applications_case_start_year, -has_all_years, -has_start_year,
+    -has_fiscal_year)
 
 # Harmonize name of FIPS code variable
 h2a_aggregated_df <- h2a_aggregated_df %>%

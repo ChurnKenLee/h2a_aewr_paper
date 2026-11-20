@@ -1,0 +1,214 @@
+{
+  "registry_id": "identification_search_A1_v1",
+  "strategy_id": "A1",
+  "family": "A",
+  "title": "2025 statewide rule with revealed binding (D1): within-state effective-floor dose, FY2025 vs FY2026 Q1-Q3",
+  "status": "frozen before any A1 estimate, first stage or design-stage power simulation",
+  "frozen": "2026-11-05",
+  "author": "Phase 3 A1 designer (Claude agent); markdowns/identification_search_agent_plan.md step 5",
+  "authority": {
+    "plan": "markdowns/identification_search_agent_plan.md (Phase 3) and AGENTS.md",
+    "declarations": "explorations/identification_search/shared/declarations.json, SHA-256 52c799080e233b7e2be7a6fd671d3fe4b2f01c146b226496ec3279b3037fd6c8",
+    "triage": "$S/triage/merged.md and merged.json (A1 seed note, gate finding, disagreements 1-5)",
+    "earlier_registries": "explorations/identification/track1_registry.json (SHA-256 bbffa053953873aa8a36c04a5af71c012fd15460b2cd0ff84bd378f6e65aafd8) and track1_registry_amendment1.json (SHA-256 433264ec85845f2ddb97c291073c19585ca9b80e2bb137aa0915fe38e29799e9); this registry is a new strategy and does not amend them",
+    "scratch_root": "$S = /tmp/claude-1000/-home-ken-Dropbox-projects-H-2A-Paper/1be305e6-0442-48c5-93f4-7023961621fb/scratchpad/identification_search"
+  },
+
+  "change_from_catalogue": {
+    "statement": "The catalogued A1 is a cross-state contrast of the FY2026 statutory rate within former AEWR regions. This registry makes the WITHIN-STATE revealed-binding contrast primary: county FE + state x FY FE, dose = FY2025 county at-AEWR hours share x the county's effective H-2A cash-floor change. The dose is the effective floor max(H-2A skill-I cash rate, applicable state agricultural minimum wage) under 20 CFR 655.120(a)(1)(v), not the statutory rate.",
+    "basis": "Chosen from support statistics and pre-period residual diagnostics only ($S/A1/a1_support.csv, a1_node_share.csv; no outcome was regressed on any dose): (i) under the declared gate rule every cross-state version (region x FY FE) has an observed state x FY residual share of 3.2% vs 1.5% under pure county noise (ratio 2.07 > 1.5), so its gate is the shared-state-shock DGP, which the triage passes put at 2.3-7.9 in cost units; (ii) state x FY FE absorb every state-level shock (immigration enforcement, the state-OEWS pre-trend, the statewide cut itself); (iii) the within-state county version has 18.8 effective states and max state leverage 0.12, against 5.0 / 0.40 for the statutory cross-state dose.",
+    "pooling_family": "A1-family (statutory_2025_statewide): A1 variants and A1 with D1 count as one for pooling; this registry's primary is the A1 entrant."
+  },
+
+  "estimand": {
+    "native": "PPML semi-elasticity eta of county certified H-2A contract hours (receipt window rq13d) per dollar of the predicted change in the binding H-2A cash wage floor, D_c = b_c x (F_c - e25_s), identified within state. Reduced form (ITT per dollar of predicted binding-floor change).",
+    "primary_estimand": "epsilon_cost = d ln(total certified hours) / d ln(C), C = H-2A cost per hour (declarations.estimand.primary).",
+    "conversion_formula": "epsilon_cost = (eta / pi_hat) x C_bar, C_bar = ratio_A1 x w_bar. Also reported: the ITT bound eta x C_bar (pi = 1), the interval [eta x C_bar, eta x C_bar / pi_hat], epsilon_w = epsilon_cost / ratio_A1, and epsilon_cost at the low and high ratios.",
+    "w_bar": "PPML-weighted (FY2020-FY2025 county mean rq13d hours) mean of the H-2A cash floor over the two periods, (e25_s + F_c)/2: 15.2607 dollars (computed at freeze from treatment data and calibration weights).",
+    "ratio_A1": "Declared rule (declarations.cost_unit.declared_ratio): certified-hours-weighted mean of the FY2025 cost_ratio and the FY2026 central_vs_h2a_cash ratio (cost_unit_by_fy.csv; the dose is on the H-2A cash floor): central 1.2401, low 1.2145, high 1.3834. Extreme sensitivity 1.76 (declared default).",
+    "C_bar": "1.2401 x 15.2607 = 18.924 dollars per hour (central).",
+    "assumptions": [
+      "A-cost: dC = d(H-2A cash wage). Non-wage cost per hour (housing, transport, fees) does not move with the dose. Employer-provided housing continues; the 655.120(b)(3) housing adjustment is already netted out of the H-2A cash rate.",
+      "A-pi: the realized share of the predicted floor change is the same for the H-2A cash wage (unobserved: disclosed offers are U.S.-worker rates) as for the U.S.-worker offered rate on which pi is estimated (same skill-level and above-floor choices for both worker types).",
+      "A-price: employers respond to the floor in force when the order is filed: the 2025-10-02 statewide schedule and the state minimum wage in force 2026-01-01 to 2026-06-30. The 2026-08-03 AEWR schedule is not used.",
+      "A-binding: FY2025 hours offered within $0.05 of an applicable AEWR are bound by the floor; hours offered above it are not moved by the cut. pi_hat measures departures (skill-II assignment, offers kept above the new floor).",
+      "A-agg: the county total includes entry and exit, so the county response is the total-hours response; counties with no FY2025 hourly hours carry the state hours-weighted binding share.",
+      "A-id: within a state, counties with higher FY2025 binding shares would have had the same FY2025-to-FY2026 proportional hours growth as lower-share counties absent the rule (no within-state shock correlated with b_c x effective cut)."
+    ],
+    "sign_convention": "Doses are mostly negative (cuts). A negative epsilon_cost (conventional demand) means larger cuts raise hours."
+  },
+
+  "sample": {
+    "unit": "county (county_fips, 5-character string; c00_shared/geography.R conventions; never numeric)",
+    "universe": "Counties of data/processed/county_year_panel.parquet (2011 rows) in the 48 contiguous states including CA and FL (single-state former regions contribute within-state variation). AK, HI, DC and PR are excluded (outside the county panel; 0.2% of FY2020-25 rq13d hours).",
+    "periods": "Federal FY2025 and FY2026 (two periods); FY2026 is Q1-Q3 by construction of the window.",
+    "estimation_sample": "PPML with county FE: counties with positive rq13d certified hours in FY2025 or FY2026. Counties zero in both years drop out.",
+    "states_with_dose_at_freeze": 48,
+    "counties_in_power_frame": 2950
+  },
+
+  "dose": {
+    "e25_s": "FY2025 binding floor = max(AEWR in force on 2025-04-01 (aewr_rate_schedule.parquet, nonrange/fls_common_soc reference, covered workers), state agricultural minimum wage). The minimum wage never reaches the FY2025 AEWR: checked against every AEWR in force 2024-10-01 to 2025-06-30 using the 2025-09-29 minimum wage (an upper bound); so e25_s = AEWR_FY2025.",
+    "F_c": "FY2026 effective H-2A cash floor = max(H-2A skill-I statewide rate of 2025-10-02 (aewr_occupation_skill_rates.parquet, 'Statewide 655.120(b)(1)(i)', worker_category H2A, skill 1), applicable state agricultural minimum wage in force 2026-01-01..2026-06-30 for the county's minimum-wage area). Source table: explorations/identification_search/A1/sources/state_ag_minwage_fy2025_2026.csv (built by 00_minwage_table.R; DOL WHD pages of 2025-07-31, 2026-01-01, 2026-07-01; state sources for FL, OR, NY, NJ, ME, MA; agricultural coverage from code/a01_sources/state_ag_minwage_coverage.csv). NY: NYC + Nassau + Suffolk + Westchester at the downstate rate, other counties upstate. OR: ORS 653.026 nonurban counties at the nonurban rate, all others at the standard rate (farms lie outside the Portland Metro UGB). Local (city or county) minimum wages are not H-2A floors under 655.120(a)(1) and are not used.",
+    "b_c": "FY2025 county at-AEWR share = at_aewr_hours_rq13d / hourly_aewr_known_hours_rq13d (shared outcomes_county_fy.parquet, year 2025), clipped to [0, 1]; counties with no known-AEWR hourly hours in FY2025 take their state's hours-weighted share. Hours-weighted mean 0.941, SD 0.114, within-state SD 0.100; counties below 0.8 hold 7.2% of FY2025 known hourly hours.",
+    "primary_dose": "x_ct = e25_s in FY2025; x_ct = e25_s + b_c x (F_c - e25_s) in FY2026. With state x FY FE the identifying variation is b_c x (F_c - e25_s) within state.",
+    "us_rate_dose_for_first_stage": "x^U_ct = e25_s in FY2025; e25_s + b_c x (F^U_c - e25_s) in FY2026, F^U_c = max(U.S. skill-I statewide rate of 2025-10-02, same minimum wage).",
+    "units": "dollars per hour (nominal)",
+    "minimum_wage_binds_fy2026": "Minimum wage above the H-2A skill-I cash rate in 16 of 48 states (AZ, CA, CO, CT, FL, IL, ME, MD, MI, MO, NJ, NM, NY, OR, RI, WA); above the U.S. skill-I rate in 8 (CA, CT, FL, ME, MO, NY, RI, WA).",
+    "files_at_freeze": "$S/A1/a1_state_doses.csv, $S/A1/a1_county_doses.parquet (columns e25, FH, FU, b, d1_h, d1_u and sensitivity variants)"
+  },
+
+  "fixed_effects": {
+    "primary": "county + state x FY",
+    "secondary_designs": "county + former AEWR region x FY (cross-state layers), see secondary_designs"
+  },
+
+  "outcomes": {
+    "primary": {
+      "id": "cert_hours_rq13d",
+      "definition": "Certified H-2A contract hours, received and decided 1 Oct - 30 Jun of the receipt FY (shared outcomes_county_fy.parquet). Receipt dating defines FY2026 exposure: under 655.120(b)(6) orders filed before 2025-10-02 keep the old rate, and rq13d FY2026 contains only receipts from 2025-10-01 on (receipts dated 2025-10-01, one day before the rule, are included; sensitivity S10 drops 1-October receipts in both years).",
+      "model": "PPML on county counts with county FE and state x FY FE (fixest::fepois), no weights (PPML is size-weighted by construction)."
+    },
+    "co_primary": [],
+    "lead_secondary": {
+      "id": "req_pos_rq13d",
+      "definition": "Requested positions from all disclosure cases including denied and withdrawn, received and decided 1 Oct - 30 Jun (shared panel). Same model. Not co-primary: no multiplicity adjustment within A1; it enters the synthesis family only if the synthesis lead adds secondary families."
+    },
+    "secondaries": [
+      "cert_pos_rq13d (PPML)",
+      "req_hours_rq13d (PPML)",
+      "decomposition (PPML, each as a count with the same FE): cert_pos_rq13d, cert_posweeks_rq13d (positions x weeks), cert_hours_rq13d; log weeks = posweeks/pos and log weekly hours = hours/posweeks effects reported as differences of PPML coefficients",
+      "extensive margin: any_cert_rq13d (county LPM, county FE + state x FY FE, weights none, state CRV1), restricted to counties with any certified hours in FY2020-FY2025",
+      "equal-county ratio: cert_hours_rq13d per 2011 farm worker (emp_farm_2011 > 0), OLS levels, county FE + state x FY FE, unweighted, state CRV1; continuity with Track 1"
+    ],
+    "not_pursued": "Within-FY2026 minimum-wage step by contract start month (triage suggestion): FY2026 Q1-Q3 receipts have 0.65% of (FY2025-shifted) contract days in Oct-Dec 2025 and 44% in Jan-Jun 2026, so nearly all orders face the 2026 value; there is no usable timing contrast in a receipt-dated design."
+  },
+
+  "first_stage": {
+    "role": "Part of estimation (Phase 5). Not computed before freezing.",
+    "outcome": "omega_ct = county hours-weighted mean hourly offered wage (case rows: certified rq13d rows with 0 < hourly_wage <= 100, certified hours as weights). FY2026 rows restricted to receipts on or after 2025-10-02. Offers are U.S.-worker rates.",
+    "dose": "x^U_ct (U.S.-rate effective-floor dose, binding-weighted)",
+    "model": "WLS of omega_ct on x^U_ct with county FE + state x FY FE, weights = FY2020-FY2025 mean rq13d certified hours (the PPML linearization weights), counties with hourly offers in both years.",
+    "parameter": "pi_hat_U = slope (dollars of offered wage per dollar of predicted binding-floor change). Used as pi under A-pi.",
+    "inference": "State CRV1 and state jackknife (CV3J) SE; first-stage F from the primary inference method. Weak-first-stage rule: if F < 10, epsilon_cost is reported only with the Fieller/AR set (no point conversion headline).",
+    "secondary_first_stage": "Same model with x^H (the primary H-2A dose) as regressor, reported for transparency (pi relative to the H-2A cash dose)."
+  },
+
+  "inference": {
+    "primary_test": "H0: eta = 0 (equivalently epsilon_cost = 0 when pi > 0), two-sided, alpha 0.05.",
+    "primary_method_rule": "State-clustered CRV1 on the PPML fit if state CRV1 passes the size gate (upper Wilson bound of the null rejection <= 0.075, no invalid repetitions) under the gate DGP in the design-stage power run (02_power.R, candidate P1); otherwise the exact leave-one-state-out jackknife (CV3J, PPML refits). Fixed by simulation before any estimate; recorded in $S/A1/a1_power_summary.csv and the ledger.",
+    "alternates": "state jackknife (if CRV1 primary) or state CRV1 (if jackknife primary); former-region CRV1. No RI: the dose varies within state.",
+    "conversion_inference": "Fieller / Anderson-Rubin-type confidence set for beta = eta / pi_U from the leave-one-state-out joint covariance of (eta_hat, pi_hat_U) (both models refit without each state): {beta : (eta - beta pi)^2 <= t^2_(0.975, G-1) Var(eta - beta pi)}, mapped to epsilon_cost by C_bar. Jackknife SE of the ratio reported as well; the size-valid SE for pooling is the jackknife SE of epsilon_cost.",
+    "multiplicity": "One primary hypothesis (hours). Enters the cross-strategy Romano-Wolf/Holm family per declarations.multiplicity."
+  },
+
+  "falsification": {
+    "gating": [
+      {
+        "id": "F1_placebo_fy2024_fy2025",
+        "spec": "Primary model on FY2024 and FY2025 (cert_hours_rq13d), county FE + state x FY FE, placebo dose: e in FY2024, e + b2024_c x (F_c - e25_s) in FY2025, with b2024_c the FY2024 rq13d at-AEWR share (same construction and imputation as b_c). Same sample rule.",
+        "fail_rule": "primary inference method two-sided p < 0.05 for the placebo eta"
+      },
+      {
+        "id": "F2_pretrend_linear_drift",
+        "spec": "PPML cert_hours_rq13d FY2020-FY2025, county FE + state x FY FE, regressor D_c x (FY - 2025) with D_c = b_c x (F_c - e25_s) (fixed FY2025 b_c). FY2020 start avoids the FY2020 worksite-reporting geography break.",
+        "fail_rule": "primary inference method two-sided p < 0.05 for the drift slope"
+      }
+    ],
+    "reported_non_gating": [
+      {
+        "id": "F3_event_study",
+        "spec": "As F2 with D_c x 1(FY = t), t = 2020..2024, reference 2025; coefficients and a joint jackknife Wald test reported (CRV1 joint Wald with 5 restrictions noted as prone to over-reject)."
+      },
+      {
+        "id": "F4_role_switch_truncation",
+        "spec": "Within-state test that the statutory part of the cut below the minimum wage does not matter: primary FY2025-FY2026 model adding b_c x trunc_c, trunc_c = max(0, MW_c(2026-01-01) - H2A_s1_s) (identified across states with state x FY FE). Expected coefficient 0. Plus the pre-period role switch: the FY2024-FY2025 placebo with the cross-state residualized truncation dose (trunc residualized on the statutory cut within former region), county + region x FY FE, expected 0 because the minimum wage bound no H-2A floor before FY2026 (one state-year, AZ 2018, by $0.04; Track 2 pre-2025 cross-price null, exploration report section 4)."
+      },
+      {
+        "id": "F5_D2_placebo_groups",
+        "spec": "(a) Above-AEWR group, cross-state layer: county + region x FY FE with regressors b_c x (F_c - e25_s) and (1 - b_c) x (F_c - e25_s); expected coefficient on the (1 - b) term 0 (hours offered above the old AEWR are not moved). (b) Minimum-wage-floored states (MW >= U.S. skill-I: CA, CT, FL, ME, MO, NY, RI, WA): their within-state slope per dollar of effective cut equals the other states' (interaction D_c x 1(MW-floored state)); a statutory-dose specification should fit worse (reported). (c) Piece-rate: heterogeneity of the within-state slope by the FY2025 county share of certified positions on orders with a positive piece_rate_offer (h2a_disclosure_records.parquet joined to case rows by case_number), above vs below the hours-weighted median; expected attenuation where piece rates dominate."
+      },
+      {
+        "id": "F6_balance",
+        "spec": "Within-state correlation (state FE, PPML weights) of D_c with pre-period covariates: FY2020-FY2025 hours growth, FY2025 contract weeks, FY2025 SOC field share, FY2025 piece-rate share, FY2025 experience-requirement (>= 3 months) share, 2011 farm employment. Reported."
+      }
+    ],
+    "rule": "A gating failure excludes A1 from pooling (declarations.pooling_rule) and is reported; no post hoc repair unless labeled post-outcome."
+  },
+
+  "secondary_designs": [
+    {"id": "SD1_cross_state_d1", "spec": "Primary dose and outcome, county FE + former region x FY FE, 46 states in multi-state regions. Gated on the shared-shock DGP (node share ratio 2.07)."},
+    {"id": "SD2_cross_state_effective_floor", "spec": "x = e25_s (FY2025), F_c (FY2026); county + region x FY FE; RI by state within region (9,999 draws) as an alternate."},
+    {"id": "SD3_cross_state_statutory", "spec": "x = AEWR25 (FY2025), H-2A skill I (FY2026); county + region x FY FE; Track 1 analogue on rq13d hours."},
+    {"id": "SD4_truncation", "spec": "x = residualized truncation (FY2026), 0 (FY2025); county + region x FY FE."},
+    {"id": "SD5_employer_within_state", "spec": "Employer x state units (employer_id_balanced, state) with positive FY2025 rq13d certified hours; unit FE + state x FY FE; b = employer x state FY2025 at-AEWR share (state share if no known-AEWR hourly hours); state-level floor (NY upstate, OR standard rates for employers); PPML cert_hours_rq13d with FY2026 zeros (exit). Incumbent response only."},
+    {"id": "SD6_us_rate_dose", "spec": "Primary model with x^U (U.S.-rate effective floor) as the dose."}
+  ],
+
+  "sensitivities": [
+    {"id": "S1_dq13", "spec": "Outcome cert_hours_dq13 (decision window; Track 1) and b from dq13."},
+    {"id": "S2_b_fy2023_24", "spec": "b_c from pooled FY2023-FY2024 rq13d hours (avoids FY2025 mean-reversion through b)."},
+    {"id": "S3_drop_imputed_b", "spec": "Drop counties without known-AEWR hourly hours in FY2025."},
+    {"id": "S4_mw_blend", "spec": "Minimum wage = 1/3 value on 2025-10-01 + 2/3 value on 2026-01-01 (triage rule)."},
+    {"id": "S5_mw_contract_days", "spec": "Minimum wage weighted by the state's FY2025 rq13d contract-day calendar shifted one year (segments 2025-10-01, 2026-01-01, 2026-07-01, 2026-09-30 and later carrying the 2026-09-30 value)."},
+    {"id": "S6_46_states", "spec": "Primary on the 46 states of multi-state former regions (Track 1 sample; drops CA and FL)."},
+    {"id": "S7_tier_covariate", "spec": "Add s_c x g_c, s_c = FY2025 rq13d county share of certified hours on orders with WORK_EXPERIENCE_MONTHS >= 3 (raw FY2025 OFLC disclosure xlsx joined by case_number), g_c = max(H2A_s2, MW_c) - max(H2A_s1, MW_c). Separates A1's binding contrast from N1's tier contrast."},
+    {"id": "S8_pretrend_adjust", "spec": "E5 regression adjustment: add (FY2023-to-FY2025 change in log(1 + hours_rq13d)) x 1(FY2026) as a covariate."},
+    {"id": "S9_soc_crop", "spec": "Add FY2025 county field-SOC share x 1(FY2026) and FY2025 county mean contract weeks x 1(FY2026)."},
+    {"id": "S10_drop_oct1_receipts", "spec": "Rebuild the outcome from case rows excluding receipts dated 1 October in both years."}
+  ],
+
+  "design_power": {
+    "harness": "explorations/identification_search/shared/power_harness.R ish_power(), settings from code/designs/border_discontinuity/design.json (seed 201103, 999 repetitions, AR(1) 0.5, spatial coefficient 0.4, size gate upper Wilson <= 0.075, alpha 0.05, power 0.80).",
+    "outcome_and_calibration": "PPML linearization (ish_ppml_linearize) of cert_hours_rq13d; calibration FY2020-FY2025 FE-only residuals (pre-period only); weights = FY2020-FY2025 county mean hours.",
+    "beta_e1": "pi / C_bar with C_bar = 18.924 (MDEs in epsilon_cost units).",
+    "pi_design": "pi = 1 for the gate, per declarations.cost_unit.conversion.power_units ('pi = 1 when the dose is the binding floor itself'): the dose is the predicted change in the binding floor. Also reported at pi = 0.8 and pi = 0.65 (Track 1's already-seen statutory H-2A skill-I first stage, report section 3), since the realized MDE scales with 1/pi_hat.",
+    "gate_dgp_rule": "Declared rule: ish_node_period_share() on the calibration outcome with the design's FE and PPML weights, node = state. At freeze: county + state x FY FE gives 0.0164 vs 0.0100 (ratio 1.64 > 1.5) -> max over the three shared DGPs (with state x FY FE the state shocks are absorbed, so shared and county DGPs should give similar MDEs). Stress node (added, conservative): node = state x FY2025 binding half (b_c above/below the state's hours-weighted median): 0.0361 vs 0.0301 (ratio 1.20) -> no stress gate; the stress DGPs are still run and reported.",
+    "runs": [
+      "P1 primary: cert_hours_rq13d, county + state x FY, clusters state and former region, jackknife state, all four DGPs",
+      "P2 stress: as P1 with node = state x binding half and group = state",
+      "P3 lead secondary: req_pos_rq13d, as P1",
+      "P4 SD1 cross-state D1 (region x FY), all four DGPs",
+      "P5 SD2 cross-state effective floor (region x FY), all four DGPs, RI by state within region (199)",
+      "P6 SD5 employer within-state (shared DGPs need node = state)"
+    ],
+    "decision": "Kill if the size-valid gate MDE (P1, pi = 1) exceeds 1.0 in epsilon_cost; flag if above 0.5; additionally flag 'conversion-sensitive' if the P1 gate MDE / 0.65 exceeds 1.0."
+  },
+
+  "split": {
+    "used": false,
+    "reason": "No data-driven tuning: dose, sample, windows, FE, inference rule and every test are fixed in this registry. The state x binding-half stress node uses a fixed median rule and is a diagnostic, not a tuning choice. (48 states would allow a split.)"
+  },
+
+  "prior_exposure": [
+    "Track 1 (markdowns/alternative_identification_exploration.md section 3; explorations/identification/08_track1_estimate.R): FY2026 Q1-Q3 (dq13) certified positions, certified hours and equal-county ratios by county; PPML positions and hours; cross-state (former-region FE) slopes on the U.S. skill-I, H-2A skill-I, U.S. skill-II and cohort-aligned statutory doses (e.g. PPML hours -0.20 [-1.00, 0.61] per statutory dollar, elasticity units); first stages on FY2026 offered wages (0.66 U.S. skill I, 0.65 H-2A skill I, 0.82 U.S. skill II); national FY2026 Q1-Q3 positions (250,732 -> 280,538 in the Track 1 sample) and offered wages (-$2.18 mean); FY2024-FY2025 placebo; FY2012-FY2024 event study (monotone dose pre-trend); S5 minimum-wage controls.",
+    "Track 2 (report section 4): state minimum-wage effects on H-2A use before FY2026 (precise null).",
+    "Phase 0 (explorations/identification_search/shared): national totals by window including FY2026 (outcome_national_by_window.csv: e.g. FY2026 rq13d certified hours 372.4m, requested positions 345,739, at-AEWR share 0.66). The A1 designer printed this FY2026 national row while inspecting files; national levels are absorbed by the FE.",
+    "Credibility triage ($S/triage/credibility.md): FY2018-FY2025 certified positions and hours by experience class and by field vs non-field SOC; FY2026 Q1-Q3 certified positions by FY2025 experience class (weights only); FY2026 hourly offered wages by class (take-up). No FY2026-vs-FY2025 change computed.",
+    "Power triage ($S/triage/power.md): FY2020-FY2025 residual variance; FY2025 at-AEWR share distribution; national non-field share series through FY2026 Q1-Q3.",
+    "This design step ($S/A1/01_support.log): FY2025 (and FY2023-24) county at-AEWR shares, the FY2025 contract-day calendar, FY2020-FY2025 calibration residual variance and node shares for hours and requested positions. No FY2026 outcome, FY2026 offered wage or dose-outcome regression was read or computed.",
+    "Not examined by anyone: within-state (state x FY FE) contrasts by FY2025 binding share in FY2026; rq13d hours or requested positions in FY2026 at county level."
+  ],
+
+  "support_statistics_at_freeze": {
+    "source": "$S/A1/a1_support.csv (two-period FY2025-FY2026 frame, PPML weights = FY2020-FY2025 county mean rq13d hours; dose SD after FE in dollars)",
+    "primary_C4_d1_within_state_48": {"units": 2950, "states": 48, "clusters_with_dose": 48, "dose_sd_after_fe": 0.2513, "effective_clusters": 18.81, "max_leverage_share": 0.116, "max_leverage_state": "48", "preperiod_residual_sd": 0.2514},
+    "C1_statutory_h2a_region": {"units": 2827, "states": 46, "dose_sd_after_fe": 0.3849, "effective_clusters": 4.97, "max_leverage_share": 0.404, "max_leverage_state": "05"},
+    "C2_effective_floor_region": {"units": 2827, "states": 46, "dose_sd_after_fe": 0.4738, "effective_clusters": 9.49, "max_leverage_share": 0.267, "max_leverage_state": "05"},
+    "C3_d1_cross_state_region": {"units": 2827, "states": 46, "dose_sd_after_fe": 0.4917, "effective_clusters": 16.51, "max_leverage_share": 0.184, "max_leverage_state": "05"},
+    "C4b_d1_within_state_46": {"units": 2827, "states": 46, "dose_sd_after_fe": 0.2668, "effective_clusters": 17.30, "max_leverage_share": 0.123},
+    "C4u_us_rate_within_state_48": {"units": 2950, "states": 48, "dose_sd_after_fe": 0.2009, "effective_clusters": 20.83, "max_leverage_share": 0.093},
+    "C5_employer_within_state": {"units": 49050, "states": 48, "dose_sd_after_fe": 0.5255, "effective_clusters": 13.84, "max_leverage_share": 0.180, "preperiod_residual_sd": 0.7261},
+    "C6_truncation_resid_region": {"units": 2827, "states": 46, "dose_sd_after_fe": 0.2015, "effective_clusters": 13.94, "max_leverage_share": 0.164}
+  },
+
+  "files": {
+    "scripts": [
+      "explorations/identification_search/A1/00_minwage_table.R",
+      "explorations/identification_search/A1/01_support.R",
+      "explorations/identification_search/A1/02_power.R (design-stage power; written after this freeze)"
+    ],
+    "sources": "explorations/identification_search/A1/sources/state_ag_minwage_fy2025_2026.csv, minwage_substate_counties.csv",
+    "outputs": "$S/A1/"
+  }
+}

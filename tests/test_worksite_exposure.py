@@ -20,9 +20,8 @@ def fixture():
     ):
         rows.append({"allocation_id": str(i), "case_number": "case", "fiscal_year": 2020,
             "worksite_requested_begin_date": begin, "worksite_requested_end_date": end,
-            "certification_begin_date": None, "certification_end_date": None,
-            "job_begin_date": "2020-01-01", "job_end_date": "2020-03-01",
-            "requested_begin_date": None, "requested_end_date": None,
+            "period_begin_date": "2020-01-01", "period_end_date": "2020-03-01",
+            "period_date_basis": "employment_dates",
             "number_of_hours": "40", "case_nbr_workers_certified": 100.0,
             "master_n_workers_certified": None, "adjusted_nbr_workers_certified": workers,
             "county_fips_list": county, "allocation_method": "case_certifications_requested_staffing_observed"})
@@ -64,6 +63,7 @@ def test_date_fallback_and_missing_hours_remain_visible():
     work, _ = prepare_worksites(source)
     month = expand_months(work)
     assert month["date_basis"].unique().to_list() == ["case_date_fallback"]
+    assert month["period_date_basis"].unique().to_list() == ["employment_dates"]
     assert month["allocated_certification_hours_with_reported_case_schedule"].null_count() == month.height
     schedule = pl.DataFrame({"state_fips": ["01"], "effective_start": [date(2020, 2, 1)],
         "effective_end_exclusive": [date(2020, 3, 1)], "aewr": [10.0]})

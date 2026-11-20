@@ -1,0 +1,78 @@
+{
+  "strategy_id": "F1",
+  "family": "F",
+  "title": "Counterfactual market-wage recovery from above-floor H-2A offers (model-based; FY2026 lower floors, FY2025 and earlier eras)",
+  "proposer": "catalogue (plan F1); scope notes from the triage merge (minimum wages as floors, receipts >= 2025-10-02, U.S.-worker rates)",
+  "implementer": "Claude Opus 5.5 (Phase 3 F1 designer)",
+  "reviewer": null,
+  "phase_reached": "estimation",
+  "status": "estimated",
+  "kill_phase": null,
+  "kill_reason": null,
+  "rubric_scores": {
+    "exogeneity": 2,
+    "estimand_distance": 1.5,
+    "support": 3.5,
+    "independence": 4,
+    "speed": 4
+  },
+  "estimand": "Model-based, not an elasticity. P1: pass-through theta = dw/dF of the 2025 floor change to the offers of FY2025 incumbents strictly above every applicable floor (theta = 0 fixed market wage, theta = 1 fixed premium). P2: nonparametric binding-share function b26(a) of FY2026 offers for counterfactual floors between the FY2026 applicable floor and the FY2025 AEWR (x 1.0376). P3: stability test Delta_S = S26(a25 (1+g)) - S25(a25). P4 (secondary, extrapolation): left-censored latent market-wage distribution below the floor. Interpretation of P2/P4 as market wages is conditional on P1/P3 (registry interpretation_rule).",
+  "primary_outcome": "Hourly offered wage (U.S.-worker rate) of field, non-piece H-2A job orders received 2025-10-02 to 2026-06-30 (rq13d), certified-hours weighted, classified against every applicable floor (F1 classification); for P1 the FY2025 -> FY2026 change in the incumbent unit's hours-weighted offer",
+  "co_primary_outcomes": [
+    "P2 b26(a) on the declared counterfactual-floor grid",
+    "P3 Delta_S at m = 1"
+  ],
+  "dose": "P1: predetermined state x MW-area change in the effective U.S. floor, eff_cut_u = max(U.S. skill-I rate 2025-10-02, MW 2026-01-01) - FY2025 AEWR ($/hour; units: hours-weighted mean -3.98, SD 1.16, range -6.90 to -1.43). P2-P4: the order's applicable floor F_app as a left-censoring point.",
+  "identifying_assumption": "M1: an employer's offer is max(applicable floor, a floor-independent market wage), and the market-wage distribution of participants is stable across FY2025-FY2026 up to a common drift g; tested by P1 (theta = 0) and P3 (Delta_S = 0). Below-floor shape (P4) additionally rests on a parametric family.",
+  "assumption_family": "structural_market_wage_censoring (F-family, model-based; excluded from headline and pooling)",
+  "conversion": {
+    "formula": "none: F1 is not converted to epsilon_cost (declarations.json: F-family estimates are reported separately, labeled model-based)",
+    "cost_ratio_used": null,
+    "first_stage_pass_through": null,
+    "first_stage_se": null,
+    "assumptions": "Welfare feed only: X_m(a) share x(a) = b26(a) + theta (1 - b26(a)); dw/da above the floor = theta. Offers are U.S.-worker rates; the H-2A cash wage after the housing adjustment is unobserved."
+  },
+  "support": {
+    "dose_sd_after_fe": 1.16,
+    "units": 352,
+    "clusters": 34,
+    "clusters_with_dose": 34,
+    "effective_clusters": null,
+    "max_leverage_share": null,
+    "preperiod_residual_sd": 1.22,
+    "basis": "P1 frame: 352 employer x state incumbent units (FY2025 field non-piece hourly hours all strictly above every floor, present in FY2026 new rule) in 34 states, 20 states with >= 5 units; dose = eff_cut_u (hours-weighted SD 1.16; max state hours share 0.155); residual SD of the FY2023 -> FY2024 offered-wage change of above-floor incumbents (243 units, 38 states; design calibration only). Distribution support (M26, 48 states): 17,665 field non-piece orders, 287.7 million certified hours; 1,713 orders (7.6% of hours) strictly above every floor, 86.6% at a floor (U.S. skill I 51%, U.S. skill II 24%, minimum wage 25% of at-floor hours), 4.3% at the old FY2025 AEWR, 1.5% excluded classes; 41 states with >= 10 above-floor orders. FY2025: 1.7% of field non-piece hours above the AEWR (620 orders); FY2011-FY2025 1.0-5.5%; FY2008 2.4%. Non-field FY2026: 143 above-floor orders (10.1% of hours). Files: $S/F1/f1_support_*.csv"
+  },
+  "design_mde_elasticity": null,
+  "design_mde_by_dgp": {
+    "note": "No elasticity MDE: F1 is model-based. Design precision instead (f1_design_theta_sim.csv, f1_design_shares.csv, f1_design_p4_sim.csv): P1 theta design SD 0.13 (jackknife size 0.045/0.037; power 0.99 to reject theta = 0 when theta = 1 and 0.98 the reverse; MDE about 0.37); P3 Delta_S design SE 0.0049, MDE 0.0138 vs M2-implied -0.0155 (power about 0.88); P2 shares SE <= 0.013; P4 below-floor binding shares SE 0.01-0.06 if the family is right, misspecification bias up to 0.21."
+  },
+  "gate_dgp": "not applicable (no elasticity gate); P1 size gate by simulation from FY2023 -> FY2024 residuals resampled in state blocks: jackknife null rejection 0.045 (upper Wilson 0.060) for H0 theta = 0, 0.037 (0.051) for H0 theta = 1; state CRV1 fails (0.075 / 0.077)",
+  "inference_primary": "P1: state_fips CV3J jackknife, t(G-1); P2-P4: 999-draw state-cluster bootstrap (seed 20261102)",
+  "registry_path": "explorations/identification_search/F1/registry.json",
+  "registry_sha256": "93cc085fff5f2302e53612e1353aa6380aaccb4e954325d5267957c558a4c2ec",
+  "split_used": true,
+  "split_detail": "P4 only: $S/shared/split_state_by_former_region.csv (ish_split seed 20261102, strata former AEWR region): 16 exploration states for the family/scale choice (LOSO predictive log-likelihood), 32 confirmation states for the single fit. P1-P3 have no tuning and use all 48 dose-file states.",
+  "prior_exposure": "Exploration report section 3 (FY2026 offered-wage first stages, Track 1 outcomes) and sections 4/7 (94% of FY2011-13 hours at the AEWR); Phase 0 FY2026 at-AEWR share 0.67; credibility triage FY2026 offers by FY2025 experience class and skill downgrading; power triage 'one in three above'; A1 estimation and review (within-state pi 0.03, cross-state 0.61, binding-half wage changes -2.38/-2.37, field incumbents with shared-flag binding <= 0.25 cut by $2.39 vs $2.32 at 1, i.e. P1 is not blind and prior evidence points toward theta near 1; non-field mass points); this designer's support shares for FY2008-FY2026 by floor class, incumbent counts, mass points, FY2023 -> FY2024 residual SD and FY2025 upper-tail shares. Not examined: FY2026 offers against any cutoff other than their own floor, levels or quantiles of FY2026 above-floor offers, FY2025 -> FY2026 or FY2024 -> FY2025 incumbent wage changes under the F1 classification, any censored-model fit to observed data.",
+  "falsification_result": "pass (FALS1 gating placebo: theta = 0.062, jackknife p = 0.600). V1 (gates the M1 reading): fail (M1 stability rejected), Delta_S = -0.0085 [-0.0151, -0.0039]. Reported: FALS2 theta_pre = 0.384 [-0.667, 1.435]; V2 fail; V3 all CIs include 0; V4 mass-point share of M26 field above-floor hours 0.565.",
+  "estimate_native": "P1 theta = 0.573 (state CV3J SE 0.256, 95% CI [0.052, 1.094], t(32); p(theta=0) = 0.0322, p(theta=1) = 0.1050; 285 units, 33 states). Reading under the registry rule: M2_supported. P2 b26(F_app) = 0.851, b26(a25) = 0.978, b26(a25(1+g)) = 0.989. P3 Delta_S = -0.0085 [-0.0151, -0.0039]. P4 (normal_common, EXTRAPOLATION): b(H-2A skill-I rate) = 0.670, band [0.635, 0.670].",
+  "se_elasticity_cost": null,
+  "ci95_elasticity_cost": null,
+  "elasticity_cost_low_high_ratio": null,
+  "p_unadjusted": 0.0321859523280863,
+  "p_size_valid": 0.0321859523280863,
+  "p_adjusted": null,
+  "realized_mde_elasticity": null,
+  "pooling_eligible": false,
+  "pooling_exclusion_reason": "F-family model-based estimate: reported separately and excluded from the headline and the pooled estimate (declarations.json pooling_rule.excluded_from_headline); not converted to epsilon_cost. Not in the Romano-Wolf/Holm family of epsilon_cost hypotheses.",
+  "external_validity_flag": "false: not applicable (not pooled); estimates describe FY2026 H-2A participants, not all farm employers",
+  "post_outcome_analyses": [
+    "PO1: P1 on the 352-unit design-stage frame (presence on any new-rule field non-piece FY2026 order; the declared INC requires an M26-class order and has 285 units): theta = 0.331 [-0.054, 0.715] (jackknife), p(0) = 0.089, p(1) = 0.0012. Under the rule this frame would read M1 (CI includes 0, excludes 1); declared P1 reads M2. Labeled post-outcome; does not replace P1.",
+    "PO2: V2 with observed = hours share of exact observations above F_app + 0.05 (incl. at_old_aewr; model-consistent reading): slope 0.090 [-0.514, 1.035], intercept 0.1019 [0.0039, 0.2008], fail."
+  ],
+  "estimates_path": "/tmp/claude-1000/-home-ken-Dropbox-projects-H-2A-Paper/1be305e6-0442-48c5-93f4-7023961621fb/scratchpad/identification_search/F1/estimates.csv",
+  "review_verdict": null,
+  "review_path": null,
+  "notes": "Decision: PROCEED at the design stage (kill rules K1-K3 pass; K4: P4 is never a kill criterion). FLAGS: (1) P1 is not blind: the A1 review found FY2025 field incumbents with low shared-flag binding shares cut offers by about as much as binding ones ($2.39 vs $2.32), pointing to theta near 1 (fixed premium), in which case F1 reports offer-premium distributions, not market wages, and the welfare feed uses dw/da = 1. (2) Under F1's own floor classification only 7.6% of FY2026 field non-piece hours (1,713 orders) are above every floor; 86.6% are at a floor (U.S. skill I 51%, skill II 24%, state minimum wage 25% of at-floor hours) and 4.3% at the old FY2025 AEWR. The triage's 'one in three above the floors' came from the shared flag, which ignores minimum wages. (3) P4 below-floor extrapolation is family-dominated; scenario band only. (4) 54% of above-floor hours sit at wage values shared by >= 3 employers in a state x SOC group (possible unseen floors; S3). (5) P3 power only about 0.88. Scripts: explorations/identification_search/F1/00_helpers.R, 01_support.R, 02_design_precision.R; outputs and logs in $S/F1. No model was fitted to observed data. ESTIMATION (Phases 4-5, registry SHA-256 and design-script hashes verified): FALS1 passes; P1 theta = 0.573 [0.052, 1.094] -> M2_supported; V1 rejects M1 stability. P2/P4 therefore reported as distribution of FY2026 offers relative to the floor (offer premia over the floor); NOT market wages (M2 reading). Welfare feed: dw/da = 1 for all hours (X_m = all hours of hourly orders). Scripts 03_est_helpers.R-11_estimates_ledger.R; outputs /tmp/claude-1000/-home-ken-Dropbox-projects-H-2A-Paper/1be305e6-0442-48c5-93f4-7023961621fb/scratchpad/identification_search/F1.",
+  "updated": "2026-11-05",
+  "estimate_elasticity_cost": null
+}

@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-14",
+  "status": "Measurement audit before new administrative regressions and any post-policy earnings access",
+  "administration": {
+    "finding": "The canonical application_date_basis is dates_of_need in FY2011-14, but certification_dates in FY2015, whose requested_begin_date is entirely empty. The raw JOB_START_DATE mapped to job_order_begin_date is not assumed to restore requested start without source documentation.",
+    "handling": "Use dates_of_need only for cohort assignment. Retain all baseline cohorts and calendar years 2011-2015. Set 2014 and 2015 cohort outcomes unknown because FY2015 decisions can serve requested-start cohorts in either year. Report those effects and temporal placebos as unavailable; estimate the feasible 2011-2013 contrast. Do not miscode missing FY2015 cohort assignments as nonfiling.",
+    "consequence": "Cannot establish persistence through 2015 with the requested-start cohort design from current fields. Original declared five-year design remains the target; feasible shorter contrast is explicitly labeled."
+  },
+  "wage_implementation_correction": {
+    "finding": "The initial extension accidentally used SOC only when repeated on an allocation row. Addendum B rows frequently omit case-level SOC, reducing the common-occupation sample. This was found after inspecting the initial extension output.",
+    "correction": "Join the unique reported case SOC from disclosure metadata to the case's allocated worksite hours. Occupation means the case's listed occupation, not a verified worksite task. Conflicting or missing case SOC stays unknown. Preserve initial extension CSVs in scratch implementation_audit/row_soc. Original county and worksite-business benchmarks are unchanged.",
+    "selection": "A measurement implementation correction, not effect-based sample selection. All registry-defined outcomes and sensitivities are rerun and retained."
+  },
+  "wage_CDF_correction": {
+    "finding": "The final report review found that sequential grouped summarisation replaced the row premium with its group mean before computing three CDF shares. The resulting vector-length mismatch made many valid cell CDFs missing. This was discovered after the initial extension and report were inspected.",
+    "correction": "Compute the three row-level premium indicators before grouping, then average them with the original row hours. Reject mismatched observation/weight lengths in the helper. Preserve earlier estimates, state deletions and panel in scratch implementation_audit/cdf_aggregation. Verify that all non-CDF estimates are unchanged and that CDF shares are complete and ordered for known premiums. No change to the declared distribution estimand or sample."
+  },
+  "earnings": {
+    "finding": "The original extractor overwrites emp with its group sum before using it in avg_wkly_wage*emp. Multiple source-geography components would consequently sum their wage means. It also lacks the supported QCEW geography-priority rules.",
+    "correction": "The new isolated extractor owns the three-series earnings scratch panel. It uses the existing QCEW canonical county mapper and geography-priority rules, excludes nonallocatable counties, and computes an employment-weighted average of the reported weekly wage BEFORE aggregation. Total wages and employment are summed separately; suppression of any selected component makes aggregated earnings missing. Single-component weekly wages retain the original reported rounded values. No change to registered sample thresholds, frozen exposure, model, weights or inference.",
+    "blindness": "No 2025 Q4 or later QCEW or QWI earnings read. Quantify differences against the original pre-policy extract and reproduce its original tau2024 estimate separately.",
+    "scope": "Original frozen extractor and registry unchanged. Extension/amendment hashes must pass before future full-window access.",
+    "preparation_validation": "Before any post-policy or prior-window-lead access, the separate public-quarter reader was corrected to use the installed pandas CSV interface after a synthetic test exposed a Polars 2 API incompatibility. Publication metadata requires a timezone-aware verification timestamp after the scheduled release. Final amendment hashes are frozen after these preparation-only checks."
+  }
+}

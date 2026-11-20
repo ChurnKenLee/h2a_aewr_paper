@@ -1,6 +1,6 @@
 +++
 title = "H-2A worksite-business linkage"
-description = "Role-aware FY2008--2024 business universe, nested linkage rules, review protocol, and downstream count semantics."
+description = "Role-aware FY2008--2026 Q3 business universe, nested linkage rules, review protocol, and downstream count semantics."
 
 [extra]
 scopes = ["code/a01_sources/02_04_h2a_match_employers.py", "src/h2a/employer_linkage.py", "code/b01_derived/01_h2a_aggregation_nodupes.R", "code/c01_clean", "code/c02_build", "code/designs"]
@@ -9,11 +9,12 @@ scopes = ["code/a01_sources/02_04_h2a_match_employers.py", "src/h2a/employer_lin
 The supported H-2A identity unit is a worksite business, not a filing agent,
 association headquarters, contractor, application, worksite row, or generic
 national name. Version `v2` uses all available identity evidence from
-FY2008--2024. The canonical partition is therefore a full-vintage longitudinal
+FY2008--FY2025 plus partial FY2026 Q3. Later identity evidence can revise
+historical business counts. The canonical partition is therefore a full-vintage longitudinal
 linkage; a separate audit reconstructs the FY2008--2022 partition using only
 evidence available through FY2022.
 
-{{ <grounding path="src/h2a/employer_linkage.py" anchor="employer-linkage-contract" sha256="ae782b1010011facde5da0dd95b87e935f49dd0704d43cae3291bc484cfa407e" /> }}
+{{ <grounding path="src/h2a/employer_linkage.py" anchor="employer-linkage-contract" sha256="04e9fee50fd5585c3a69ee26638fd5e726f2b57ab1743f63b3453aa49d2f6cce" /> }}
 
 ## Outcome-free business universe
 
@@ -64,7 +65,11 @@ The tiers are nested:
 No union may combine conflicting nonblank FEINs. Non-FEIN unions also obey
 distinct-name sprawl limits of 25, 100, and 500 for conservative, balanced,
 and high recall. Candidate order, union anchors, review ranking, and output
-sorts are deterministic. IDs have the form
+sorts are deterministic. All-tier exact rules (exact FEIN, then exact name or
+trade name at an exact address or phone) run for both contact types before
+any balanced-only similar-name rule, so an earlier fuzzy merge cannot carry a
+record into another FEIN's balanced cluster ahead of its exact links and break
+nesting. IDs have the form
 `emp_wb_v2_<tier>_<anchor-hash>`.
 
 ## Audits and manual review
@@ -99,10 +104,16 @@ overall, rule, and regime precision, near-miss yield, and cluster-check failure
 rates. Those empirical metrics are diagnostic and do not select or promote a
 tier.
 
-Promotion still fails if labels are missing or incomplete, IDs or keys are
+Promotion fails if IDs or keys are
 missing or duplicated, tiers are not nested, IDs change after a row shuffle,
-a cluster contains conflicting FEINs, or a record role is invalid. The review
-report hash and status travel with the linkage metadata.
+a cluster contains conflicting FEINs, or a record role is invalid. With a
+complete label file the status is `complete` and the hash is the review
+report's. The FY2026 Q3 extension is published before its new pairs are labeled:
+`ALLOW_PENDING_REVIEW` in `02_04` stamps status `pending`, reports how many
+sampled pairs are already labeled, computes no
+precision metrics, and hashes the review sample instead. Setting it to `False`
+makes missing or incomplete labels stop promotion again. Status and hash
+travel with the linkage metadata.
 
 ## County-year interface
 
@@ -116,7 +127,9 @@ allocation calculations remain unchanged.
 
 The aggregate and shared panels carry one filled contract:
 `employer_linkage_unit = worksite_business`,
-`employer_linkage_version = v2`, input maximum year 2024, review status
-`complete`, and the 64-character review-report hash. Balanced linkage is the
+`employer_linkage_version = v2`, input maximum year 2026, review status
+`complete` or `pending`, and the 64-character review hash. Shared stages
+accept either status; each design pins the status it was validated against
+(currently `pending`). Balanced linkage is the
 canonical causal outcome tier; conservative and high-recall counts remain
 sensitivity measures.

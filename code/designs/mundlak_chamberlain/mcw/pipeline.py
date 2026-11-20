@@ -587,7 +587,7 @@ def _postfit_rows(
         values=frame["mc_baseline_farm_employment"].cast(pl.Float64).to_numpy(),
     )
     gradients = []
-    for outcome in ("applications", "requested_positions", "certified_positions"):
+    for outcome in ("applications", "certified_positions"):
         gradients.append(
             per_baseline_worker_effect(
                 name=f"{outcome}_per_1000_baseline_farm_workers",

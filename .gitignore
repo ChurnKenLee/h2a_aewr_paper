@@ -5,6 +5,8 @@ data/
 *.csv
 !code/a01_sources/aewr_rate_schedule_manifest.csv
 !code/a01_sources/aewr_policy_events.csv
+!code/a01_sources/state_ag_minwage_coverage.csv
+!explorations/identification/sources/state_ag_overtime_schedule.csv
 !outputs/tables/iv_dissimilarity_model_estimates.csv
 !outputs/tables/iv_dissimilarity_ar_intervals.csv
 *.xlsx

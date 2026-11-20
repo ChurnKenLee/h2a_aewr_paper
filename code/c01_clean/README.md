@@ -16,8 +16,8 @@ The branch artifact is:
 data/intermediate/county_year_merged.parquet
 ```
 
-The H-2A normalizer requires one reviewed FY2008--2024 `worksite_business` v2
-linkage contract and passes its unit, version, vintage, review status, and
+The H-2A normalizer requires one FY2008--2026 Q3 `worksite_business` v2
+linkage contract (review status `complete` or `pending`) and passes its unit, version, vintage, review status, and
 review-report hash through to the merge.
 
 Run the complete shared branch with:
@@ -58,7 +58,15 @@ the grounded [shared-panel contract](../../content/contracts/shared-panel.md).
 The complete producer chain and join map are documented in
 [Generating the shared county-year panel](../../content/architecture/shared-panel-generation.md).
 
-The BEA employment normalizer retains the cached 2001--2022 history. The
-shared merge still uses its declared 2008--2022 backbone. AEWR normalization
+The BEA employment and farm-income normalizers retain the 2001--2022 history;
+BEA discontinued CAEMP25N and CAINC45 after 2022. `10_bea_farm_earnings.R`
+normalizes the continuing CAINC5N farm earnings and earnings by place of work.
+The backbone and the H-2A, AEWR, population, OEWS and price-index normalizers
+use `SHARED_PANEL_START_YEAR`--`SHARED_PANEL_END_YEAR` from `code/paths.R`
+(2008--2025). AEWR normalization
 passes source status, document ID and the explicitly nonstatutory 2009 field;
 missing canonical 2009 wages propagate into their one- and two-year lags.
+
+The CAINC5N and OEWS normalizers validate the years published in their sources within the
+shared calendar, rather than requiring every shared year to be available.
+Both current sources end in 2024, leaving their 2025 values missing.

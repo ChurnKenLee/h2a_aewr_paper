@@ -1,0 +1,53 @@
+{
+  "id": "chapter_directions_2026_11_14_v1",
+  "frozen_date": "2026-11-14",
+  "status": "Exploratory specifications fixed before running new outcomes; no significance-based selection",
+  "blindness": {
+    "wage": "Developed after seeing related FY2026 county wage and worksite-business decomposition results, including the existing report. Not a preregistered independent confirmation.",
+    "administration": "No event-period administrative outcomes inspected before this declaration. Primary agency documents and schema names inspected.",
+    "earnings": "No 2025 Q4 or later earnings opened. Existing frozen registry is preserved. No partial window or automatic scheduling."
+  },
+  "wage": {
+    "unit": "filer-state-occupation; R7 candidate filer identifiers; distinct from worksite-business identity",
+    "sample": "Hourly worksite offers in (0,100], positive certified hours, decision October 1-June 30 in each FY; same counties and multi-state former regions as Track 1. Certified hours use original pooled FY2012-25 weekly-hours imputation. Allocate existing worksite rows equally across listed counties, then aggregate to state; never count a master in addition to allocated worksites.",
+    "years": [2023, 2024, 2025, 2026],
+    "pairs": [2024, 2025, 2026],
+    "dose": "FY2026 US skill-I state AEWR minus April 1 2025 regional AEWR, unchanged for placebos",
+    "primary": "Change in continuing filer-state-occupation mean offer on dose and former-region effects; baseline certified-hours weights",
+    "weights": ["baseline_hours", "equal"],
+    "identities": ["R7", "R5", "R8", "FEIN"],
+    "outcomes": ["mean_offer_change", "offer_reduction_gt_005", "old_offer_retained_within_005", "baseline_reference_premium_change", "near_observed_schedule_within_005", "reference_premium_cdf_000", "reference_premium_cdf_025", "reference_premium_cdf_100"],
+    "fixed_composition": "Filer-state mean wage change on common occupations, using baseline occupation hours shares renormalized over common occupations. Compare unrestricted continuing filer-state response on same and full continuer samples. Report baseline and current hours coverage; common-occupation selection is post-outcome conditioning.",
+    "heterogeneity": "R7 FY2025-26 primary mean-offer change only: interactions of dose with baseline premium >0.25, baseline contractor indicator, and baseline filer total hours above the median. Separate regressions; Holm adjust the three interaction p values and report Bonferroni simultaneous intervals as well as unadjusted intervals. Missing contractor or occupation remains unknown.",
+    "selection": "R7 baseline filer-state continuation in hourly offers and any certified positions; dose, former-region effects; equal and baseline-hours weights. Pre-wage/premium differences by continuation and dose interaction. No inference of random selection from insignificant tests.",
+    "within_filer": "R7 continuing filer-state unrestricted change on dose with filer and former-region effects, equivalent to filer-by-year effects in two-period levels; at least two continuing states per filer; both weights",
+    "floor_audit": "Receipt date is not job-order submission date. Skill, prevailing/collective wage, worker category and itinerary ambiguity prevent exact applicable-floor classification. Missing/unresolved effective floor is NA. Report separately receipt-aligned, five-common-SOC, single-state schedule-envelope comparisons for US/H2A skill-I/II plus observed state minimum; label as reference schedules, not established legal floors or market wages.",
+    "diagnostics": ["matched-window placebos", "all state deletions", "R5/R8/FEIN sensitivity", "FY2025 baseline-only heterogeneity", "multi-state hours coverage", "state shock documentation"],
+    "inference": "State deletion jackknife with t(G-1); CRV1 secondary. Any nonidentified deletion makes jackknife unavailable, never silently omit failed replicates."
+  },
+  "administration": {
+    "interruption": ["2013-10-01", "2013-10-16"],
+    "reopening": "2013-10-17",
+    "receipt_recoding": "All October 1-18 submissions considered received October 18; cannot recover actual submission date",
+    "cohort": "R7 filer x worksite state x requested start month, observed in calendar requested-start years 2011 and 2012. Use primary/master case record only; collapse exact duplicates; conflicting dates/status/positions become unknown. Calendar years, not fiscal years, determine the event.",
+    "prediction": "Project each 2011/12 baseline case receipt, decision and requested-start calendar date to 2013 by year shift relative to its requested-start year; February 29 -> February 28. Predicted cohort start is median projected start date. Exposure is equal-case share of valid baseline projected receipt-to-decision closed intervals overlapping October 1-16. Require complete plausible baseline dates and nonnegative processing intervals in both years; document exclusions.",
+    "years": [2011, 2012, 2013, 2014, 2015],
+    "primary": "Any observed certification decided by historically predicted cohort start date; missing decisions for potentially timely certified cases -> unknown. No observed case -> zero observed timely certification, not proof of nonfiling. Keep all baseline cohorts in all years.",
+    "secondary": ["observed_filing", "certified_positions", "certification_days_relative_to_requested_start_among_observed", "observed_denial", "unknown_dates_or_status"],
+    "model": "Exposure x year, reference 2012; cohort effects and state x broad-season x year effects (contains state-by-year effects). Broad seasons are Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec.",
+    "weights": ["equal_cohort", "mean_2011_2012_certified_positions"],
+    "sensitivities": ["state x month x year effects", "Aug-Dec requested-start cohorts", "R5 and R8 linkage", "leave-one-state-out", "exclude largest baseline-position filer"],
+    "diagnostics": ["2011 lead", "2014 and 2015 same-calendar temporal placebo contrasts relative to previous year", "baseline exposure support within state-season", "monthly decision and receipt counts including recoding mass", "certifications by predicted start plus 7,14,30,60 days", "baseline characteristics", "exposure concentration"],
+    "inference": "State deletion jackknife t(G-1); temporal placebo estimates separately. One national interruption, no claim that cohorts are independent shocks. Conditional timing is selection-dependent; no shutdown IV for pure delay."
+  },
+  "earnings": {
+    "base_registry": "explorations/episode_2025/domestic_wage_registry.json",
+    "preserve": "NAICS 111 private county weekly earnings, mean YoY log change 2025Q4-2026Q2; frozen 2022-24 intensity and dose; state effects; equal counties; state jackknife",
+    "preparation": "Verify all base hashes, rebuild missing exposure from owner and demand exact frozen hash, reproduce tau2024 original estimate. Audit quarter keys, suppression, canonical geography and wage/employment aggregation on pre-policy data. Write dated correction amendment before accessing earnings.",
+    "queue": ["primary", "employment_weighted", "cash_dose", "commuting_zone", "no_intensity_control", "all_private_diagnostic", "animal_diagnostic", "prior_window_lead", "UI_classification_splits", "QWI_secondary_when_complete"],
+    "preperiod_years": [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+    "release_gate": "Publication metadata must verify 2026Q2 full data availability, then all six prior/current quarters must exist. Scheduled release 2026-12-02 10:00 America/New_York, verified 2026-11-14. No post-policy file open before release, hash and amendment checks.",
+    "UI": "Source direct agriculture and contractor treatment independently from law/agency guidance; unresolved states explicitly ambiguous. Do not classify from observed employment discrepancies."
+  },
+  "precision_references": {"wage_dollars_per_statutory_dollar": [0.10, 0.25, 0.50], "participation_percentage_points": [2, 5, 10], "timing_days": [3, 7, 14], "earnings_percent_at_S_03_cut_minus4": [1, 3, 5]}
+}

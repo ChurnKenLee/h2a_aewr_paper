@@ -18,6 +18,24 @@ from h2a.geography import assert_geo_columns, normalize_geo_code
 CRS_FILE = "20080326_RL32861_9a486634f79a5f9c680cc5ba021e579cc67210a5.pdf"
 CRS_URL = "https://www.everycrsreport.com/files/" + CRS_FILE
 COMMON_SOC = "45-2041;45-2091;45-2092;45-2093;45-2099;53-7064"
+FLAG_FILES = "https://flag.dol.gov/sites/default/files/"
+# 2023 rule (88 FR 12760): OEWS vintage, cached workbook, FLAG path, effective
+# interval, and the later start for Kansas-order states and entities.
+OEWS_OCCUPATION_RELEASES = [
+    ("May 2021", "BLS-OEWS_National_State_Data_May_2021_Release_Effective_3.30.23_to_6.30.23.xlsx",
+     "2023-06/BLS-OEWS_National_State_Data_May%202021%20Release%20Effective%203.30.23%20to%206.30.23.xlsx",
+     date(2023, 3, 30), date(2023, 7, 1), None),
+    ("May 2022", "BLS-OEWS_National_State_Data_May_2022_Release.xlsx",
+     "2023-06/BLS-OEWS_National_State_Data_May%202022_Release.xlsx",
+     date(2023, 7, 1), date(2024, 7, 8), None),
+    ("May 2023", "BLS-OEWS_National_State_Data_May_2023_Release.xlsx",
+     "2024-07/BLS-OEWS_National_State_Data_May%202023_Release.xlsx",
+     date(2024, 7, 8), date(2025, 7, 11), None),
+    # The interval ends when OFLC implemented the rule's vacatur.
+    ("May 2024", "BLS-OEWS_National_State_Data_May_2024_Release.xlsx",
+     "2025-07/BLS-OEWS_National_State_Data_May%202024_Release.xlsx",
+     date(2025, 7, 11), date(2025, 8, 29), date(2025, 7, 25)),
+]
 
 
 def state_identity(name: str) -> dict:
@@ -195,7 +213,67 @@ def parse_skill_workbooks(raw: Path) -> pl.DataFrame:
     return result
 
 
-def build_aewr_artifacts(raw: Path, registry_path: Path) -> dict:
+def parse_oews_occupation_workbooks(raw: Path) -> pl.DataFrame:
+    """2023-rule AEWRs for occupations outside the common field-and-livestock group.
+
+    The rate is the statewide OEWS mean hourly wage for the SOC, or the national
+    mean when no statewide wage is published. Suppressed cells stay null.
+    """
+    common = COMMON_SOC.split(";")
+    sheets = []
+    for reference, filename, url_path, start, end, alternative in OEWS_OCCUPATION_RELEASES:
+        state = pl.read_excel(raw / filename, sheet_name="State Data").select(
+            pl.col("AREA_TITLE").alias("area"), pl.col("OCC_CODE").alias("soc_code"),
+            pl.col("H_MEAN").cast(pl.String).alias("source_rate_text"))
+        national = pl.read_excel(raw / filename, sheet_name="National Data").select(
+            pl.col("OCC_CODE").alias("soc_code"),
+            pl.col("H_MEAN").cast(pl.String).alias("national_rate_text")).unique()
+        assert_unique(state, ["area", "soc_code"])
+        assert_unique(national, ["soc_code"])
+        sheets.append((reference, filename, url_path, start, end, alternative, state, national))
+    # One workbook can omit a state entirely (Colorado, May 2024); the rule then
+    # gives the national rate, so every vintage is crossed with every area.
+    areas = pl.DataFrame([{"area": area, **state_identity(area)} for area in sorted(
+        {area for *_, state, _ in sheets for area in state["area"].unique().to_list()})])
+    assert_unique(areas, ["state_fips"])
+    frames = []
+    for reference, filename, url_path, start, end, alternative, state, national in sheets:
+        published = state.filter(~pl.col("soc_code").str.ends_with("-0000"))["soc_code"].unique()
+        detailed = national.filter(pl.col("soc_code").str.contains(r"[1-9]$"))["soc_code"]
+        socs = pl.DataFrame({"soc_code": sorted((set(published) | set(detailed)) - set(common))})
+        if socs.filter(~pl.col("soc_code").str.contains(r"^\d{2}-\d{4}$")).height:
+            raise ValueError("Invalid published occupational code")
+        frame = areas.join(socs, how="cross").join(
+            state, on=["area", "soc_code"], how="left", validate="1:1").join(
+            national, on="soc_code", how="left", validate="m:1").with_columns(
+            pl.col("source_rate_text").cast(pl.Float64, strict=False).round(2).alias("state_rate"),
+            pl.col("national_rate_text").cast(pl.Float64, strict=False).round(2).alias("national_rate"))
+        frame = frame.with_columns(
+            pl.when(pl.col("state_rate").is_not_null()).then(pl.lit("statewide"))
+            .when(pl.col("source_rate_text") == "#").then(pl.lit("statewide_topcoded_unavailable"))
+            .when(pl.col("national_rate").is_not_null()).then(pl.lit("national_fallback"))
+            .otherwise(pl.lit("unavailable")).alias("rate_basis")).with_columns(
+            pl.when(pl.col("rate_basis") == "statewide").then(pl.col("state_rate"))
+            .when(pl.col("rate_basis") == "national_fallback").then(pl.col("national_rate"))
+            .otherwise(None).alias("hourly_aewr"))
+        frames.append(frame.select(
+            "state_name", "state_fips", "soc_code", pl.lit(reference).alias("oews_reference"),
+            "hourly_aewr", "rate_basis", "source_rate_text", "national_rate_text",
+            pl.lit(start).alias("effective_start"), pl.lit(end).alias("effective_end_exclusive"),
+            pl.lit(alternative, dtype=pl.Date).alias("alternative_effective_start"),
+            pl.lit(filename).alias("source_file"), pl.lit(FLAG_FILES + url_path).alias("source_url"),
+            pl.lit("job_duties_cohort_and_competing_floors_required").alias("applicability_status")))
+    result = pl.concat(frames).sort(["effective_start", "state_fips", "soc_code"])
+    assert_unique(result, ["state_fips", "soc_code", "effective_start"])
+    assert_geo_columns(result, ["state_fips"])
+    if result.filter(pl.col("soc_code").is_in(common)).height:
+        raise ValueError("Common field-and-livestock SOCs entered the occupation table")
+    if result.filter(pl.col("hourly_aewr") <= 0).height:
+        raise ValueError("Nonpositive occupational rate")
+    return result
+
+
+def build_aewr_artifacts(raw: Path, registry_path: Path, occupation_raw: Path) -> dict:
     registry = pl.read_csv(registry_path, schema_overrides={"year": pl.Int64},
                            try_parse_dates=True)
     assert_unique(registry, ["document_number"])
@@ -269,23 +347,33 @@ def build_aewr_artifacts(raw: Path, registry_path: Path) -> dict:
     validate_schedule(schedule)
     skill_rates = parse_skill_workbooks(raw)
     sources.extend(raw / name for name in skill_rates["source_file"].unique().to_list())
+    occupation_rates = parse_oews_occupation_workbooks(occupation_raw)
+    # Kept apart from "inputs": those names resolve inside the AEWR raw folder.
+    occupation_inputs = [
+        {"name": name, "sha256": hashlib.sha256((occupation_raw / name).read_bytes()).hexdigest()}
+        for name in sorted(occupation_rates["source_file"].unique().to_list())]
     events_path = registry_path.with_name("aewr_policy_events.csv")
     events = pl.read_csv(events_path, try_parse_dates=True)
     assert_unique(events, ["event_id"])
     sources.append(events_path)
     manifest = {
-        "schema_version": "aewr_source_v2", "annual_reference_years": [1990, 2025],
+        "schema_version": "aewr_source_v3", "annual_reference_years": [1990, 2025],
         "schedule_coverage_start": "1995-02-07", "schedule_coverage_end_exclusive": "2025-10-02",
+        "occupation_schedule_coverage_start": "2023-03-30",
+        "occupation_schedule_coverage_end_exclusive": "2025-08-29",
+        "occupation_inputs": occupation_inputs,
         "unresolved": ["2009 OES area/SOC/skill determinations and transition cohorts",
                        "pre-1995 effective dates", "non-FLS occupations and range wage histories",
                        "job-specific prevailing/CBA/state-law coverage and injunction entity membership",
-                       "2023--2025 other-occupation historical tables: uncached; network acquisition unavailable"],
+                       ("2023--2025 other-occupation rates: job-order cohort, combined-occupation duties, "
+                        "injunction entity membership and the OEWS-based field rates of AK, DC, GU, PR and VI")],
         "inputs": [{"name": str(p.relative_to(raw)) if p.is_relative_to(raw) else p.name,
                     "sha256": hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(set(sources))],
         "annual_reference_semantics": "published FLS benchmark, not a dated universal wage obligation",
         "2009_semantics": "canonical null; means retained only in explicitly nonstatutory field"}
     return {"aewr.parquet": annual, "aewr_rate_schedule.parquet": schedule,
             "aewr_occupation_skill_rates.parquet": skill_rates,
+            "aewr_oews_occupation_rates.parquet": occupation_rates,
             "aewr_policy_events.parquet": events,
             "aewr_reference_rate_source_audit.parquet": audit,
             "aewr_2009_nonstatutory_wages.parquet": nonstatutory,

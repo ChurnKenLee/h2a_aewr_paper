@@ -1,0 +1,31 @@
+[
+  {
+    "file": "2025_qtrly_singlefile.zip",
+    "url": "https://data.bls.gov/cew/data/files/2025/csv/2025_qtrly_singlefile.zip",
+    "bytes": "286989289",
+    "sha256": "207db563cdd331055b55140786d8209da1e6ef5fbcfa61f039718db5e4f4afb2",
+    "last_modified": "Fri, 21 Aug 2026 13:22:41 GMT",
+    "retrieved_utc": "2026-11-14T01:20:32Z",
+    "path": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew_episode_2025_2026/2025_qtrly_singlefile.zip",
+    "opened_at": "2026-11-17T02:21:56.401698+00:00",
+    "quarters": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "file": "2026_qtrly_singlefile.zip",
+    "url": "https://data.bls.gov/cew/data/files/2026/csv/2026_qtrly_singlefile.zip",
+    "bytes": "68947328",
+    "sha256": "27a5d0eeaca62c1823cb0cde06310fd8dd24524cf91d5ce5894e21cb7948fd96",
+    "last_modified": "Fri, 21 Aug 2026 15:36:22 GMT",
+    "retrieved_utc": "2026-11-14T01:20:54Z",
+    "path": "/home/ken/Dropbox/projects/H-2A_Paper/data/raw/qcew_episode_2025_2026/2026_qtrly_singlefile.zip",
+    "opened_at": "2026-11-17T02:21:59.167986+00:00",
+    "quarters": [
+      1
+    ]
+  }
+]

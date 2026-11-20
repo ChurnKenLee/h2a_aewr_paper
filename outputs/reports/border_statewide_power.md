@@ -14,223 +14,223 @@ Units: certified positions per fixed-2011 farm worker per nominal $1/hour (0.01 
 
 | spec_id | treatment_label | scenario_id | counties | pairs | states | median_post_pair_gap | effective_pair_leverage_count | maximum_pair_leverage_share | signed_incidence_rank | pre_mean_outcome | pre_sd_outcome |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 |  322 |   22 |   34 | 0.705 | 5.69 | 0.279 |   21 | 0.113 | 0.198 |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 |  322 |   22 |   34 | 0.765 | 6.88 | 0.261 |   21 | 0.113 | 0.198 |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  322 |   22 |   34 | 0.945 | 7.97 | 0.244 |   21 | 0.113 | 0.198 |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  322 |   22 |   34 | 0.94 | 8.66 | 0.235 |   21 | 0.113 | 0.198 |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 |  322 |   22 |   34 | 1.19 |  8.7 | 0.258 |   21 | 0.113 | 0.198 |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  322 |   22 |   34 | 1.09 | 10.4 | 0.155 |   21 | 0.113 | 0.198 |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 |  708 |   69 |   40 | 1.16 | 27.2 | 0.0842 |   39 | 0.0858 | 0.18 |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  708 |   69 |   40 | 1.16 | 28.6 | 0.0728 |   39 | 0.0858 | 0.18 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  544 |   37 |   46 | 1.12 | 12.2 | 0.169 |   31 | 0.101 | 0.188 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  544 |   37 |   46 | 1.11 | 13.1 | 0.14 |   31 | 0.101 | 0.188 |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 |  322 |   22 |   34 | 0.705 | 5.69 | 0.279 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 |  322 |   22 |   34 | 0.765 | 6.88 | 0.261 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  322 |   22 |   34 | 0.945 | 7.97 | 0.244 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  322 |   22 |   34 | 0.94 | 8.66 | 0.235 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 |  322 |   22 |   34 | 1.19 |  8.7 | 0.258 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  322 |   22 |   34 | 1.09 | 10.4 | 0.155 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 |  708 |   69 |   40 | 1.16 | 27.2 | 0.0842 |   39 | 0.0886 | 0.185 |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  708 |   69 |   40 | 1.16 | 28.6 | 0.0728 |   39 | 0.0886 | 0.185 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  544 |   37 |   46 | 1.12 | 12.2 | 0.169 |   31 | 0.103 | 0.192 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  544 |   37 |   46 | 1.11 | 13.1 | 0.14 |   31 | 0.103 | 0.192 |
 
 ### Primary specification: power at the declared threshold
 
 | scenario_id | dgp_id | inference_method | effect | rejection_rate | size_gate_pass |
 | --- | --- | --- | --- | --- | --- |
-| post_fy2026 | county_serial | pair_CRV1 | 0.01 | 0.529 | FALSE |
-| post_fy2026 | county_serial | pair_CRV1 | -0.01 | 0.529 | FALSE |
-| post_fy2026 | county_serial | pair_CV3J | 0.01 | 0.469 | FALSE |
-| post_fy2026 | county_serial | pair_CV3J | -0.01 | 0.477 | FALSE |
-| post_fy2026 | county_serial | pair_region_CRV1 | 0.01 | 0.539 | FALSE |
-| post_fy2026 | county_serial | pair_region_CRV1 | -0.01 | 0.538 | FALSE |
-| post_fy2026 | county_serial | shared_endpoint_dyadic | 0.01 | 0.603 | FALSE |
-| post_fy2026 | county_serial | shared_endpoint_dyadic | -0.01 | 0.585 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CRV1 | 0.01 | 0.17 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CRV1 | -0.01 | 0.193 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CV3J | 0.01 | 0.15 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CV3J | -0.01 | 0.171 | FALSE |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 | 0.01 | 0.165 | FALSE |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 | -0.01 | 0.196 | FALSE |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic | 0.01 | 0.172 | FALSE |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic | -0.01 | 0.201 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | 0.01 | 0.146 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | -0.01 | 0.153 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | 0.01 | 0.132 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | -0.01 | 0.131 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | 0.01 | 0.145 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | -0.01 | 0.157 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.01 | 0.162 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.01 | 0.181 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CRV1 | 0.01 | 0.134 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CRV1 | -0.01 | 0.139 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CV3J | 0.01 | 0.115 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CV3J | -0.01 | 0.116 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 | 0.01 | 0.134 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.01 | 0.136 | FALSE |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.01 | 0.148 | FALSE |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.01 | 0.164 | FALSE |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 | 0.01 | 0.662 | FALSE |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 | -0.01 | 0.666 | FALSE |
-| post_fy2026_fy2027 | county_serial | pair_CV3J | 0.01 | 0.597 | TRUE |
-| post_fy2026_fy2027 | county_serial | pair_CV3J | -0.01 | 0.616 | TRUE |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 | 0.01 | 0.663 | FALSE |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 | -0.01 | 0.678 | FALSE |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | 0.01 | 0.717 | FALSE |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | -0.01 | 0.726 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | 0.01 | 0.229 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | -0.01 | 0.254 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | 0.01 | 0.19 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | -0.01 | 0.226 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | 0.01 | 0.223 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | -0.01 | 0.249 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | 0.01 | 0.214 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | -0.01 | 0.255 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | 0.01 | 0.193 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | -0.01 | 0.169 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | 0.01 | 0.167 | TRUE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | -0.01 | 0.148 | TRUE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | 0.01 | 0.197 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | -0.01 | 0.168 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.01 | 0.231 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.01 | 0.201 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | 0.01 | 0.166 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | -0.01 | 0.15 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | 0.01 | 0.148 | TRUE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | -0.01 | 0.122 | TRUE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | 0.01 | 0.176 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | -0.01 | 0.149 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | 0.01 | 0.214 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | -0.01 | 0.181 | FALSE |
+| post_fy2026 | county_serial | pair_CRV1 | 0.01 | 0.463 | FALSE |
+| post_fy2026 | county_serial | pair_CRV1 | -0.01 | 0.476 | FALSE |
+| post_fy2026 | county_serial | pair_CV3J | 0.01 | 0.402 | FALSE |
+| post_fy2026 | county_serial | pair_CV3J | -0.01 | 0.413 | FALSE |
+| post_fy2026 | county_serial | pair_region_CRV1 | 0.01 | 0.477 | FALSE |
+| post_fy2026 | county_serial | pair_region_CRV1 | -0.01 | 0.488 | FALSE |
+| post_fy2026 | county_serial | shared_endpoint_dyadic | 0.01 | 0.533 | FALSE |
+| post_fy2026 | county_serial | shared_endpoint_dyadic | -0.01 | 0.542 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CRV1 | 0.01 | 0.159 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CRV1 | -0.01 | 0.18 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CV3J | 0.01 | 0.139 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CV3J | -0.01 | 0.156 | FALSE |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 | 0.01 | 0.158 | FALSE |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 | -0.01 | 0.177 | FALSE |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic | 0.01 | 0.151 | FALSE |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic | -0.01 | 0.186 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | 0.01 | 0.138 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | -0.01 | 0.138 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | 0.01 | 0.115 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | -0.01 | 0.119 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | 0.01 | 0.131 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | -0.01 | 0.141 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.01 | 0.151 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.01 | 0.167 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CRV1 | 0.01 | 0.124 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CRV1 | -0.01 | 0.129 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CV3J | 0.01 | 0.104 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CV3J | -0.01 | 0.109 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 | 0.01 | 0.12 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.01 | 0.13 | FALSE |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.01 | 0.141 | FALSE |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.01 | 0.155 | FALSE |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 | 0.01 | 0.578 | FALSE |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 | -0.01 | 0.605 | FALSE |
+| post_fy2026_fy2027 | county_serial | pair_CV3J | 0.01 | 0.526 | TRUE |
+| post_fy2026_fy2027 | county_serial | pair_CV3J | -0.01 | 0.544 | TRUE |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 | 0.01 | 0.588 | FALSE |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 | -0.01 | 0.615 | FALSE |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | 0.01 | 0.65 | FALSE |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | -0.01 | 0.659 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | 0.01 | 0.206 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | -0.01 | 0.23 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | 0.01 | 0.169 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | -0.01 |  0.2 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | 0.01 | 0.195 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | -0.01 | 0.228 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | 0.01 | 0.195 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | -0.01 | 0.236 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | 0.01 | 0.176 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | -0.01 | 0.156 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | 0.01 | 0.148 | TRUE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | -0.01 | 0.126 | TRUE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | 0.01 | 0.18 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | -0.01 | 0.155 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.01 | 0.211 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.01 | 0.188 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | 0.01 | 0.152 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | -0.01 | 0.136 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | 0.01 | 0.131 | TRUE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | -0.01 | 0.113 | TRUE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | 0.01 | 0.157 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | -0.01 | 0.135 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | 0.01 | 0.199 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | -0.01 | 0.159 | FALSE |
 
 ### Primary specification: size and minimum detectable effects
 
 | scenario_id | dgp_id | inference_method | effect_sign | grid_mde | size_valid_mde | null_rejection_rate | null_mc_confidence_high |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| post_fy2026 | county_serial | pair_CRV1 |   -1 | 0.015 | unavailable | 0.0931 | 0.113 |
-| post_fy2026 | county_serial | pair_CRV1 |    1 | 0.015 | unavailable | 0.0931 | 0.113 |
-| post_fy2026 | county_serial | pair_CV3J |   -1 | 0.016 | unavailable | 0.0751 | 0.0931 |
-| post_fy2026 | county_serial | pair_CV3J |    1 | 0.016 | unavailable | 0.0751 | 0.0931 |
-| post_fy2026 | county_serial | pair_region_CRV1 |   -1 | 0.015 | unavailable | 0.0921 | 0.112 |
-| post_fy2026 | county_serial | pair_region_CRV1 |    1 | 0.015 | unavailable | 0.0921 | 0.112 |
-| post_fy2026 | county_serial | shared_endpoint_dyadic |   -1 | 0.014 | unavailable | 0.127 | 0.149 |
-| post_fy2026 | county_serial | shared_endpoint_dyadic |    1 | 0.014 | unavailable | 0.127 | 0.149 |
-| post_fy2026 | shared_region_serial | pair_CRV1 |   -1 | 0.034 | unavailable | 0.0891 | 0.108 |
-| post_fy2026 | shared_region_serial | pair_CRV1 |    1 | 0.035 | unavailable | 0.0891 | 0.108 |
-| post_fy2026 | shared_region_serial | pair_CV3J |   -1 | 0.036 | unavailable | 0.0721 | 0.0898 |
-| post_fy2026 | shared_region_serial | pair_CV3J |    1 | 0.037 | unavailable | 0.0721 | 0.0898 |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 |   -1 | 0.035 | unavailable | 0.0821 | 0.101 |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 |    1 | 0.036 | unavailable | 0.0821 | 0.101 |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |   -1 | 0.035 | unavailable | 0.0881 | 0.107 |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.037 | unavailable | 0.0881 | 0.107 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.037 | unavailable | 0.0871 | 0.106 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.039 | unavailable | 0.0871 | 0.106 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.039 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.041 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.037 | unavailable | 0.0911 | 0.111 |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.039 | unavailable | 0.0911 | 0.111 |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.036 | unavailable | 0.101 | 0.121 |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.039 | unavailable | 0.101 | 0.121 |
-| post_fy2026 | spatial_region_serial | pair_CRV1 |   -1 | 0.043 | unavailable | 0.0911 | 0.111 |
-| post_fy2026 | spatial_region_serial | pair_CRV1 |    1 | 0.044 | unavailable | 0.0911 | 0.111 |
-| post_fy2026 | spatial_region_serial | pair_CV3J |   -1 | 0.045 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026 | spatial_region_serial | pair_CV3J |    1 | 0.047 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.042 | unavailable | 0.0881 | 0.107 |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 |    1 | 0.044 | unavailable | 0.0881 | 0.107 |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.041 | unavailable | 0.105 | 0.126 |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.043 | unavailable | 0.105 | 0.126 |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 |   -1 | 0.012 | unavailable | 0.0631 | 0.0799 |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 |    1 | 0.012 | unavailable | 0.0631 | 0.0799 |
-| post_fy2026_fy2027 | county_serial | pair_CV3J |   -1 | 0.013 | 0.013 | 0.049 | 0.0643 |
-| post_fy2026_fy2027 | county_serial | pair_CV3J |    1 | 0.013 | 0.013 | 0.049 | 0.0643 |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |   -1 | 0.012 | unavailable | 0.0651 | 0.0821 |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |    1 | 0.012 | unavailable | 0.0651 | 0.0821 |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |   -1 | 0.012 | unavailable | 0.111 | 0.132 |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |    1 | 0.012 | unavailable | 0.111 | 0.132 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |   -1 | 0.029 | unavailable | 0.11 | 0.131 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |    1 | 0.03 | unavailable | 0.11 | 0.131 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |   -1 | 0.03 | unavailable | 0.0971 | 0.117 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |    1 | 0.031 | unavailable | 0.0971 | 0.117 |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |   -1 | 0.029 | unavailable | 0.109 | 0.13 |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |    1 | 0.03 | unavailable | 0.109 | 0.13 |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |   -1 | 0.03 | unavailable | 0.111 | 0.132 |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.031 | unavailable | 0.111 | 0.132 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.032 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.031 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.034 | 0.034 | 0.0511 | 0.0665 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.033 | 0.033 | 0.0511 | 0.0665 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.033 | unavailable | 0.0641 | 0.081 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.032 | unavailable | 0.0641 | 0.081 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.032 | unavailable | 0.0851 | 0.104 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.032 | unavailable | 0.0851 | 0.104 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |   -1 | 0.038 | unavailable | 0.0631 | 0.0799 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |    1 | 0.035 | unavailable | 0.0631 | 0.0799 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |   -1 | 0.039 | 0.039 | 0.0501 | 0.0654 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |    1 | 0.037 | 0.037 | 0.0501 | 0.0654 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.038 | unavailable | 0.0651 | 0.0821 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |    1 | 0.036 | unavailable | 0.0651 | 0.0821 |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.037 | unavailable | 0.0941 | 0.114 |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.035 | unavailable | 0.0941 | 0.114 |
+| post_fy2026 | county_serial | pair_CRV1 |   -1 | 0.016 | unavailable | 0.0931 | 0.113 |
+| post_fy2026 | county_serial | pair_CRV1 |    1 | 0.016 | unavailable | 0.0931 | 0.113 |
+| post_fy2026 | county_serial | pair_CV3J |   -1 | 0.018 | unavailable | 0.0751 | 0.0931 |
+| post_fy2026 | county_serial | pair_CV3J |    1 | 0.017 | unavailable | 0.0751 | 0.0931 |
+| post_fy2026 | county_serial | pair_region_CRV1 |   -1 | 0.016 | unavailable | 0.0921 | 0.112 |
+| post_fy2026 | county_serial | pair_region_CRV1 |    1 | 0.016 | unavailable | 0.0921 | 0.112 |
+| post_fy2026 | county_serial | shared_endpoint_dyadic |   -1 | 0.016 | unavailable | 0.127 | 0.149 |
+| post_fy2026 | county_serial | shared_endpoint_dyadic |    1 | 0.015 | unavailable | 0.127 | 0.149 |
+| post_fy2026 | shared_region_serial | pair_CRV1 |   -1 | 0.037 | unavailable | 0.0891 | 0.108 |
+| post_fy2026 | shared_region_serial | pair_CRV1 |    1 | 0.038 | unavailable | 0.0891 | 0.108 |
+| post_fy2026 | shared_region_serial | pair_CV3J |   -1 | 0.039 | unavailable | 0.0721 | 0.0898 |
+| post_fy2026 | shared_region_serial | pair_CV3J |    1 | 0.041 | unavailable | 0.0721 | 0.0898 |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 |   -1 | 0.038 | unavailable | 0.0821 | 0.101 |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 |    1 | 0.04 | unavailable | 0.0821 | 0.101 |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |   -1 | 0.038 | unavailable | 0.0881 | 0.107 |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.04 | unavailable | 0.0881 | 0.107 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.041 | unavailable | 0.0871 | 0.106 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.042 | unavailable | 0.0871 | 0.106 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.043 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.045 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.04 | unavailable | 0.0911 | 0.111 |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.042 | unavailable | 0.0911 | 0.111 |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.04 | unavailable | 0.101 | 0.121 |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.042 | unavailable | 0.101 | 0.121 |
+| post_fy2026 | spatial_region_serial | pair_CRV1 |   -1 | 0.047 | unavailable | 0.0911 | 0.111 |
+| post_fy2026 | spatial_region_serial | pair_CRV1 |    1 | 0.048 | unavailable | 0.0911 | 0.111 |
+| post_fy2026 | spatial_region_serial | pair_CV3J |   -1 | 0.049 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | spatial_region_serial | pair_CV3J |    1 | 0.051 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.046 | unavailable | 0.0881 | 0.107 |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 |    1 | 0.048 | unavailable | 0.0881 | 0.107 |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.045 | unavailable | 0.105 | 0.126 |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.047 | unavailable | 0.105 | 0.126 |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 |   -1 | 0.014 | unavailable | 0.0631 | 0.0799 |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 |    1 | 0.014 | unavailable | 0.0631 | 0.0799 |
+| post_fy2026_fy2027 | county_serial | pair_CV3J |   -1 | 0.015 | 0.015 | 0.049 | 0.0643 |
+| post_fy2026_fy2027 | county_serial | pair_CV3J |    1 | 0.014 | 0.014 | 0.049 | 0.0643 |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |   -1 | 0.013 | unavailable | 0.0651 | 0.0821 |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |    1 | 0.013 | unavailable | 0.0651 | 0.0821 |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |   -1 | 0.013 | unavailable | 0.111 | 0.132 |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |    1 | 0.013 | unavailable | 0.111 | 0.132 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |   -1 | 0.032 | unavailable | 0.11 | 0.131 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |    1 | 0.033 | unavailable | 0.11 | 0.131 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |   -1 | 0.033 | unavailable | 0.0971 | 0.117 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |    1 | 0.034 | unavailable | 0.0971 | 0.117 |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |   -1 | 0.032 | unavailable | 0.109 | 0.13 |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |    1 | 0.033 | unavailable | 0.109 | 0.13 |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |   -1 | 0.033 | unavailable | 0.111 | 0.132 |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.034 | unavailable | 0.111 | 0.132 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.035 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.034 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.037 | 0.037 | 0.0511 | 0.0665 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.036 | 0.036 | 0.0511 | 0.0665 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.036 | unavailable | 0.0641 | 0.081 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.035 | unavailable | 0.0641 | 0.081 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.035 | unavailable | 0.0851 | 0.104 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.035 | unavailable | 0.0851 | 0.104 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |   -1 | 0.041 | unavailable | 0.0631 | 0.0799 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |    1 | 0.039 | unavailable | 0.0631 | 0.0799 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |   -1 | 0.043 | 0.043 | 0.0501 | 0.0654 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |    1 | 0.041 | 0.041 | 0.0501 | 0.0654 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.041 | unavailable | 0.0651 | 0.0821 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |    1 | 0.039 | unavailable | 0.0651 | 0.0821 |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.04 | unavailable | 0.0941 | 0.114 |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.039 | unavailable | 0.0941 | 0.114 |
 
 ### Declared precision standard
 
 | spec_id | treatment_label | scenario_id | calibration | inference_method | threshold | minimum_power_both_signs | all_shared_size_gates | maximum_size_valid_mde | maximum_null_rejection | conditional_precision_pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.388 | FALSE | unavailable | 0.173 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.37 | FALSE | unavailable | 0.163 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.358 | FALSE | unavailable | 0.145 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.356 | FALSE | unavailable | 0.12 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.457 | FALSE | unavailable | 0.195 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.446 | FALSE | unavailable | 0.183 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.432 | FALSE | unavailable | 0.152 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.395 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.162 | FALSE | unavailable | 0.116 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.01 | 0.118 | FALSE | unavailable | 0.0831 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.16 | FALSE | unavailable | 0.117 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.194 | FALSE | unavailable | 0.142 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.12 | FALSE | unavailable | 0.117 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CV3J | 0.01 | 0.0851 | FALSE | unavailable | 0.0881 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_region_CRV1 | 0.01 | 0.121 | FALSE | unavailable | 0.116 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.151 | FALSE | unavailable | 0.134 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.155 | FALSE | unavailable | 0.129 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.127 | FALSE | unavailable | 0.101 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.157 | FALSE | unavailable | 0.124 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.206 | FALSE | unavailable | 0.14 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.116 | FALSE | unavailable | 0.105 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0931 | FALSE | unavailable | 0.0841 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.01 | 0.122 | FALSE | unavailable | 0.107 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.166 | FALSE | unavailable | 0.135 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.134 | FALSE | unavailable | 0.0911 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.115 | FALSE | unavailable | 0.0721 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.134 | FALSE | unavailable | 0.0911 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.148 | FALSE | unavailable | 0.105 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.0981 | FALSE | unavailable | 0.0881 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CV3J | 0.01 | 0.0771 | FALSE | unavailable | 0.0701 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_region_CRV1 | 0.01 |  0.1 | FALSE | unavailable | 0.0841 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.12 | FALSE | unavailable | 0.105 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.15 | FALSE | unavailable | 0.11 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.122 | FALSE | unavailable | 0.0971 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.149 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.181 | FALSE | unavailable | 0.111 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.111 | FALSE | unavailable | 0.0831 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0961 | FALSE | unavailable | 0.0651 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.01 | 0.116 | FALSE | unavailable | 0.0841 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.348 | FALSE | unavailable | 0.173 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.335 | FALSE | unavailable | 0.163 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.328 | FALSE | unavailable | 0.145 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.331 | FALSE | unavailable | 0.12 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.43 | FALSE | unavailable | 0.195 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.419 | FALSE | unavailable | 0.183 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.394 | FALSE | unavailable | 0.152 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.37 | FALSE | unavailable | 0.109 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.149 | FALSE | unavailable | 0.116 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.01 | 0.113 | FALSE | unavailable | 0.0831 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.153 | FALSE | unavailable | 0.117 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.178 | FALSE | unavailable | 0.142 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.118 | FALSE | unavailable | 0.117 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CV3J | 0.01 | 0.0861 | FALSE | unavailable | 0.0881 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_region_CRV1 | 0.01 | 0.118 | FALSE | unavailable | 0.116 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.144 | FALSE | unavailable | 0.134 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.142 | FALSE | unavailable | 0.129 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.116 | FALSE | unavailable | 0.101 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.147 | FALSE | unavailable | 0.124 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.191 | FALSE | unavailable | 0.14 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.114 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0921 | FALSE | unavailable | 0.0841 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.01 | 0.121 | FALSE | unavailable | 0.107 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.161 | FALSE | unavailable | 0.135 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.124 | FALSE | unavailable | 0.0911 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.104 | FALSE | unavailable | 0.0721 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.12 | FALSE | unavailable | 0.0911 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.141 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.0991 | FALSE | unavailable | 0.0881 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CV3J | 0.01 | 0.0741 | FALSE | unavailable | 0.0701 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_region_CRV1 | 0.01 | 0.0991 | FALSE | unavailable | 0.0841 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.119 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.136 | FALSE | unavailable | 0.11 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.113 | FALSE | unavailable | 0.0971 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.135 | FALSE | unavailable | 0.109 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.159 | FALSE | unavailable | 0.111 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.108 | FALSE | unavailable | 0.0831 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0921 | FALSE | unavailable | 0.0651 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.01 | 0.11 | FALSE | unavailable | 0.0841 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.141 | FALSE | unavailable | 0.114 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.121 | FALSE | unavailable | 0.103 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CV3J | 0.01 | 0.0951 | FALSE | unavailable | 0.0891 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.121 | FALSE | unavailable | 0.0991 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.146 | FALSE | unavailable | 0.103 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.109 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.112 | FALSE | unavailable | 0.103 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CV3J | 0.01 | 0.0911 | FALSE | unavailable | 0.0891 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.115 | FALSE | unavailable | 0.0991 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.142 | FALSE | unavailable | 0.103 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.105 | FALSE | unavailable | 0.105 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CV3J | 0.01 | 0.0811 | FALSE | unavailable | 0.0821 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_region_CRV1 | 0.01 | 0.107 | FALSE | unavailable | 0.102 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.119 | FALSE | unavailable | 0.123 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.131 | FALSE | unavailable |  0.1 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.11 | FALSE | unavailable | 0.0861 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.131 | FALSE | unavailable | 0.0971 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.162 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.0991 | FALSE | unavailable | 0.0881 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0811 | FALSE | unavailable | 0.0821 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_region_CRV1 | 0.01 | 0.106 | FALSE | unavailable | 0.102 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.117 | FALSE | unavailable | 0.123 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.119 | FALSE | unavailable |  0.1 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.103 | FALSE | unavailable | 0.0861 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.125 | FALSE | unavailable | 0.0971 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.155 | FALSE | unavailable | 0.109 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.0961 | FALSE | unavailable | 0.0881 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0791 | FALSE | unavailable | 0.0821 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.01 | 0.102 | FALSE | unavailable | 0.0941 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.124 | FALSE | unavailable | 0.111 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.181 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.16 | FALSE | unavailable | 0.0931 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.18 | FALSE | unavailable | 0.101 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.19 | FALSE | unavailable | 0.0961 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.21 | FALSE | unavailable | 0.106 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.183 | FALSE | unavailable | 0.0931 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.209 | FALSE | unavailable | 0.0981 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.224 | FALSE | unavailable | 0.0871 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.12 | FALSE | unavailable | 0.111 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.172 | FALSE | unavailable | 0.109 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.15 | FALSE | unavailable | 0.0931 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.167 | FALSE | unavailable | 0.101 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.177 | FALSE | unavailable | 0.0961 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.195 | FALSE | unavailable | 0.106 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.174 | FALSE | unavailable | 0.0931 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.196 | FALSE | unavailable | 0.0981 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.212 | FALSE | unavailable | 0.0871 | FALSE |
 
 Conditional precision passes for 0 of 64 specification/inference combinations.
 
@@ -242,16 +242,16 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 
 | spec_id | treatment_label | scenario_id | counties | pairs | states | median_post_pair_gap | effective_pair_leverage_count | maximum_pair_leverage_share | signed_incidence_rank | pre_mean_outcome | pre_sd_outcome |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 |  276 |   22 |   34 | 0.705 | 5.47 | 0.29 |   21 |   14 | 1.42 |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 |  276 |   22 |   34 | 0.765 | 6.55 | 0.272 |   21 |   14 | 1.42 |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  276 |   22 |   34 | 0.945 |  7.4 | 0.258 |   21 |   14 | 1.42 |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  276 |   22 |   34 | 0.94 |  8.1 | 0.249 |   21 |   14 | 1.42 |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 |  276 |   22 |   34 | 1.19 | 8.01 | 0.276 |   21 |   14 | 1.42 |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  276 |   22 |   34 | 1.09 | 9.89 | 0.168 |   21 |   14 | 1.42 |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 |  578 |   65 |   40 | 1.12 |   25 | 0.0787 |   38 | 14.2 | 1.47 |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  578 |   65 |   40 | 1.07 | 26.4 | 0.0908 |   38 | 14.2 | 1.47 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  421 |   35 |   45 | 1.02 | 12.1 | 0.16 |   30 | 14.1 | 1.42 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  421 |   35 |   45 | 1.08 | 12.4 | 0.153 |   30 | 14.1 | 1.42 |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 |  275 |   22 |   34 | 0.705 | 5.47 | 0.29 |   21 |   14 | 1.42 |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 |  275 |   22 |   34 | 0.765 | 6.54 | 0.272 |   21 |   14 | 1.42 |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  275 |   22 |   34 | 0.945 |  7.4 | 0.258 |   21 |   14 | 1.42 |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  275 |   22 |   34 | 0.94 | 8.09 | 0.249 |   21 |   14 | 1.42 |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 |  275 |   22 |   34 | 1.19 | 7.99 | 0.276 |   21 |   14 | 1.42 |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  275 |   22 |   34 | 1.09 | 9.88 | 0.168 |   21 |   14 | 1.42 |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 |  578 |   65 |   40 | 1.12 |   25 | 0.0786 |   38 | 14.2 | 1.48 |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  578 |   65 |   40 | 1.07 | 26.4 | 0.0908 |   38 | 14.2 | 1.48 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  421 |   35 |   45 | 1.02 | 11.5 | 0.168 |   30 | 14.1 | 1.43 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  421 |   35 |   45 | 1.08 | 12.1 | 0.15 |   30 | 14.1 | 1.43 |
 
 ### Primary specification: power at the declared threshold
 
@@ -265,30 +265,30 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026 | county_serial | pair_region_CRV1 | -0.25 |    1 | FALSE |
 | post_fy2026 | county_serial | shared_endpoint_dyadic | 0.25 |    1 | FALSE |
 | post_fy2026 | county_serial | shared_endpoint_dyadic | -0.25 |    1 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CRV1 | 0.25 | 0.93 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CRV1 | -0.25 | 0.948 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CV3J | 0.25 | 0.893 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CV3J | -0.25 | 0.922 | FALSE |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 | 0.25 | 0.924 | FALSE |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 | -0.25 | 0.938 | FALSE |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic | 0.25 | 0.912 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CRV1 | 0.25 | 0.95 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CRV1 | -0.25 | 0.941 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CV3J | 0.25 | 0.929 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CV3J | -0.25 | 0.929 | FALSE |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 | 0.25 | 0.944 | FALSE |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 | -0.25 | 0.94 | FALSE |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic | 0.25 | 0.937 | FALSE |
 | post_fy2026 | shared_region_serial | shared_endpoint_dyadic | -0.25 | 0.933 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | 0.25 | 0.911 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | -0.25 | 0.918 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | 0.25 | 0.886 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | -0.25 | 0.884 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | 0.25 | 0.909 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | -0.25 | 0.912 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.914 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.25 | 0.915 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CRV1 | 0.25 | 0.836 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CRV1 | -0.25 | 0.859 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CV3J | 0.25 | 0.786 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CV3J | -0.25 | 0.805 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.836 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.856 | FALSE |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.838 | FALSE |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.863 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | 0.25 | 0.907 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | -0.25 | 0.902 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | 0.25 | 0.875 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J | -0.25 | 0.867 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | 0.25 | 0.906 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | -0.25 | 0.898 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.907 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.25 | 0.903 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CRV1 | 0.25 | 0.837 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CRV1 | -0.25 | 0.838 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CV3J | 0.25 | 0.799 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CV3J | -0.25 | 0.788 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.839 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.834 | FALSE |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.843 | FALSE |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.846 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CRV1 | 0.25 |    1 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CRV1 | -0.25 |    1 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CV3J | 0.25 |    1 | FALSE |
@@ -297,171 +297,171 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026_fy2027 | county_serial | pair_region_CRV1 | -0.25 |    1 | FALSE |
 | post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | 0.25 |    1 | FALSE |
 | post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | -0.25 |    1 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | 0.25 | 0.98 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | -0.25 | 0.989 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | 0.25 | 0.975 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | -0.25 | 0.983 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | 0.25 | 0.979 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | -0.25 | 0.988 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | 0.25 | 0.972 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | -0.25 | 0.982 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | 0.25 | 0.981 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | -0.25 | 0.978 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | 0.25 | 0.964 | TRUE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | -0.25 | 0.96 | TRUE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | 0.25 | 0.974 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | -0.25 | 0.975 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.969 | FALSE |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.25 | 0.973 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | 0.25 | 0.936 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | -0.25 | 0.941 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | 0.25 | 0.915 | TRUE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | -0.25 | 0.916 | TRUE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.934 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.938 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.937 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.939 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | 0.25 | 0.992 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | -0.25 | 0.986 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | 0.25 | 0.986 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | -0.25 | 0.98 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | 0.25 | 0.99 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | -0.25 | 0.984 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | 0.25 | 0.984 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic | -0.25 | 0.975 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | 0.25 | 0.972 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 | -0.25 | 0.974 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | 0.25 | 0.953 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J | -0.25 | 0.965 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | 0.25 | 0.971 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 | -0.25 | 0.972 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.97 | FALSE |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.25 | 0.97 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | 0.25 | 0.927 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | -0.25 | 0.93 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | 0.25 | 0.91 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | -0.25 | 0.915 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.925 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.931 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.935 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.937 | FALSE |
 
 ### Primary specification: size and minimum detectable effects
 
 | scenario_id | dgp_id | inference_method | effect_sign | grid_mde | size_valid_mde | null_rejection_rate | null_mc_confidence_high |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| post_fy2026 | county_serial | pair_CRV1 |   -1 | 0.085 | unavailable | 0.0781 | 0.0964 |
-| post_fy2026 | county_serial | pair_CRV1 |    1 | 0.085 | unavailable | 0.0781 | 0.0964 |
-| post_fy2026 | county_serial | pair_CV3J |   -1 | 0.095 | unavailable | 0.0621 | 0.0788 |
-| post_fy2026 | county_serial | pair_CV3J |    1 | 0.095 | unavailable | 0.0621 | 0.0788 |
-| post_fy2026 | county_serial | pair_region_CRV1 |   -1 | 0.085 | unavailable | 0.0811 | 0.0997 |
-| post_fy2026 | county_serial | pair_region_CRV1 |    1 | 0.085 | unavailable | 0.0811 | 0.0997 |
-| post_fy2026 | county_serial | shared_endpoint_dyadic |   -1 | 0.08 | unavailable | 0.128 | 0.15 |
+| post_fy2026 | county_serial | pair_CRV1 |   -1 | 0.085 | unavailable | 0.0821 | 0.101 |
+| post_fy2026 | county_serial | pair_CRV1 |    1 | 0.085 | unavailable | 0.0821 | 0.101 |
+| post_fy2026 | county_serial | pair_CV3J |   -1 | 0.09 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | county_serial | pair_CV3J |    1 | 0.09 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | county_serial | pair_region_CRV1 |   -1 | 0.08 | unavailable | 0.0911 | 0.111 |
+| post_fy2026 | county_serial | pair_region_CRV1 |    1 | 0.08 | unavailable | 0.0911 | 0.111 |
+| post_fy2026 | county_serial | shared_endpoint_dyadic |   -1 | 0.075 | unavailable | 0.128 | 0.15 |
 | post_fy2026 | county_serial | shared_endpoint_dyadic |    1 | 0.08 | unavailable | 0.128 | 0.15 |
-| post_fy2026 | shared_region_serial | pair_CRV1 |   -1 | 0.19 | unavailable | 0.103 | 0.124 |
-| post_fy2026 | shared_region_serial | pair_CRV1 |    1 |  0.2 | unavailable | 0.103 | 0.124 |
-| post_fy2026 | shared_region_serial | pair_CV3J |   -1 | 0.205 | unavailable | 0.0881 | 0.107 |
-| post_fy2026 | shared_region_serial | pair_CV3J |    1 | 0.215 | unavailable | 0.0881 | 0.107 |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 |   -1 | 0.195 | unavailable | 0.104 | 0.125 |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 |    1 |  0.2 | unavailable | 0.104 | 0.125 |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |   -1 |  0.2 | unavailable | 0.109 | 0.13 |
-| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.205 | unavailable | 0.109 | 0.13 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.205 | unavailable | 0.0781 | 0.0964 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.21 | unavailable | 0.0781 | 0.0964 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.22 | unavailable | 0.0691 | 0.0865 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.225 | unavailable | 0.0691 | 0.0865 |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.205 | unavailable | 0.0791 | 0.0975 |
-| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.21 | unavailable | 0.0791 | 0.0975 |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 |  0.2 | unavailable | 0.0981 | 0.118 |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.21 | unavailable | 0.0981 | 0.118 |
-| post_fy2026 | spatial_region_serial | pair_CRV1 |   -1 | 0.235 | unavailable | 0.0791 | 0.0975 |
-| post_fy2026 | spatial_region_serial | pair_CRV1 |    1 | 0.24 | unavailable | 0.0791 | 0.0975 |
-| post_fy2026 | spatial_region_serial | pair_CV3J |   -1 | 0.25 | unavailable | 0.0651 | 0.0821 |
-| post_fy2026 | spatial_region_serial | pair_CV3J |    1 | 0.255 | unavailable | 0.0651 | 0.0821 |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.235 | unavailable | 0.0801 | 0.0986 |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 |    1 | 0.24 | unavailable | 0.0801 | 0.0986 |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.225 | unavailable | 0.0941 | 0.114 |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.235 | unavailable | 0.0941 | 0.114 |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 |   -1 | 0.07 | unavailable | 0.0721 | 0.0898 |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 |    1 | 0.075 | unavailable | 0.0721 | 0.0898 |
-| post_fy2026_fy2027 | county_serial | pair_CV3J |   -1 | 0.075 | unavailable | 0.0601 | 0.0765 |
-| post_fy2026_fy2027 | county_serial | pair_CV3J |    1 | 0.075 | unavailable | 0.0601 | 0.0765 |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |   -1 | 0.07 | unavailable | 0.0771 | 0.0953 |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |    1 | 0.07 | unavailable | 0.0771 | 0.0953 |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |   -1 | 0.065 | unavailable | 0.108 | 0.129 |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |    1 | 0.07 | unavailable | 0.108 | 0.129 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |   -1 | 0.16 | unavailable | 0.115 | 0.136 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |    1 | 0.155 | unavailable | 0.115 | 0.136 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |   -1 | 0.17 | unavailable | 0.0921 | 0.112 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |    1 | 0.165 | unavailable | 0.0921 | 0.112 |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |   -1 | 0.165 | unavailable | 0.11 | 0.131 |
-| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |    1 | 0.16 | unavailable | 0.11 | 0.131 |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |   -1 | 0.165 | unavailable | 0.128 | 0.15 |
-| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.165 | unavailable | 0.128 | 0.15 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.175 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.175 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.18 | 0.18 | 0.0511 | 0.0665 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.185 | 0.185 | 0.0511 | 0.0665 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.175 | unavailable | 0.0641 | 0.081 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.17 | unavailable | 0.0641 | 0.081 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.17 | unavailable | 0.0931 | 0.113 |
-| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.165 | unavailable | 0.0931 | 0.113 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |   -1 |  0.2 | unavailable | 0.0591 | 0.0754 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |    1 |  0.2 | unavailable | 0.0591 | 0.0754 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |   -1 | 0.21 | 0.21 | 0.046 | 0.0609 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |    1 | 0.215 | 0.215 | 0.046 | 0.0609 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |   -1 |  0.2 | unavailable | 0.0601 | 0.0765 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |    1 |  0.2 | unavailable | 0.0601 | 0.0765 |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.19 | unavailable | 0.0951 | 0.115 |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.19 | unavailable | 0.0951 | 0.115 |
+| post_fy2026 | shared_region_serial | pair_CRV1 |   -1 | 0.19 | unavailable | 0.102 | 0.122 |
+| post_fy2026 | shared_region_serial | pair_CRV1 |    1 | 0.185 | unavailable | 0.102 | 0.122 |
+| post_fy2026 | shared_region_serial | pair_CV3J |   -1 |  0.2 | unavailable | 0.0821 | 0.101 |
+| post_fy2026 | shared_region_serial | pair_CV3J |    1 | 0.195 | unavailable | 0.0821 | 0.101 |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 |   -1 | 0.195 | unavailable | 0.105 | 0.126 |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 |    1 | 0.185 | unavailable | 0.105 | 0.126 |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |   -1 |  0.2 | unavailable | 0.121 | 0.143 |
+| post_fy2026 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.19 | unavailable | 0.121 | 0.143 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.21 | unavailable | 0.0851 | 0.104 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.205 | unavailable | 0.0851 | 0.104 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.225 | unavailable | 0.0631 | 0.0799 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.22 | unavailable | 0.0631 | 0.0799 |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.21 | unavailable | 0.0851 | 0.104 |
+| post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.21 | unavailable | 0.0851 | 0.104 |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.21 | unavailable | 0.119 | 0.141 |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.21 | unavailable | 0.119 | 0.141 |
+| post_fy2026 | spatial_region_serial | pair_CRV1 |   -1 | 0.245 | unavailable | 0.0841 | 0.103 |
+| post_fy2026 | spatial_region_serial | pair_CRV1 |    1 | 0.235 | unavailable | 0.0841 | 0.103 |
+| post_fy2026 | spatial_region_serial | pair_CV3J |   -1 | 0.255 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | spatial_region_serial | pair_CV3J |    1 | 0.255 | unavailable | 0.0671 | 0.0843 |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.24 | unavailable | 0.0861 | 0.105 |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 |    1 | 0.235 | unavailable | 0.0861 | 0.105 |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.235 | unavailable | 0.123 | 0.145 |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.235 | unavailable | 0.123 | 0.145 |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 |   -1 | 0.07 | unavailable | 0.0861 | 0.105 |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 |    1 | 0.07 | unavailable | 0.0861 | 0.105 |
+| post_fy2026_fy2027 | county_serial | pair_CV3J |   -1 | 0.075 | unavailable | 0.0681 | 0.0854 |
+| post_fy2026_fy2027 | county_serial | pair_CV3J |    1 | 0.075 | unavailable | 0.0681 | 0.0854 |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |   -1 | 0.07 | unavailable | 0.0861 | 0.105 |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 |    1 | 0.07 | unavailable | 0.0861 | 0.105 |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |   -1 | 0.065 | unavailable | 0.137 | 0.16 |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |    1 | 0.065 | unavailable | 0.137 | 0.16 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |   -1 | 0.155 | unavailable | 0.11 | 0.131 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |    1 | 0.16 | unavailable | 0.11 | 0.131 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |   -1 | 0.165 | unavailable | 0.0961 | 0.116 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J |    1 | 0.17 | unavailable | 0.0961 | 0.116 |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |   -1 | 0.16 | unavailable | 0.106 | 0.127 |
+| post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 |    1 | 0.165 | unavailable | 0.106 | 0.127 |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |   -1 | 0.165 | unavailable | 0.113 | 0.134 |
+| post_fy2026_fy2027 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.165 | unavailable | 0.113 | 0.134 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.175 | unavailable | 0.0881 | 0.107 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.17 | unavailable | 0.0881 | 0.107 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.18 | unavailable | 0.0701 | 0.0876 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.185 | unavailable | 0.0701 | 0.0876 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |   -1 | 0.17 | unavailable | 0.0831 | 0.102 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | pair_region_CRV1 |    1 | 0.17 | unavailable | 0.0831 | 0.102 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |   -1 | 0.17 | unavailable | 0.121 | 0.143 |
+| post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic |    1 | 0.17 | unavailable | 0.121 | 0.143 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |   -1 | 0.195 | unavailable | 0.0871 | 0.106 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |    1 |  0.2 | unavailable | 0.0871 | 0.106 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |   -1 | 0.21 | unavailable | 0.0711 | 0.0887 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |    1 | 0.21 | unavailable | 0.0711 | 0.0887 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.195 | unavailable | 0.0861 | 0.105 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |    1 |  0.2 | unavailable | 0.0861 | 0.105 |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.195 | unavailable | 0.129 | 0.151 |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.19 | unavailable | 0.129 | 0.151 |
 
 ### Declared precision standard
 
 | spec_id | treatment_label | scenario_id | calibration | inference_method | threshold | minimum_power_both_signs | all_shared_size_gates | maximum_size_valid_mde | maximum_null_rejection | conditional_precision_pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.974 | FALSE | unavailable | 0.159 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.973 | FALSE | unavailable | 0.151 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.966 | FALSE | unavailable | 0.138 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.936 | FALSE | unavailable | 0.11 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.981 | FALSE | unavailable | 0.185 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.978 | FALSE | unavailable | 0.174 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.976 | FALSE | unavailable | 0.15 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.965 | FALSE | unavailable | 0.12 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.811 | FALSE | unavailable | 0.149 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.25 | 0.732 | FALSE | unavailable | 0.0971 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.976 | FALSE | unavailable | 0.157 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.972 | FALSE | unavailable | 0.151 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.967 | FALSE | unavailable | 0.136 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.933 | FALSE | unavailable | 0.111 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.982 | FALSE | unavailable | 0.194 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.979 | FALSE | unavailable | 0.183 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.979 | FALSE | unavailable | 0.154 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.963 | FALSE | unavailable | 0.119 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.811 | FALSE | unavailable | 0.14 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.25 | 0.736 | FALSE | unavailable | 0.104 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.813 | FALSE | unavailable | 0.141 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.828 | FALSE | unavailable | 0.152 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.779 | FALSE | unavailable | 0.176 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.664 | FALSE | unavailable | 0.123 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.787 | FALSE | unavailable | 0.171 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.806 | FALSE | unavailable | 0.198 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.909 | FALSE | unavailable | 0.133 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.871 | FALSE | unavailable |  0.1 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.915 | FALSE | unavailable | 0.133 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.917 | FALSE | unavailable | 0.145 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.873 | FALSE | unavailable | 0.147 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.781 | FALSE | unavailable | 0.102 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.875 | FALSE | unavailable | 0.153 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.894 | FALSE | unavailable | 0.196 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.836 | FALSE | unavailable | 0.103 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.786 | FALSE | unavailable | 0.0881 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.836 | FALSE | unavailable | 0.104 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.838 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.804 | FALSE | unavailable | 0.148 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.721 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 |  0.8 | FALSE | unavailable | 0.142 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.821 | FALSE | unavailable | 0.162 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.936 | FALSE | unavailable | 0.115 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.915 | FALSE | unavailable | 0.0921 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.934 | FALSE | unavailable | 0.11 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.937 | FALSE | unavailable | 0.128 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.891 | FALSE | unavailable | 0.123 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.823 | FALSE | unavailable | 0.0961 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.895 | FALSE | unavailable | 0.119 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.906 | FALSE | unavailable | 0.158 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.676 | FALSE | unavailable | 0.129 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CV3J | 0.25 | 0.607 | FALSE | unavailable | 0.106 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.677 | FALSE | unavailable | 0.129 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.705 | FALSE | unavailable | 0.135 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.59 | FALSE | unavailable | 0.118 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.521 | FALSE | unavailable | 0.0901 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.592 | FALSE | unavailable | 0.118 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.618 | FALSE | unavailable | 0.128 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.784 | FALSE | unavailable | 0.133 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.75 | FALSE | unavailable | 0.121 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.792 | FALSE | unavailable | 0.132 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.801 | FALSE | unavailable | 0.133 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.676 | FALSE | unavailable | 0.0911 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.626 | FALSE | unavailable | 0.0791 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.677 | FALSE | unavailable | 0.0921 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.702 | FALSE | unavailable | 0.0991 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.957 | FALSE | unavailable | 0.107 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.951 | FALSE | unavailable | 0.0951 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.961 | FALSE | unavailable | 0.104 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.96 | FALSE | unavailable | 0.101 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.992 | FALSE | unavailable | 0.101 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.987 | FALSE | unavailable | 0.0831 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.992 | FALSE | unavailable | 0.0911 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.99 | FALSE | unavailable | 0.0841 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.821 | FALSE | unavailable | 0.175 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.736 | FALSE | unavailable | 0.163 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.632 | FALSE | unavailable | 0.116 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.746 | FALSE | unavailable | 0.167 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.769 | FALSE | unavailable | 0.188 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.912 | FALSE | unavailable | 0.121 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.868 | FALSE | unavailable | 0.0931 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.909 | FALSE | unavailable | 0.116 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.916 | FALSE | unavailable | 0.163 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.815 | FALSE | unavailable | 0.149 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.731 | FALSE | unavailable | 0.122 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.814 | FALSE | unavailable | 0.148 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.847 | FALSE | unavailable | 0.18 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.837 | FALSE | unavailable | 0.102 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.788 | FALSE | unavailable | 0.0821 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.834 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.843 | FALSE | unavailable | 0.123 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.751 | FALSE | unavailable | 0.138 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.688 | FALSE | unavailable | 0.106 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.759 | FALSE | unavailable | 0.134 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.775 | FALSE | unavailable | 0.151 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.927 | FALSE | unavailable | 0.11 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.91 | FALSE | unavailable | 0.0961 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.925 | FALSE | unavailable | 0.106 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.935 | FALSE | unavailable | 0.129 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.845 | FALSE | unavailable | 0.126 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.78 | FALSE | unavailable | 0.0971 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.85 | FALSE | unavailable | 0.125 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.873 | FALSE | unavailable | 0.153 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.694 | FALSE | unavailable | 0.138 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CV3J | 0.25 | 0.617 | FALSE | unavailable | 0.115 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.693 | FALSE | unavailable | 0.138 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.706 | FALSE | unavailable | 0.15 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.543 | FALSE | unavailable | 0.121 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.459 | FALSE | unavailable | 0.0931 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.54 | FALSE | unavailable | 0.119 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.558 | FALSE | unavailable | 0.128 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.805 | FALSE | unavailable | 0.106 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.767 | FALSE | unavailable | 0.0831 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.804 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.814 | FALSE | unavailable | 0.111 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.615 | FALSE | unavailable | 0.116 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.564 | FALSE | unavailable | 0.0911 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.616 | FALSE | unavailable | 0.109 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.645 | FALSE | unavailable | 0.118 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.953 | FALSE | unavailable | 0.108 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.945 | FALSE | unavailable | 0.0961 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.956 | FALSE | unavailable | 0.103 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.958 | FALSE | unavailable | 0.107 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.99 | FALSE | unavailable | 0.102 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.985 | FALSE | unavailable | 0.0861 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.989 | FALSE | unavailable | 0.0951 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.989 | FALSE | unavailable | 0.0861 | FALSE |
 
 Conditional precision passes for 0 of 64 specification/inference combinations.
 
 ## Limits
 
-Simulated size and power are conditional on assumed error processes; they do not establish that state AEWR gaps are exogenous. The rule also changed rates nationally, added a state housing adjustment and coincided with other 2025 policy changes; state-specific concurrent shocks would bias the design and are not represented here. Skill-level assignment is an employer choice, so the primary treatment is an intent-to-treat statutory floor. FY2026 includes cases decided under prior rates. The wage outcome requires post-period offers in the same counties. Estimation requires the upstream producers to parse the 2025 and later disclosure files.
+Simulated size and power are conditional on assumed error processes; they do not establish that state AEWR gaps are exogenous. The rule also changed rates nationally, added a state housing adjustment and coincided with other 2025 policy changes; state-specific concurrent shocks would bias the design and are not represented here. Skill-level assignment is an employer choice, so the primary treatment is an intent-to-treat statutory floor. FY2026 includes cases decided under prior rates. The wage outcome requires post-period offers in the same counties. Estimation requires aligning the FY 2026 Q3 disclosures, now available upstream, to the applicable job-order cohorts.

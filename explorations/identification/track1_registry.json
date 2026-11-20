@@ -1,0 +1,130 @@
+{
+  "design_id": "identification_track1_statewide_all_county_v1",
+  "status": "declared_before_any_FY2026_outcome_offered_wage_or_case_count_is_parsed_or_inspected",
+  "registry_frozen": "2026-11-02",
+  "research_status": "exploratory; extends code/designs/border_discontinuity/statewide_design.json (border_statewide_aewr_v1) from 22 within-region border pairs to every county in a multi-state former AEWR region; that registry and its outputs are unchanged",
+  "policy_event": {
+    "rule": "2025-10-02 interim final rule: statewide OEWS-based field-and-livestock AEWRs by skill level",
+    "first_schedule_effective_start": "2025-10-02",
+    "second_schedule_effective_start": "2026-08-03",
+    "source_artifact": "data/intermediate/aewr_occupation_skill_rates.parquet",
+    "source_sheet": "Statewide 655.120(b)(1)(i)",
+    "legal_status": "unverified: litigation, stays or injunctions after 2025-10-02 cannot be checked without a network call; user must confirm that the statewide rates applied throughout FY2026 Q1-Q3 before estimation"
+  },
+  "period": {
+    "unit": "county_by_federal_fiscal_year",
+    "fiscal_years": [2012, 2026],
+    "post_fiscal_years": [2026],
+    "post_fiscal_years_when_released": [2027],
+    "assignment": "rate_in_effect_on_april_1_of_the_fiscal_year",
+    "preperiod_rate": "nonrange_reference / fls_common_soc_reference regional AEWR from aewr_rate_schedule (covered_workers)",
+    "seasonal_window": {
+      "primary": "case decisions dated 1 October through 30 June of each FY (Q1-Q3), every FY",
+      "reason": "FY2026 disclosures end at Q3; pre and post outcomes must cover the same seasonal window",
+      "check": "full-FY pre-period outcome (all decisions) reported alongside to show how much Q4 matters"
+    },
+    "transition_note": "job orders submitted before 2025-10-02 carry the prior regional rate; the primary estimate is intent-to-treat on the statutory rate and is attenuated by these cases"
+  },
+  "treatment": {
+    "primary": {"worker_category": "US", "skill_level": "1", "label": "us_skill_1"},
+    "sensitivities": [
+      {"worker_category": "H2A", "skill_level": "1", "label": "h2a_skill_1", "note": "cash rate after housing adjustment"},
+      {"worker_category": "US", "skill_level": "2", "label": "us_skill_2"}
+    ],
+    "units": "one_nominal_dollar_per_hour",
+    "units_note": "PPI for FY2026 is unavailable; former-region x FY FE absorb each year's level, so real units are a year-specific rescaling of within-region gaps",
+    "dose": "FY2026 statewide rate minus the FY2025 regional rate (April 1, 2025); within former region this equals the FY2026 statewide rate up to a region constant",
+    "skill_level_note": "skill level is an employer choice; the statutory skill-I rate is the intent-to-treat treatment",
+    "cohort_aligned_sensitivity": "FY2026 cases whose case_received_date precedes 2025-10-02 are assigned the prior regional rate; county treatment is the certified-position-weighted mean of assigned rates; labeled sensitivity, not primary"
+  },
+  "outcomes": [
+    {
+      "outcome_id": "cert_positions_q1q3",
+      "role": "primary",
+      "numerator": "certified positions (adjusted_nbr_workers_certified) in h2a_allocated_worksites rows whose case decision_date falls in Q1-Q3 of the FY",
+      "denominator": "emp_farm_2011 from data/processed/county_year_panel.parquet",
+      "construction": "b01 fiscal-year logic (code/b01_derived/01_h2a_aggregation_nodupes.R, h2a_fiscal_year_df): rows with a period begin date; each row split equally across county_fips_list; withdrawn/denied rows already zeroed by b01; decision_date is the first nonempty disclosure decision_date by case_number and fiscal_year",
+      "missing_numerator": "zero for counties with positive fixed denominator",
+      "units": "certified positions per fixed 2011 farm worker"
+    },
+    {
+      "outcome_id": "cert_hours_q1q3",
+      "role": "secondary (welfare-model quantity)",
+      "numerator": "certified contract hours = (period_end - period_begin)/7 x number_of_hours x certified positions, b01 rule; missing number_of_hours replaced by the pooled mean as in b01",
+      "denominator": "emp_farm_2011",
+      "units": "certified hours per fixed 2011 farm worker"
+    },
+    {
+      "outcome_id": "ppml_counts_q1q3",
+      "role": "secondary",
+      "construction": "PPML of certified positions and of certified hours (counts) on the treatment with county and former-region x FY FE; semi-elasticity; size-weighted estimand"
+    },
+    {
+      "outcome_id": "offered_wage_q1q3",
+      "role": "first_stage_pass_through",
+      "construction": "hours-weighted hourly offered wage (wage_unit hourly, 0 < wage <= 100, b01 HOURLY_WAGE_MAX) over certified hours of Q1-Q3 decisions",
+      "sample": "counties with hourly-offer certified hours in every calibration year; post estimation also requires FY2026 offers"
+    }
+  ],
+  "geography": {
+    "unit": "county",
+    "cluster_node": "state_fips",
+    "excluded_states": ["02", "15", "11"],
+    "single_state_former_regions": "dropped: they contribute no within-region contrast (support script reports which)",
+    "sample": "all counties with positive emp_farm_2011 in multi-state former AEWR regions; balanced county x FY panel"
+  },
+  "fixed_effects": ["county", "former_aewr_region_by_fiscal_year"],
+  "fixed_effects_note": "the national level change of the rule is absorbed and not identified; only post-2025 within-former-region dispersion identifies the slope",
+  "weights": "equal_county",
+  "inference": {
+    "primary": "CRV1 by state, t(G-1)",
+    "alternatives": ["state leave-one-out jackknife (CV3)", "CRV1 by former region"],
+    "wild_bootstrap": "restricted Webb wild cluster bootstrap over states, 9999 draws, seed 20261102, full FE/nuisance projection (explorations/bite/cross_design_helpers.R bite_wild)",
+    "randomization_inference": "permute FY2026 state doses across states within former region (exact enumeration where feasible, otherwise 9999 draws, seed 20261102); reported as a design-based reference under within-region exchangeability of doses"
+  },
+  "event_study": {
+    "specification": "dose x FY indicators, reference FY2025, county + former-region x FY FE, state CRV1",
+    "pre_years": [2012, 2024],
+    "pre_trend_test": "joint Wald on FY2012-FY2024 dose x FY coefficients; plus a linear dose x FY trend"
+  },
+  "sensitivities": [
+    "state-specific linear trends",
+    "applicable state agricultural minimum wage (nominal, April 1 of FY) as a control",
+    "h2a_skill_1 and us_skill_2 treatments",
+    "cohort-aligned treatment",
+    "full-FY pre-period outcome construction check",
+    "calibration FY2012-FY2025 for power"
+  ],
+  "warning_checks": [
+    "dose vs FY2024-to-FY2025 county outcome growth within former region (state CRV1): a nonzero slope warns of differential pre-policy momentum (e.g. enforcement-driven demand)"
+  ],
+  "calibration": {
+    "primary_years": [2020, 2025],
+    "primary_reason": "FY2020 onward allocates certifications with Addendum B worksite records, the measurement regime of the post period",
+    "sensitivity_years": [2012, 2025],
+    "projection": "county and former-region x FY FE only; no treatment regressor"
+  },
+  "power": {
+    "settings_source": "code/designs/border_discontinuity/design.json redesign.power and redesign.precision_assumptions (seed 201103, 999 repetitions, 999 calibration repetitions, AR(1) 0.5, spatial graph coefficient 0.4, size gate upper-Wilson 95% null rejection <= 0.075, alpha 0.05, target power 0.80)",
+    "dgp_mapping": {
+      "county_serial": "county AR(1) only",
+      "shared_region_serial": "0.5 state AR(1) + 0.5 county AR(1)",
+      "shared_region_and_pair_serial": "0.25 state + 0.25 former-region (absorbed by FE; calibration rescales) + 0.5 county",
+      "spatial_region_serial": "0.5 state AR(1) loaded on the state contiguity graph + 0.25 former-region + 0.25 county"
+    },
+    "node_interpretation": "border machinery's region shocks are state shocks; its pair shocks become former-region shocks",
+    "scenarios": [
+      {"scenario_id": "post_fy2026", "fiscal_years": [2012, 2026], "role": "primary"},
+      {"scenario_id": "post_fy2026_fy2027", "fiscal_years": [2012, 2027], "role": "after FY2027 release"}
+    ],
+    "thresholds": {
+      "cert_positions_q1q3": {"registry_beta": 0.01, "note": "border_statewide_aewr_v1 threshold: 10 positions per 1,000 2011 farm workers per nominal dollar"},
+      "all_outcomes": {"elasticity": 1.0, "note": "plan gate: elasticity MDE = 2.8 x SE x mean price / mean outcome <= 1.0, using pre-period calibration means"},
+      "offered_wage_q1q3": {"registry_beta": 0.25}
+    },
+    "decision": "a threshold passes when every shared-dependence DGP passes the size gate for the inference method, power at both signs of the threshold is >= 0.80, and the largest size-valid MDE is <= the threshold",
+    "not_simulated": ["wild bootstrap and randomization inference (observed-data only)", "PPML", "attenuation from pre-rule job orders decided in FY2026"]
+  },
+  "promising_gate": "elasticity MDE <= 1.0 (design stage), then after estimation: event-study pre-trend and lead placebo pass, wild bootstrap supports the headline, and at least one alternative treatment (h2a_skill_1 or us_skill_2 or cohort-aligned) agrees",
+  "selection_rule": "No outcome-based selection. All declared specifications are estimated and reported once the user approves reading FY2026 outcomes; failures are reported. Any later choice is labeled post-outcome."
+}

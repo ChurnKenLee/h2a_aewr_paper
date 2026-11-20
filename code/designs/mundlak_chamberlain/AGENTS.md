@@ -5,8 +5,11 @@
   targeted.
 - Preserve the declared linear-history registry, causal-first common full-rank
   basis, pooled rich-projection candidate, county-FE sensitivities, common
-  six-outcome sample, exact full-model leverage, named gradients,
+  five-outcome sample, exact full-model leverage, named gradients,
   input/code/sample hashes, and resource guards.
+- Requested positions and their derived rate are excluded from the baseline
+  by user instruction. Their source availability must not restrict the sample
+  or become a prerequisite for building or estimating the five outcomes.
 - The exhaustive registry is not the default queue. Do not trigger it without
   an explicit resource decision.
 - The scalar continuous CCV-HC3 mixture is experimental and not Lean-proved

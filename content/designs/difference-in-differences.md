@@ -6,7 +6,7 @@ description = "Treatment construction, estimation samples, fixed effects, and ev
 scopes = ["code/designs/did", "scripts/run_did.sh"]
 +++
 
-{{ <grounding path="code/designs/did/helpers.R" anchor="did-estimation-contract" sha256="abc47e8490b0857dc03f19e055b214c3a94a4ec866568d0741614007118fdebd" /> }}
+{{ <grounding path="code/designs/did/helpers.R" anchor="did-estimation-contract" sha256="4822f93257431fac0a7ffe9399d475d9aa14324d6f76580d666775e9b3b5ab9c" /> }}
 
 The cross-design distinction between causal outcomes and required model inputs
 is maintained in [Causal outcomes and model inputs](@/contracts/causal-outcomes-and-model-inputs.md).
@@ -43,3 +43,9 @@ Run:
 ```sh
 ./scripts/run_did.sh
 ```
+
+The common input calendar is now 2008--2025. Each regression continues to use
+its existing complete-case rule, so missing source controls can shorten its
+estimation window. Event-study code applies that same rule before expanding
+year interactions: this avoids a fixest dimension error when an entire year
+has missing regressors. It does not fill controls or change the 2011 reference.

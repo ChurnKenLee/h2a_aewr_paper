@@ -102,8 +102,7 @@ mc_sp_primary_effect <- function(
     coefficients = checkpoint$coefficients,
     state_errors = checkpoint$state_errors,
     observations = checkpoint$diagnostics$observations[[1]],
-    effective_parameters =
-      checkpoint$diagnostics$effective_parameters[[1]]
+    effective_parameters = checkpoint$diagnostics$effective_parameters[[1]]
   )
   multiplier <- if (
     identical(
@@ -134,10 +133,8 @@ mc_sp_primary_effect <- function(
     scope = scope,
     scope_value = as.character(scope_value),
     estimate = projected$estimate * multiplier,
-    raw_standard_error =
-      projected$raw_standard_error * multiplier,
-    standard_error =
-      projected$standard_error * multiplier,
+    raw_standard_error = projected$raw_standard_error * multiplier,
+    standard_error = projected$standard_error * multiplier,
     conf_low = projected$conf_low * multiplier,
     conf_high = projected$conf_high * multiplier,
     reported_unit = if (multiplier == 100) {
@@ -244,7 +241,8 @@ for (selection_index in seq_len(nrow(primary_selection))) {
           stats::coef(model) -
             checkpoint$coefficients
         )
-      ) > 1e-7
+      ) >
+        1e-7
   ) {
     stop("Primary refit does not match its checkpoint.", call. = FALSE)
   }
@@ -336,9 +334,7 @@ for (selection_index in seq_len(nrow(primary_selection))) {
           identical(selected$outcome_id[[1]], "employers")
         ) {
           rep(1, nrow(estimation_data))
-        } else if (
-          identical(selected$outcome_id[[1]], "certified_hours")
-        ) {
+        } else if (identical(selected$outcome_id[[1]], "certified_hours")) {
           estimation_data$emp_farm_2011
         } else {
           estimation_data$emp_farm_2011 / 1000
@@ -468,15 +464,15 @@ for (selection_index in seq_len(nrow(primary_selection))) {
       checkpoint$coefficients /
         checkpoint$parameter_standard_error
     ),
-    p_value = 2 * stats::pt(
-      -abs(
-        checkpoint$coefficients /
-          checkpoint$parameter_standard_error
+    p_value = 2 *
+      stats::pt(
+        -abs(
+          checkpoint$coefficients /
+            checkpoint$parameter_standard_error
+        ),
+        df = MC_CCV_DF
       ),
-      df = MC_CCV_DF
-    ),
-    conventional_cluster_standard_error =
-      checkpoint$conventional_cluster_standard_error,
+    conventional_cluster_standard_error = checkpoint$conventional_cluster_standard_error,
     stringsAsFactors = FALSE
   )
 }
@@ -511,7 +507,7 @@ write_csv(
 
 parameter_path <- path_tables("mc_parameter_estimates.csv")
 benchmark_parameters <- if (file.exists(parameter_path)) {
-  read_csv(parameter_path, show_col_types = FALSE) |>
+  read_csv(parameter_path, show_col_types = FALSE) %>%
     filter(
       .data$model_id %in%
         c("twfe_benchmark", "mundlak_multilevel")
@@ -524,13 +520,13 @@ write_csv(
   parameter_path
 )
 
-curve_data <- grid_effects |>
+curve_data <- grid_effects %>%
   filter(
     .data$estimand == "average_marginal_effect",
     .data$standardization == "sample_average"
-  ) |>
+  ) %>%
   left_join(
-    registry |>
+    registry %>%
       select(
         .data$spec_id,
         .data$horizon_count,
@@ -542,18 +538,18 @@ curve_data <- grid_effects |>
         .data$analysis_start
       ),
     by = "spec_id"
-  ) |>
+  ) %>%
   left_join(
-    primary_selection |>
+    primary_selection %>%
       select(.data$outcome_id, primary_spec_id = .data$spec_id),
     by = "outcome_id"
-  ) |>
-  group_by(.data$outcome_id, .data$treatment_column) |>
-  arrange(.data$estimate, .by_group = TRUE) |>
+  ) %>%
+  group_by(.data$outcome_id, .data$treatment_column) %>%
+  arrange(.data$estimate, .by_group = TRUE) %>%
   mutate(
     specification_rank = dplyr::row_number(),
     primary = .data$spec_id == .data$primary_spec_id
-  ) |>
+  ) %>%
   ungroup()
 
 write_csv(
@@ -577,7 +573,7 @@ if (nrow(curve_data) > 0L) {
     ) +
     geom_point(size = 0.7, alpha = 0.75) +
     geom_point(
-      data = curve_data |> filter(.data$primary),
+      data = curve_data %>% filter(.data$primary),
       shape = 21,
       fill = "gold",
       color = "black",

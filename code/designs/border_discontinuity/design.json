@@ -1,11 +1,18 @@
 {
-  "design_id": "border_redesign_v6",
+  "design_id": "border_redesign_v7_2025",
+  "calendar_revision": {
+    "approved_on": "2026-10-26",
+    "role": "new baseline using the common shared panel through 2025",
+    "previous_policy_end_year": 2022,
+    "source_vintage": "FY2008-FY2025 complete disclosures plus FY2026 Q3",
+    "unchanged": "regional FLS-reference AEWR, outcome, fixed 2011 denominator, baseline features, geography, weights, fixed effects, inference and simulation resource guards"
+  },
   "feature_start_year": 2008,
   "feature_end_year": 2010,
   "placebo_start_year": 2008,
   "placebo_end_year": 2010,
   "policy_start_year": 2011,
-  "policy_end_year": 2022,
+  "policy_end_year": 2025,
   "outcome": "h2a_cert_share_farm_workers_2011_start_year",
   "treatment": "aewr_ppi",
   "caliper_quantile": 0.9,
@@ -40,8 +47,8 @@
   "employer_linkage": {
     "unit": "worksite_business",
     "version": "v2",
-    "input_max_year": 2024,
-    "review_status": "complete"
+    "input_max_year": 2026,
+    "review_status": "pending"
   },
   "bootstrap": {
     "method": "WCR11-FNW",
@@ -112,7 +119,7 @@
   "diagnostic_audit": {
     "primary_spec_id": "ring_h1_disjoint",
     "annual_start_year": 2008,
-    "annual_end_year": 2022,
+    "annual_end_year": 2025,
     "leave_one_border_pair_out": true,
     "cluster_jackknife_method": "CV3J",
     "cluster_jackknife_confidence_level": 0.95
@@ -162,13 +169,13 @@
         "role": "independent_region_sensitivity"
       }
     ],
-    "unchanged_estimand_fields": {
+    "estimand_fields": {
       "outcome": "h2a_cert_share_farm_workers_2011_start_year",
       "treatment": "aewr_ppi",
       "treatment_units": "one_2012_dollar_per_hour",
       "years": [
         2011,
-        2022
+        2025
       ],
       "denominator": "fixed_2011_farm_employment",
       "fixed_effects": [
@@ -283,7 +290,7 @@
       "gap_panel": "Algebraically equivalent gap changes audit; no claim of new policy assignments.",
       "bite": "No observed prepolicy agricultural hourly wage distribution; nonfarm proxy changes estimand and exclusion assumptions, not selected.",
       "finer_units": "County adjacency/aggregates cannot identify pointwise spatial RD; worksite-distance panel and valid policy innovations needed.",
-      "extra_years": "Existing common panel 2008-2022; 2023 occupation-specific rule is a new regime and requires new aligned data."
+      "extra_years": "User-approved baseline extends through 2025 using the shared 2008-2025 panel and regional FLS reference AEWR. FY2026 Q3 disclosures supplement calendar-2025 starts; the last source fiscal year is partial. Occupation and late-2025 filing-cohort coverage are diagnostics, not new outcome restrictions."
     },
     "preanalysis_wage_audit": {
       "excluded_years": [

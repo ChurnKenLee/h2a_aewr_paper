@@ -16,10 +16,8 @@ mc_sp_calendar_registry <- function() {
       for (preperiod_length in MC_SPEC_PREPERIOD_LENGTHS) {
         for (preperiod_start in 2008:2012) {
           preperiod_end <- preperiod_start + preperiod_length - 1L
-          admissible <- (
-            preperiod_end <= 2012L &&
-              preperiod_end < analysis_start - maximum_lag
-          )
+          admissible <- (preperiod_end <= 2012L &&
+            preperiod_end < analysis_start - maximum_lag)
           if (!admissible) {
             next
           }
@@ -95,8 +93,7 @@ mc_specification_registry <- function() {
           polynomial_degree = as.integer(degree),
           moderated_polynomial_degree = as.integer(degree),
           richness_tier = as.integer(richness_tier),
-          richness_label =
-            MC_SPEC_RICHNESS_LABELS[[richness_tier + 1L]],
+          richness_label = MC_SPEC_RICHNESS_LABELS[[richness_tier + 1L]],
           heredity = "strong",
           history_rule = "maximal_common_basis",
           covariance_method = MC_CCV_METHOD,
@@ -146,18 +143,12 @@ mc_specification_registry <- function() {
     horizon_count == 3L &
       polynomial_degree == 2L &
       richness_tier == 1L &
-      (
-        (
-          analysis_start == min(MC_ANALYSIS_YEARS) &
-            paste(preperiod_start, preperiod_end) %in%
-              c("2008 2009", "2009 2010")
-        ) |
-          (
-            preperiod_start == min(MC_BASELINE_YEARS) &
-              preperiod_end == max(MC_BASELINE_YEARS) &
-              analysis_start %in% c(2014L, 2015L)
-          )
-      )
+      ((analysis_start == min(MC_ANALYSIS_YEARS) &
+        paste(preperiod_start, preperiod_end) %in%
+          c("2008 2009", "2009 2010")) |
+        (preperiod_start == min(MC_BASELINE_YEARS) &
+          preperiod_end == max(MC_BASELINE_YEARS) &
+          analysis_start %in% c(2014L, 2015L)))
   )
   registry$default_execution <- with(
     registry,
@@ -272,10 +263,10 @@ mc_sp_specification <- function(registry_row) {
       seq_len(registry_row$horizon_count[[1]])
     ],
     lag_orders = 0:registry_row$maximum_lag[[1]],
-    polynomial_degrees =
-      seq_len(registry_row$polynomial_degree[[1]]),
-    moderated_polynomial_degrees =
-      seq_len(registry_row$moderated_polynomial_degree[[1]]),
+    polynomial_degrees = seq_len(registry_row$polynomial_degree[[1]]),
+    moderated_polynomial_degrees = seq_len(registry_row$moderated_polynomial_degree[[
+      1
+    ]]),
     richness_tier = registry_row$richness_tier[[1]],
     richness_label = registry_row$richness_label[[1]],
     heredity = registry_row$heredity[[1]],
@@ -442,9 +433,10 @@ mc_sp_region_budget_audit <- function(registry) {
         spec_id = specification$spec_id,
         outcome_year = as.integer(outcome_year),
         year_coordinate = 1L,
-        causal_region_coordinates =
-          length(mc_sp_treatment_columns(specification)) *
-            length(specification$polynomial_degrees),
+        causal_region_coordinates = length(mc_sp_treatment_columns(
+          specification
+        )) *
+          length(specification$polynomial_degrees),
         candidate_history_coordinates = sum(
           history$outcome_year == outcome_year
         ),
@@ -519,7 +511,7 @@ mc_sp_resolve_history_selection <- function(
     state_cells,
     function(state_data) {
       stats::model.matrix(
-        ~factor(year) + factor(aewr_region_id),
+        ~ factor(year) + factor(aewr_region_id),
         data = state_data
       )
     }
@@ -529,9 +521,7 @@ mc_sp_resolve_history_selection <- function(
     function(state_data) {
       columns <- list()
       for (outcome_year in specification$analysis_years) {
-        for (
-          treatment_column in mc_sp_treatment_columns(specification)
-        ) {
+        for (treatment_column in mc_sp_treatment_columns(specification)) {
           for (degree in specification$polynomial_degrees) {
             basis_column <- mc_polynomial_basis_name(
               treatment_column,
@@ -544,7 +534,7 @@ mc_sp_resolve_history_selection <- function(
             )
             columns[[column_name]] <-
               as.integer(state_data$year == outcome_year) *
-                state_data[[basis_column]]
+              state_data[[basis_column]]
           }
         }
       }
@@ -565,7 +555,8 @@ mc_sp_resolve_history_selection <- function(
     fixed_matrices,
     function(matrix) qr(matrix, tol = 1e-9)$rank,
     integer(1)
-  ) + ncol(causal_matrices[[1L]])
+  ) +
+    ncol(causal_matrices[[1L]])
   if (any(active_ranks != expected_ranks)) {
     stop(
       "The forced causal region block is not full rank in every state.",
@@ -588,8 +579,7 @@ mc_sp_resolve_history_selection <- function(
     history_year <- selection$history_year[[selection_index]]
     history_column <-
       metadata$region_treatment_history_map$constructed_column[
-        metadata$region_treatment_history_map$history_year ==
-          history_year
+        metadata$region_treatment_history_map$history_year == history_year
       ]
     candidate_columns <- lapply(
       state_cells,
@@ -666,11 +656,13 @@ mc_sp_prepare_shared_panel <- function(shared_panel) {
     !"h2a_prediction_cutoff_year" %in% names(shared_panel) ||
       any(
         !is.na(shared_panel$h2a_prediction_cutoff_year) &
-          shared_panel$h2a_prediction_cutoff_year !=
-            H2A_PREDICTION_CUTOFF_YEAR
+          shared_panel$h2a_prediction_cutoff_year != H2A_PREDICTION_CUTOFF_YEAR
       )
   ) {
-    stop("The MC panel has an unexpected H-2A prediction cutoff.", call. = FALSE)
+    stop(
+      "The MC panel has an unexpected H-2A prediction cutoff.",
+      call. = FALSE
+    )
   }
   if (
     !"h2a_prediction_model_spec" %in% names(shared_panel) ||
@@ -687,8 +679,10 @@ mc_sp_prepare_shared_panel <- function(shared_panel) {
     filter(!is.na(h2a_predicted_share_2011)) %>%
     distinct(county_fips, h2a_predicted_share_2011)
   if (anyDuplicated(prediction_contract$county_fips) > 0L) {
-    stop("The MC panel must use one static H-2A propensity per county.",
-      call. = FALSE)
+    stop(
+      "The MC panel must use one static H-2A propensity per county.",
+      call. = FALSE
+    )
   }
   shared_panel$year <- as.integer(shared_panel$year)
   shared_panel$state_fips <- as.integer(shared_panel$state_fips)
@@ -707,7 +701,10 @@ mc_sp_prepare_shared_panel <- function(shared_panel) {
     drop = FALSE
   ]
   if (anyDuplicated(shared_panel[c("county_fips", "year")]) > 0L) {
-    stop("The shared MC panel must have unique county-year keys.", call. = FALSE)
+    stop(
+      "The shared MC panel must have unique county-year keys.",
+      call. = FALSE
+    )
   }
   shared_panel
 }
@@ -819,8 +816,8 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     calendar_row$analysis_end[[1]]
   )
 
-  baseline_long <- shared_panel |>
-    dplyr::semi_join(eligible_counties, by = "county_fips") |>
+  baseline_long <- shared_panel %>%
+    dplyr::semi_join(eligible_counties, by = "county_fips") %>%
     dplyr::filter(.data$year %in% preperiod_years)
   for (variable_name in names(MC_BASELINE_VARIABLES)) {
     source_column <- MC_BASELINE_VARIABLES[[variable_name]]
@@ -848,8 +845,8 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
   for (variable_name in names(MC_BASELINE_VARIABLES)) {
     source_column <- MC_BASELINE_VARIABLES[[variable_name]]
     raw_column <- paste0("mc_sp_raw_", variable_name)
-    summary_table <- baseline_long |>
-      dplyr::group_by(.data$county_fips) |>
+    summary_table <- baseline_long %>%
+      dplyr::group_by(.data$county_fips) %>%
       dplyr::summarise(
         value_mean = mc_finite_mean(.data[[raw_column]]),
         value_trend = mc_linear_slope(
@@ -869,7 +866,7 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
         statistic
       )
       value_column <- paste0("value_", statistic)
-      piece <- summary_table |>
+      piece <- summary_table %>%
         dplyr::transmute(
           county_fips = .data$county_fips,
           value = .data[[value_column]]
@@ -917,12 +914,12 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     period_components[[variable_name]] <- list()
     trajectory_sources[[variable_name]] <- list()
     trajectory_components[[variable_name]] <- list()
-    period_table <- baseline_long |>
+    period_table <- baseline_long %>%
       dplyr::select(
         .data$county_fips,
         .data$year,
         dplyr::all_of(raw_column)
-      ) |>
+      ) %>%
       tidyr::pivot_wider(
         names_from = .data$year,
         values_from = dplyr::all_of(raw_column),
@@ -980,9 +977,7 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     imputed_period_values <- as.matrix(
       county_design[, imputed_period_columns, drop = FALSE]
     )
-    for (
-      contrast_index in seq_len(ncol(trajectory_weights) - 1L)
-    ) {
+    for (contrast_index in seq_len(ncol(trajectory_weights) - 1L)) {
       contrast_name <- paste0("trajectory_", contrast_index)
       raw_trajectory_column <- paste0(
         "mc_b_",
@@ -1062,11 +1057,9 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
   trajectory_causal_columns <- mean_causal_columns
   trajectory_nuisance_columns <- character()
   for (variable_name in nonbite_variables) {
-    for (
-      contrast_name in names(
-        trajectory_components[[variable_name]]
-      )
-    ) {
+    for (contrast_name in names(
+      trajectory_components[[variable_name]]
+    )) {
       component_columns <-
         trajectory_components[[variable_name]][[contrast_name]]
       trajectory_causal_columns <- c(
@@ -1118,7 +1111,7 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     )
     county_design[[product_column]] <-
       county_design$mc_z *
-        county_design[[mean_nuisance_columns[[index]]]]
+      county_design[[mean_nuisance_columns[[index]]]]
     bite_nuisance_product_columns <- c(
       bite_nuisance_product_columns,
       product_column
@@ -1133,7 +1126,7 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     )
     county_design[[product_column]] <-
       county_design$mc_z *
-        county_design[[trajectory_causal_columns[[index]]]]
+      county_design[[trajectory_causal_columns[[index]]]]
     bite_three_way_columns <- c(
       bite_three_way_columns,
       product_column
@@ -1164,7 +1157,7 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
       )
       county_design[[product_column]] <-
         county_design[[quadratic_base_columns[[left]]]] *
-          county_design[[quadratic_base_columns[[right]]]]
+        county_design[[quadratic_base_columns[[right]]]]
       quadratic_columns <- c(quadratic_columns, product_column)
       quadratic_lookup_rows[[length(quadratic_lookup_rows) + 1L]] <-
         data.frame(
@@ -1176,33 +1169,35 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     }
   }
   if (length(quadratic_columns) != 78L) {
-    stop("The county second-order block must contain 78 columns.", call. = FALSE)
+    stop(
+      "The county second-order block must contain 78 columns.",
+      call. = FALSE
+    )
   }
 
-  region_treatment <- shared_panel |>
-    dplyr::filter(.data$year >= 2010L) |>
+  region_treatment <- shared_panel %>%
+    dplyr::filter(.data$year >= 2010L) %>%
     dplyr::distinct(
       .data$aewr_region_id,
       .data$year,
       .data$aewr
-    ) |>
-    dplyr::arrange(.data$aewr_region_id, .data$year) |>
-    dplyr::group_by(.data$aewr_region_id) |>
+    ) %>%
+    dplyr::arrange(.data$aewr_region_id, .data$year) %>%
+    dplyr::group_by(.data$aewr_region_id) %>%
     dplyr::mutate(
-      mc_dose_current =
-        100 * (log(.data$aewr) - dplyr::lag(log(.data$aewr))),
+      mc_dose_current = 100 * (log(.data$aewr) - dplyr::lag(log(.data$aewr))),
       mc_dose_lag1 = dplyr::lag(.data$mc_dose_current),
       mc_dose_lag2 = dplyr::lag(.data$mc_dose_current, n = 2L),
       mc_dose_lead1 = dplyr::lead(.data$mc_dose_current)
-    ) |>
+    ) %>%
     dplyr::ungroup()
-  region_history <- region_treatment |>
-    dplyr::filter(.data$year %in% MC_SPEC_HISTORY_YEARS) |>
+  region_history <- region_treatment %>%
+    dplyr::filter(.data$year %in% MC_SPEC_HISTORY_YEARS) %>%
     dplyr::select(
       .data$aewr_region_id,
       .data$year,
       .data$mc_dose_current
-    ) |>
+    ) %>%
     tidyr::pivot_wider(
       names_from = .data$year,
       values_from = .data$mc_dose_current,
@@ -1217,10 +1212,10 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     region_history[[column]] <- standardized$value
   }
 
-  analysis_panel <- shared_panel |>
-    dplyr::semi_join(eligible_counties, by = "county_fips") |>
-    dplyr::filter(.data$year %in% analysis_years) |>
-    dplyr::select(-.data$mc_market_id) |>
+  analysis_panel <- shared_panel %>%
+    dplyr::semi_join(eligible_counties, by = "county_fips") %>%
+    dplyr::filter(.data$year %in% analysis_years) %>%
+    dplyr::select(-.data$mc_market_id) %>%
     dplyr::left_join(
       county_design,
       by = c(
@@ -1230,9 +1225,9 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
         "emp_farm_2011"
       ),
       relationship = "many-to-one"
-    ) |>
+    ) %>%
     dplyr::left_join(
-      region_treatment |>
+      region_treatment %>%
         dplyr::select(
           .data$aewr_region_id,
           .data$year,
@@ -1243,35 +1238,31 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
         ),
       by = c("aewr_region_id", "year"),
       relationship = "many-to-one"
-    ) |>
+    ) %>%
     dplyr::left_join(
       region_history,
       by = "aewr_region_id",
       relationship = "many-to-one"
-    ) |>
+    ) %>%
     dplyr::mutate(
       mc_y_applications = .data$nbr_applications_start_year,
       mc_y_employers = .data$nbr_employers_balanced_start_year,
-      mc_y_requested_positions =
-        .data$nbr_workers_requested_start_year,
-      mc_y_certified_positions =
-        .data$nbr_workers_certified_start_year,
-      mc_y_certified_hours_thousands =
-        .data$man_hours_certified_start_year / 1000,
-      mc_y_applications_per_1000 =
-        1000 * .data$nbr_applications_start_year /
-          .data$emp_farm_2011,
-      mc_y_requested_positions_per_1000 =
-        1000 * .data$nbr_workers_requested_start_year /
-          .data$emp_farm_2011,
-      mc_y_certified_positions_per_1000 =
-        1000 * .data$nbr_workers_certified_start_year /
-          .data$emp_farm_2011,
-      mc_y_certified_hours_per_worker =
-        .data$man_hours_certified_start_year /
-          .data$emp_farm_2011,
-      mc_y_any_application =
-        as.integer(.data$nbr_applications_start_year > 0),
+      mc_y_requested_positions = .data$nbr_workers_requested_start_year,
+      mc_y_certified_positions = .data$nbr_workers_certified_start_year,
+      mc_y_certified_hours_thousands = .data$man_hours_certified_start_year /
+        1000,
+      mc_y_applications_per_1000 = 1000 *
+        .data$nbr_applications_start_year /
+        .data$emp_farm_2011,
+      mc_y_requested_positions_per_1000 = 1000 *
+        .data$nbr_workers_requested_start_year /
+        .data$emp_farm_2011,
+      mc_y_certified_positions_per_1000 = 1000 *
+        .data$nbr_workers_certified_start_year /
+        .data$emp_farm_2011,
+      mc_y_certified_hours_per_worker = .data$man_hours_certified_start_year /
+        .data$emp_farm_2011,
+      mc_y_any_application = as.integer(.data$nbr_applications_start_year > 0),
       mc_y_positions_per_application = dplyr::if_else(
         .data$nbr_applications_start_year > 0,
         .data$nbr_workers_certified_start_year /
@@ -1295,17 +1286,17 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
   for (column in colnames(year_contrasts)) {
     analysis_panel[[column]] <- year_contrasts[year_rows, column]
   }
-  analysis_panel <- analysis_panel |>
-    dplyr::group_by(.data$year) |>
+  analysis_panel <- analysis_panel %>%
+    dplyr::group_by(.data$year) %>%
     dplyr::mutate(
       mc_binding_quartile = dplyr::ntile(.data$mc_z, 4L),
       mc_baseline_h2a_quartile = dplyr::ntile(
         .data[["mc_b_h2a_cert_intensity_mean_z"]],
         4L
       )
-    ) |>
-    dplyr::ungroup() |>
-    dplyr::arrange(.data$county_fips, .data$year) |>
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(.data$county_fips, .data$year) %>%
     dplyr::mutate(mc_row_id = dplyr::row_number())
 
   expected_rows <- nrow(eligible_counties) * length(analysis_years)
@@ -1313,7 +1304,8 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     nrow(analysis_panel) != expected_rows ||
       anyDuplicated(
         analysis_panel[c("county_fips", "year")]
-      ) > 0L
+      ) >
+        0L
   ) {
     stop("A specification panel must be balanced.", call. = FALSE)
   }
@@ -1326,8 +1318,7 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
         function(column) {
           value <- analysis_panel[[column]]
           any(is.finite(value)) &&
-            stats::sd(value[is.finite(value)]) >
-              sqrt(.Machine$double.eps)
+            stats::sd(value[is.finite(value)]) > sqrt(.Machine$double.eps)
         },
         logical(1)
       )
@@ -1356,26 +1347,21 @@ mc_sp_build_calendar_panel <- function(shared_panel, calendar_row) {
     ),
     year_contrast_columns = colnames(year_contrasts),
     bite_mean_column = "mc_z",
-    bite_trajectory_columns =
-      active_column(bite_trajectory_columns),
+    bite_trajectory_columns = active_column(bite_trajectory_columns),
     mean_causal_columns = active_column(mean_causal_columns),
-    trajectory_causal_columns =
-      active_column(trajectory_causal_columns),
+    trajectory_causal_columns = active_column(trajectory_causal_columns),
     mean_nuisance_columns = active_column(mean_nuisance_columns),
-    trajectory_nuisance_columns =
-      active_column(trajectory_nuisance_columns),
-    bite_nuisance_product_columns =
-      active_column(bite_nuisance_product_columns),
-    bite_three_way_columns =
-      active_column(bite_three_way_columns),
+    trajectory_nuisance_columns = active_column(trajectory_nuisance_columns),
+    bite_nuisance_product_columns = active_column(
+      bite_nuisance_product_columns
+    ),
+    bite_three_way_columns = active_column(bite_three_way_columns),
     quadratic_columns = active_column(quadratic_columns),
-    legacy_intercept_columns =
-      active_column(legacy_intercept_columns),
+    legacy_intercept_columns = active_column(legacy_intercept_columns),
     variable_inventory = dplyr::bind_rows(inventory_rows),
     scaling = dplyr::bind_rows(scaling_rows),
     trajectory_weights = trajectory_weights,
-    quadratic_lookup =
-      dplyr::bind_rows(quadratic_lookup_rows)
+    quadratic_lookup = dplyr::bind_rows(quadratic_lookup_rows)
   )
   list(panel = as.data.frame(analysis_panel), metadata = metadata)
 }
@@ -1528,7 +1514,10 @@ mc_sp_causal_dictionary <- function(
   }
   dictionary <- do.call(rbind, rows)
   if (anyDuplicated(dictionary$coefficient_name) > 0L) {
-    stop("The causal dictionary emitted duplicate coefficient names.", call. = FALSE)
+    stop(
+      "The causal dictionary emitted duplicate coefficient names.",
+      call. = FALSE
+    )
   }
   dictionary
 }
@@ -1553,7 +1542,10 @@ mc_sp_history_dictionary <- function(
           selected$history_year[[1]]
       ]
     if (length(history_column) != 1L) {
-      stop("A retained history year lacks one constructed column.", call. = FALSE)
+      stop(
+        "A retained history year lacks one constructed column.",
+        call. = FALSE
+      )
     }
     rows[[length(rows) + 1L]] <- data.frame(
       outcome_year = selected$outcome_year[[1]],
@@ -1663,8 +1655,10 @@ mc_sp_formula_bundle <- function(
     .Environment = environment()
   )
   planned_effective_parameters <-
-    length(specification$analysis_years) - 1L +
-    MC_CCV_REFERENCE_STATES - 1L +
+    length(specification$analysis_years) -
+    1L +
+    MC_CCV_REFERENCE_STATES -
+    1L +
     length(unique(metadata$legacy_intercept_columns)) +
     length(unique(nuisance_varying)) *
       length(specification$analysis_years) +
@@ -1678,8 +1672,7 @@ mc_sp_formula_bundle <- function(
     formula_terms = terms,
     expanded_formula_characters = sum(nchar(terms)) +
       max(length(terms) - 1L, 0L) * 3L,
-    planned_effective_parameters =
-      planned_effective_parameters
+    planned_effective_parameters = planned_effective_parameters
   )
 }
 
@@ -1731,8 +1724,7 @@ mc_sp_resource_budget <- function(observations, parameters) {
   dense_gib <- observations * parameters * 8 / 1024^3
   gram_gib <- parameters^2 * 8 / 1024^3
   estimated_peak_gib <-
-    MC_SPEC_DENSE_PEAK_COPIES * dense_gib +
-      MC_SPEC_GRAM_PEAK_COPIES * gram_gib
+    MC_SPEC_DENSE_PEAK_COPIES * dense_gib + MC_SPEC_GRAM_PEAK_COPIES * gram_gib
   list(
     dense_matrix_gib = dense_gib,
     gram_matrix_gib = gram_gib,
@@ -1812,12 +1804,10 @@ mc_sp_state_errors <- function(
       coefficient_names,
       names(state_coefficient)
     )
-    finite_basis <- (
-      length(missing_coefficient) == 0L &&
-        all(is.finite(
-          state_coefficient[coefficient_names]
-        ))
-    )
+    finite_basis <- (length(missing_coefficient) == 0L &&
+      all(is.finite(
+        state_coefficient[coefficient_names]
+      )))
     basis_rows[[length(basis_rows) + 1L]] <- data.frame(
       state_index = as.integer(state_index),
       coefficient_count = length(state_coefficient),
@@ -1861,8 +1851,7 @@ mc_sp_state_errors <- function(
       reference_states = state_count,
       covariance_rank = sum(eigenvalues > tolerance),
       minimum_kernel_eigenvalue = min(eigenvalues),
-      maximum_observed_state_error =
-        max(abs(state_errors[1L, ]))
+      maximum_observed_state_error = max(abs(state_errors[1L, ]))
     )
   )
 }
@@ -1965,8 +1954,11 @@ mc_sp_gradient <- function(
     for (degree in sort(unique(dictionary$degree))) {
       basis_contrast <- switch(
         as.character(degree),
-        "1" = if (derivative) rep(1, observations) else
-          rep(dose_change, observations),
+        "1" = if (derivative) {
+          rep(1, observations)
+        } else {
+          rep(dose_change, observations)
+        },
         "2" = if (derivative) {
           2 * dose / 25
         } else {
@@ -1993,7 +1985,7 @@ mc_sp_gradient <- function(
         row_index <- data$year == outcome_year
         weighted_contrast <-
           aggregation_weights[row_index] *
-            basis_contrast[row_index]
+          basis_contrast[row_index]
         unmoderated <- is.na(year_rows$moderator_column)
         if (any(unmoderated)) {
           gradient[
@@ -2019,7 +2011,8 @@ mc_sp_gradient <- function(
             year_rows$coefficient_name[!unmoderated]
           ] <- drop(
             crossprod(weighted_contrast, moderator_matrix)
-          ) / denominator
+          ) /
+            denominator
         }
       }
     }
@@ -2037,10 +2030,9 @@ mc_sp_gradient <- function(
       treatment_column,
       -epsilon
     )
-    difference <- (
-      mc_sp_model_matrix(model, upper) -
-        mc_sp_model_matrix(model, lower)
-    ) / (2 * epsilon)
+    difference <- (mc_sp_model_matrix(model, upper) -
+      mc_sp_model_matrix(model, lower)) /
+      (2 * epsilon)
   } else {
     counterfactual <- mc_counterfactual_data(
       data,
@@ -2052,7 +2044,8 @@ mc_sp_gradient <- function(
   }
   drop(
     crossprod(aggregation_weights, difference)
-  ) / denominator
+  ) /
+    denominator
 }
 
 mc_sp_project_effect <- function(
@@ -2066,7 +2059,10 @@ mc_sp_project_effect <- function(
   coefficient_names <- names(coefficients)
   gradient <- gradient[coefficient_names]
   if (any(!is.finite(gradient))) {
-    stop("The delta gradient is not finite on the coefficient basis.", call. = FALSE)
+    stop(
+      "The delta gradient is not finite on the coefficient basis.",
+      call. = FALSE
+    )
   }
   state_projection <- drop(
     state_errors[, coefficient_names, drop = FALSE] %*%
@@ -2151,10 +2147,8 @@ mc_sp_effect_row <- function(
     dose_change = dose_change,
     standardization = "sample_average",
     estimate = projected$estimate * multiplier,
-    raw_standard_error =
-      projected$raw_standard_error * multiplier,
-    standard_error =
-      projected$standard_error * multiplier,
+    raw_standard_error = projected$raw_standard_error * multiplier,
+    standard_error = projected$standard_error * multiplier,
     conf_low = projected$conf_low * multiplier,
     conf_high = projected$conf_high * multiplier,
     reported_unit = if (multiplier == 100) {
@@ -2375,14 +2369,12 @@ mc_sp_estimate_outcome <- function(
       outcome_id = outcome_id,
       richness_tier = specification$richness_tier,
       horizon_count = specification$horizon_count,
-      polynomial_degree =
-        max(specification$polynomial_degrees),
+      polynomial_degree = max(specification$polynomial_degrees),
       observations = nrow(model_data),
       counties = length(unique(model_data$county_fips)),
       estimated_parameters = NA_integer_,
       effective_parameters = planned_effective_parameters,
-      planned_effective_parameters =
-        planned_effective_parameters,
+      planned_effective_parameters = planned_effective_parameters,
       parameter_row_ratio = planned_parameter_row_ratio,
       parameter_row_guard = row_guard,
       collinear_terms = NA_integer_,
@@ -2390,17 +2382,12 @@ mc_sp_estimate_outcome <- function(
       dropped_causal_terms = NA_integer_,
       warning_count = 0L,
       warning_messages = "",
-      formula_characters =
-        preflight_bundle$expanded_formula_characters,
-      dense_matrix_gib =
-        preflight_resource$dense_matrix_gib,
+      formula_characters = preflight_bundle$expanded_formula_characters,
+      dense_matrix_gib = preflight_resource$dense_matrix_gib,
       gram_matrix_gib = preflight_resource$gram_matrix_gib,
-      estimated_peak_gib =
-        preflight_resource$estimated_peak_gib,
-      dense_matrix_guard_gib =
-        preflight_resource$dense_matrix_guard_gib,
-      estimated_peak_guard_gib =
-        preflight_resource$estimated_peak_guard_gib,
+      estimated_peak_gib = preflight_resource$estimated_peak_gib,
+      dense_matrix_guard_gib = preflight_resource$dense_matrix_guard_gib,
+      estimated_peak_guard_gib = preflight_resource$estimated_peak_guard_gib,
       status = "rejected",
       rejection_reason = paste(
         preflight_rejections,
@@ -2419,10 +2406,8 @@ mc_sp_estimate_outcome <- function(
       dropped_causal_terms = character(),
       compiler_pruned_terms = character(),
       formula = deparse1(preflight_bundle$formula),
-      causal_dictionary =
-        preflight_bundle$causal_dictionary,
-      history_dictionary =
-        preflight_bundle$history_dictionary,
+      causal_dictionary = preflight_bundle$causal_dictionary,
+      history_dictionary = preflight_bundle$history_dictionary,
       history_selection = history_selection,
       effects = data.frame(),
       influence = data.frame()
@@ -2501,14 +2486,12 @@ mc_sp_estimate_outcome <- function(
     outcome_id = outcome_id,
     richness_tier = specification$richness_tier,
     horizon_count = specification$horizon_count,
-    polynomial_degree =
-      max(specification$polynomial_degrees),
+    polynomial_degree = max(specification$polynomial_degrees),
     observations = observations,
     counties = length(unique(estimation_data$county_fips)),
     estimated_parameters = length(coefficients),
     effective_parameters = effective_parameters,
-    planned_effective_parameters =
-      planned_effective_parameters,
+    planned_effective_parameters = planned_effective_parameters,
     parameter_row_ratio = parameter_row_ratio,
     parameter_row_guard = row_guard,
     collinear_terms = length(dropped_terms),
@@ -2519,15 +2502,12 @@ mc_sp_estimate_outcome <- function(
       unique(warning_messages),
       collapse = " | "
     ),
-    formula_characters =
-      formula_bundle$expanded_formula_characters,
+    formula_characters = formula_bundle$expanded_formula_characters,
     dense_matrix_gib = actual_resource$dense_matrix_gib,
     gram_matrix_gib = actual_resource$gram_matrix_gib,
     estimated_peak_gib = actual_resource$estimated_peak_gib,
-    dense_matrix_guard_gib =
-      actual_resource$dense_matrix_guard_gib,
-    estimated_peak_guard_gib =
-      actual_resource$estimated_peak_guard_gib,
+    dense_matrix_guard_gib = actual_resource$dense_matrix_guard_gib,
+    estimated_peak_guard_gib = actual_resource$estimated_peak_guard_gib,
     stringsAsFactors = FALSE
   )
 
@@ -2549,8 +2529,7 @@ mc_sp_estimate_outcome <- function(
     )
   }
   if (
-    actual_resource$dense_matrix_gib >
-      actual_resource$dense_matrix_guard_gib ||
+    actual_resource$dense_matrix_gib > actual_resource$dense_matrix_guard_gib ||
       actual_resource$estimated_peak_gib >
         actual_resource$estimated_peak_guard_gib
   ) {
@@ -2576,10 +2555,8 @@ mc_sp_estimate_outcome <- function(
       dropped_causal_terms = dropped_causal_terms,
       compiler_pruned_terms = compiler_pruned_terms,
       formula = deparse1(formula_bundle$formula),
-      causal_dictionary =
-        formula_bundle$causal_dictionary,
-      history_dictionary =
-        formula_bundle$history_dictionary,
+      causal_dictionary = formula_bundle$causal_dictionary,
+      history_dictionary = formula_bundle$history_dictionary,
       history_selection = history_selection,
       effects = data.frame(),
       influence = data.frame()
@@ -2641,8 +2618,7 @@ mc_sp_estimate_outcome <- function(
     parameter_standard_error = sqrt(
       pmax(adjusted_parameter_variance, 0)
     ),
-    conventional_cluster_standard_error =
-      unname(fixest::se(model)),
+    conventional_cluster_standard_error = unname(fixest::se(model)),
     coefficient_names = names(coefficients),
     state_errors = ccv$state_errors,
     common_basis_audit = ccv$basis_audit,
@@ -2714,8 +2690,7 @@ mc_sp_primary_selection <- function(
       spec_id = selected$spec_id[[1]],
       calendar_id = selected$calendar_id[[1]],
       richness_tier = selected$richness_tier[[1]],
-      selection_rule =
-        "highest_richness_current_calendar_h3_d2_passing_guards",
+      selection_rule = "highest_richness_current_calendar_h3_d2_passing_guards",
       stringsAsFactors = FALSE
     )
   }

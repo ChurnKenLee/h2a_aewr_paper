@@ -13,6 +13,7 @@ def validator_functions():
     """Load pure validation functions without running the Marimo application."""
     path = Path(__file__).parents[1] / "06_validate_artifacts.py"
     names = {
+        "validate_annual_bootstrap_intervals", "validate_requested_margin", "validate_requested_totals",
         "expected_model_ids", "validate_redesign_geographies",
         "validate_region_disjoint_matching",
         "validate_redesign_panel",
@@ -544,3 +545,53 @@ def test_decision_cannot_omit_shared_dependence_scenario():
         assert "every shared-dependence DGP" in str(error)
     else:
         raise AssertionError("Central precision must retain all declared shared-dependence scenarios")
+
+
+def test_annual_bootstrap_inversion_failure_is_explicit():
+    validate = validator_functions()["validate_annual_bootstrap_intervals"]
+    row = {"wcb_p_value": 0.99, "wcb_confidence_low": np.nan,
+           "wcb_confidence_high": np.nan, "wcb_status": "inversion_failed"}
+    validate(pd.DataFrame([row]))
+    row["wcb_status"] = "ok"
+    try:
+        validate(pd.DataFrame([row]))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Missing intervals cannot be marked successful")
+
+
+def test_annual_bootstrap_failure_cannot_hide_finite_interval():
+    validate = validator_functions()["validate_annual_bootstrap_intervals"]
+    row = {"wcb_p_value": 0.5, "wcb_confidence_low": -1.0,
+           "wcb_confidence_high": 1.0, "wcb_status": "inversion_failed"}
+    try:
+        validate(pd.DataFrame([row]))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("A finite interval cannot be relabeled as failed")
+
+
+def test_requested_diagnostics_preserve_missing_source_values():
+    functions = validator_functions()
+    source = pd.DataFrame({"county_fips": ["01001", "01003"], "year": [2013, 2013],
+                           "requested": [np.nan, 3.0]})
+    detail = source.rename(columns={"requested": "requested_positions"})
+    functions["validate_requested_margin"](detail, source, "requested")
+    invented = detail.fillna(0)
+    try:
+        functions["validate_requested_margin"](invented, source, "requested")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Unknown requests cannot become zero")
+    summary = pd.DataFrame({"year": [2013], "total_requested_positions": [np.nan]})
+    functions["validate_requested_totals"](summary, detail, ["year"])
+    summary["total_requested_positions"] = 3.0
+    try:
+        functions["validate_requested_totals"](summary, detail, ["year"])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("A partial observed subtotal cannot replace an unknown total")

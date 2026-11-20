@@ -1,6 +1,8 @@
 # Purpose: Estimate the publication first stages, 2SLS outcomes, summary
 # statistics, and email-ready transposed results on the county-year panel.
 # Input: data/processed/panel_iv_county_year.parquet.
+# Every model uses the wage-plus-seasonal/composition instrument. Column 1 has
+# no controls; column 2 adds the declared controls and is preferred.
 
 here::i_am("code/paths.R")
 source(here::here("code", "paths.R"))
@@ -25,21 +27,27 @@ obsolete_outputs <- c(
 )
 unlink(obsolete_outputs[file.exists(obsolete_outputs)])
 
-specification_path <- path_code("designs", "panel_iv", "estimation_spec.json")
-estimation_spec <- panel_iv_read_specification(specification_path)
-if (!identical(as.character(estimation_spec$controls), DISSIMILARITY_IV_CONTROL_TERMS)) {
-  stop("Panel-IV control registry disagrees with design.R.", call. = FALSE)
-}
+estimation_spec <- panel_iv_read_specification(
+  path_code("designs", "panel_iv", "estimation_spec.json")
+)
+endogenous <- estimation_spec$endogenous
+instrument <- estimation_spec$instrument
+fixed_effects <- paste(estimation_spec$fixed_effects, collapse = " + ")
+cluster_vcov <- stats::as.formula(paste("~", estimation_spec$primary_inference_cluster))
+control_terms <- paste(estimation_spec$controls, collapse = " + ")
+control_columns <- DISSIMILARITY_IV_CONTROL_COLUMNS
+policy_end_year <- estimation_spec$policy_years[[2]]
+preferred_column <- estimation_spec$preferred_column
+model_specs <- estimation_spec$models %>%
+  transmute(column, instrument = instrument, controls, header)
+model_count <- nrow(model_specs)
+outcomes <- estimation_spec$outcomes
+h2a_adjustment_outcomes <- outcomes$outcome[outcomes$adjustment_margin]
+
 panel <- panel_iv_prepare_outcomes(
   read_parquet(path_processed("panel_iv_county_year.parquet")),
   estimation_spec
 )
-endogenous <- estimation_spec$endogenous
-fixed_effects <- paste(estimation_spec$fixed_effects, collapse = " + ")
-cluster_vcov <- stats::as.formula(paste("~", estimation_spec$primary_inference_cluster))
-control_terms <- paste(estimation_spec$controls, collapse = " + ")
-outcomes <- estimation_spec$outcomes
-h2a_adjustment_outcomes <- outcomes$outcome[outcomes$adjustment_margin]
 
 required_columns <- unique(c(
   "county_fips",
@@ -49,12 +57,9 @@ required_columns <- unique(c(
   "h2a_prediction_cutoff_year",
   "h2a_prediction_model_spec",
   "h2a_predicted_share_2011",
-  "h2a_ppml_static_propensity_z",
-  "year_centered",
   endogenous,
-  "z_wage_only_real",
-  "z_wage_seasonal_composition_real",
-  DISSIMILARITY_IV_CONTROL_COLUMNS,
+  instrument,
+  control_columns,
   outcomes$outcome
 ))
 missing_columns <- setdiff(required_columns, names(panel))
@@ -65,6 +70,9 @@ if (length(missing_columns) > 0L) {
     call. = FALSE
   )
 }
+# Every regression names the excluded instrument z.
+panel <- panel %>%
+  mutate(z = .data[[instrument]])
 
 prediction_cutoffs <- sort(unique(
   panel$h2a_prediction_cutoff_year[
@@ -113,17 +121,54 @@ if (
   )
 }
 
-finite_complete <- function(data, numeric_columns, id_columns) {
+# Both columns share the controlled specification's complete cases.
+complete_cases <- function(data, outcome = NULL) {
   data %>%
     filter(
       year >= DISSIMILARITY_IV_POLICY_START_YEAR,
-      year <= DISSIMILARITY_IV_POLICY_END_YEAR,
+      year <= policy_end_year,
       if_all(
-        all_of(numeric_columns),
+        all_of(c(outcome, endogenous, "z", control_columns)),
         ~ !is.na(.x) & is.finite(.x)
       ),
-      if_all(all_of(id_columns), ~ !is.na(.x))
+      if_all(
+        all_of(c("county_fips", "year", "aewr_iv_cluster_id")),
+        ~ !is.na(.x)
+      )
     )
+}
+
+estimate <- function(formula, data) {
+  feols(
+    as.formula(formula),
+    data = data,
+    vcov = cluster_vcov,
+    warn = FALSE,
+    notes = FALSE
+  )
+}
+
+estimate_first_stage <- function(data, controls) {
+  rhs <- if (is.null(controls)) "z" else paste("z", controls, sep = " + ")
+  estimate(paste(endogenous, "~", rhs, "|", fixed_effects), data)
+}
+
+estimate_iv <- function(data, outcome, controls) {
+  rhs <- if (is.null(controls)) "1" else controls
+  estimate(
+    paste(outcome, "~", rhs, "|", fixed_effects, "|", endogenous, "~ z"),
+    data
+  )
+}
+
+# The control terms of one declared column, or NULL without controls.
+model_controls <- function(controls) {
+  if (controls) control_terms else NULL
+}
+
+same_observations <- function(models) {
+  observations <- map(models, fixest::obs)
+  all(map_lgl(observations[-1], ~ identical(.x, observations[[1]])))
 }
 
 coefficient_row <- function(model, pattern) {
@@ -172,98 +217,83 @@ format_number <- function(value, digits = 2L) {
   )
 }
 
-# Four-column first stage ----------------------------------------------------
-
-first_stage_data <- finite_complete(
-  panel,
-  c(
-    endogenous,
-    "z_wage_only_real",
-    "z_wage_seasonal_composition_real",
-    DISSIMILARITY_IV_CONTROL_COLUMNS
-  ),
-  c("county_fips", "year", "aewr_iv_cluster_id")
+control_labels <- c(
+  ln_pop_census_l1 = "Lagged log population",
+  farm_emp_share_l1 = "Lagged farm-employment share",
+  emp_pop_ratio_l1 = "Lagged employment/population",
+  wage_p10_l1 = "Lagged real p10 wage",
+  h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
+  year_centered = "Year minus 2011"
+)
+treatment_labels <- c(
+  fit_aewr_ppi = "Real AEWR (2012 dollars)",
+  aewr_ppi = "Real AEWR (2012 dollars)"
+)
+significance_codes <- c("***" = 0.01, "**" = 0.05, "*" = 0.10)
+controls_yes_no <- if_else(model_specs$controls, "Yes", "No")
+all_yes <- rep("Yes", model_count)
+instrument_note <- paste(
+  "Every column uses the wage-plus-seasonal-and-composition instrument, which",
+  "aggregates the county-mapped OEWS-area Big-Six hourly-wage proxy using the",
+  "calibrated county weights; QCEW supplies county employment, seasonal, and",
+  "field/livestock features."
+)
+trend_note <- paste0(
+  "The controlled column includes the standardized static PPML propensity ",
+  "interacted with year minus 2011; ",
+  "the selected PPML training cutoff is ",
+  H2A_PREDICTION_CUTOFF_YEAR,
+  "."
 )
 
-first_stage_specs <- estimation_spec$models %>%
-  transmute(
-    column,
-    instrument,
-    moment_targets,
-    controls,
-    header = first_stage_header
-  )
+# First stage ----------------------------------------------------------------
 
-first_stage_models <- vector("list", nrow(first_stage_specs))
-first_stage_rows <- vector("list", nrow(first_stage_specs))
-
-for (index in seq_len(nrow(first_stage_specs))) {
-  model_spec <- first_stage_specs[index, ]
-  model_data <- first_stage_data %>%
-    mutate(z = .data[[model_spec$instrument[[1]]]])
-  rhs <- if (model_spec$controls[[1]]) {
-    paste("z", control_terms, sep = " + ")
-  } else {
-    "z"
-  }
-  model <- feols(
-    as.formula(paste(
-      endogenous,
-      "~",
-      rhs,
-      "|",
-      fixed_effects
-    )),
-    data = model_data,
-    vcov = cluster_vcov,
-    warn = FALSE,
-    notes = FALSE
+first_stage_data <- complete_cases(panel)
+first_stage_models <- map(
+  model_specs$controls,
+  ~ estimate_first_stage(first_stage_data, model_controls(.x))
+)
+if (!same_observations(first_stage_models)) {
+  stop("Both first-stage columns must use the same observations.", call. = FALSE)
+}
+first_stage_sample <- first_stage_data[
+  fixest::obs(first_stage_models[[1]]),
+  ,
+  drop = FALSE
+]
+if (
+  min(first_stage_sample$year) != DISSIMILARITY_IV_POLICY_START_YEAR ||
+    max(first_stage_sample$year) != policy_end_year
+) {
+  stop(
+    "The first-stage sample must span ",
+    DISSIMILARITY_IV_POLICY_START_YEAR,
+    " through ",
+    policy_end_year,
+    ".",
+    call. = FALSE
   )
-  estimation_data <- model_data[fixest::obs(model), , drop = FALSE]
+}
+
+first_stage_results <- map_dfr(seq_len(model_count), function(index) {
+  model <- first_stage_models[[index]]
   z_result <- coefficient_row(model, "^z$")
-
-  first_stage_models[[index]] <- model
-  first_stage_rows[[index]] <- bind_cols(
-    model_spec,
+  bind_cols(
+    model_specs[index, ],
     tibble(
       observations = nobs(model),
-      counties = n_distinct(estimation_data$county_fips),
-      aewr_regions = n_distinct(estimation_data$aewr_region_id),
-      inference_clusters = n_distinct(
-        estimation_data$aewr_iv_cluster_id
-      ),
-      minimum_year = min(estimation_data$year),
-      maximum_year = max(estimation_data$year),
+      counties = n_distinct(first_stage_sample$county_fips),
+      aewr_regions = n_distinct(first_stage_sample$aewr_region_id),
+      inference_clusters = n_distinct(first_stage_sample$aewr_iv_cluster_id),
+      minimum_year = min(first_stage_sample$year),
+      maximum_year = max(first_stage_sample$year),
       r2 = model_r2(model),
       within_r2 = model_r2(model, "wr2")
     ),
     z_result,
     tibble(first_stage_f = z_result$t_statistic^2)
   )
-}
-
-first_stage_results <- bind_rows(first_stage_rows)
-first_stage_observations <- map(first_stage_models, fixest::obs)
-if (
-  n_distinct(first_stage_results$observations) != 1L ||
-    !all(
-      map_lgl(
-        first_stage_observations[-1],
-        ~ identical(.x, first_stage_observations[[1]])
-      )
-    )
-) {
-  stop(
-    "All four first-stage columns must use the same observations.",
-    call. = FALSE
-  )
-}
-if (
-  first_stage_results$minimum_year[[1]] != DISSIMILARITY_IV_POLICY_START_YEAR ||
-    first_stage_results$maximum_year[[1]] != DISSIMILARITY_IV_POLICY_END_YEAR
-) {
-  stop("The first-stage sample must span 2011 through 2022.", call. = FALSE)
-}
+})
 
 write_csv(
   first_stage_results,
@@ -273,83 +303,62 @@ write_csv(
 etable(
   first_stage_models,
   tex = TRUE,
-  title = "First Stage: Real AEWR on OEWS-Area Donor-Wage Instruments",
+  title = "First Stage: Real AEWR on the OEWS-Area Donor-Wage Instrument",
   label = "tab:iv_preferred_first_stage",
-  headers = list("Specification" = first_stage_specs$header),
+  headers = list("Specification" = model_specs$header),
   keep_raw = "^z$",
-  dict = c(
-    z = "Instrument $Z$",
-    ln_pop_census_l1 = "Lagged log population",
-    farm_emp_share_l1 = "Lagged farm-employment share",
-    emp_pop_ratio_l1 = "Lagged employment/population",
-    wage_p10_l1 = "Lagged real p10 wage",
-    h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
-    year_centered = "Year minus 2011"
-  ),
+  dict = c(z = "Instrument $Z$", control_labels),
   fitstat = ~ n + r2,
   extralines = list(
     "_^Excluded-instrument F" = format_number(
       first_stage_results$first_stage_f
     ),
-    "_Seasonal and composition moments" = c("No", "Yes", "No", "Yes"),
-    "_Controls" = if_else(first_stage_specs$controls, "Yes", "No"),
-    "_Static propensity differential trend" = if_else(
-      first_stage_specs$controls,
-      "Yes",
-      "No"
-    ),
+    "_Controls" = controls_yes_no,
+    "_Static propensity differential trend" = controls_yes_no,
     "_Prediction training cutoff" = rep(
       as.character(H2A_PREDICTION_CUTOFF_YEAR),
-      4
+      model_count
     ),
-    "_County fixed effects" = rep("Yes", 4),
-    "_Year fixed effects" = rep("Yes", 4),
-    "_AEWR-subregion clustered SEs" = rep("Yes", 4),
+    "_County fixed effects" = all_yes,
+    "_Year fixed effects" = all_yes,
+    "_AEWR-subregion clustered SEs" = all_yes,
     "_Number of SE clusters" = as.character(
       first_stage_results$inference_clusters
     ),
-    "_Common sample" = rep("Yes", 4)
+    "_Common sample" = all_yes
   ),
   notes = c(
     paste0(
-      "All columns use the same complete-case county-year sample from ",
+      "Both columns use the same complete-case county-year sample from ",
       DISSIMILARITY_IV_POLICY_START_YEAR,
       " through ",
-      DISSIMILARITY_IV_POLICY_END_YEAR,
+      policy_end_year,
       "."
-    ),
-    paste(
-      "Column 4 is preferred. The excluded-instrument F is the squared",
-      "AEWR-region-by-subregion clustered t statistic."
-    ),
-    paste(
-      "Both instruments aggregate the county-mapped OEWS-area Big-Six",
-      "hourly-wage proxy using the calibrated county weights; QCEW supplies",
-      "county employment, seasonal, and field/livestock features."
     ),
     paste0(
-      "Controlled columns include the standardized static PPML propensity ",
-      "interacted with year minus 2011; ",
-      "the selected PPML training cutoff is ",
-      H2A_PREDICTION_CUTOFF_YEAR,
-      "."
-    )
+      "Column ",
+      preferred_column,
+      " is preferred. The excluded-instrument F is the squared ",
+      "AEWR-region-by-subregion clustered t statistic."
+    ),
+    instrument_note,
+    trend_note
   ),
-  signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
+  signif.code = significance_codes,
   file = path_tables("table_iv_preferred_first_stage.tex"),
   replace = TRUE
 )
 
-# Four-column 2SLS outcomes -------------------------------------------------
+# 2SLS outcomes --------------------------------------------------------------
 
-second_stage_specs <- estimation_spec$models %>%
-  transmute(
-    column,
-    instrument,
-    moment_targets,
-    controls,
-    header = second_stage_header
-  )
+baseline_control_terms <- paste(
+  DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,
+  collapse = " + "
+)
+observation_keys <- function(data, model) {
+  selected <- data[fixest::obs(model), c("county_fips", "year"), drop = FALSE]
+  paste(selected$county_fips, selected$year, sep = "_")
+}
 
 iv_result_rows <- list()
 iv_sample_rows <- list()
@@ -359,91 +368,33 @@ h2a_adjustment_models <- list()
 for (outcome_index in seq_len(nrow(outcomes))) {
   outcome_spec <- outcomes[outcome_index, ]
   outcome_name <- outcome_spec$outcome[[1]]
-  outcome_data <- finite_complete(
-    panel,
-    c(
-      outcome_name,
-      endogenous,
-      "z_wage_only_real",
-      "z_wage_seasonal_composition_real",
-      DISSIMILARITY_IV_CONTROL_COLUMNS
-    ),
-    c("county_fips", "year", "aewr_iv_cluster_id")
-  )
+  outcome_data <- complete_cases(panel, outcome_name)
 
-  iv_models <- pmap(
-    second_stage_specs,
-    function(column, instrument, moment_targets, controls, header) {
-      model_data <- outcome_data %>%
-        mutate(z = .data[[instrument]])
-      rhs <- if (controls) control_terms else "1"
-      feols(
-        as.formula(paste(
-          outcome_name,
-          "~",
-          rhs,
-          "|",
-          fixed_effects,
-          "|",
-          endogenous,
-          "~ z"
-        )),
-        data = model_data,
-        vcov = cluster_vcov,
-        warn = FALSE,
-        notes = FALSE
-      )
-    }
+  iv_models <- map(
+    model_specs$controls,
+    ~ estimate_iv(outcome_data, outcome_name, model_controls(.x))
   )
-  model_observations <- map(iv_models, fixest::obs)
-  if (
-    !all(
-      map_lgl(
-        model_observations[-1],
-        ~ identical(.x, model_observations[[1]])
-      )
-    )
-  ) {
+  if (!same_observations(iv_models)) {
     stop(
-      "The four IV columns for ",
+      "The IV columns for ",
       outcome_name,
       " do not use the same observations.",
       call. = FALSE
     )
   }
   estimation_data <- outcome_data[
-    model_observations[[1]],
+    fixest::obs(iv_models[[1]]),
     ,
     drop = FALSE
   ]
+  preferred_iv <- iv_models[[preferred_column]]
   if (outcome_name %in% h2a_adjustment_outcomes) {
-    h2a_adjustment_models[[outcome_name]] <- iv_models[[4]]
+    h2a_adjustment_models[[outcome_name]] <- preferred_iv
   }
 
-  first_stage_models_outcome <- pmap(
-    second_stage_specs,
-    function(column, instrument, moment_targets, controls, header) {
-      model_data <- estimation_data %>%
-        mutate(z = .data[[instrument]])
-      rhs <- if (controls) {
-        paste("z", control_terms, sep = " + ")
-      } else {
-        "z"
-      }
-      feols(
-        as.formula(paste(
-          endogenous,
-          "~",
-          rhs,
-          "|",
-          fixed_effects
-        )),
-        data = model_data,
-        vcov = cluster_vcov,
-        warn = FALSE,
-        notes = FALSE
-      )
-    }
+  first_stage_models_outcome <- map(
+    model_specs$controls,
+    ~ estimate_first_stage(estimation_data, model_controls(.x))
   )
   first_stage_f <- map_dbl(
     first_stage_models_outcome,
@@ -455,56 +406,21 @@ for (outcome_index in seq_len(nrow(outcomes))) {
 
   # Identical-sample diagnostic: compare the four committed controls with the
   # same controls plus the static PPML propensity differential trend.
-  diagnostic_data <- estimation_data %>%
-    mutate(z = z_wage_seasonal_composition_real)
-  baseline_control_terms <- paste(
-    DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS,
-    collapse = " + "
+  four_control_iv <- estimate_iv(
+    estimation_data,
+    outcome_name,
+    baseline_control_terms
   )
-  four_control_iv <- feols(
-    as.formula(paste(
-      outcome_name,
-      "~",
-      baseline_control_terms,
-      "|",
-      fixed_effects,
-      "|",
-      endogenous,
-      "~ z"
-    )),
-    data = diagnostic_data,
-    vcov = cluster_vcov,
-    warn = FALSE,
-    notes = FALSE
+  four_control_first_stage <- estimate_first_stage(
+    estimation_data,
+    baseline_control_terms
   )
-  four_control_first_stage <- feols(
-    as.formula(paste(
-      endogenous,
-      "~ z +",
-      baseline_control_terms,
-      "|",
-      fixed_effects
-    )),
-    data = diagnostic_data,
-    vcov = cluster_vcov,
-    warn = FALSE,
-    notes = FALSE
-  )
-  trend_control_iv <- iv_models[[4]]
-  trend_control_first_stage <- first_stage_models_outcome[[4]]
-  observation_keys <- function(data, model) {
-    selected <- data[
-      fixest::obs(model),
-      c("county_fips", "year"),
-      drop = FALSE
-    ]
-    paste(selected$county_fips, selected$year, sep = "_")
-  }
+  trend_control_first_stage <- first_stage_models_outcome[[preferred_column]]
   diagnostic_observations <- list(
-    four_control_iv = observation_keys(diagnostic_data, four_control_iv),
-    trend_control_iv = observation_keys(outcome_data, trend_control_iv),
+    four_control_iv = observation_keys(estimation_data, four_control_iv),
+    trend_control_iv = observation_keys(outcome_data, preferred_iv),
     four_control_first_stage = observation_keys(
-      diagnostic_data,
+      estimation_data,
       four_control_first_stage
     ),
     trend_control_first_stage = observation_keys(
@@ -517,7 +433,7 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       diagnostic_observations,
       ~ identical(.x, diagnostic_observations[[1]])
     )) ||
-      length(diagnostic_observations[[1]]) != nrow(diagnostic_data)
+      length(diagnostic_observations[[1]]) != nrow(estimation_data)
   ) {
     stop(
       "Four-control and differential-trend diagnostics must use identical samples.",
@@ -529,7 +445,7 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     "^(fit_)?aewr_ppi$"
   )
   trend_iv_result <- coefficient_row(
-    trend_control_iv,
+    preferred_iv,
     "^(fit_)?aewr_ppi$"
   )
   four_first_stage_result <- coefficient_row(
@@ -544,8 +460,8 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     tibble(
       outcome = outcome_name,
       outcome_label = outcome_spec$outcome_label[[1]],
-      observations = nobs(trend_control_iv),
-      counties = n_distinct(diagnostic_data$county_fips),
+      observations = nobs(preferred_iv),
+      counties = n_distinct(estimation_data$county_fips),
       inference_clusters = inference_clusters,
       h2a_prediction_cutoff_year = H2A_PREDICTION_CUTOFF_YEAR,
       h2a_prediction_model_spec = H2A_PREDICTION_MODEL_SPEC,
@@ -557,7 +473,7 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       clustered_se_change =
         trend_control_clustered_se - four_control_clustered_se,
       four_control_within_r2 = model_r2(four_control_iv, "wr2"),
-      trend_control_within_r2 = model_r2(trend_control_iv, "wr2"),
+      trend_control_within_r2 = model_r2(preferred_iv, "wr2"),
       within_r2_change = trend_control_within_r2 - four_control_within_r2,
       four_control_first_stage_f =
         four_first_stage_result$t_statistic[[1]]^2,
@@ -568,14 +484,9 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     )
 
   for (model_index in seq_along(iv_models)) {
-    result <- coefficient_row(
-      iv_models[[model_index]],
-      "^(fit_)?aewr_ppi$"
-    )
-    model_spec <- second_stage_specs[model_index, ]
     iv_result_rows[[length(iv_result_rows) + 1L]] <- bind_cols(
       outcome_spec,
-      model_spec,
+      model_specs[model_index, ],
       tibble(
         observations = nobs(iv_models[[model_index]]),
         counties = n_distinct(estimation_data$county_fips),
@@ -587,7 +498,7 @@ for (outcome_index in seq_len(nrow(outcomes))) {
         within_r2 = model_r2(iv_models[[model_index]], "wr2"),
         first_stage_f = first_stage_f[[model_index]]
       ),
-      result
+      coefficient_row(iv_models[[model_index]], "^(fit_)?aewr_ppi$")
     )
   }
 
@@ -605,15 +516,6 @@ for (outcome_index in seq_len(nrow(outcomes))) {
     maximum_year = max(estimation_data$year)
   )
 
-  if (n_distinct(map_int(iv_models, nobs)) != 1L) {
-    stop(
-      "The four IV models must have the same N for ",
-      outcome_name,
-      ".",
-      call. = FALSE
-    )
-  }
-
   etable(
     iv_models,
     tex = TRUE,
@@ -622,80 +524,44 @@ for (outcome_index in seq_len(nrow(outcomes))) {
       outcome_spec$outcome_label[[1]]
     ),
     label = paste0("tab:iv_", outcome_spec$table_stub[[1]]),
-    headers = list(
-      "Specification" = second_stage_specs$header
-    ),
+    headers = list("Specification" = model_specs$header),
     keep_raw = "^(fit_)?aewr_ppi$",
-    dict = c(
-      fit_aewr_ppi = "Real AEWR (2012 dollars)",
-      aewr_ppi = "Real AEWR (2012 dollars)",
-      ln_pop_census_l1 = "Lagged log population",
-      farm_emp_share_l1 = "Lagged farm-employment share",
-      emp_pop_ratio_l1 = "Lagged employment/population",
-      wage_p10_l1 = "Lagged real p10 wage",
-      h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
-      year_centered = "Year minus 2011"
-    ),
+    dict = c(treatment_labels, control_labels),
     fitstat = ~ n + r2,
     extralines = list(
       "_^First-stage excluded-instrument F" = format_number(
         first_stage_f
       ),
-      "_Seasonal and composition moments" = if_else(
-        second_stage_specs$instrument == "z_wage_seasonal_composition_real",
-        "Yes",
-        "No"
-      ),
-      "_Controls" = if_else(
-        second_stage_specs$controls,
-        "Yes",
-        "No"
-      ),
-      "_Static propensity differential trend" = if_else(
-        second_stage_specs$controls,
-        "Yes",
-        "No"
-      ),
+      "_Controls" = controls_yes_no,
+      "_Static propensity differential trend" = controls_yes_no,
       "_Prediction training cutoff" = rep(
         as.character(H2A_PREDICTION_CUTOFF_YEAR),
-        4
+        model_count
       ),
-      "_County fixed effects" = rep("Yes", 4),
-      "_Year fixed effects" = rep("Yes", 4),
-      "_AEWR-subregion clustered SEs" = rep("Yes", 4),
+      "_County fixed effects" = all_yes,
+      "_Year fixed effects" = all_yes,
+      "_AEWR-subregion clustered SEs" = all_yes,
       "_Number of SE clusters" = rep(
         as.character(inference_clusters),
-        4
+        model_count
       ),
-      "_Common outcome sample" = rep("Yes", 4)
+      "_Common outcome sample" = all_yes
     ),
     notes = c(
-      paste(
-        "Columns 1 and 3 use the wage-only instrument; columns 2 and 4",
-        "use the wage-plus-seasonal-and-composition instrument."
-      ),
-      paste(
-        "Both instruments use the county-mapped OEWS-area Big-Six hourly",
-        "wage proxy as the donor wage level; QCEW supplies county",
-        "employment, seasonal, and field/livestock features."
-      ),
+      instrument_note,
       paste0(
-        "All columns use the controlled specification's complete-case ",
+        "Both columns use the controlled specification's complete-case ",
         "county-year sample from ",
         DISSIMILARITY_IV_POLICY_START_YEAR,
         " through ",
-        DISSIMILARITY_IV_POLICY_END_YEAR,
-        ". Column 4 is preferred."
+        policy_end_year,
+        ". Column ",
+        preferred_column,
+        " is preferred."
       ),
-      paste0(
-        "Controlled columns include the standardized static PPML propensity ",
-        "interacted with year minus 2011; ",
-        "the selected PPML training cutoff is ",
-        H2A_PREDICTION_CUTOFF_YEAR,
-        "."
-      )
+      trend_note
     ),
-    signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
+    signif.code = significance_codes,
     file = path_tables(paste0(
       "table_iv_",
       outcome_spec$table_stub[[1]],
@@ -761,8 +627,7 @@ diagnostic_table_tex <- c(
   paste0(
     "\\begin{minipage}{0.98\\textwidth}\\footnotesize Notes: ",
     "Each pair uses the same outcome-specific county-year observations, ",
-    "county and year fixed effects, the preferred wage-plus-seasonal-and-",
-    "composition ",
+    "county and year fixed effects, the wage-plus-seasonal-and-composition ",
     "instrument, and AEWR-subregion clustered standard errors. The static-trend ",
     "column adds standardized static PPML propensity interacted with year ",
     "minus 2011. The PPML model is trained through ",
@@ -794,7 +659,7 @@ h2a_adjustment_specs <- tibble(
 )
 
 h2a_adjustment_results <- iv_results %>%
-  filter(column == 4L) %>%
+  filter(column == preferred_column) %>%
   inner_join(
     h2a_adjustment_specs,
     by = "outcome",
@@ -831,16 +696,7 @@ etable(
     "Outcome" = h2a_adjustment_specs$column_header
   ),
   keep_raw = "^(fit_)?aewr_ppi$",
-  dict = c(
-    fit_aewr_ppi = "Real AEWR (2012 dollars)",
-    aewr_ppi = "Real AEWR (2012 dollars)",
-    ln_pop_census_l1 = "Lagged log population",
-    farm_emp_share_l1 = "Lagged farm-employment share",
-    emp_pop_ratio_l1 = "Lagged employment/population",
-    wage_p10_l1 = "Lagged real p10 wage",
-    h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
-    year_centered = "Year minus 2011"
-  ),
+  dict = c(treatment_labels, control_labels),
   fitstat = ~ n + r2,
   extralines = list(
     "_^First-stage excluded-instrument F" = format_number(
@@ -874,8 +730,7 @@ etable(
   ),
   notes = c(
     paste(
-      "All columns use the preferred wage-plus-seasonal-and-composition",
-      "instrument and",
+      "All columns use the wage-plus-seasonal-and-composition instrument and",
       "the four lagged controls plus the static propensity differential trend."
     ),
     paste(
@@ -893,7 +748,7 @@ etable(
       "algebraically additive."
     )
   ),
-  signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10),
+  signif.code = significance_codes,
   file = path_tables("table_iv_h2a_adjustment_margins.tex"),
   replace = TRUE
 )
@@ -968,19 +823,13 @@ email_outcomes <- tribble(
   "Farm outcomes"
 )
 
-email_specs <- second_stage_specs %>%
+email_specs <- model_specs %>%
   mutate(
-    file_stub = c(
-      "spec1_wage_only",
-      "spec2_seasonal_composition",
-      "spec3_wage_only_controls",
-      "spec4_preferred"
-    ),
-    display_title = c(
-      "Wage only",
-      "Seasonal/composition",
-      "Wage only + controls",
-      "Seasonal/composition + controls (preferred)"
+    file_stub = estimation_spec$models$file_stub,
+    display_title = if_else(
+      column == preferred_column,
+      paste(header, "(preferred)"),
+      header
     )
   )
 
@@ -1326,23 +1175,18 @@ grDevices::dev.off()
 
 summary_variable_labels <- c(
   aewr_ppi = "Real AEWR (2012 dollars)",
-  z_wage_only_real = "Wage-only OEWS-area hourly-wage instrument",
-  z_wage_seasonal_composition_real = paste(
-    "Preferred OEWS-area hourly-wage plus seasonal/composition instrument"
+  setNames(
+    "OEWS-area hourly-wage plus seasonal/composition instrument",
+    instrument
   ),
-  ln_pop_census_l1 = "Lagged log population",
-  farm_emp_share_l1 = "Lagged farm-employment share",
-  emp_pop_ratio_l1 = "Lagged employment/population",
-  wage_p10_l1 = "Lagged real p10 wage",
-  h2a_ppml_static_propensity_z = "Static PPML propensity (standardized)",
-  year_centered = "Year minus 2011",
+  control_labels,
   setNames(outcomes$outcome_label, outcomes$outcome)
 )
 
 summary_data <- panel %>%
   filter(
     year >= DISSIMILARITY_IV_POLICY_START_YEAR,
-    year <= DISSIMILARITY_IV_POLICY_END_YEAR
+    year <= policy_end_year
   )
 
 summary_statistics <- imap_dfr(
@@ -1410,7 +1254,7 @@ summary_tex <- c(
     "All finite county-year observations from ",
     DISSIMILARITY_IV_POLICY_START_YEAR,
     " through ",
-    DISSIMILARITY_IV_POLICY_END_YEAR,
+    policy_end_year,
     ". Fixed-effect and cluster identifiers are excluded.} \\\\"
   ),
   "\\end{tabular}",

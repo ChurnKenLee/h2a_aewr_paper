@@ -1,11 +1,11 @@
 # Frozen constants for the panel-IV branch.
 #
-# The publication design compares two soft-entropy instruments constructed
-# from the same Census hired-worker frame prior.  The first targets only the
-# annual FLS combined field-and-livestock/OEWS hourly-wage moment. The
-# preferred instrument adds QCEW seasonal and field/livestock-composition
-# moments. Worker-duration moments and a separate Census-frame instrument are
-# not publication specifications.
+# The publication design uses one soft-entropy instrument constructed from the
+# Census hired-worker frame prior. Its calibration targets the annual FLS
+# combined field-and-livestock/OEWS hourly-wage moment together with QCEW
+# seasonal and field/livestock-composition moments. The wage-only calibration,
+# worker-duration moments and a separate Census-frame instrument are not
+# publication specifications.
 
 # docs-ground:start panel-iv-design-contract
 DISSIMILARITY_IV_K_VALUES <- 5L
@@ -15,7 +15,11 @@ DISSIMILARITY_IV_PRIMARY_DONOR_COUNT <- 2L
 DISSIMILARITY_IV_FEATURE_START_YEAR <- 2008L
 DISSIMILARITY_IV_FEATURE_END_YEAR <- 2011L
 DISSIMILARITY_IV_POLICY_START_YEAR <- 2011L
-DISSIMILARITY_IV_POLICY_END_YEAR <- 2022L
+# Instruments and the county-year panel are constructed through policy year
+# 2024. BEA discontinued CAEMP25N after 2022, so the lagged controls, and with
+# them every estimation sample, end in policy year 2023.
+DISSIMILARITY_IV_POLICY_END_YEAR <- 2024L
+DISSIMILARITY_IV_ESTIMATION_END_YEAR <- 2023L
 
 DISSIMILARITY_IV_INSTRUMENT_FAMILY <- "dissimilarity_cluster"
 DISSIMILARITY_IV_AGGREGATION_SPEC <- "county"
@@ -23,14 +27,10 @@ DISSIMILARITY_IV_FRAME_WEIGHT_SPEC <-
   "census_hired_workers_qcew_annual_updated_v2"
 DISSIMILARITY_IV_PRIMARY_WEIGHT_SPEC <-
   "fls_pseudo_county_entropy_v2"
-DISSIMILARITY_IV_WAGE_ONLY_WEIGHT_SPECIFICATION <-
-  "fls_county_wage_only_soft_rho010_v2"
 DISSIMILARITY_IV_PRIMARY_WEIGHT_SPECIFICATION <-
   "fls_county_wage_seasonal_composition_soft_rho010_v2"
 DISSIMILARITY_IV_PRIMARY_WEIGHT_COMPONENT <-
   "calibrated_center"
-DISSIMILARITY_IV_WAGE_ONLY_MOMENT_SPEC <-
-  "fls_field_livestock_wage_only"
 DISSIMILARITY_IV_PRIMARY_MOMENT_SPEC <-
   "fls_oews_wage_plus_qcew_seasonal_and_composition"
 DISSIMILARITY_IV_DONOR_WAGE_SPEC <-
@@ -40,13 +40,6 @@ DISSIMILARITY_IV_DONOR_WAGE_SOURCE <-
 DISSIMILARITY_IV_DONOR_WAGE_GEOGRAPHY <-
   "oews_reporting_area_mapped_to_county"
 DISSIMILARITY_IV_PRIMARY_RHO <- 0.10
-DISSIMILARITY_IV_WAGE_ONLY_INSTRUMENT_LABEL <- paste0(
-  "k",
-  DISSIMILARITY_IV_PRIMARY_K,
-  "_d",
-  DISSIMILARITY_IV_PRIMARY_DONOR_COUNT,
-  "_oews_hourly_wage_only_soft_rho010_center"
-)
 DISSIMILARITY_IV_PRIMARY_INSTRUMENT_LABEL <- paste0(
   "k",
   DISSIMILARITY_IV_PRIMARY_K,
@@ -65,8 +58,8 @@ DISSIMILARITY_IV_INFERENCE_CLUSTER <- "aewr_iv_cluster_id"
 
 DISSIMILARITY_IV_EMPLOYER_LINKAGE_UNIT <- "worksite_business"
 DISSIMILARITY_IV_EMPLOYER_LINKAGE_VERSION <- "v2"
-DISSIMILARITY_IV_EMPLOYER_LINKAGE_INPUT_MAX_YEAR <- 2024L
-DISSIMILARITY_IV_EMPLOYER_LINKAGE_REVIEW_STATUS <- "complete"
+DISSIMILARITY_IV_EMPLOYER_LINKAGE_INPUT_MAX_YEAR <- 2026L
+DISSIMILARITY_IV_EMPLOYER_LINKAGE_REVIEW_STATUS <- "pending"
 
 # All selected donor clusters must contribute a wage in a given year. Donor
 # unit counts are diagnostics only; no minimum cluster-size rule is imposed.
@@ -95,7 +88,7 @@ DISSIMILARITY_IV_BASELINE_CONTROL_COLUMNS <- c(
 )
 
 # The time-invariant PPML level is absorbed by county fixed effects. The
-# controlled publication specifications instead allow counties with different
+# controlled publication specification instead allows counties with different
 # baseline propensities to follow different linear trends.
 DISSIMILARITY_IV_PROPENSITY_COLUMN <- "h2a_ppml_static_propensity_z"
 DISSIMILARITY_IV_PROPENSITY_TREND_TERM <- paste0(

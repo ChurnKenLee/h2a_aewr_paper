@@ -1,0 +1,251 @@
+{
+  "declarations_id": "identification_search_phase0_v1",
+  "status": "frozen_before_any_strategy_registry_or_estimate",
+  "frozen": "2026-11-05",
+  "authority": "markdowns/identification_search_agent_plan.md (Phase 0) and AGENTS.md; this file fixes what the plan leaves to Phase 0",
+  "sha256_record": "explorations/identification_search/shared/declarations.sha256 (any later change requires a new file declarations_v2.json that cites this hash; this file is never edited)",
+  "decisions": {
+    "D1_outcome": "Hours. Primary outcome: total certified H-2A contract hours, size-weighted (PPML on counts, or an aggregate elasticity), as the response to H-2A cost per hour. Requested positions (all disclosure cases including denied and withdrawn, dated by receipt) are the lead secondary. In a strategy confined to FY2015+ the registry may make requested positions co-primary with hours, with a multiplicity adjustment.",
+    "D2_gate": "Recommended default (user did not answer; may override before Phase 3): single-strategy size-valid elasticity MDE <= 0.5 is informative, <= 1.0 is pooling-eligible; pooled target <= 0.3.",
+    "D3_data": "Full network and write access, interpreted as in the plan's Repository safety section: public sources may be acquired; new raw data, sourced tables and new a01/b01 producers allowed; no change to existing producers' schema or values, retained outputs, the manuscript; no run_all.sh, commits or deletions.",
+    "D4_reserved_data": "Moot: FY2026 Q4 and FY2027 disclosures do not exist. Data are FY2008 through FY2026 Q3 only. The plan's integrity rules (freeze before estimating, confirmation split, prior exposure, no selection on results, blind review, units) replace data reservation.",
+    "D5_pooling": "Recommended default (user did not answer): a pre-declared pooled estimate across strategies resting on different assumptions may be the headline.",
+    "D6_execution": "Sequential: one Claude subagent at a time from the main session; independence comes from fresh agents that see only files."
+  },
+  "estimand": {
+    "primary": "Elasticity of total certified H-2A contract hours with respect to H-2A cost per hour, size-weighted: epsilon_cost = d ln(total hours) / d ln(C).",
+    "size_weighting": "PPML on counts (semi-elasticity eta; epsilon = eta x mean C, mean weighted by the PPML weights) or an aggregate (state, region or national total) elasticity. Equal-unit ratio outcomes (hours per fixed 2011 farm worker) are secondary, kept for continuity.",
+    "lead_secondary": "Requested positions from all cases, dated by receipt (window rq13d where FY2026 is used; rfy or rq13 otherwise), same cost elasticity.",
+    "secondaries": [
+      "requested hours",
+      "certified positions",
+      "equal-county ratio outcomes",
+      "extensive margin: any use, employer entry and exit",
+      "decomposition log hours = log positions + log weeks + log weekly hours (cert_posweeks)"
+    ],
+    "sign_convention": "Elasticities are reported as d ln q / d ln C; a conventional labor-demand elasticity is about -0.3."
+  },
+  "outcomes": {
+    "builder": "explorations/identification_search/shared/01_outcomes.R",
+    "files": {
+      "county_fy": "$S/shared/outcomes_county_fy.parquet",
+      "employer_fy": "$S/shared/outcomes_employer_fy.parquet",
+      "county_calendar": "$S/shared/outcomes_county_calendar.parquet",
+      "case_rows": "$S/shared/outcomes_case_rows.parquet"
+    },
+    "certified": "b01 fiscal-year logic (code/b01_derived/01_h2a_aggregation_nodupes.R): allocated worksite rows with a period begin date; hours = (end - begin)/7 x weekly hours x certified positions; missing weekly hours set to the pooled mean over all such rows (FY2008-FY2026); equal split across county_fips_list. Validated against h2a_data_year FY2008-FY2025 (county maximum difference < 1e-12 positions, hours relative difference < 1e-15) and its start-year columns.",
+    "requested": "All disclosure cases including denied and withdrawn. Allocated cases use b01's adjusted requested counts; cases absent from the allocated file are located with h2a_case_allocation_source (pre-FY2020: master total over non-master rows, requested-weighted) or Addendum B worksites (FY2020+: requested-weighted, equal if unknown). Requested hours = requested positions x requested weeks (worksite or case requested dates; period dates when missing, invalid or over 400 days) x weekly hours.",
+    "requested_availability": "NA for decision FY2008-10 and FY2013-14 (no requested counts in those disclosures) and for any window-year where >= 1% of contributing rows come from those files (see outcome_requested_coverage.csv). nbr_workers_needed exists only from FY2020 and cannot stand in.",
+    "windows": {
+      "fy": "disclosure (decision) FY, all decisions; NA in FY2026",
+      "dq13": "disclosure FY, decision dated 1 Oct - 30 Jun; complete in every FY including FY2026",
+      "rfy": "federal FY of case_received_date, all decisions; NA in FY2026",
+      "rq13": "received 1 Oct - 30 Jun of the receipt FY, any decision date; NA in FY2026 (decisions after 30 Jun 2026 are not released)",
+      "rq13d": "received and decided 1 Oct - 30 Jun of the receipt FY; complete in FY2026"
+    },
+    "fy2026_rule": "Any comparison involving FY2026 uses dq13 or rq13d for every year in the comparison.",
+    "known_limitations": [
+      "Weekly hours are missing for every FY2008-FY2010 case; hours in those years are positions x weeks x the pooled mean, so the weekly-hours margin carries no information there (affects A2).",
+      "Requested dates are missing in FY2015; requested hours fall back to period dates.",
+      "The at-AEWR flag is unreliable in FY2009-FY2010: no reference AEWR is in force 2009-01-17 to 2010-03-15 (OES schedules not acquired), so rows dated in that period are 'AEWR unknown'.",
+      "At-AEWR for non-field SOCs between 2023-03-30 and 2025-10-02 uses only the FLS reference (historical OEWS occupation AEWRs are not cached).",
+      "Employer unit break at FY2020: from FY2020 Addendum B names worksite businesses, so employer_id_balanced counts jump (8,459 active employers in FY2019 vs 26,284 in FY2020, window dq13) and FY2020 'entry' is mostly a measurement artifact. Employer-level extensive-margin outcomes must stay within FY2008-FY2019 or FY2020-FY2026, or difference out the break with period FE and say so.",
+      "County geography breaks: counties with any certified use jump at FY2015 (1,253 to 1,695) and FY2020 (2,101 to 2,525) as worksite reporting widens; county entry/exit across those boundaries is partly measurement.",
+      "Receipt window rq13d drops cases received in Q1-Q3 but decided after 30 June (8-14% of rq13 positions in FY2008-FY2025); it is the only receipt window comparable with FY2026.",
+      "The at-AEWR share falls to 0.67 in FY2026 (0.93-0.97 in FY2011-FY2025): many FY2026 offers sit above the new statewide floors."
+    ],
+    "at_aewr_definition": "Hourly certified hours (hourly unit, 0 < wage <= 100) offered within $0.05 (b01 AEWR_OFFER_TOLERANCE) of any applicable AEWR on the receipt, decision or period-begin date: the reference rate in force (plus the prior rate before an alternative start, e.g. the 2024 injunction group), and from 2025-10-02 the statewide (b)(1)(i) US and H2A skill I and II rates and the SOC-specific (b)(1)(ii) rates. Share = at-AEWR hours / hourly hours with a known AEWR."
+  },
+  "cost_unit": {
+    "definition": "H-2A cost per hour C = w + h + t + f per certified contract hour. w: binding cash wage floor for H-2A workers (the AEWR through FY2025; from 2025-10-02 the statewide H2A-category rate, which is the U.S. rate net of the housing adjustment; job-order strategies may use the observed hourly offer when it exceeds the floor; prevailing, minimum and CBA wages are not in the series and must be modelled by a strategy that relies on them). h: value of employer-provided housing per hour. t: inbound plus outbound transportation per worker / certified contract hours per position. f: (consular $190 + border $6 + DOL/DHS $15.60 + recruitment $100-250 per worker + agent $1,500-3,500 per application / positions per application) / contract hours per position.",
+    "builder": "explorations/identification_search/shared/03_cost_unit.R -> $S/shared/cost_unit_by_fy.csv (national FY series), cost_unit_summary.csv, cost_per_hour_state_fy.parquet (state x FY, central)",
+    "sources": "explorations/identification_search/shared/sources/cost_unit_sources.csv: DOL 2025 AEWR IFR, 90 FR 47914 (Oct. 2, 2025), RIA Exhibits 5-6 and the 0-bedroom regulatory alternative; USDA Farmers.gov H-2A cost table; Castillo, Martin and Rutledge (2024), Choices 39(1), via 90 FR 47914 fn. 79. The 2010 (75 FR 6884) and 2022 (87 FR 61660) rules gave no usable per-worker figure.",
+    "imputations": [
+      "h: DOL valuation (HUD 4-bedroom FMR / (8 occupants x 172 hours per month)). National h/AEWR from IFR Exhibit 6 (0.102 in FY2014 to 0.113 in FY2024) times the in-data hours-weighted AEWR; FY2008-13 held at the FY2014 ratio, FY2025 at the FY2024 ratio; FY2026 = hours-weighted state adjustments in force ($1.86; states $0.71-$3.18). State series scales the FY2026 state adjustment by the national path.",
+      "h high: DOL's 0-bedroom-for-2 alternative ($3.54 vs a $16.66 AEWR in 2024: ratio 0.2125).",
+      "t: 2 x $400 / $525 / $650 per worker (low/central/high), nominal and constant over years.",
+      "f: low/central/high per-worker fees as listed; agent cost per application divided by in-data certified positions per application.",
+      "Contract hours per position from the shared outcomes (certified hours / certified positions, window fy; FY2026 window dq13): 917-1,224 by FY.",
+      "Extreme sensitivity: $10,000 minimum non-wage cost per worker (Castillo, Martin and Rutledge 2024) per contract hour.",
+      "FY2009: April 1 falls in the 2009 OES period (no reference rate in the repository): no ratio; strategies using FY2009 use their own acquired schedules or the FY2008/FY2010 average ratio, declared in their registry."
+    ],
+    "values": {
+      "ratio_definition": "C / w at hours-weighted national means",
+      "FY2008_FY2025_hours_weighted": {
+        "low": 1.198,
+        "central": 1.227,
+        "high": 1.362,
+        "extreme": 1.764
+      },
+      "FY2020_FY2025_hours_weighted": {
+        "low": 1.188,
+        "central": 1.213,
+        "high": 1.341,
+        "extreme": 1.656
+      },
+      "FY2024": {
+        "w": 16.68,
+        "h": 1.89,
+        "t": 1.04,
+        "f": 0.53,
+        "nonwage_per_hour": 3.46,
+        "low": 1.185,
+        "central": 1.207,
+        "high": 1.329,
+        "extreme": 1.594
+      },
+      "FY2026_Q1_Q3": {
+        "w_h2a_cash": 11.8,
+        "us_skill1": 13.66,
+        "h": 1.86,
+        "t": 0.95,
+        "f": 0.48,
+        "central_vs_h2a_cash": 1.279,
+        "central_vs_us_skill1": 1.105,
+        "low": 1.25,
+        "high": 1.446,
+        "extreme": 1.767
+      },
+      "by_year_range_central": "1.203 (FY2025) to 1.254 (FY2013)"
+    },
+    "declared_ratio": {
+      "rule": "Each strategy uses the certified-hours-weighted mean of cost_ratio_low/central/high over its estimation years from cost_unit_by_fy.csv (FY2026: central_vs_h2a_cash when the dose is the H2A cash floor). Pooled conversions and any strategy that cannot apply the rule use the default.",
+      "default_central": 1.23,
+      "default_range": [
+        1.2,
+        1.36
+      ],
+      "extreme_sensitivity": 1.76
+    },
+    "conversion": {
+      "wage_floor_dose": "epsilon_cost = epsilon_w x (C_bar / w_bar), with epsilon_w = beta_w x w_bar / y_bar (levels) or eta_w x w_bar (PPML semi-elasticity), beta_w the effect per dollar of the binding cash floor. Equivalently epsilon_cost = beta_w x C_bar / y_bar or eta_w x C_bar. Assumes dC = dw: non-wage costs per hour do not move with the dose. epsilon_AEWR = epsilon_cost / ratio, so an AEWR elasticity of -0.3 is a cost elasticity of about -0.37.",
+      "statutory_dose_with_pass_through": "When the dose is a statutory rate with first-stage pass-through pi to the offered (binding) hourly wage, beta_w = beta_statutory / pi; report pi and its SE, and use size-valid IV inference (Anderson-Rubin, or jackknife/RI of the Wald ratio). The ITT per statutory dollar is also reported.",
+      "rule_2025_statewide": "From 2025-10-02 the H-2A cash floor is the U.S. statewide rate minus the state housing adjustment, and the employer still provides housing. A dose on the H2A cash rate maps 1:1 to C; a dose on the U.S. rate maps through dC = d(US rate) - d(housing adjustment), which varies by state. The registry states which rate it uses.",
+      "nonwage_shifter": "For a housing, transportation or fee shifter measured in dollars per contract hour, epsilon_cost = beta_h x C_bar / y_bar (PPML: eta_h x C_bar). This assumes cost equivalence: employers respond to total cost per hour whatever its component.",
+      "cost_equivalence_test": "Where two components vary in one design (e.g. a C-family shifter alongside an A-family wage dose), estimate both per-dollar effects and test equality (Wald with the strategy's size-valid inference); report the test with the estimate. Failure of the test is reported and the strategy is excluded from pooling only if its registry declares the test as falsification.",
+      "power_units": "Pass beta_e1 = pi x y_bar / C_bar (levels) or pi / C_bar (PPML linearization) to ish_power(), with C_bar = w_bar x declared ratio and pi = 1 when the dose is the binding floor itself, so harness MDEs are in epsilon_cost units. The gate thresholds (0.5 / 1.0 / 0.3) apply to epsilon_cost.",
+      "reporting": "Every strategy reports its native estimate, epsilon_w (or the ITT elasticity per statutory dollar), and epsilon_cost at the low, central and high ratio."
+    }
+  },
+  "power": {
+    "harness": "explorations/identification_search/shared/power_harness.R, function ish_power()",
+    "settings": "code/designs/border_discontinuity/design.json redesign.power and precision_assumptions: seed 201103, 999 repetitions, 999 calibration repetitions, AR(1) 0.5, spatial graph coefficient 0.4, four DGPs (county_serial, shared_region_serial, shared_region_and_pair_serial, spatial_region_serial), alpha 0.05, target power 0.80, size gate: upper 95% Wilson bound of the null rejection rate <= 0.075 with no invalid repetitions",
+    "calibration": "FE-only residuals of the pre-period outcome; no dose regressor. Calibration years are declared in each registry before any outcome is examined beyond residual variance.",
+    "size_valid_mde": "Per DGP, the upper MDE across both signs of the first inference method that passes the size gate, in the order: primary-cluster CRV1, exact leave-one-cluster-out jackknife (CV3J), randomization inference (when the dose is constant within assignment unit x period), other CRV1. MDEs are in elasticity units at the design's means and reported on the grid 0.01 to 10.",
+    "gate_dgp_rule": "Compute ish_node_period_share() on the calibration outcome. If the observed share of FE-residual variance at shock-node x period cells is at most 1.5 times the pure-unit-noise share, the gate uses county_serial; otherwise the gate uses the largest size-valid MDE among the three shared DGPs. All four DGPs are always reported.",
+    "required_support_statistics": [
+      "dose SD after FE",
+      "number of independent clusters carrying the dose",
+      "effective number of clusters (sxx^2 / sum of squared cluster leverage)",
+      "maximum cluster leverage share",
+      "pre-period outcome residual SD"
+    ]
+  },
+  "gate": {
+    "informative": "size-valid elasticity MDE <= 0.5 (gate DGP)",
+    "pooling_eligible": "size-valid elasticity MDE <= 1.0 (gate DGP)",
+    "pooled_target": "pooled MDE <= 0.3",
+    "design_stage_kill": "Kill at Phase 3 if the size-valid MDE exceeds 1.0 and the strategy cannot be pooled; flag if it exceeds 0.5.",
+    "triage_kill": "Kill at triage if the rough MDE exceeds 2 and the strategy cannot be pooled, or if the dose dispersion is region-year only (17 clusters) with no added cross-sectional structure.",
+    "mde_basis": "Elasticity of the primary outcome (hours) with respect to C, using the central cost ratio. A strategy whose primary is requested positions (FY2015+ co-primary) reports the gate on both outcomes; the hours gate governs pooling."
+  },
+  "split": {
+    "helper": "explorations/identification_search/shared/split_helper.R, function ish_split()",
+    "seed": 20261102,
+    "rule": "Sorted unique unit ids, optionally within strata; round(n/3) (at least 1 in strata of 3+ units) to exploration, the rest to confirmation. Only strategies with data-driven tuning use it; fewer than 30 independent units: skip and flag.",
+    "standard_files": "$S/shared/split_state_unstratified.csv, split_state_by_former_region.csv, split_county_unstratified.csv, split_county_by_state.csv"
+  },
+  "pooling_rule": {
+    "method": "Random-effects inverse-variance pooling (DerSimonian-Laird tau^2) of epsilon_cost estimates with each strategy's size-valid standard error (the SE of its declared primary inference; for jackknife-primary strategies, the jackknife SE). Report Cochran's Q, I^2 and tau^2; report a Hartung-Knapp-Sidik-Jonkman interval as a sensitivity because few strategies enter. Each strategy is reported alone first.",
+    "inclusion": [
+      "estimated under a frozen registry (post-outcome changes excluded)",
+      "passes its own size gate with size-valid MDE <= 1.0 at the design stage (pooling-eligible)",
+      "passes every declared falsification test (Phase 4)",
+      "blind review verdict 'stands' or 'stands with caveats'",
+      "converts to the primary estimand (epsilon_cost) under the declared cost-unit rule",
+      "rests on identifying assumptions different from every other included strategy"
+    ],
+    "assumption_families_count_once": [
+      "Gap-model designs (bite 1(a)/1(b), Mundlak-Chamberlain bite coordinates, minimum-wage translations, any design whose dose is AEWR minus a domestic-wage measure) count as one: if several qualify, the one with the smallest design-stage MDE enters.",
+      "Designs using the same policy event and the same identifying contrast (e.g. A1 variants, or A1 with D1 revealed binding) count as one: the registry-declared primary enters.",
+      "A6 (stacked statutory events) and its component A-events are alternatives: if A6 qualifies it enters instead of its components; otherwise qualifying components enter separately.",
+      "Region-year AEWR designs (B family without added structure) count as one."
+    ],
+    "excluded_from_headline": [
+      "strategies flagged for external validity (e.g. A4 range herders: different occupation): reported in a sensitivity pool that adds them",
+      "F-family structural or model-based estimates: reported separately, labeled model-based"
+    ],
+    "dependence_sensitivity": "When two included strategies use overlapping outcome observations, a sensitivity assumes correlation 0.5 between their estimates (generalized inverse-variance with that covariance).",
+    "selection_rule": "Inclusion is decided from design gates, falsification results and review verdicts, never from estimates. The pooled estimate is computed once after all strategies finish."
+  },
+  "multiplicity": {
+    "family": "All primary hypotheses (H0: epsilon_cost = 0) of every strategy that reaches Phase 5 estimation, including strategies that later fail falsification or review; co-primary requested-position hypotheses are added to the family.",
+    "method": "Romano-Wolf stepdown (two-sided, alpha 0.05) using joint resampling draws when the strategies can be resampled together (common cluster bootstrap or permutation over a shared unit, e.g. states, with each strategy's statistic studentized by its own SE in every draw, 9999 draws, seed 20261102). If joint resampling is infeasible for any member, use Holm on the size-valid p-values for the whole family.",
+    "within_strategy": "A strategy with co-primary outcomes also reports Holm-adjusted p-values within itself.",
+    "reporting": "Unadjusted p, size-valid p, and adjusted p for each primary hypothesis in the ledger."
+  },
+  "integrity": {
+    "freeze": "Each strategy writes explorations/identification_search/<id>/registry.json and records its SHA-256 in ledger_row.json before computing any estimate. Allowed before freezing: treatment variables, support statistics, pre-period outcome residual variance for calibration.",
+    "post_outcome_label": "Anything not declared in the frozen registry is labeled post-outcome in outputs and the ledger.",
+    "prior_exposure": "Each registry lists which outcomes and periods earlier work examined (cite markdowns/alternative_identification_exploration.md sections). Known: certified positions, certified hours and equal-county ratios for FY2026 Q1-Q3 vs FY2025 (Track 1, report section 3); region-year designs FY2008-FY2025 (sections 1-2); bite and minimum-wage designs (sections 4, 7).",
+    "review": "Blind review by a fresh agent with registry, code and outputs only; verdict stands / stands with caveats / fails in <id>/review.md."
+  },
+  "ledger": {
+    "row_file": "explorations/identification_search/<strategy_id>/ledger_row.json",
+    "table": "explorations/identification_search/ledger.csv (columns = the fields below, list fields joined with '; ')",
+    "ledger_row_fields": {
+      "strategy_id": "string, e.g. A1, C1, N1",
+      "family": "catalogue family letter A-G or 'new'",
+      "title": "short name",
+      "proposer": "agent/model that proposed it (catalogue, triage_credibility, triage_power, merge)",
+      "implementer": "agent/model that implemented it",
+      "reviewer": "agent/model of the blind review, or null",
+      "phase_reached": "triage | acquisition | design | falsification | estimation | review",
+      "status": "active | killed | estimated | reviewed",
+      "kill_phase": "phase at which it was killed, or null",
+      "kill_reason": "text, or null",
+      "rubric_scores": "object {exogeneity, estimand_distance, support, independence, speed} from the triage merge (1-5 each)",
+      "estimand": "native estimand in words",
+      "primary_outcome": "outcome id and window (e.g. cert_hours_dq13, PPML)",
+      "co_primary_outcomes": "list, or empty",
+      "dose": "dose definition and units",
+      "identifying_assumption": "one sentence",
+      "assumption_family": "label used by the pooling rule (e.g. statutory_2025_statewide, gap_model, region_year_aewr, housing_cost)",
+      "conversion": "object {formula, cost_ratio_used, first_stage_pass_through, first_stage_se, assumptions}",
+      "support": "object {dose_sd_after_fe, units, clusters, clusters_with_dose, effective_clusters, max_leverage_share, preperiod_residual_sd}",
+      "design_mde_elasticity": "size-valid MDE (gate DGP), primary outcome",
+      "design_mde_by_dgp": "object dgp_id -> size-valid MDE",
+      "gate_dgp": "dgp used for the gate and the node-period share that chose it",
+      "inference_primary": "e.g. state_CV3J",
+      "registry_path": "path",
+      "registry_sha256": "hex",
+      "split_used": "true | false",
+      "split_detail": "units, strata, file, or reason skipped/flagged",
+      "prior_exposure": "text with report citations",
+      "falsification_result": "pass | fail | not_run, with the test list",
+      "estimate_native": "point estimate in native units",
+      "estimate_elasticity_cost": "epsilon_cost point estimate (central ratio)",
+      "se_elasticity_cost": "size-valid SE in epsilon_cost units",
+      "ci95_elasticity_cost": "[low, high] from the primary inference",
+      "elasticity_cost_low_high_ratio": "[epsilon at low ratio, epsilon at high ratio]",
+      "p_unadjusted": "number",
+      "p_size_valid": "number (primary inference)",
+      "p_adjusted": "Romano-Wolf or Holm (filled at synthesis)",
+      "realized_mde_elasticity": "2.8 x SE in epsilon_cost units",
+      "pooling_eligible": "true | false",
+      "pooling_exclusion_reason": "text or null",
+      "external_validity_flag": "true | false, with reason",
+      "post_outcome_analyses": "list of labeled post-outcome analyses",
+      "estimates_path": "path to estimates.csv",
+      "review_verdict": "stands | stands with caveats | fails | null",
+      "review_path": "path to review.md or null",
+      "notes": "text",
+      "updated": "ISO date"
+    }
+  },
+  "phase0_checks": {
+    "outcome_validation": "Rebuilt certified positions and hours (window fy, allocated rows) equal h2a_data_year FY2008-FY2025 by county (max |diff| 4.5e-13 positions; hours relative diff < 4e-16) and its start-year columns; requested positions on allocated rows equal nbr_workers_requested_fiscal_year. All-case requested adds 1.7-6.1% by FY (FY2011, FY2012, FY2015-FY2026) from denied, withdrawn and zero-certified cases; FY2020+ totals match the disclosure main rows (e.g. FY2025 415,496). Files: $S/shared/outcome_validation_fy.csv, outcome_validation_calendar.csv, outcome_requested_by_source.csv.",
+    "nbr_workers_needed": "Non-missing only from FY2020 (0% in FY2008-FY2019; 95.6% FY2020, ~100% FY2021-FY2026). It cannot stand in for requested positions in FY2008-10 or FY2013-14. Where both exist it is >= requested in >99.9% of rows and equals it in 81-87%; total needed/requested = 1.10-1.24 (it includes U.S. workers sought), so it is not the same quantity. File: outcome_needed_coverage.csv.",
+    "power_harness_reproduction": "On 04_track1_power.R's own pre panel the harness reproduces every MDE, null rejection rate and gate of the U.S. skill-I FY2026 primary-calibration run exactly (4 DGPs x 3 methods x 2 signs for positions; county-only for hours): county-only state jackknife elasticity MDE 1.48/1.51 (positions), 1.28/1.30 (hours). On the shared outcomes (window dq13) the county-only jackknife MDE is identical (1.51, 1.30). Within-region RI (199 permutations) passes the size gate (null 0.043) with MDE 1.35; the PPML linearization on hours counts gives a jackknife MDE of 0.95. Effective states 11.1 of 46, max state leverage 0.24. Files: $S/shared/harness_test_*.csv, harness_test_verdict.json."
+  }
+}

@@ -34,7 +34,7 @@
     "denominator_source": "data/processed/county_year_panel.parquet",
     "missing_numerator": "zero_for_counties_with_positive_fixed_denominator",
     "units": "certified_positions_per_fixed_2011_farm_worker",
-    "post_period_requirement": "Upstream a01/b01 producers must parse FY2025 and FY2026 disclosure files before estimation; this registry never reads post outcomes."
+    "post_period_requirement": "FY2026 Q3 disclosures are parsed upstream; estimation still requires job-order cohort alignment. This registry never reads post outcomes."
   },
   "geography": {
     "unit": "county",
@@ -59,9 +59,9 @@
   "weights": "equal_county",
   "calibration": {
     "primary_years": [2020, 2022],
-    "primary_reason": "FY2020 onward allocates certifications with Addendum B worksite records, the measurement regime of the post period; the owning county-year producer (h2a_data_year) currently ends at FY2022",
+    "primary_reason": "FY2020 onward allocates certifications with Addendum B worksite records, the measurement regime of the post period; the frozen calibration window is retained even though the common panel now reaches 2025",
     "sensitivity_years": [2015, 2022],
-    "data_note": "FY2023-FY2024 worksite allocations exist upstream but are not aggregated by the owning producer; they are not re-aggregated here",
+    "data_note": "The shared producer includes later years; this power exercise retains its declared calibration years",
     "projection": "unit_and_pair_year_FE_only_no_wage_regressor"
   },
   "scenarios": [

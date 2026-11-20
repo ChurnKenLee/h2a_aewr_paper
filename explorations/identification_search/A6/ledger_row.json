@@ -1,0 +1,15 @@
+{
+  "strategy_id": "A6",
+  "title": "Stacked statutory events (A1-A4)",
+  "family": "A",
+  "phase_reached": "not_run",
+  "status": "not_run",
+  "kill_phase": "pre-design",
+  "kill_reason": "Not run (lead decision 2026-11-06). The plan's literal condition (Execution step 6: at least two A-family registries frozen) was met: A1, A2 and A3 froze registries. The lead read the condition as requiring at least two A-family designs that proceeded past design; only A1 did (A2 and A3 were killed at design, A4 at triage). This is a recorded deviation from the plan.",
+  "registry_path": null,
+  "registry_sha256": null,
+  "pooling_eligible": false,
+  "decided_by": "lead (orchestrating session)",
+  "date": "2026-11-06",
+  "deviation_from_plan": true
+}
