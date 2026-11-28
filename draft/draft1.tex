@@ -1,501 +1,896 @@
-\documentclass[14pt]{article}
-\usepackage[usenames]{color}
-\usepackage[margin=1in]{geometry}
+\documentclass[11pt]{article}
+\usepackage[margin=0.95in]{geometry}
 \usepackage{setspace}
-\usepackage{graphicx}
-\doublespacing
+\onehalfspacing
 \usepackage{parskip}
-\usepackage{placeins,float,setspace,amsfonts,comment,amsmath,amssymb,amsxtra,graphicx,ifthen,ushort,enumerate,mathrsfs,hyperref,textcomp,pdflscape, threeparttable,footmisc}
-\usepackage{subcaption}
-\usepackage{authblk}
+\usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs}
-\hypersetup{colorlinks=true, anchorcolor=webbrown, citecolor=webbrown, filecolor=webbrown, linkcolor=webbrown, menucolor=webbrown, urlcolor=webbrown, citebordercolor=1 0 0, menubordercolor=1 0 0, urlbordercolor=1 0 0, runbordercolor=1 0 0}
-\definecolor{webbrown}{rgb}{.6,0,0}
-\definecolor{ChadBlue}{rgb}{.1,.1,.5}
-\definecolor{ChadGreen}{rgb}{0,.4,0}    % Dark Green
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{placeins}
+\usepackage{float}
+\usepackage{authblk}
+\usepackage{xcolor}
+\usepackage{etoolbox}
+\usepackage{adjustbox}
+\usepackage[round]{natbib}
+\usepackage{hyperref}
 
-\usepackage[style=authoryear, backend=biber]{biblatex}
-\bibliography{h2a_paper.bib}
+\setlength{\tabcolsep}{4.5pt}
+\emergencystretch=1.5em
 
-\author[1]{David J. Bier}
+\definecolor{webbrown}{rgb}{.55,0,0}
+\hypersetup{
+  colorlinks=true,
+  anchorcolor=webbrown,
+  citecolor=webbrown,
+  filecolor=webbrown,
+  linkcolor=webbrown,
+  urlcolor=webbrown
+}
+
+\title{Wage Floors, Short-Run Labor Demand, and Producer Incidence in the U.S.\ H-2A Program}
+
+\author[1]{David J.\ Bier}
 \author[2]{Philip Hoxie}
-\author[3]{Churn Ken Lee}
-\affil[1]{CATO Institute}
-\affil[2,3]{UC San Diego - Department of Economics}
+\author[2]{Churn Ken Lee}
+\affil[1]{Cato Institute}
+\affil[2]{UC San Diego, Department of Economics}
 
-\title{The Adverse Effect Wage Rate and H-2A Program Use}
+\date{November 2026}
 
 \begin{document}
 
 \maketitle
 
+\BeforeBeginEnvironment{tabular}{\begin{adjustbox}{max width=\textwidth}}
+\AfterEndEnvironment{tabular}{\end{adjustbox}}
+
 \begin{abstract}
-The H-2A program permits U.S. agricultural employers to hire temporary foreign
-workers but requires them to pay at least the Adverse Effect Wage Rate (AEWR).
-We construct a county-year panel for 2008--2022 that combines geocoded H-2A
-certifications, AEWRs, local wage measures, agricultural employment, and
-county characteristics.  Our difference-in-differences design compares
-counties facing different lagged AEWR premiums relative to the 25th percentile
-of the wage distribution in their commuting zone before and after 2011.  A
-larger premium is associated with lower H-2A use after 2011: the controlled
-estimate is -0.72 percentage points of 2011 farm employment per additional
-2012 dollar of the lagged premium.  Event-study estimates are near zero before
-2011 and become increasingly negative after 2014.  We also report exploratory
-evidence on agricultural prices and labor expenditure shares, which should not
-be interpreted as a complete account of downstream adjustment.
+The H-2A temporary agricultural guest-worker program requires employers to pay
+at least the statutory Adverse Effect Wage Rate (AEWR), which binds on roughly
+85--97 percent of certified hours. Historically, the AEWR was set across only
+17 Farm Labor Survey (FLS) regions, imposing a severe small-cluster
+power ceiling on panel designs. We exploit the October 2, 2025 Interim Final
+Rule, which abruptly replaced regional FLS schedules with statewide OEWS
+skill-tier schedules, generating statutory wage cuts averaging $-\$3.74$/hr
+nationally alongside sharp within-former-region variation across 46 states. Using complete FY2026 Q4 disclosures
+and exact delete-one-state jackknife inference, we establish three main
+findings. First, offered wages respond immediately and strongly: continuing
+filers pass through $\$0.623$ per statutory dollar (95\% CI $[0.422, 0.824]$),
+with $\$0.442$ ($[0.205, 0.679]$) within multi-state filers and flat
+FY2024--FY2025 placebos, alongside suggestive but specification-sensitive
+declines in interim QCEW crop weekly earnings. Second, one-season certified
+labor demand is tightly bounded as inelastic: size-weighted PPML certified
+hours yield a statutory elasticity of $-0.078$ (95\% CI $[-0.598, +0.443]$,
+ruling out unit-elastic demand), with direct-farm growers bounded even more
+tightly at $-0.066$ ($[-0.440, +0.308]$). Across five mechanism panels with
+Holm multiplicity control, this rigidity is not driven by administrative
+denials---requested hours and approval rates are flat---nor offset by contract
+duration or weekly-hours expansion. Third, applying the envelope theorem across
+all 3,108 contiguous U.S.\ counties shows that short-run AEWR changes operate
+overwhelmingly as direct wage transfers: a $+\$1$/hr increase reduces
+certification-space farm quasi-rent by $\$209.7$M to $\$205.0$M per year over
+2011--2024 ($\$379.3$M to $\$372.6$M in 2024 nominal dollars, with under
+2.3\% second-order behavioral cushioning), while the October 2, 2025 cut raises
+static 2024 quasi-rent by $\$1.42$B to $\$1.53$B, scaled linearly by the
+realized paid-hours ratio $\rho$. A companion power audit of 2011--2025 county
+panels explains why pre-reform designs cannot pin down moderate elasticities.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
-The H-2A program is the principal uncapped temporary foreign-worker program
-for U.S. agriculture.  Its use has expanded sharply over the past two decades,
-as illustrated in Figure \ref{fig:ts_h2a_workers_certified}.  At the same
-time, the program imposes a distinctive wage rule: employers must pay the
-highest applicable wage floor, which commonly is the AEWR.  Because employers
-also incur recruitment, housing, transportation, and administrative costs,
-the AEWR can affect both the decision to participate in H-2A and the scale of
-certified employment.
 
-This paper asks whether a higher AEWR relative to local outside wages reduces
-H-2A program use.  The empirical analysis uses county-year observations.  The
-outcome is certified H-2A workers with a contract start date in the calendar
-year, normalized by county farm employment in 2011.  The key regressor is the
-one-year-lagged, real AEWR minus the 25th percentile local wage in the
-county's commuting zone.  This definition measures the wage premium relevant
-to a farm's decision more directly than a comparison with the statutory
-minimum wage.
+The H-2A temporary agricultural worker program is the only uncapped guest-worker
+channel in U.S.\ immigration policy. Certified H-2A employment expanded nearly
+fivefold over the past fifteen years, rising from 86.0 million certified hours
+in 2011 to 392.5 million hours in 2024 (Figure~\ref{fig:ts_h2a_workers_certified}
+traces the 2008--2022 surge in certified positions). Unlike conventional
+statutory minimum wages that bind only in the lower tail of a local labor
+market, the H-2A Adverse Effect Wage Rate (AEWR) is an occupation-wide wage
+floor that binds across nearly the entire program: between 85 and 97 percent of
+comparable certified hours are offered within five cents of the applicable
+statutory rate. Understanding how agricultural employers adjust wages, labor
+demand, and margins when the AEWR changes is central to evaluating farm-labor
+policy, domestic spillover debates, and the incidence of guest-worker
+regulation.
 
-Our baseline specification is a continuous-treatment difference-in-differences
-model with county and year fixed effects.  It compares changes after 2011 in
-counties with relatively high and low AEWR wage premiums.  In the controlled
-model, a one-dollar larger lagged premium is associated with a 0.72
-percentage-point lower H-2A certification rate (Table
-\ref{tab:main-results}).  The estimate is similar when commuting zones that
-span AEWR-region boundaries are excluded.  The event study provides no clear
-evidence of differential pre-trends and shows increasingly negative estimates
-in later post-2011 years.
+Estimating the causal effect of the AEWR has proved unusually difficult because
+of its institutional geography. From 1987 through September 2025 (outside a
+brief 2009--2010 interruption), the U.S.\ Department of Labor (DOL) derived
+field-and-livestock AEWRs from the USDA Farm Labor Survey (FLS) across just 17
+regional groupings, most of which pool multiple contiguous states under a
+single uniform wage floor. Across 2011--2025, universal binding within regions
+combined with 17 regional policy nodes creates a structural power wall:
+county-panel designs that absorb common regional shocks either lose virtually
+all identifying variation or lack enough independent policy clusters to
+distinguish zero from economically large elasticities.
 
-The results describe the reduced-form relationship generated by this design.
-They should not be read as a simple elasticity of H-2A demand, nor as evidence
-that every component of a change in the AEWR is exogenous.
+On October 2, 2025, DOL issued an Interim Final Rule (IFR) that abruptly
+replaced the 17 regional FLS schedules with statewide Occupational Employment
+and Wage Statistics (OEWS) skill-tier schedules \citep{dol_2025_ifr}. Overnight,
+states that had shared identical AEWRs for decades received starkly different
+statutory wage cuts, averaging $-\$3.74$/hr across the contiguous United States
+(hours-weighted relative to the 2025 FLS rate) and generating substantial
+within-former-region variation across 46 states in the 15 multi-state former FLS regions. Using the complete FY2026 Q4
+Office of Foreign Labor Certification (OFLC) disclosure alongside cached
+Quarterly Census of Employment and Wages (QCEW) and Cropland Data Layer (CDL)
+records, this paper leverages that quasi-experimental shock to measure
+first-stage wage pass-through, bound the short-run quantity response, test five
+classes of economic mechanisms, and compute tight partial-equilibrium producer
+incidence bounds under the envelope theorem.
 
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.7\textwidth]{../outputs/figures/fig_line_ts_h2a_workers_certified.png}
-	\caption{Annual H-2A workers certified.}
-	\label{fig:ts_h2a_workers_certified}
+Our analysis yields three connected findings. First, statutory AEWR cuts pass
+through rapidly and substantially into H-2A wage offers. Comparing continuing
+filer--state--occupation cells between FY2025 and FY2026 within former AEWR
+regions, each statutory dollar cut reduces nominal hourly wage offers by
+$\$0.623$ (95\% state-jackknife CI $[0.422, 0.824]$ across 13,463 cells in 46
+states). The pass-through holds under fixed baseline occupation composition
+($\$0.620$), across alternative filer linkage tiers ($\$0.621$--$\$0.624$),
+within multi-state filers operating across state lines ($\$0.442$, 95\% CI
+$[0.205, 0.679]$), and on a county-level first stage ($\$0.671$, SE $0.099$),
+while FY2023--FY2024 ($\$0.026$) and FY2024--FY2025 ($\$0.079$) placebos sit
+near zero. In interim QCEW private crop-production (NAICS 111) weekly earnings
+covering 2025Q4--2026Q1, higher-intensity counties in larger-cut states show a
+statistically significant relative earnings decline (implied $-1.97\%$, 95\% CI
+$[-3.60\%, -0.30\%]$ at intensity $0.30$ and a $-\$4$ cut), though this
+secondary earnings finding is sensitive to employment weighting, exposure
+definition, and omitting the baseline intensity control, and cannot separate
+wage rates from hours or workforce composition.
+
+Second, despite large immediate wage reductions, one-season H-2A labor
+utilization is sharply bounded as inelastic. Across all 2,921 positive-farm-employment
+counties in the 15 multi-state former regions, fixed-effects Poisson
+pseudo-maximum likelihood (FE-PPML) estimates of complete FY2026 Q4 certified
+hours imply a statutory AEWR elasticity of $-0.078$ (exact delete-one-state
+jackknife SE $0.259$, 95\% CI $[-0.598, +0.443]$, MDE $0.72$). Completing Q4
+tightens precision by 36 percent relative to matched Q1--Q3 disclosures
+($-0.198$, 95\% CI $[-1.004, +0.609]$) and rules out unit-elastic ($-1.0$)
+certified-hours responses at 95 percent confidence. Certified positions
+($+0.064$, 95\% CI $[-0.312, +0.440]$), direct log-rate specifications
+($-0.062$, 95\% CI $[-0.452, +0.328]$), August 3 second-schedule and August 26
+litigation cutoffs, minimum-wage controls across all 46 states, and
+FY2024--FY2025 placebos ($-0.033$, 95\% CI $[-0.293, +0.228]$) all reinforce
+this inelastic lower bound.
+
+To understand why large wage cuts did not spark a first-season hiring surge, we
+decompose the Track 1 quantity response across five pre-specified mechanism
+families---application pipelines, incumbent capacity versus employer entry,
+H-2ALC labor contractors versus fixed-site direct growers, planning lead-time
+and predetermined crop capital, and intensive contract margins---applying Holm
+step-down multiplicity control across 12 primary hypotheses alongside matched
+FY2024--FY2025 placebos. No primary mechanism test survives multiplicity
+adjustment ($\min p_{\text{Holm}} = 0.939$). Two structural facts nevertheless
+sharpen interpretation. First, inelasticity is not an administrative approval
+bottleneck: all-filed requested hours ($+0.058$, 95\% CI $[-0.607, +0.724]$),
+requested positions ($+0.162$, 95\% CI $[-0.328, +0.652]$), and certification
+approval rates ($-0.0062$ per dollar, 95\% CI $[-0.0228, +0.0104]$) do not
+respond to the cut. Second, fixed-site direct growers---who account for 74.7\%
+of Track 1 hours (65.9\% nationally)---deliver the tightest elasticity bounds
+in the program: $-0.066$ ($[-0.440, +0.308]$, MDE $0.52$) for hours and
+$-0.021$ ($[-0.293, +0.251]$, MDE $0.38$) for positions, while intensive
+contract duration and weekly hours are tightly zero ($-0.043$ and $+0.016$,
+MDE $0.08$ for weekly hours). Late-season spring/summer starts (April--September)
+display a larger negative point estimate ($-0.676$, unadjusted $p<0.10$,
+$p_{\text{Holm}}=0.939$), but the matched FY2024--FY2025 placebo is also
+negative ($-0.286$) and the paired late-minus-early contrast is imprecise.
+
+Third, this empirical lower bound sharply disciplines producer welfare
+incidence. Under the envelope theorem, the marginal impact of a wage-floor
+change on farm quasi-rent equals minus exposed hours, so behavioral responses
+enter only at second order. Evaluating exact partial-equilibrium envelope
+integrals across all 3,108 contiguous U.S.\ counties over an elasticity bounds
+grid anchored at the FY2026 Q4 Track 1 lower bound ($\eta = -0.60$) demonstrates
+that the first-order wage transfer captures more than 97.7 percent of total
+producer incidence for a $+\$1$/hr AEWR shift. For an anticipated $+\$1$/hr
+real increase over 2011--2024, annual certification-space farm quasi-rent falls
+by $\$209.7$M at $\eta=0$ versus $\$205.0$M at $\eta=-0.60$ (a $+2.23\%$
+behavioral cushion, representing $0.45\%$ of BEA U.S.\ farm hired-labor
+expense); on 2024 nominal hours, the corresponding range is $-\$379.3$M to
+$-\$372.6$M ($+1.76\%$ cushion, or $-\$236.2$M to $-\$233.6$M under the
+observed $0.623$ offered-wage pass-through). Evaluated statically on 2024
+hours, the actual October 2, 2025 statutory cut generates a $+\$1.42$B
+first-order transfer to $+\$1.53$B upper envelope gain ($+8.10\%$ second-order
+amplification). Every monetary figure is reported transparently in
+certification space, so paid-hours incidence equals $\rho$ times the reported
+value for any constant realization share $\rho$.
+
+Finally, Section~\ref{sec:pre2025_power} and the Appendix synthesize why
+pre-2025 county-panel designs cannot independently pin down moderate AEWR
+elasticities. Using a full-panel FE-PPML bite specification over 2011--2025
+alongside audits of cross-border county pairs, dissimilarity IV, and correlated
+random-effects models, we show how universal within-region AEWR binding,
+effective cluster concentration ($G_{\text{eff}} = 13.4$ regions), and sample
+or exclusion restrictions limit pre-reform inference---explaining why the
+46-state 2025 reform is uniquely informative for short-run H-2A responsiveness
+and producer incidence.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.78\textwidth]{../outputs/figures/fig_line_ts_h2a_workers_certified.png}
+  \caption{Annual H-2A certified positions in the contiguous United States, 2008--2022.}
+  \label{fig:ts_h2a_workers_certified}
 \end{figure}
 
-\section{H-2A agricultural guest worker program}
+\FloatBarrier
+\section{Institutional Background and Conceptual Framework}
+\label{sec:background}
 
-\subsection{Background of the program}
+\subsection{The H-2A Certification Process and Non-Wage Costs}
 
-The Bracero program, which was the forerunner to the H-2A program, was created in 1942 to fill labor shortages due to the war.
-The program allowed migrant workers, mostly Mexicans, to temporarily work in the U.S. agricultural industry.
-The program was terminated in 1964, and was succeeded by the H-2A guest worker program which was created as part of the Immigration Reform and Control Act of 1986.
-The act also created the H-1B and H-2B guest worker programs.
-The H-2A program is unique among major U.S. temporary worker programs in that it does not have a numerical cap; its use has consequently grown substantially since the mid-2000s.
-The H-2A program requires employers to complete an expensive multi-step certification process, involving multiple state and federal agencies.
-The positions filled via the H-2A program has to be full-time, in the agricultural sector, and seasonal in nature.
-Note that this traditionally excludes many jobs involving animal husbandry due to their year-round nature.
+Created under the Immigration Reform and Control Act of 1986 as the statutory
+successor to the wartime Bracero program, H-2A allows U.S.\ agricultural
+employers to hire foreign nationals for temporary or seasonal agricultural
+work with no numerical cap \citep{dol_h2a_info,usda_h2a_checklist}. Hiring
+through H-2A requires a multi-agency certification process that begins roughly
+60 to 90 days before the date of need: employers file a job order with their
+State Workforce Agency (SWA) and undergo pre-occupancy housing inspection,
+apply to DOL's Office of Foreign Labor Certification (OFLC), conduct mandatory
+domestic recruitment (interviewing and hiring any qualified U.S.\ applicant),
+obtain final labor certification, petition U.S.\ Citizenship and Immigration
+Services (USCIS), and coordinate consular visa issuance before workers travel
+to the worksite \citep{usda_h2a_checklist}.
 
-\subsection{H-2A hiring process}
+Beyond the hourly wage, employers face substantial non-wage fixed and
+per-worker obligations: inbound and outbound international transportation,
+visa and filing fees, daily worksite and weekly grocery transit, and
+SWA-inspected free housing for all H-2A workers (as well as corresponding
+domestic workers unable to return to their residences daily)
+\citep{usda_h2a_info}. In addition, the ``corresponding employment'' rule
+requires H-2A employers to pay domestic workers performing substantially the
+same duties at least the same offered hourly wage floor and equivalent housing
+and transportation terms. These up-front housing capacity limits, pre-season
+filing lead times, and multi-year crop commitments are central to interpreting
+why one-season labor demand may respond far less elastically than offered
+wages.
 
-The U.S. Department of Agriculture (USDA) and Department of Labor (DOL) provide information to prospective employers who wish to use the program \parencite{usda_h2a_checklist,dol_h2a_info}.  We summarize the standard (non-expedited) application process below.
-This process begins about 3 months before the actual start of work.
+\subsection{AEWR Rulemaking and the October 2, 2025 Reform}
+
+Employers must offer H-2A workers the highest of four wage floors: the
+applicable AEWR, the prevailing wage, an agreed collective-bargaining rate, or
+the federal or state statutory minimum wage \citep{dol_aewr}. In practice, the
+AEWR almost always binds across field and livestock jobs. For nearly four
+decades (1987--2025), DOL derived non-range field-and-livestock AEWRs from the
+prior year's USDA Farm Labor Survey combined field-and-livestock average hourly
+wage across 17 regional groupings (15 multi-state regions plus California and
+Florida as single-state regions; Alaska, Hawaii, and D.C.\ use separate
+schedules). This FLS methodology covered the six major agricultural Standard
+Occupational Classification (SOC) codes---45-2041 (graders/sorters), 45-2091
+(equipment operators), 45-2092 (crop/nursery/greenhouse farmworkers), 45-2093
+(livestock farmworkers), 53-7064 (hand packers), and 45-2099 (all other
+agricultural workers)---which account for the vast majority of H-2A hours.
+
+Three regulatory transitions punctuate this regime:
 \begin{enumerate}
-	\item The farmer first submits a job order to their state's State Workforce Agency (SWA), which notifies the SWA of the nature of the future H-2A application and requests an inspection of the housing provided by the employer.
-	      The SWA, once it accepts the job order, begins domestic recruitment for the job order.
-	\item The farmer simultaneously applies for labor certification with the Department of Labor's Office of Foreign Labor Certification (OFLC)
-	\item Once the labor certification application is accepted by the OFLC, the farmer has to begin domestic recruitment for the H-2A positions.
-	      The OFLC provides instructions to the farmer for this process.
-	      Domestic recruitment may involve:
-	      \begin{itemize}
-		      \item Posting newspaper ads for the positions in a local newspaper that serves the area around the worksite
-		      \item Contacting previously hired domestic workers who were not previously fired for cause or abandoned the job, offering them a position
-		      \item Advertising the position in a maximum of three other states in the region or where they expect to hire (domestic) workers
-	      \end{itemize}
-	      The farmer has to interview all domestic applicants and accept every eligible applicant.
-	      They also have to maintain a report that includes details of every applicant and contacted former worker, and an explanation of why any given applicant was not hired.
-	\item Once domestic recruitment has been completed and housing has been inspected by the SWA, the farmer can then apply for final determination of their labor certification with the OFLC
-	\item After the farmer obtains a labor certification, they can then submit a petition to the United States Citizenship and Immigration Services (USCIS) informing them of the guest workers the farmer intends to hire.
-	\item Once approved by USCIS, these guest workers will travel to their U.S. consulates to apply for a visa.
-	\item Once the workers obtain a visa, they can then travel to the U.S. to reach their worksite.
+  \item \emph{2009--2010 OES interruption:} A rule effective January 17, 2009
+    briefly replaced FLS regional rates with area-by-occupation-by-skill OES
+    wages; following litigation \citep{ncga_v_solis_2009}, DOL restored FLS
+    rates effective March 15, 2010 \citep{dol_2010_fr}. Because canonical
+    job-level 2009 statutory determinations are not published in uniform state
+    schedules (Table 1 of 75 FR 6884 reports application means rather than
+    statutory schedules), our repository leaves canonical 2009 AEWR missing.
+  \item \emph{2023 occupation-specific disaggregation:} Effective March 30,
+    2023, DOL retained FLS rates for the six combined field-and-livestock
+    occupations while moving non-core occupations (such as trucking,
+    construction, and supervisors) to state-by-occupation OEWS rates
+    \citep{dol_2023_fr}.
+  \item \emph{October 2, 2025 statewide OEWS skill-tier IFR:} Following USDA's
+    suspension of the Farm Labor Survey, DOL issued an Interim Final Rule
+    effective October 2, 2025 replacing regional FLS field-and-livestock AEWRs
+    with statewide OEWS-based skill-tier schedules (Skill Level I and Skill
+    Level II) alongside a separate H-2A adverse-effect housing adjustment
+    \citep{dol_2025_ifr}. Crucially, states within the same former FLS region
+    had faced identical statutory AEWRs through FY2025 but received sharply
+    different statewide rates in FY2026: across the 48 contiguous states, the
+    October 2, 2025 U.S.-worker Skill-I rate cut the FY2025 FLS rate by an
+    hours-weighted average of $-\$3.74$/hr (unweighted mean $-\$3.96$/hr, SD
+    $\$1.22$/hr; across the 46 states in the 15 multi-state former regions, the
+    unweighted mean cut is $-\$3.98$/hr, SD $\$1.24$/hr, and the 2024
+    hours-weighted cut is $-\$3.77$/hr). On August 3, 2026,
+    DOL published a second annual statewide OEWS schedule, and on August 26,
+    2026 federal litigation (\emph{UFW v.\ DOL}) vacated the IFR with backpay
+    questions beginning September 2, 2026. Our empirical design explicitly
+    audits all receipt and decision cutoffs around August 3 and August 26.
 \end{enumerate}
 
-\subsection{The Adverse Effect Wage Rate}
+\subsection{Conceptual Framework and the Envelope Theorem}
 
-The Adverse Effect Wage Rate (AEWR) is set by the Department of Labor, and serves as a wage floor for workers hired via the H-2A program.
-The AEWR is intended to prevent the hiring of H-2A workers from depressing the wages of domestic farmworkers.
-Farmers have to include information on the wages they intend to pay the workers they hire via the H-2A program, and this wage rate has to equal or exceed the AEWR, the agreed-upon collective bargaining wage, or the federal or state statutory minimum wage, whichever is highest.
-In practice, the AEWR is typically the relevant wage floor due to the way it is calculated.
-The DOL calculates the AEWR for different regions in the U.S. based primarily on wage data from the USDA's Farm Labor Survey (FLS), and, for occupations or regions not adequately covered by the FLS, the Bureau of Labor Statistics' Occupational Employment and Wage Statistics (OEWS).
-These rates are updated and published annually in the Federal Register and on the Department of Labor's website, near the beginning of the year.
-The AEWR is calculated in three different ways depending on the occupation; we summarize the DOL's methodology \parencite{dol_aewr}.
+Consider a price-taking farm operation choosing H-2A certified hours $H^c$ and
+other inputs (domestic labor, land, machinery, and pre-installed housing
+capacity $\bar{K}$) facing an anticipated statutory AEWR $a$. Let $X(a) \equiv
+x \cdot H^c(a)$ denote AEWR-exposed certified hours, where $x \in (0, 1]$ is
+the fraction of certified hours for which the AEWR is the active wage margin,
+and let $\pi \in (0, 1]$ capture the pass-through from statutory AEWR shifts
+$\Delta a$ to effective hourly offered wages ($\Delta_{\text{eff}} = \pi \Delta
+a$). Partial pass-through ($\pi < 1$) arises naturally when some jobs sit above
+the floor due to competing state minimum wages, prevailing wages, Skill-II
+classifications, multi-occupation bundles, or employer retention premia.
 
-For non-range workers that work in field or livestock occupations, the AEWR is set as an hourly rate, and is calculated from the average wage rates reported for all such such occupations, combined, in the FLS.
-These occupations are listed by their SOC codes,
+In the short run (a single agricultural season), quasi-fixed constraints---such
+as SWA-inspected housing capacity $\bar{K}$, pre-season recruitment and
+crop-planting commitments, and perennial orchard acreage---limit how far
+employers can expand H-2A hours even when the statutory wage floor falls
+sharply. Letting $\Pi(a) = \max_{H^c, z} \{p F(\rho H^c, z; \bar{K}) - \rho
+w(a) H^c - c(z)\}$ denote short-run partial-equilibrium farm quasi-rent
+(holding output prices $p$ and non-H-2A domestic wages fixed), where $\rho \in
+(0, 1]$ is a constant ratio mapping certified hours to realized paid hours, the
+envelope theorem yields:
+\begin{equation}
+  \frac{d \Pi(a)}{da} = -\rho \, \pi \, X(a).
+  \label{eq:envelope_marginal}
+\end{equation}
+Integrating \eqref{eq:envelope_marginal} across a finite anticipated AEWR
+change from $a_0$ to $a_1 = a_0 + \Delta_{\text{eff}}$ gives exact
+certification-space producer incidence ($\rho = 1$):
+\begin{equation}
+  \Delta \Pi^{PE} = -\int_{a_0}^{a_0 + \Delta_{\text{eff}}} X(s)\,ds
+  = \underbrace{-X_0 \Delta_{\text{eff}}}_{\text{First-order transfer }\Delta\Pi^{PE}(0)}
+  + \underbrace{\left[\Delta\Pi^{PE} - \Delta\Pi^{PE}(0)\right]}_{\text{Second-order behavioral cushion } \ge 0}.
+  \label{eq:envelope_integral}
+\end{equation}
+Under a local constant-elasticity certified-hours curve
+$H^c(a) = H^c_0 (a/a_0)^\eta$ with $\eta = d\log H^c / d\log a \le 0$,
+\eqref{eq:envelope_integral} evaluates analytically to
+\begin{equation}
+  \Delta \Pi^{PE}(\eta) =
+  \begin{cases}
+    -X_0 a_0 \dfrac{(1 + \Delta_{\text{eff}}/a_0)^{\eta + 1} - 1}{\eta + 1}, & \eta \neq -1, \\[8pt]
+    -X_0 a_0 \ln\!\left(1 + \dfrac{\Delta_{\text{eff}}}{a_0}\right), & \eta = -1.
+  \end{cases}
+  \label{eq:ce_formula}
+\end{equation}
+Convexity of the profit function guarantees that the second-order behavioral
+term is nonnegative for both wage increases (mitigating producer losses as
+farms cut back hours) and wage cuts (amplifying producer gains as farms expand
+hours), and is proportional to $|\eta| \cdot |\Delta_{\text{eff}}/a_0| / 2$.
+Consequently, once an empirical design establishes a credible lower bound on
+$\eta$ (ruling out strongly elastic responses), producer incidence is tightly
+pinned down even when $\eta$ itself is not estimated to two decimal places.
+
+\FloatBarrier
+\section{Data and Empirical Strategy}
+\label{sec:data}
+
+\subsection{Data Sources and Panel Construction}
+
+Our primary microdata come from DOL OFLC H-2A public disclosure workbooks for
+fiscal years 2008 through complete FY2026 Q4 (decisions through September 30,
+2026). Worksites are geocoded to 2010-vintage 5-digit string county FIPS codes
+using a tiered ZIP, Census place, fuzzy-match, and cached geocoding pipeline,
+with multi-county applications allocated equally across worksite counties and
+certified contract hours conserving total mass across calendar and fiscal
+years. We pair two distinct entity linkages:
 \begin{itemize}
-	\item 45-2041 - Graders and Sorters, Agricultural Products.
-	\item 45-2091 - Agricultural Equipment Operators.
-	\item 45-2092 - Farmworkers and Laborers, Crop, Nursery, and Greenhouse.
-	\item 45-2093 - Farmworkers, Farm, Ranch, and Aquacultural Animals.
-	\item 53-7064 - Packers and Packagers, Hand.
-	\item 45-2099 - Agricultural Workers, All Other.
+  \item \emph{Filer-level linkage (R7, with R5, R8, and FEIN
+    sensitivities):} Used in the offered-wage pass-through regressions to track
+    continuing filing entities across FY2023--FY2026 within state-occupation
+    cells. Filing entities include both direct farms and H-2A labor contractors
+    (H-2ALCs) and are explicitly distinct from physical worksite businesses.
+  \item \emph{Worksite-business linkage (\texttt{employer\_id\_balanced}, v2):}
+    Constructed over FY2008--FY2026 Q4 disclosures (manual review of the FY2026
+    Q4 extension pending) to identify distinct worksite businesses for the
+    mechanism decomposition between incumbent and new-entrant employers while
+    avoiding the FY2020 Addendum B disclosure break across FY2021--FY2026.
 \end{itemize}
-, and they comprise the overwhelming majority of H-2A applications.
-The AEWR that applies to these occupations is the relevant wage rate for our research.
-Henceforth, discussion of the AEWR will refer to this rate unless otherwise specified.
-If any given region or state does not have coverage by the FLS for these occupations, the average wage rates from the state or national OEWS for these occupations, combined, is used instead.
-In practice, this only applies to the District of Columbia, Alaska, and U.S. Territories.
-The AEWR is set at a regional level, so its change relative to local wages can
-vary substantially within a region.  Figure \ref{fig:map-aewr-premium-change}
-maps the change in the commuting-zone wage-premium measure used below.
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.8\textwidth]{../outputs/figures/map_aewr_cz_p25_change_from_trend_2022_2008.png}
-	\caption{Change in the AEWR premium relative to the commuting-zone 25th-percentile wage, 2008--2022.}
-	\label{fig:map-aewr-premium-change}
+
+Statutory wage schedules combine CRS historical FLS rates, cached Federal
+Register notices, and the October 2, 2025 / August 3, 2026 OEWS skill-tier
+lookup tables, joined to a unified 51-jurisdiction FRED state and applicable
+agricultural minimum-wage panel (\texttt{state\_real\_minwages.parquet}) covering all
+46 multi-state-region states through 2026 without missing federal-floor states.
+For secondary earnings, crop-capital, and welfare scale checks, we incorporate
+cached BLS QCEW quarterly single-file archives through 2026Q1 (private NAICS
+111 crop production, NAICS 112 animal production, and all-private wages),
+USDA CroplandCROS Cropland Data Layer (CDL) county crop-type shares over
+2022--2024 (covering 100\% of our 2,921 Track 1 counties), BEA farm employment
+and CAINC45 farm hired-labor expenses and crop cash receipts (2011--2022,
+deflated by the WPU01 farm-products PPI, $2012 = 100$), and ACS commuting-zone
+wage quantiles. All shared county panels cover the balanced 3,108 contiguous
+U.S.\ counties (excluding Alaska, Hawaii, and D.C.).
+
+\subsection{Identification, Inference, and Transparency}
+
+Our 2025 policy-shift analyses exploit within-former-FLS-region dispersion in
+the October 2, 2025 statewide statutory AEWR across the 46 states belonging to
+the 15 multi-state former AEWR regions (California and Florida are absorbed as
+single-state former regions).
+
+\paragraph{Offered-wage pass-through.}
+For continuing R7 filer--state--occupation cell $j$ in state $s$ and former
+FLS region $r(s)$, we estimate the two-period first-difference specification
+\begin{equation}
+  \Delta w_{js} = \pi \, \text{Dose}_s + \lambda_{r(s)} + u_{js},
+  \label{eq:wage_reg}
+\end{equation}
+where $\Delta w_{js} = \bar{w}_{js,\text{FY26}} - \bar{w}_{js,\text{FY25}}$ is
+the nominal hourly wage offer change over full fiscal-year decisions (October 1
+through September 30), $\text{Dose}_s = \text{AEWR}^{\text{US, Skill I}}_{s,\text{Oct 2025}} - \text{AEWR}^{\text{FLS}}_{r(s),\text{Apr 2025}}$ is the
+statutory dollar cut (negative where rates fell), and $\lambda_{r(s)}$ absorbs
+former-region fixed effects. Primary regressions weight by FY2025 baseline
+certified hours, paired with equal-weighted, fixed-occupation-composition, and
+within-multi-state-filer (adding filer fixed effects) specifications.
+
+\paragraph{County H-2A quantity response and mechanisms.}
+Across all 2,921 counties with positive fixed-2011 BEA farm employment in the 15
+multi-state former regions, we stack FY2025 and FY2026 full-fiscal-year totals
+and estimate size-weighted fixed-effects Poisson pseudo-maximum likelihood
+(FE-PPML; \citealp{silva_tenreyro_2006}):
+\begin{equation}
+  \mathbb{E}[Y_{ct} \mid p_{st}, \alpha_c, \gamma_{r(c)t}]
+  = \exp\!\left(\beta \, p_{st} + \alpha_c + \gamma_{r(c)t}\right),
+  \label{eq:qty_ppml}
+\end{equation}
+where $Y_{ct}$ is county certified hours (or positions, or a mechanism subgroup
+count), $p_{st}$ is the statutory rate (the regional FLS rate in FY2025 and the
+October 2, 2025 statewide U.S.\ Skill-I rate in FY2026), $\alpha_c$ absorbs
+county fixed effects, and $\gamma_{r(c)t}$ absorbs former-region-by-fiscal-year
+fixed effects. Because $\gamma_{r(c)t}$ absorbs the national and regional level
+shifts, $\beta$ is identified strictly from within-former-region state rate
+dispersion. Scaling by the estimation-sample mean statutory rate $\bar{p}$
+yields the statutory elasticity $\hat{\eta} = \hat{\beta}\bar{p}$ (verified
+against direct $\ln(p_{st})$ PPML). We estimate the exact same model on
+FY2024--FY2025 as a pre-policy placebo for every headline and mechanism outcome.
+
+\paragraph{Inference, multiplicity, and post-inspection disclosure.}
+Because policy assignment varies at the state level across 46 states (47 in
+QCEW interim earnings), primary inference in every specification uses the exact
+delete-one-state cluster jackknife (CV3J) with $t(G-1)$ critical values
+\citep{mackinnon_nielsen_webb_2023}, alongside conventional state-clustered CRV1
+standard errors. Paired subgroup contrasts (such as entrant minus incumbent,
+contractor minus direct grower, late minus early starts, and implied intensive
+elasticities $\hat{\theta}_H - \hat{\theta}_N$) are computed from paired
+46-state jackknife deletion draws. Across the 12 declared primary mechanism
+hypotheses, we report Holm step-down multiplicity-adjusted $p$-values
+\citep{holm_1979}. In keeping with transparent empirical reporting, we emphasize
+that the November 2026 FY2026 Q4 baseline, Track 1 quantity module, and
+five-panel mechanism audit were implemented after earlier FY2026 wage and
+Q1--Q3 outcomes had been inspected; they are documented via dated amendments
+rather than claimed as fresh preregistrations.
+
+\FloatBarrier
+\section{Wage Pass-Through and Covered Crop Earnings}
+\label{sec:wages}
+
+\subsection{Immediate Offered-Wage Pass-Through}
+
+Table~\ref{tab:policy_2025_wages} and Figure~\ref{fig:policy_2025_wages} present
+our first-stage wage-offer results on the complete FY2026 Q4 disclosure. Across
+13,463 continuing R7 filer--state--occupation cells in 46 states, a $\$1.00$
+larger statutory cut reduces baseline-hours-weighted nominal hourly wage offers
+by $\$0.623$ (CV3J SE $\$0.100$, 95\% CI $[0.422, 0.824]$; Panel A, row 1).
+Equal cell weighting yields a nearly identical $\$0.600$ ($[0.266, 0.933]$).
+Holding each filer--state cell's occupation shares fixed at FY2025 levels
+yields $\$0.620$ ($[0.418, 0.822]$ across 12,540 continuing filer--states,
+covering 95.9\% of baseline hours), confirming that occupational mix shifts do
+not drive the wage decline.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{../outputs/figures/fig_policy_2025_wages.pdf}
+  \caption{Offered-wage pass-through under the October 2, 2025 statewide AEWR
+    rule. Panel A shows the former-region-residualized relationship between
+    state statutory cuts and continuing-filer offered-wage changes (FY2025--FY2026).
+    Panel B compares FY2025--FY2026 pass-through across linkage tiers against
+    matched FY2023--FY2024 and FY2024--FY2025 pre-policy placebos with 95\%
+    state-jackknife intervals.}
+  \label{fig:policy_2025_wages}
 \end{figure}
 
-For all other non-range occupations not already covered, e.g., logging, trucking, and supervisors, the AEWR is set at the state and occupation level.
-This AEWR in any given state-occupation is simply the mean hourly wage as reported in the OEWS report for that state and SOC code.
-If the state OEWS is not available, the national OEWS is used instead.
-In the event that a worker's tasks encompass multiple SOCs, the highest wage rate of those SOCs apply.
+\input{../outputs/tables/table_policy_2025_wages.tex}
 
-For range and animal herding occupations, the AEWR is calculated as a monthly salary, and applies nationally to all workers in this category.
-Each year's AEWR is the previous year's AEWR inflated by the Bureau of Labor Statistics' Employment Cost Index.
-The Employment Cost Index is an analogue of the the Producer Price Index or Consumer Price Index, but applied to a fixed ``basket'' of labor, and measures the hourly cost of hiring labor for US employers, inclusive of benefits.
-This inflated AEWR is then carried forward into the calculation for next year's AEWR for range and animal herding occupations.
-This category of occupations was quite recently added to the H-2A program in 2016, and for that year the monthly AEWR was simply defined as \$7.25 (the federal minimum hourly wage), multiplied by 48 hours, and then multiplied by 4.333 weeks per month.
-This number is then multiplied by 0.8 for 2016, and multiplied by 1 for 2017, and inflated using the index thereafter.
+Three additional checks in Table~\ref{tab:policy_2025_wages} sharpen the causal
+interpretation. First, restricting to multi-state filers and absorbing filer
+fixed effects (equivalent to filer-by-year fixed effects in two-period levels)
+yields a highly significant within-filer pass-through of $\$0.442$ ($[0.205,
+0.679]$ hours-weighted; $\$0.183$ equal-weighted across 2,024 cells), ruling
+out firm-specific unobserved shocks as the sole driver. Restricting to
+receipt-aligned, single-state jobs in the five common FLS SOCs raises
+pass-through to $\$0.716$ ($[0.537, 0.894]$). Second, Panel B shows complete
+stability across strict (R5: $\$0.623$), loose (R8: $\$0.621$), and
+disclosed FEIN ($\$0.624$) linkage tiers, while matched pre-policy placebos
+in FY2023--FY2024 ($\$0.026$, 95\% CI $[-0.017, 0.069]$) and FY2024--FY2025
+($\$0.079$, 95\% CI $[-0.123, 0.281]$) are small and statistically
+indistinguishable from zero. Third, Panel C finds no evidence of differential
+continuation selection into the FY2026 hourly-offer sample ($-0.002$, SE
+$0.004$) or any certified FY2026 positions ($-0.002$, SE $0.004$). Baseline
+heterogeneity across high-premium filers, H-2ALC contractors ($+0.258$,
+unadjusted $p<0.10$, Holm $p=0.159$), and large filers is statistically
+insignificant after Holm multiplicity adjustment.
 
-\subsection{Additional costs of using the program}
+Two institutional caveats remain essential. First, R7 tracks filing entities
+rather than physical farms, and exact job-level effective legal floors cannot
+be established with certainty because receipt dates do not observe SWA
+job-order submission dates and skill-tier, worker-category, prevailing-wage,
+and multi-state itinerary rules interact (by FY2026, 17.6\% of hours in our
+schedule-envelope audit sit in states where a competing minimum wage exceeds
+the lowest statutory reference). Second, offered wages measure certified
+contract offers rather than realized payroll earnings.
 
-Farmers who use the program must pay for the travel costs incurred by the guest workers during this application process, provide or pay for lodgings, provide transportation for their workers' commute to their worksite and for weekly grocery runs, and all associated application fees.
-This alone incurs anywhere between \$10,000 to \$14,000 + weekly travel costs per worker hired using the H-2A program \parencite{usda_h2a_info}.
+\subsection{Exploratory Interim Covered Crop Earnings (2025Q4--2026Q1)}
 
-An additional complication is that employers of H-2A workers have to pay all workers in ``corresponding employment'' at least the hourly rate they pay their H-2A workers plus an adjustment for the additional costs incurred by H-2A workers, i.e., lodgings and transport.
+To examine whether the statutory cut moved broader covered agricultural
+payroll, Table~\ref{tab:policy_2025_earnings} reports interim county QCEW
+regressions of mean year-over-year log changes in private crop-production
+(NAICS 111) average weekly earnings over 2025Q4--2026Q1 on frozen 2022--2024
+H-2A intensity $S_c$ interacted with the October 2, 2025 state statutory cut,
+controlling for $S_c$ and state fixed effects (1,457 eligible counties across
+47 states; 2026Q2 remains pending verified publication).
 
-\subsection{Changes in AEWR determination methodology}
-\begin{itemize}
-	\item Pre-1987:
-	      \begin{itemize}
-		      \item History detailed in 54 FR 28037
-		      \item Used 1950 Census of Agriculture state numbers and adjusted that upwards occasionally
-	      \end{itemize}
-	\item 1987-2008:
-	      \begin{itemize}
-		      \item 54 FR 28037 final rule: establishes new methodology: set USDA FLS average hourly wage within each region in the previous year as the AEWR
-		      \item Reasoning:
-		            \begin{itemize}
-			            \item Previous methodology led to AEWR that was above prevailing agricultural wages in some states and below in others
-		            \end{itemize}
-	      \end{itemize}
-	\item Feb 13, 2008:
-	      \begin{itemize}
-		      \item Notice of Proposed Rulemaking on February 13, 2008 (73 FR 8538)
-		      \item Proposes change from FLS to OES
-		      \item Reasoning:
-		            \begin{itemize}
-			            \item https://www.federalregister.gov/d/E8-29309/p-611
-			            \item AEWR is too high, leading to farmers not utilizing the program and choosing to hire undocumented workers instead, potentially leading to wage depression
-			            \item FLS inaccurate as it does not ask for hourly wage, and combines many occupations of different skill levels
-			            \item FLS not administed by DOL, and is discretionary so USDA can terminate it at any time (it has almost done so many times, and actually did terminate it in August 2025)
-			            \item OES is calculated at finer occupational and geographic granularity, so higher accuracy of estimated prevailing wage
-			            \item More predictable budgeting by fixing contract wage at time contract signed, rather than adjusting with time work performed as under AEWR rule
-		            \end{itemize}
-	      \end{itemize}
-	\item Jan 17, 2009
-	      \begin{itemize}
-		      \item 73 FR 77110 Final Rule implementing switch to OES goes into effect
-		      \item DOL no longer required to publish AEWR
-		      \item Table 1 in 75 FR 6884 reports average application wages, not statutory AEWR schedules. We retain those means separately and leave canonical 2009 AEWR missing pending the actual area/occupation/skill determinations.
-	      \end{itemize}
-	\item May 29, 2009
-	      \begin{itemize}
-		      \item 74 FR 25972 Final Rule implements suspension of 2008 Final Rule as previously proposed (74 FR 11408 on Mar 17 2009, 74 FR 17597 on Apr 16 2009)
-	      \end{itemize}
-	\item June 29, 2009
-	      \begin{itemize}
-		      \item Injunction granted against suspension of 2008 Final Rule
-		      \item Lawsuit brought by NCGA (NCGA v. Solis, 1:09-cv-00411)
-	      \end{itemize}
-	\item Sep 4, 2009
-	      \begin{itemize}
-		      \item 74 FR 45906 Proposed rule for reverting back to FLS methodology
-	      \end{itemize}
-	\item Mar 15, 2010:
-	      \begin{itemize}
-		      \item 75 FR 6884 Final Rule effective March 15, 2010
-		      \item Return to FLS methodology
-		      \item Reasoning:
-		            \begin{itemize}
-			            \item OES does not survey farms, rejects assumption that farming support services capture farm wages
-			            \item Rejects existence of differential skill level in agricultural labor, hence no need for OES
-			            \item AEWR being too high for many locations due to wide geographic aggregation is feature, not bug (prevents localized wage depression due to program usage)
-			            \item Higher estimation errors for OES compared to FLS
-			            \item Changes in wages that occur between contract formation and performance are unavoidable and must be incorporated into employers' planning.
-		            \end{itemize}
-	      \end{itemize}
-	\end{itemize}
+\input{../outputs/tables/table_policy_2025_earnings.tex}
 
+In the primary equal-weighted specification (Panel A, row 1), the interaction
+slope is $+0.0165$ (CV3J SE $0.0070$, 95\% CI $[0.0025, 0.0306]$): because
+$\text{cut}_s < 0$, a positive slope indicates relative earnings declined more
+in H-2A-intensive counties facing larger statutory cuts, implying a $-1.97\%$
+relative earnings difference ($[-3.60\%, -0.30\%]$) at intensity $S=0.30$ and a
+$-\$4$/hr cut. Quarter-by-quarter estimates concentrate in 2025Q4 ($+0.0311$,
+95\% CI $[0.0007, 0.0615]$ on the common sample) rather than 2026Q1
+($+0.0020$, 95\% CI $[-0.0231, 0.0271]$), while the prior-window lead
+($-0.0150$, 95\% CI $[-0.0375, 0.0075]$) and nine matched 2016--2024 Q4--Q1
+placebos (mean $+0.0001$, range $[-0.0090, +0.0129]$) remain centered at zero.
 
+We explicitly treat these interim earnings estimates as exploratory and
+specification-sensitive rather than confirmatory proof of domestic wage
+spillovers. As Panel B documents, weighting by prior-year crop employment
+reduces the point estimate to $+0.0050$ ($[-0.0142, 0.0243]$), replacing the
+U.S.\ Skill-I dose with H-2A Skill-I cash ($+0.0146$, $[-0.0013, 0.0305]$) or
+aggregating exposure to commuting zones ($+0.0169$, $[-0.0047, 0.0385]$) leaves
+the 95\% CI crossing zero, and omitting the $S_c$ control brings the slope to
+$+0.0012$. Comparison industries---animal production ($-0.0025$) and all
+private sectors ($+0.0032$)---show near-zero slopes. Moreover, QCEW weekly
+earnings combine hourly wage rates, weekly hours, and workforce composition,
+and incomplete state UI coverage classification (42 of 47 states are
+ambiguous; H-2A covered states have only $G=2$ states) prevents separating
+mechanical H-2A payroll changes from domestic-worker spillovers.
 
-\section{Data sources}
+\FloatBarrier
+\section{Short-Run Quantity Response and Mechanisms}
+\label{sec:quantity}
 
-\subsection{H-2A program usage}
+\subsection{Complete FY2026 Q4 County Quantity Bounds}
 
-The DOL's Office of Foreign Labor Certification (OFLC) posts disclosure files on H-2A program performance data on their website every year.
-The primary data source consists of H-2A disclosure files from fiscal years 2008 through 2024; the shared county-year analysis window remains 2008--2022.
-These files contain detailed information on every H-2A application received in that year, and include the employer's name and address, the number of workers requested, the nature of the job, worksite addresses, job start and end dates, negotiated hourly wage rates, weekly work hours, and sometimes the relevant crops.
-The biggest challenge here is in assigning counties to worksites correctly.
-This is because, prior to 2017, the OFLC only had worksite location data by city, ZIP code, and state.
-The OFLC only included county information beginning in 2017.
-This is not even considering errors in data entry or transcription.
-We use a multi-tiered approach for matching entries that cannot be directly matched on county names.
-In order of matching priority, from highest to lowest:
+Having established an immediate $\$0.623$--$\$0.671$ hourly wage pass-through,
+we test whether certified H-2A labor utilization expanded in response to lower
+statutory wage floors during FY2026. Table~\ref{tab:policy_2025_quantity}
+reports Track 1 estimates across all 2,921 positive-farm-employment counties in
+the 15 multi-state former AEWR regions (46 states).
+
+\input{../outputs/tables/table_policy_2025_quantity.tex}
+
+Panel A delivers our headline behavioral result. On the complete FY2026 Q4
+disclosure (full fiscal year October 1--September 30), the primary
+size-weighted FE-PPML regression of county certified hours on the statutory
+AEWR yields a slope of $-0.0051$ (CV3J SE $0.0168$), corresponding to a
+statutory elasticity of $-0.078$ (95\% state-jackknife CI $[-0.598,
++0.443]$, MDE $0.72$). Direct log-rate PPML yields an even tighter elasticity
+of $-0.062$ (95\% CI $[-0.452, +0.328]$, MDE $0.54$), and FE-PPML certified
+positions give $+0.064$ (95\% CI $[-0.312, +0.440]$, MDE $0.52$). Equal-weighted
+OLS per-2011-worker ratios are positive and noisier ($+0.261$ for hours,
+$+0.544$ for positions), while the county-level offered-wage first stage on the
+exact same sample is $+0.6714^{***}$ (CV3J SE $0.0988$, 95\% CI $[0.47, 0.87]$).
+
+Panel B confirms both the precision gain from completing Q4 and the robustness
+of this bound to legal cutoffs and pre-trends. Moving from matched Q1--Q3
+disclosures ($-0.198$, 95\% CI $[-1.004, +0.609]$, MDE $1.12$) to the complete
+fiscal year cuts the jackknife standard error by 36 percent and rules out
+unit-elastic ($-1.0$) certified-hours demand at the 95 percent confidence
+level. Symmetric cutoffs excluding cases decided or received on or after the
+August 3, 2026 second schedule ($-0.167$ and $-0.180$) or the August 26, 2026
+\emph{UFW} vacatur ($-0.178$ and $-0.113$, CI $[-0.546, +0.320]$) yield closely
+aligned inelastic bounds. Matched FY2024--FY2025 pre-policy placebos sit
+tightly at zero for both full-FY ($-0.033$, 95\% CI $[-0.293, +0.228]$) and
+Q1--Q3 ($-0.079$, 95\% CI $[-0.605, +0.447]$) windows.
+
+Panel C verifies that alternative statutory rates and state controls leave the
+bound unchanged across all 46 states: using the H-2A Skill-I cash rate
+($-0.081$, $[-0.521, +0.359]$), U.S.\ Skill-II rate ($+0.181$), pre-October 2
+receipt cohort ($-0.063$), dual-schedule cohort ($-0.044$), or controlling for
+general state minimum wages ($-0.061$) or applicable agricultural minimum wages
+($-0.084$, $[-0.603, +0.436]$) reproduces the same narrow interval. Scaling
+the statutory elasticity into an implied total-cost elasticity using a central
+non-wage cost ratio of $1.2401$ yields $-0.162$ (95\% CI $[-1.246, +0.922]$)
+under the R7 pass-through ($0.6229$) and $-0.150$ ($[-1.149, +0.848]$) under
+the paired-jackknife county first stage ($0.6714$). We interpret the headline
+$-0.078$ ($[-0.598, +0.443]$) strictly as a credible one-season lower bound on
+elastic demand rather than a tightly pinned structural point estimate.
+
+\subsection{Why Is Short-Run Demand Inelastic? Five-Panel Mechanism Audit}
+
+Why did a nearly $\$4$/hr statutory wage cut with $\$0.62$--$\$0.67$ wage
+pass-through produce no detectable first-season surge in certified hours?
+Table~\ref{tab:policy_2025_mechanisms} and
+Figure~\ref{fig:policy_2025_mechanisms} decompose the Track 1 county response
+across five economic channels---application pipelines, incumbent capacity
+versus new-employer entry, labor contractors versus direct growers, planning
+lead-time and crop capital, and intensive contract margins---evaluated on the
+identical 2,921-county, 46-state frame with exact FY2024--FY2025 placebos and
+Holm step-down multiplicity adjustment across 12 declared primary hypotheses.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{../outputs/figures/fig_policy_2025_mechanisms.pdf}
+  \caption{Mechanism heterogeneity across application pipelines, employer
+    incumbency, labor contractors versus direct growers, planning lead-time,
+    predetermined crop capital, and intensive contract margins (FY2025--FY2026
+    versus matched FY2024--FY2025 placebos, with 95\% state-jackknife CIs).}
+  \label{fig:policy_2025_mechanisms}
+\end{figure}
+
+\input{../outputs/tables/table_policy_2025_mechanisms.tex}
+
+Across all 12 primary mechanism hypotheses, no estimate is statistically
+significant after Holm multiplicity control ($\min p_{\text{Holm}} = 0.939$).
+Even so, the five panels provide concrete, falsifiable discipline on competing
+explanations of short-run inelasticity:
+
 \begin{enumerate}
-	\item Direct matching with ZIP codes:
-	      The vast majority of entries include ZIP code information.
-	      The U.S. Census Bureau provides crosswalks from ZIP codes to counties.
-	      Some ZIP codes map to multiple counties; in those cases we treat the entries as containing multiple counties.
-	      We describe below how entries with multiple counties are handled.
-	\item Direct Matching with place names:
-	      For entries with reported county names but no ZIP codes, counties can be matched directly.
-	      For entries with reported city names but no reported county (mostly entries prior to 2017), counties can be assigned using U.S. Census Bureau files that provide names for all incorporated places within every county.
-	      These places would include cities, town, boroughs, and villages.
-	      A modified procedure was implemented for New England states, where ``towns'', equivalent to cities and towns in other states, often serve as the primary unit of local government instead of counties, and thus county information is omitted.
-	      In these cases, the worksite "county" entries, which frequently contain town names, were matched with Census place names.
-	\item Fuzzy String Matching: For worksites that could not be directly matched using either place or county names, a fuzzy string matching approach was used.
-	      When county names are available, we use fuzzy string matching with county names in the Census county file and select the best match.
-	      This takes care of typographical errors in the reported county names.
-	      For entries without county names, we calculate string-similarity scores between worksite city names reported in the H-2A data and all Census place names within the same state.
-	      Algorithms and score cutoffs were selected case by case to minimize false positives while capturing legitimate name variations.
-	\item Google Places API: For the remaining unmatched locations, we use Google's Places API as a geocoding solution.
-	      These are mostly worksites that are located in unincorporated areas, or reported wity unusual place names, e.g., landmarks, crossroads, etc.
-	      This involved a two-step process.
-	      First, the ``Find Place'' endpoint was queried with the reported worksite city and state to obtain a unique location ID.
-	      Second, the ``Place Details'' endpoint was queried with the location ID to retrieve the full address components, including the county name.
+  \item \emph{Not an administrative processing or denial bottleneck (Panel A):}
+    In FY2026, Track 1 employers requested 379.5 million hours and 370.2
+    million hours were certified (an approval ratio of 97.5\%). Including
+    denied and withdrawn applications from raw disclosure records, all-filed
+    requested hours have a statutory elasticity of $+0.058$ (95\% CI $[-0.607,
+    +0.724]$, $p_{\text{Holm}}=1.000$), requested positions give $+0.162$
+    ($[-0.328, +0.652]$), the certification approval rate changes by $-0.0062$
+    per dollar ($[-0.0228, +0.0104]$), and the paired requested-minus-certified
+    hours difference is $+0.136$ ($[-0.322, +0.594]$). Employers did not file
+    a wave of additional requests that OFLC or SWAs subsequently blocked.
+  \item \emph{Direct growers anchor the tightest inelastic bound (Panel C):}
+    Splitting certified hours between H-2ALC labor contractors (25.3\% of Track 1
+    hours; 34.1\% nationally) and fixed-site direct growers (74.7\% of Track 1
+    hours; 65.9\% nationally) reveals a sharp precision contrast. Fixed-site
+    direct growers exhibit a statutory hours elasticity of $-0.066$ (CV3J
+    SE $0.186$, 95\% CI $[-0.440, +0.308]$, MDE $0.52$; placebo $+0.064$) and
+    a positions elasticity of $-0.021$ (CV3J SE $0.135$, 95\% CI $[-0.293,
+    +0.251]$, MDE $0.38$). H-2ALC contractor hours are far noisier ($-0.103$,
+    95\% CI $[-2.417, +2.210]$, with a negative placebo of $-0.602$), and the
+    contractor share of county hours is flat ($+0.0016$, SE $0.0044$). Thus,
+    direct agricultural employers bound one-season demand more tightly than
+    $-0.44$ for hours and $-0.29$ for positions.
+  \item \emph{Incumbent capacity dominates short-run volume; entry is noisy
+    (Panel B):} Using canonical worksite-business IDs (\texttt{employer\_id\_balanced}),
+    incumbent businesses active in the prior fiscal year account for 86.2\% of
+    worksite-business-linked FY2026 Track 1 hours (with linked worksite
+    businesses covering 85.0\% of all Track 1 hours) and exhibit a statutory
+    elasticity of $-0.086$ (95\%
+    CI $[-0.866, +0.694]$; placebo $+0.113$). New-entrant business hours
+    ($-0.213$, 95\% CI $[-4.275, +3.849]$) and distinct active business counts
+    ($+0.444$, 95\% CI $[-1.070, +1.958]$) are too volatile over one season to
+    detect entry effects, and the paired entrant-minus-incumbent contrast is
+    indistinguishable from zero ($-0.127$, SE $2.370$; R7 filer sensitivity
+    $-2.551$, SE $1.537$, placebo $+1.111$).
+  \item \emph{Suggestive planning lead-time gradient, zero perennial-crop
+    interaction (Panel D):} Because the IFR took effect October 2, 2025,
+    early-season winter starts (October--March; 63.1\% of FY2026 Track 1 hours)
+    were largely committed prior to the rule and yield an elasticity of
+    $+0.055$ ($[-0.992, +1.101]$). Late-season spring and summer starts
+    (April--September; 36.9\% of hours), filed months after the new schedules
+    were known, yield a larger negative point estimate of $-0.676$ (CV3J SE
+    $0.375$, 95\% CI $[-1.431, +0.080]$, unadjusted $p=0.078$,
+    $p_{\text{Holm}}=0.939$; receipt-date split $\ge$ January 1 gives $-0.525$
+    vs.\ $+0.211$). However, the matched FY2024--FY2025 late-start placebo is
+    also negative ($-0.286$, SE $0.150$) and the paired late-minus-early
+    difference ($-0.730$, SE $0.820$) is imprecise, so we treat this lead-time
+    pattern as suggestive motivation for multi-year FY2027+ follow-up rather
+    than confirmed adjustment. Splitting counties by predetermined 2022--2024
+    CDL perennial fruit-and-tree-nut share shows no significant differential
+    response (continuous within-region interaction $+0.012$, SE $0.400$,
+    $p_{\text{Holm}}=1.000$; annual-dominated counties $<p_{75}$ give $+0.020$,
+    95\% CI $[-0.499, +0.540]$). An exploratory secondary continuous
+    interaction with baseline CDL vegetable share is negative ($-0.230$, JK SE
+    $0.047$; placebo $-0.071$, SE $0.053$; upper-quartile subgroup contrast
+    $-0.567$, SE $0.531$), though explicitly outside the 12-hypothesis primary
+    family.
+  \item \emph{No intensive contract stretching (Panel E):} Employers did not
+    materially lengthen contracts or weekly schedules in states with larger
+    cuts. Paired-jackknife implied $\ln(\text{hours/position})$ equals
+    $-0.141$ (95\% CI $-0.503$ to $+0.220$, MDE $0.50$), the mean
+    contract-weeks elasticity equals $-0.043$ (95\% CI $-0.304$ to $+0.218$,
+    MDE $0.36$), and the observed non-imputed weekly-hours elasticity is
+    tightly bounded at $+0.016$ (95\% CI $-0.044$ to $+0.077$, MDE $0.08$).
 \end{enumerate}
 
-The cleaned and geocoded entries were then aggregated to the county-year level.
-For entries with multiple counties, either because the matched location spans multiple counties or because the employer reports multiple worksites for the same workers, we split man-hours and workers evenly across counties in the entry.
-To account for employment periods spanning across calendar years, the number of workers and man-hours for these applications were weighted by the proportion of the contract period falling within each calendar year.
+\FloatBarrier
+\section{Producer Incidence Bounds Under the Envelope Theorem}
+\label{sec:welfare}
 
-The final dataset includes the following aggregated variables for each county-year:
+Because the complete FY2026 Q4 Track 1 design rules out certified-hours
+elasticities more negative than $\eta = -0.60$ at 95\% confidence---and direct
+growers tighten that floor further to $-0.44$---the envelope formula
+\eqref{eq:ce_formula} pins down static partial-equilibrium producer incidence
+within a remarkably narrow band. Rather than pretending that a noisy point
+estimate is a known structural parameter, we evaluate a transparent bounds grid
+$\eta \in \{0.00, -0.30, -0.75, -1.00\}$ anchored directly to the verified
+Track 1 Q4 jackknife 95\% lower bound ($\eta = -0.5985 \approx -0.60$) across
+all 3,108 contiguous U.S.\ counties in the shared panel.
+
+\input{../outputs/tables/table_welfare_bounds.tex}
+
+Table~\ref{tab:welfare_bounds} summarizes the exact certification-space
+envelope bounds (with all 26 provenance and analytic identities verified in
+\texttt{code/welfare/}). Panel A evaluates an anticipated $+\$1.00$/hr AEWR increase
+under coverage-adjusted AEWR exposure and full statutory pass-through
+($\pi = 1.00$). Over the complete 2011--2024 window (unweighted mean of annual
+national totals; 209.67M exposed hours/year in 2012 farm-products-PPI real
+dollars), producer quasi-rent falls by $-\$209.7$M/yr at the first-order
+inelastic envelope ($\eta = 0.00$) versus $-\$205.0$M/yr at the Track 1 Q4
+lower bound ($\eta = -0.60$), a second-order behavioral cushion of just
+$+2.23\%$. Even at the rejected unit-elastic benchmark ($\eta = -1.00$),
+the loss is $-\$201.9$M/yr ($+3.69\%$ cushion), and replacing constant
+elasticity with constant semi-elasticity changes the integral by only
+$0.097\%$. Scaled against BEA CAINC45 farm accounts over complete 2011--2022
+real years, a $+\$1$/hr real AEWR increase represents $0.45\%$ of total U.S.\
+farm hired-labor expense ($0.081\%$ of U.S.\ crop cash receipts) at $\eta = 0$.
+
+Because H-2A utilization more than quadrupled between 2011 and 2024, current
+policy stakes are substantially larger than the 14-year average. On the latest
+complete year (2024; 379.25M coverage-adjusted exposed hours, hours-weighted
+nominal AEWR $\$16.65$/hr), a $+\$1.00$/hr nominal increase reduces
+certification-space producer quasi-rent by $-\$379.3$M at $\eta = 0.00$ to
+$-\$372.6$M at the Track 1 lower bound ($\eta = -0.60$, second-order
+cushion $+1.76\%$), and $-\$368.2$M even at $\eta = -1.00$ ($+2.92\%$
+cushion, where the mechanical certification-space H-2A wage-bill change
+$\Delta E^c_H$ vanishes identically).
+
+Panel B demonstrates that exposure shares and offered-wage pass-through matter
+far more for monetary incidence than curvature over $\eta \in [-0.60, 0]$.
+Varying the AEWR-exposed share parametrically across $x \in \{0.85, 0.94,
+1.00\}$ of all certified hours spans $-\$333.6$M to $-\$392.5$M at $\eta=0$
+($-\$327.8$M to $-\$385.6$M at $\eta=-0.60$). Applying the empirically
+estimated FY2026 Q4 offered-wage pass-through ($\pi = 0.623$) scales 2024
+nominal coverage-adjusted incidence to $-\$236.2$M ($\eta=0$) through
+$-\$233.6$M (Track 1 low, cushion $+1.11\%$). Finally, applying the actual
+state-level October 2, 2025 U.S.\ Skill-I statutory cuts relative to 2025 FLS
+rates (hours-weighted mean cut $-\$3.74$/hr) statically to 2024 certified hours
+in nominal dollars yields a certification-space producer gain of $+\$1,418.2$M
+at $\eta = 0.00$ to $+\$1,533.1$M at the Track 1 lower bound ($\eta =
+-0.60$, gain amplification $+8.10\%$), or $+\$1,618.0$M at $\eta = -1.00$
+(a uniform $+10\%$ real AEWR stress test on 2024 hours yields $-\$545.5$M at
+$\eta=0$ to $-\$519.9$M at $\eta=-1.00$, cushion $+4.69\%$).
+
+All monetary figures in Table~\ref{tab:welfare_bounds} are strictly in
+certification space and hold farm-gate output prices, domestic wages, and
+corresponding-employment hours fixed. If realized paid H-2A hours equal a
+constant fraction $\rho \in (0, 1]$ of certified hours, paid-hours farm
+producer incidence equals $\rho$ times every reported monetary value. Our
+calculation intentionally excludes H-2A foreign worker outside-option surplus,
+domestic corresponding-worker transfers, administrative compliance costs, and
+multi-year crop-mix or mechanization adjustments.
+
+\FloatBarrier
+\section{Why Pre-2025 County Panels Cannot Pin Down Moderate Elasticities}
+\label{sec:pre2025_power}
+
+Before the October 2, 2025 statewide shift, empirical research on the AEWR had
+to rely on historical variation across the 17 regional FLS schedules. A natural
+question is why we rely on the 2025 reform rather than a conventional
+2011--2025 county-panel difference-in-differences, local border, or
+instrumental-variables design. Across four distinct county-panel designs
+audited in this repository, historical pre-2025 data confront two structural
+barriers: \emph{universal within-region floor binding} (roughly 94\% of
+2011--2013 H-2A hours are paid at the AEWR, leaving little differential wage
+``bite'' across counties within a region) and a \emph{17-region effective
+cluster ceiling} (with California alone carrying 12.1\% of Fisher-information
+weight, reducing effective independent clusters to $G_{\text{eff}} = 13.36$).
+
+First, we audit a full-panel fixed-effects PPML ``bite'' design over all 3,108
+contiguous counties in 2011--2025 (\texttt{code/designs/bite}, detailed in
+Appendix~\ref{app:pre2025_audit}, Tables~\ref{tab:bite_main}--\ref{tab:bite_diagnostics},
+and Figure~\ref{fig:bite_event_study}). Earlier county-panel difference-in-differences
+implementations that dropped ``always-taker'' counties (discarding 62.6\% of
+U.S.\ H-2A workers), used time-varying local wage gaps, and clustered below the
+AEWR region suffer from severe sample selection, mechanical local-wage
+endogeneity, and downward-biased standard errors; we retire those specifications
+completely from the paper. Fixing every methodological flaw---retaining all
+3,108 counties via FE-PPML, freezing baseline exposures strictly over 2008/2010
+(respecting missing canonical 2009 AEWR), controlling for predetermined
+covariates interacted with year so 2023--2025 survive BEA discontinuation, and
+reporting exact delete-one-region CV3J jackknife inference---yields a primary
+differential elasticity on $E_{p25} \times \ln(\text{AEWR}_{rt})$ of $+0.003$
+(CV3J SE $0.135$, MDE $0.379$, clean 2008--2010 pre-trend $F=0.531, p=0.667$;
+Table~\ref{tab:bite_main}). Because Region $\times$ Year effects absorb the
+common regional response, this estimand captures only differential bite
+heterogeneity across counties within the same region, not an aggregate AEWR
+elasticity \citep{callaway_goodman_bacon_santanna_2024}; across a $+2$ SD
+exposure contrast, its 95\% CV3J interval spans $[-0.57, +0.58]$, ruling out
+massive differential collapses but leaving moderate elasticities unresolved.
+Adding $E_{p25} \times \text{Year}$ effects wipes out 96.6\% of residualized
+variation (MDE $2.11$). Unlocking all 48 states through unified agricultural
+minimum-wage series confirms that domestic-floor regressions on
+$\ln(\text{prevailing ag.\ min.\ wage})$ also remain underpowered ($+0.376$,
+state CV3J SE $0.374$, MDE $1.05$; Table~\ref{tab:bite_diagnostics}, Panel E).
+
+Second, three alternative pre-2025 county designs hit closely related walls:
 \begin{itemize}
-	\item Total number of H-2A workers requested
-	\item Total number of H-2A workers certified
-	\item Total requested man-hours
-	\item Total certified man-hours
-	\item Total number of applications
+  \item \emph{Cross-region border county pairs (\citealp{dube_lester_reich_2010}
+    approach, \texttt{border\_discontinuity} v7):} Across 807 agriculturally screened
+    counties spanning 25 regional border pairs (2011--2025), all 25 pairs share
+    only 16 regional nodes (signed incidence rank 15; effective pair count
+    11.58). Exact pair-CV3J ($0.39 \pm 4.98$ certifications per 1,000 farm
+    workers) and dyadic shared-endpoint standard errors ($5.25$;
+    \citealp{aronow_samii_assenova_2015}) fail declared power and size-validity
+    gates across 0 of 8 candidate-method pairs (retrospective shared-region
+    MDEs exceed 62--76 certifications per 1,000 workers), and weak pre-period
+    diagnostics cannot certify parallel trends \citep{roth_2022}.
+  \item \emph{Entropy-calibrated dissimilarity Panel IV (\texttt{panel\_iv},
+    2011--2023):} Calibrating county donor weights to published FLS moments
+    yields a strong statistical first stage ($F = 44.71$ across 80 subregions)
+    and negative 2SLS point estimates for normalized certified hours
+    ($-65.52$, SE $31.61$; Appendix Table~\ref{tab:iv_h2a_adjustment_margins})
+    and workers ($-0.089$, SE $0.049$), but relies on current-year FLS targets
+    that can induce mechanical relevance and shares regional economic shocks
+    across same-region donors without establishing exclusion.
+  \item \emph{Correlated random-effects continuous-dose panels
+    (\texttt{mundlak\_chamberlain} v4.1.0, 2012--2022):} Flexible linear-history OLS
+    models with 1,261--3,930 effective columns confront extreme leverage
+    (maximum full-model leverage $0.84$--$0.97$), high condition numbers
+    ($>10^6$), and 17-cluster inference breakdown.
 \end{itemize}
+Taken together, these four pre-2025 audits show that no amount of county-level
+refinement can manufacture independent regional policy assignments out of 17
+FLS regions. Breaking the 17-region ceiling required the 46-state within-region
+statutory shock of October 2, 2025.
 
-\subsection{Adverse Effect Wage Rates (AEWR)}
+\FloatBarrier
+\section{Conclusion}
+\label{sec:conclusion}
 
-We assemble annual FLS reference rates from CRS historical tables and explicitly selected Department of Labor state tables in cached Federal Register notices. The source retains 1990--2025 independently of a separate USDA validation workbook. Annual references do not by themselves establish each job's binding wage or exact within-year exposure.
+Exploiting the October 2, 2025 transition from regional FLS schedules to
+statewide OEWS skill-tier AEWRs provides the sharpest quasi-experimental window
+to date into how U.S.\ agricultural employers respond to statutory guest-worker
+wage floors. Across 46 states, continuing H-2A filers passed through $\$0.623$
+per statutory dollar into nominal hourly offers within the first fiscal year
+($\$0.442$ within multi-state filers), accompanied by suggestive---though
+specification-sensitive---relative declines in interim QCEW crop weekly
+earnings. Yet complete FY2026 Q4 disclosures bound the one-season certified
+hours response tightly against elastic expansion: the statutory PPML elasticity
+is $-0.078$ (95\% CI $[-0.598, +0.443]$), ruling out unit-elastic demand, with
+fixed-site direct growers bounded even more tightly at $-0.066$ ($[-0.440,
++0.308]$) and zero evidence of administrative approval bottlenecks or
+intensive-margin hours stretching.
 
-The 2009 OES regime requires area, occupation, skill and job-cohort information. Table 1 of the 2010 final rule reports application wage means rather than statutory AEWR schedules.\footnote{Department of Labor, 75 FR 6884, February 12, 2010, Table 1: \href{https://www.govinfo.gov/content/pkg/FR-2010-02-12/pdf/2010-2731.pdf}{Federal Register source}.} We retain those means only as a separately labeled source audit. Canonical 2009 AEWR is missing, and the lagged wage regressor is consequently unavailable in 2010. We retain outcome rows in the shared panel and apply the existing regression complete-case rule.
+These estimates carry a direct lesson for policy incidence. Under the envelope
+theorem, short-run AEWR adjustments act overwhelmingly as direct wage transfers
+on inframarginal certified hours: behavioral re-optimization cushions less than
+2.3\% of producer surplus losses for a $+\$1$/hr hike ($\$205.0$M--$\$209.7$M/yr
+over 2011--2024; $\$372.6$M--$\$379.3$M on 2024 nominal hours) and amplifies
+the static gain from the October 2, 2025 cut by at most 8.1\%
+($\$1.42$B--$\$1.53$B in certification space, scaled by realized paid-hours
+share $\rho$). Because FY2026 captures a single season marked by quasi-fixed
+housing, pre-committed crop acreage, and late-year litigation, our bounds
+characterize short-run incidence rather than long-run structural elasticities.
+Whether the suggestive gradient observed in late-season April--September starts
+compounds into larger multi-year adjustments as growers expand housing, alter
+crop mixes, or re-enter the program remains a central question for FY2027 and
+beyond.
 
-\subsection{Crop acreage}
+\bibliographystyle{plainnat}
+\bibliography{h2a_paper}
 
-To measure land use patterns, we draw on two USDA National Agricultural Statistics Service (NASS) sources.
-The first is the Census of Agriculture, conducted every five years (in years ending in '2' and '7').
-It provides county-level data on the acreage of hundreds of specific crops.
-The second is the Cropland Collaborative Research Outcomes System (CroplandCROS) project.
-This project classifies 30-by-30-meter parcels of land in the U.S. by use and crop type and publishes the data in its Cropland Data Layer (CDL) product.
-Each parcel of land corresponds to a single pixel in the CDL.
-We assign each pixel to a county and aggregate pixels by county-crop-year.
+\clearpage
+\appendix
+\section{Pre-2025 County-Panel Power Audit}
+\label{app:pre2025_audit}
 
-\subsection{Crop prices and yields}
-We obtain state-level crop prices and yields from agricultural surveys that the NASS conducts every year.
-While county-level prices and yields would be ideal, they are not systematically available for specialty crops.
-We also have county-level prices from USDA's Risk Management Agency actuarial data, however this obviously only ccovers specific county-crop-years for which federal crop insurance policies were purchased.
+This appendix retains the key tables and event study from our standalone
+full-panel FE-PPML bite audit (\texttt{code/designs/bite}, 2011--2025, 3,108 counties,
+17 AEWR regions) alongside the preferred Panel-IV H-2A adjustment margins
+(\texttt{code/designs/panel\_iv}, 2011--2023) discussed in
+Section~\ref{sec:pre2025_power}. Legacy difference-in-differences tables that
+excluded always-taker counties are retired from the manuscript.
 
-\subsection{Occupational Employment and Wage Statistics (OEWS)}
-
-The Occupational Employment and Wage Statistics (OEWS) program of the BLS produces estimates of employment and wages for about 830 occupations across the U.S., by industry and locality.
-The program surveys every non-farm establishment registered with State Workforce Agencies (SWAs), which excludes most of the agricultural sector.
-However, the survey does include establishments that fall under NAICS 1151 - Support Activities for Crop Production, which includes establishments engaged in farm labor contracting.
-Note that the DOL uses OEWS estimates to calculate the AEWR for localities and occupations not adequately covered by the FLS.
-The estimates are available at the OEWS Metropolitan and Nonmetropolitan Area level, and geographic crosswalks permit county-level estimates.
-We calculate the county estimate as the employment-weighted mean of the OEWS locality estimates available within the county.
-The occupations used are the same occupations included in the FLS, with SOC codes
-\begin{itemize}
-	\item 45-2041 - Graders and Sorters, Agricultural Products.
-	\item 45-2091 - Agricultural Equipment Operators.
-	\item 45-2092 - Farmworkers and Laborers, Crop, Nursery, and Greenhouse.
-	\item 45-2093 - Farmworkers, Farm, Ranch, and Aquacultural Animals.
-	\item 53-7064 - Packers and Packagers, Hand.
-	\item 45-2099 - Agricultural Workers, All Other.
-\end{itemize}
-We can also construct an AEWR wage equivalent by calculating the mean wage for these occupations, which is the same procedure used by the DOL.
-
-\subsection{Sample construction}
-The analysis panel covers 2008--2022.  We retain counties with positive
-cropland in 2007 and exclude counties classified as ``always takers'' by the
-project's treatment-group construction.  Alaska, Hawaii, the District of
-Columbia, and observations without an AEWR-region assignment are not in the
-analysis file. The finalized shared panel contains 46,620 county-year observations.
-The descriptive main sample in Table \ref{tab:sumstats} contains 34,215
-observations, and the main regression sample contains 31,934 complete cases.
-The missing statutory 2009 wage removes 2010 observations from lagged-wage
-regressions; it does not imply zero H-2A activity in those years.
-
-\input{../outputs/tables/table_sumstats_dd_variables.tex}
-
-\section{Empirical design and results}
-
-\subsection{Design}
-
-Let $Y_{ct}$ be certified H-2A workers with a start date in year $t$, divided
-by farm employment in county $c$ in 2011.  Define the lagged wage-premium
-measure as
-\[
-B_{ct-1}=\operatorname{AEWR}^{\mathrm{real}}_{ct-1}
- - w^{p25,\mathrm{real}}_{\operatorname{CZ}(c),t-1},
-\]
-where the wage percentile is measured within the county's commuting zone and
-all wage values are expressed in 2012 dollars.  The baseline regression is
-\[
-Y_{ct}=\beta B_{ct-1}+\delta\left(B_{ct-1}\times
-\mathbb{1}\{t>2011\}\right)+X_{ct}'\gamma+\alpha_c+\tau_t+\varepsilon_{ct}.
-\]
-County fixed effects ($\alpha_c$) absorb time-invariant differences in local
-agricultural production and H-2A use, while year fixed effects ($\tau_t$)
-absorb common shocks.  The controlled specification includes log population
-and the employment-to-population ratio.  Standard errors are clustered by the
-commuting-zone-by-AEWR-region cell.  We report a complementary sample that
-excludes commuting zones crossing AEWR-region borders, where the interpretation
-of a commuting-zone wage comparison is less direct.
-
-The event-study specification replaces the single post-2011 interaction with
-interactions between $B_{ct-1}$ and each calendar year, omitting 2011.  It
-therefore tests whether high- and low-premium counties had different trends
-before the post period and traces the evolution of the estimated relationship.
-
-\subsection{H-2A utilization}
-
-\begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.8\textwidth]{../outputs/figures/coefplot_dd_controls.png}
-	\caption{Event-study coefficients for the lagged AEWR wage premium, with controls.  The omitted year is 2011; shaded bands are 95\% confidence intervals.}
-	\label{fig:event-study}
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.92\textwidth]{../outputs/figures/fig_bite_event_study.pdf}
+  \caption{Full-panel FE-PPML bite event study (2008--2025, reference year
+    2011; canonical 2009 AEWR omitted as missing; 95\% AEWR-region CV3J
+    jackknife confidence intervals).}
+  \label{fig:bite_event_study}
 \end{figure}
 
-\begin{table}[ht]
-	\centering
-	\resizebox{\linewidth}{!}{\input{../outputs/tables/table_1_main_results.tex}}
-	\caption{Difference-in-differences estimates of the relationship between the lagged AEWR wage premium and normalized H-2A utilization.}
-	\label{tab:main-results}
-\end{table}
+\input{../outputs/tables/table_bite_main.tex}
 
-Table \ref{tab:main-results} reports the main estimates.  In column (2), the
-coefficient on the post-2011 interaction is -0.0072 (standard error 0.0033),
-and in the no-border controlled sample it is -0.0095 (standard error 0.0044).
-Thus, the negative relationship is not driven by the commuting zones that
-cross AEWR-region borders. The table reports changes in the ratio of certified
-positions to 2011 farm jobs. Multiplying by 100 gives approximately -0.72 and
--0.95 percentage points per dollar in the two controlled samples. These are
-not percent changes in the number of certifications.
+\input{../outputs/tables/table_bite_diagnostics.tex}
 
-Figure \ref{fig:event-study} and Table \ref{tab:event-study} show the flexible
-event-study results. The available 2008 and 2009 coefficients are small relative
-to their standard errors; the 2010 coefficient is unavailable because its
-lagged statutory wage is missing. This short diagnostic does not establish
-parallel trends. The post-period estimates turn negative in 2014 and
-are largest in 2022, when the controlled estimate is -0.0158 (standard error
-0.0056).  The pattern is consistent with a growing negative association
-between the AEWR premium and H-2A use, while the limited number of AEWR regions
-and the observational nature of the wage premium warrant cautious
-interpretation.
-
-\begin{table}[p]
-	\centering
-	\scriptsize
-	\input{../outputs/tables/table_2_event_study.tex}
-	\caption{Event-study estimates; 2011 is the omitted year.}
-	\label{tab:event-study}
-\end{table}
-
-\subsection{Exploratory downstream outcomes}
-
-The code also constructs a county Fisher agricultural price index, chained
-from crop-level prices and acreage and expressed in real 2012 dollars.  In the
-same reduced-form specification, the post-2011 premium interaction is negative
-in all four price regressions (Table \ref{tab:price-results}).  The controlled
-baseline estimate is -2.174 index points per dollar (standard error 0.7998).
-This result is exploratory: it combines price and crop-composition changes and
-does not identify a pass-through mechanism.
-
-The corresponding estimates for the labor share of farm production expenses
-are -0.0009 (standard error 0.0005) in the controlled full sample and
--0.0014 (standard error 0.0005) in the controlled no-border sample (Table
-\ref{tab:laborshare-results}).  The sensitivity of precision across samples
-does not establish that the H-2A response operates through a shift in labor's
-share of farm production expenses.
-
-\begin{table}[ht]
-	\centering
-	\small
-	\resizebox{\linewidth}{!}{\input{../outputs/tables/table_fisher_price_dd.tex}}
-	\caption{Exploratory reduced-form estimates for the county Fisher agricultural price index.}
-	\label{tab:price-results}
-\end{table}
-
-\begin{table}[ht]
-	\centering
-	\small
-	\resizebox{\linewidth}{!}{\input{../outputs/tables/table_laborshare_dd.tex}}
-	\caption{Exploratory reduced-form estimates for labor's share of farm production expenses.}
-	\label{tab:laborshare-results}
-\end{table}
-
-\section{Model}
-\begin{itemize}
-    \item Production:
-    \begin{itemize}
-        \item Mass of farms, indexed by \(i \in [0, 1] \)
-        \item Farms are heterogeneous in farm size/productivity/crop suitability
-        \[ A_i \sim G(A_i)\]
-        \item Farms use labor \(L\) to produce output with production function
-        \[ Y_i = A_i f(L_i) \]
-        where \(f'(L) > 0\) and \(f''(L) < 0\)
-        \item Farms receive price \(p\) for their output
-    \end{itemize}
-    \item Labor market:
-    \begin{itemize}
-        \item Farms have 2 sources of labor, Domestic and H-2A.
-        \item Domestic labor: hire \(L_{i,D}\), pay prevailing Domestic wage \(w_D\)
-        \item Domestic labor market is tight:
-        \[ \int_0^{1} L_{i,D} d_i = \bar{L} \]
-        \item H-2A labor: hire \(L_{i, F}\), pay AEWR \(w_F\) to ALL workers, including domestic
-        \item H-2A labor market is slack, no constraints
-    \end{itemize}
-\end{itemize}
-\subsection{Farmer's Problem}
-\begin{itemize}
-    \item Use only Domestic labor, profits are
-    \[ \Pi_D(A_i) = p A f(L_{i,D}) - w_D L_{i, D} \]
-    \item Use H-2A labor, profits are
-    \[ \Pi_F(A_i) = p A_i f(L_{i, F} + L_{i, D}) - w_F(L_{i, F} + L_{i, D}) - F \]
-    where \(F\) is the fixed cost of participating in the H-2A program
-    \item H-2A adoption decision: compare \( \Pi_D(A_i) \) and \( \Pi_F(A_i) \)
-    \item Simplification: only 1 farm, so \( L_{i,D} = \bar{L}\)
-    \item Then
-    \[ \Pi_D (A_i) = p A f(\bar{L}) - w_D \bar{L} \]
-    \[ \Pi_F(A_i) = p A_i f(L_{i, F} + \bar{L}) - w_F(L_{i, F} + \bar{L}) - F \]
-    \item Denote total labor hired as \(L_{i}^* = L_{i,F} + \bar{L}\). Then
-    \[ \Pi_F(A_i) -  \Pi_D (A_i) =  \underbrace{\int_{\bar{L}}^{L{i}^*} \left( p A f'(L) - w_F  \right) dL}_{\text{Expansion gain}} - \underbrace{(w_F - w_D) \bar{L}}_{\text{Corresponding employment wage penalty on Domestic workers}} - F \]
-    \item Use H-2A program if profit gain from expansion outweighs the wage penalty paid to Domestic workers + fixed costs
-    \item Comparative statics:
-    \begin{itemize}
-        \item Counties with lower AEWR wage growth relative to local wages \( (w_F - w_D)  \downarrow \) see higher H-2A adoption
-        \item Counties with larger pre-existing domestic farm labor (big \( \bar{L} \)) should see less adoption
-    \end{itemize}
-\end{itemize}
-
-\printbibliography
+\input{../outputs/tables/table_iv_h2a_adjustment_margins.tex}
 
 \end{document}
