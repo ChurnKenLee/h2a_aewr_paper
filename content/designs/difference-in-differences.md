@@ -46,6 +46,18 @@ Run:
 
 The common input calendar is now 2008--2025. Each regression continues to use
 its existing complete-case rule, so missing source controls can shorten its
-estimation window. Event-study code applies that same rule before expanding
+estimation window. Following the C01/13 lag-construction fix restoring
+`2024 -> 2025` `wage_p25_l1` (and `aewr_cz_p25_l1` in C02), uncontrolled
+Columns 1 and 3 of `table_1_main_results.tex` (`N = 38,998` and `N = 31,790`)
+and `table_2_event_study.tex` explicitly include provisional 2025 H-2A
+start-year observations (subject to FY2027 revision) by user instruction.
+Controlled Columns 2 and 4 remain capped at 2022 (`N = 32,116` and `N = 26,180`)
+because `emp_pop_ratio` uses BEA CAEMP25N (discontinued after 2022);
+`table_fisher_price_dd.tex` ends in 2024 (`fisher_index_ppi`),
+`table_laborshare_dd.tex` ends in 2022 (BEA CAINC45),
+`table_sumstats_dd_variables.tex` reports contemporaneous `aewr_cz_p25` (missing
+in 2025 because 2025 ACS quantiles are unavailable), and
+`coefplot_dd_controls.png` plots the controlled Column 2 event study through
+2022. Event-study code applies that same complete-case rule before expanding
 year interactions: this avoids a fixest dimension error when an entire year
 has missing regressors. It does not fill controls or change the 2011 reference.

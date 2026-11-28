@@ -1,6 +1,6 @@
 +++
 title = "H-2A worksite-business linkage"
-description = "Role-aware FY2008--2026 Q3 business universe, nested linkage rules, review protocol, and downstream count semantics."
+description = "Role-aware FY2008--2026 Q4 business universe, nested linkage rules, review protocol, and downstream count semantics."
 
 [extra]
 scopes = ["code/a01_sources/02_04_h2a_match_employers.py", "src/h2a/employer_linkage.py", "code/b01_derived/01_h2a_aggregation_nodupes.R", "code/c01_clean", "code/c02_build", "code/designs"]
@@ -9,7 +9,7 @@ scopes = ["code/a01_sources/02_04_h2a_match_employers.py", "src/h2a/employer_lin
 The supported H-2A identity unit is a worksite business, not a filing agent,
 association headquarters, contractor, application, worksite row, or generic
 national name. Version `v2` uses all available identity evidence from
-FY2008--FY2025 plus partial FY2026 Q3. Later identity evidence can revise
+FY2008--FY2026 (Q4 release). Later identity evidence can revise
 historical business counts. The canonical partition is therefore a full-vintage longitudinal
 linkage; a separate audit reconstructs the FY2008--2022 partition using only
 evidence available through FY2022.
@@ -108,7 +108,7 @@ Promotion fails if IDs or keys are
 missing or duplicated, tiers are not nested, IDs change after a row shuffle,
 a cluster contains conflicting FEINs, or a record role is invalid. With a
 complete label file the status is `complete` and the hash is the review
-report's. The FY2026 Q3 extension is published before its new pairs are labeled:
+report's. The FY2026 Q4 extension is published before its new pairs are labeled:
 `ALLOW_PENDING_REVIEW` in `02_04` stamps status `pending`, reports how many
 sampled pairs are already labeled, computes no
 precision metrics, and hashes the review sample instead. Setting it to `False`

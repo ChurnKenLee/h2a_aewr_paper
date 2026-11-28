@@ -33,7 +33,7 @@ The shared-panel producer supplies the fixed-2011 denominators and the common
 ratios used by DiD and panel IV. It retains conservative, balanced, and
 high-recall worksite-business counts separately; the balanced v2 count is the
 supported causal business outcome. These are positive-certified county-year
-counts constructed under the FY2008--2026 Q3 (review pending)
+counts constructed under the FY2008--2026 Q4 (review pending)
 [employer-linkage contract](@/contracts/employer-linkage.md).
 
 H-2A start-year positions and hours use the source-owned employment-period
@@ -69,11 +69,18 @@ MC input. Shared source values and missingness are preserved.
 | Hired-labor share of farm production expenses | `share_farm_laborexp_prodexp` | DiD; panel IV |
 | Fisher crop output-quantity index | `fisher_quantity_index` | Panel IV |
 
-{{ <grounding path="code/c01_clean/13_merge_county_panel.R" anchor="county-year-merge" sha256="42d6578ce958f298f14bbfca2d9b26e2f43c1735f2e922f1b194dd025e833885" /> }}
+{{ <grounding path="code/c01_clean/13_merge_county_panel.R" anchor="county-year-merge" sha256="ba9dbebb81f486b8c93263f39013c8713c4d1e3453dc38710e656e62cfd20b8f" /> }}
 
 `fisher_index_ppi` divides the nominal index by the annual `ppi_2012` joined
 by year in the merge, so the real price index is defined through 2024 even
-though BEA farm-income rows end in 2022.
+though BEA farm-income rows end in 2022. The same merge joins the unified
+A01--C01 state/agricultural minimum-wage series (`state_real_minwages.parquet`,
+51/51 states/DC nominal through 2026 and complete 3,108/3,108 county coverage in
+the 2008--2025 shared panel) and completes `acs_czone_wage_quantiles.parquet`
+over `2005:SHARED_PANEL_END_YEAR` with consecutive-year lag guards so
+`wage_p10_l1`--`wage_p90_l1` and downstream `aewr_cz_p25_l1` are populated for
+both 2008 (from 2007) and 2025 (from 2024, 3,108/3,108 counties) while 2025
+contemporaneous ACS quantile levels remain missing.
 
 These are downstream responses to the policy exposure, not controls. Moving
 one of them to the right-hand side or using it for sample selection would
@@ -109,6 +116,26 @@ The DiD model additionally needs:
 {{ <grounding path="code/designs/did/01_build_did_panel.R" anchor="did-treatment-inputs" sha256="107031bcdcda7d02bfff630c95b423659522a4ecdee0637374ecb585dce55bb7" /> }}
 
 {{ <grounding path="code/designs/did/helpers.R" anchor="did-estimation-contract" sha256="4822f93257431fac0a7ffe9399d475d9aa14324d6f76580d666775e9b3b5ab9c" /> }}
+
+## Full-panel FE-PPML bite mapping
+
+The standalone [full-panel FE-PPML bite design](@/designs/bite.md)
+(`code/designs/bite/`, runner `scripts/run_bite.sh`) consumes
+`data/processed/county_year_panel.parquet` and adds no causal outcome to the
+thirteen-outcome union. Over `2011--2025` (event study `2008--2025`, ref. `2011`),
+it fits FE-PPML (`fixest::fepois`) directly on raw `man_hours_certified_start_year`
+and `nbr_workers_certified_start_year` without excluding `"always takers"`,
+alongside LPM extensive-margin indicators (`any_h2a_ge5` primary; `any_h2a_gt0`
+and `any_h2a_ge1` Addendum-B diagnostics), paired-jackknife implied duration
+(`hours/position`), `nbr_employers_balanced_start_year` split strictly at
+`2011--2019` vs `2020--2025`, farm-economic outcomes (`fisher_index_ppi`,
+`share_farm_laborexp_prodexp`, `emp_farm`), and a standalone 48-state
+domestic-floor regression on `ln(prevailing_ag_min_wage)`. Frozen `2008/2010`
+exposures (`E_p25`, `E_oews`, all-real `E_sf_log`) and predetermined `2008--2010`
+covariates (`X_pre x Year`) avoid time-varying local wages and discontinued BEA
+truncation; every fit pairs CRV1 with exact delete-one-cluster jackknife (CV3J)
+SEs and MDEs. Relative differential coefficients on $E_c \times \ln(\text{AEWR})$
+are not aggregate AEWR elasticities.
 
 ## Panel-IV mapping
 
@@ -250,9 +277,10 @@ The model also needs:
   constructed per-worker quantities, rather than a fixed-2011 filter;
 - 2008–2010 baseline means and their nested county/market/state/region Mundlak
   components, with categorical calendar interactions but no imposed trend;
-- complete 2010–2022 real and nominal AEWR paths, applicable agricultural
-  minimum wages, and frozen 2008–09/2008–10 wage quantiles used by the declared
-  bite approximation;
+- complete 2010–2022 real and nominal AEWR paths, PPI-2012 real AEWR
+  (`aewr_ppi`) and real applicable agricultural minimum wages
+  (`prevailing_ag_min_wage_ppi`), and frozen 2008–09/2008–10 PPI-2012 real wage
+  quantiles (`wage_p10`–`wage_p90`) used by the declared bite approximation;
 - the common causal-first full-rank basis and exact full-model leverage; and
 - analytic HC3 and cluster covariances plus an explicitly experimental scalar
   continuous CCV-HC3 comparator.
@@ -297,13 +325,14 @@ design, this inventory, its design page, and the retained output contract.
 ## 2025 policy-shift estimands
 
 The [separate 2025 design](@/designs/policy-2025.md) retains the inspected
-exploratory wage and earnings endpoints below. Organizational promotion to
-its own branch does not establish causal validity or change the thirteen
-outcomes in the established causal-outcome union.
+exploratory wage, Track 1 county quantity, and earnings endpoints below.
+Organizational promotion to its own branch does not establish causal validity
+or change the thirteen outcomes in the established causal-outcome union.
 
 | Endpoint | Construction and comparison |
 | --- | --- |
-| Nominal hourly offered wage | Continuing filer–state–occupation mean-offer change, FY2025–FY2026 decisions through June 30; U.S. skill-I dollar dose, former-region effects, baseline-hours primary weights |
+| Nominal hourly offered wage | Continuing filer–state–occupation mean-offer change, FY2025–FY2026 full-fiscal-year decisions (October 1–September 30); U.S. skill-I dollar dose, former-region effects, baseline-hours primary weights |
+| County H-2A certified quantity (Track 1) | Full-FY (October 1–September 30) county certified hours and positions (`2,921` multi-state counties, `46` states, `15` former regions), FY2025–FY2026 FE-PPML on October 2, 2025 U.S. skill-I rate with County and Former-Region × FY effects, state-deletion CV3J `t(45)` inference, matched Q1–Q3/legal-cutoff windows, FY2024–FY2025 placebos, `S1`–`S5` sensitivities, and post-hoc `epsilon_cost` conversion |
 | Covered crop weekly earnings | Mean YoY log change in private NAICS 111 average weekly earnings for 2025Q4/2026Q1; frozen intensity × dollar cut, intensity control, state effects, equal county weights |
 
 Wage retention/reduction, reference-premium distributions, composition,
@@ -345,6 +374,11 @@ registry and design page.
 
 The common input calendar is now 2008--2025. Each regression continues to use
 its existing complete-case rule, so missing source controls can shorten its
-estimation window. Event-study code applies that same rule before expanding
-year interactions: this avoids a fixest dimension error when an entire year
-has missing regressors. It does not fill controls or change the 2011 reference.
+estimation window. With the restored 2024-to-2025 lag for `wage_p25_l1` and
+`aewr_cz_p25_l1`, the uncontrolled DiD primary and event-study columns include
+provisional 2025 H-2A start-year observations by user instruction, while
+controlled DiD columns remain capped at 2022 (BEA CAEMP25N), Fisher price at
+2024, and labor share at 2022. Event-study code applies that same complete-case
+rule before expanding year interactions: this avoids a fixest dimension error
+when an entire year has missing regressors. It does not fill controls or change
+the 2011 reference.

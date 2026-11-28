@@ -36,7 +36,7 @@ divide by that same stored exposure.
 The shared H-2A business outcome uses the raw balanced v2 count of
 positive-certified linked worksite businesses. Conservative and high-recall
 counts remain in the panel for linkage-sensitivity analyses. C02 requires the
-FY2008--2026 Q3 linkage metadata (review status `complete` or `pending`) and fills its unit, version, vintage,
+FY2008--2026 Q4 linkage metadata (review status `complete` or `pending`) and fills its unit, version, vintage,
 review status, and review-report hash across H-2A zero-use county-years.
 
 The shared panel carries BEA CAEMP25N employment totals, including all-industry
@@ -86,5 +86,9 @@ Rscript --vanilla code/c02_build/01_build_county_panel.R
 The producer enforces the complete 2008--2025 calendar for every county.
 The shared coverage validator reports observed and finite values by year and
 checks certifications against B01; missing later-year source values remain
-missing. Full-vintage linkage can revise earlier business counts, and pooled
+missing. Unified A01--C01 state and agricultural minimum-wage measures are
+complete for all 3,108 counties across 2008--2025, and consecutive-year ACS
+wage-quantile lags (`wage_p10_l1`--`wage_p90_l1` and `aewr_cz_p25_l1`) populate
+both 2008 (from 2007) and 2025 (from 2024) while contemporaneous 2025 ACS
+quantile levels remain missing. Full-vintage linkage can revise earlier business counts, and pooled
 hours imputation can revise earlier hours when disclosures are refreshed.

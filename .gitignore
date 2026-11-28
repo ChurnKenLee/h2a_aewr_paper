@@ -6,6 +6,9 @@ data/
 !code/a01_sources/aewr_rate_schedule_manifest.csv
 !code/a01_sources/aewr_policy_events.csv
 !code/a01_sources/state_ag_minwage_coverage.csv
+!code/designs/panel_iv/census_farm_floor_selection.csv
+!code/designs/policy_2025/sources/domestic_wage_exposure_frozen.csv
+!code/designs/policy_2025/tests/fixtures/*.csv
 !explorations/identification/sources/state_ag_overtime_schedule.csv
 !outputs/tables/iv_dissimilarity_model_estimates.csv
 !outputs/tables/iv_dissimilarity_ar_intervals.csv
@@ -41,6 +44,7 @@ papers/h2a_lit/*
 
 # LaTeX auxiliary files
 draft/*
+!draft/AGENTS.md
 !draft/*.tex
 !draft/*.pdf
 !draft/*.bib

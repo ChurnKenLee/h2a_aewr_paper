@@ -19,7 +19,7 @@ model specification, and defines the predicted share using fixed 2011 farm
 employment.
 
 The same shared-panel contract block independently validates and fills the
-FY2008--2026 Q3 worksite-business v2 provenance. That linkage metadata
+FY2008--2026 Q4 worksite-business v2 provenance. That linkage metadata
 does not enter prediction fitting, scoring, or cutoff selection. The shared
 contract additionally requires every county to have the complete 2008--2025
 calendar; extending that calendar does not change the 2011 training cutoff.

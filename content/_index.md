@@ -20,6 +20,7 @@ every Zola build.
 - [Causal outcomes and model inputs](@/contracts/causal-outcomes-and-model-inputs.md)
 - [H-2A prediction contract](@/contracts/prediction-model.md)
 - [Difference-in-differences](@/designs/difference-in-differences.md)
+- [Full-panel FE-PPML bite design](@/designs/bite.md)
 - [Panel IV](@/designs/panel-iv.md)
 - [AEWR-border ring experiment](@/designs/border-discontinuity.md)
 - [Border data-input comparisons](@/designs/border-data-inputs.md)

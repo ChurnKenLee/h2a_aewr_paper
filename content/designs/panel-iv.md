@@ -241,7 +241,7 @@ employment ratios with the CAINC5N farm-earnings share and QCEW all-sector
 employment per resident in order to reach 2024, was removed at the user's
 request. Restoring it or otherwise extending the window is a separate
 specification change. The common shared baseline reaches 2025 and includes
-FY2026 Q3 disclosures. The 2023 occupation-specific rates and late-2025
+FY2026 Q4 disclosures. The 2023 occupation-specific rates and late-2025
 job-order cohort are source applicability diagnostics, not a wholesale
 replacement of annual regional AEWR. Outcomes built from current BEA farm
 employment or CAINC45 farm income end in 2022.
@@ -254,7 +254,7 @@ position, real crop prices, farm employment, farm-production expense share,
 real farm income per current-year farm worker, farm-labor share, and output
 quantities.
 
-The panel builder and final validator require the FY2008--2026 Q3
+The panel builder and final validator require the FY2008--2026 Q4
 `worksite_business` v2 provenance with the review status pinned in `design.R`
 (currently `pending`) before the balanced business count can enter
 this registry. The review metrics do not select the IV specification or tier.

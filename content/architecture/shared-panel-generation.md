@@ -37,7 +37,7 @@ starting grid used by the final C01 merge. The H-2A, AEWR, population, OEWS
 and price-index normalizers use the same calendar.
 
 The 2025 extension is the user-approved common baseline. It uses complete
-FY2008--FY2025 disclosures plus the cached partial FY2026 Q3 release, which
+FY2008--FY2025 disclosures plus the cached complete FY2026 Q4 release, which
 contains later decisions on contracts starting in 2025. Later releases may
 still revise those starts. No design sample is imposed at this layer.
 `02_validate_source_coverage.py` runs after C02 and writes the shared-panel
@@ -79,16 +79,30 @@ artifacts:
 | `nass_fisher_price_index.parquet` | county, year | Chained Fisher price and quantity indexes |
 | `h2a_predict.parquet` | county | One canonical static H-2A propensity record |
 | `census_ag_cropland_2007_year.parquet` | county | Fixed 2007 cropland baseline |
-| `state_real_minwages.parquet` | state, year | Nominal and real minimum-wage measures, the applicable agricultural floor from the dated coverage table `code/a01_sources/state_ag_minwage_coverage.csv` (spell in effect on 1 July; `ag_floor_rule`, `ag_specific_min_wage`, `ag_coverage_backcast` before 2008), plus lags created before the join |
+| `state_real_minwages.parquet` | state, year | Nominal and real minimum-wage measures built from the unified A01 FRED producer `code/a01_sources/07_state_minimum_wages.py` (`state_year_min_wage.parquet`, all 51 states/DC across annual federal years 1968--2026; retiring `code/utilities/pull_fred_minimum_wages.R`) and the dated agricultural coverage table `code/a01_sources/state_ag_minwage_coverage.csv` (spell in effect on 1 July; `ag_floor_rule`, `ag_specific_min_wage`, `ag_coverage_backcast` before 2008), plus consecutive-year lags created before the join |
 | `oews_county_year.parquet` | county, year | Nominal OEWS Big-Six mean hourly- and annual-wage proxies, primary reporting area, and coverage support |
 | `qcew_county_year.parquet` | county, year | Separate all-ownership NAICS 111, NAICS 112, and all-sector annual employment, wage bills, and disclosure flags |
-| `acs_czone_wage_quantiles.parquet` | county, year, CZ | Real local wage quantiles and their lags |
+| `acs_czone_wage_quantiles.parquet` | county, year, CZ | Real local wage quantiles (2008--2024) and consecutive-year lags (2008--2025) |
 
 The merge reads `ppi_2012.parquet` to deflate the ACS wage quantiles and joins
 the same annual PPI by year to deflate the Fisher price index. The deflator no
 longer comes from the normalized BEA farm-income rows, so it is defined in
 2023--2025 and for the few counties without BEA farm-income rows. Raw state/AEWR crosswalks attach stable state names and
 AEWR regions.
+
+`04_state_minimum_wages.R` consumes `state_year_min_wage.parquet` and enforces a
+strict non-federal missingness guard from 2008 onward: any state-year whose
+dated agricultural coverage spell is not `federal_minimum` must have an observed
+`state_min_wage` from FRED rather than falling back silently to the federal
+floor. This yields complete 51/51 state/DC coverage for nominal minimum-wage
+floors through 2026 and for PPI-2012 real floors through 2025. In
+`13_merge_county_panel.R`, `state_minimum_wages` lags enforce
+`lag(year) == year - 1L`, and `wage_quantiles` is completed across
+`2005:SHARED_PANEL_END_YEAR` (`tidyr::complete`) before lagging with the same
+consecutive-year guard. That preserves the 2007-to-2008 pre-panel lags and
+populates 2024-to-2025 lags (`wage_p10_l1`--`wage_p90_l1` and downstream
+`aewr_cz_p25_l1`, 3,108/3,108 counties in 2025) while leaving contemporaneous
+2025 ACS quantile levels missing.
 
 The two BEA normalizers retain source totals rather than constructing
 per-job statistics. CAEMP25N wage-and-salary employment is an all-industry job
@@ -124,7 +138,7 @@ other county-level values use many-to-one joins. Duplicate source keys
 therefore fail during the join. The completed intermediate artifact must also
 be nonempty and unique by `county_fips, year`.
 
-{{ <grounding path="code/c01_clean/13_merge_county_panel.R" anchor="county-year-merge" sha256="42d6578ce958f298f14bbfca2d9b26e2f43c1735f2e922f1b194dd025e833885" /> }}
+{{ <grounding path="code/c01_clean/13_merge_county_panel.R" anchor="county-year-merge" sha256="ba9dbebb81f486b8c93263f39013c8713c4d1e3453dc38710e656e62cfd20b8f" /> }}
 
 The result of this stage is:
 
@@ -166,7 +180,7 @@ following transformations:
    application-status rates using current farm employment, fixed-2011 farm
    employment, application counts, or certified positions as the appropriate
    positive denominator. The three v2 worksite-business linkage counts remain
-   separate source measures. It validates one FY2008--2026 Q3 linkage contract
+   separate source measures. It validates one FY2008--2026 Q4 linkage contract
    (review status `complete` or `pending`) and fills its unit, version, vintage, review status, and
    review-report hash across zero-use county-years.
 

@@ -64,7 +64,7 @@ contains = 'return "46113" if county == "46102" else county'
 id = "EMPLOYER-001"
 risk = "critical"
 owner = "H-2A worksite-business linkage"
-statement = "The supported employer unit is the v2 worksite business linked with FY2008--FY2025 plus partial FY2026 Q3 identity evidence (manual review of the FY2026 Q3 extension pending, declared as review status `pending`); the balanced tier is canonical, and alias-only individual masters are not counted as businesses."
+statement = "The supported employer unit is the v2 worksite business linked with FY2008--FY2026 (Q4 release) identity evidence (manual review of the FY2026 Q4 extension pending, declared as review status `pending`); the balanced tier is canonical, and alias-only individual masters are not counted as businesses."
 source = "content/contracts/employer-linkage.md"
 review_when = "The business universe, role classification, evidence vintage, linkage rule, threshold, shared-contact guard, name-sprawl guard, manual review policy, count eligibility, or provenance schema changes."
 scopes = ["code/a01_sources/02_04_h2a_match_employers.py", "src/h2a/employer_linkage.py", "code/b01_derived/01_h2a_aggregation_nodupes.R", "code/c01_clean", "code/c02_build", "code/designs"]
@@ -237,7 +237,7 @@ contains = 'CCV_STATUS: Final = "experimental_not_lean_validated"'
 id = "WELFARE-001"
 risk = "critical"
 owner = "narrow welfare"
-statement = "The narrow welfare branch reports certification-space producer incidence for an anticipated real one-dollar AEWR increase, applies one frozen certified-hours elasticity to all shared-panel counties in its declared target years, and leaves paid-hours incidence as rho times the reported result."
+statement = "The narrow welfare branch (v2 scenario_bounds_grid) reports static partial-equilibrium certification-space producer-incidence bounds for an anticipated +$1/hr AEWR increase (real PPI-2012 and 2024 nominal, plus +-10% and Oct. 2, 2025 statutory cut comparisons) across a declared certified-hours elasticity bounds grid anchored to the complete FY2026 Q4 Track 1 statutory PPML hours 95% jackknife lower bound (eta = -0.5985, G = 46 states) and FY2026 Q4 R7 offered-wage pass-through sensitivity, applied to all 3,108 shared-panel counties in 2011--2025 with fail-closed SHA-256 and CSV parity checks; paid-hours incidence remains rho times every reported monetary result."
 source = "content/designs/welfare.md"
 review_when = "The elasticity definition, counterfactual, application population, exposure construction, numeraire, realization treatment, or welfare boundary changes."
 scopes = ["code/welfare", "scripts/run_welfare.sh", "content/designs/welfare.md"]
@@ -384,7 +384,7 @@ contains = 'Missing declared interim quarter'
 id = "POLICY2025-001"
 risk = "critical"
 owner = "2025 policy-shift design"
-statement = "The November 16 migration preserves inspected wage-offer and covered-earnings specifications and the frozen source/exposure vintage. The current earnings window is 2025Q4/2026Q1 with complete current/prior pairs; the original full-window release gate remains distinct. R7 filers are not worksite businesses, exact wage floors remain unresolved, and covered earnings do not identify domestic-worker wage rates. Every declared fit and failed deletion is retained with state jackknife inference; 2013 shutdown work stays outside this design."
+statement = "Since the user's instruction of November 21, 2026 the baseline is the complete FY2026 H-2A disclosure (Q4 release): the wage window is the full fiscal year and the exposure table is rebuilt from that vintage; earlier specifications are not preserved and outcomes were inspected beforehand. The November 25, 2026 dated vintage update (history/vintage_update_2026_11_25.json) aligned state_real_minwages.parquet and county_year_panel.parquet to the unified A01 FRED minimum-wage producer, added an explicit !anyNA(r$ag_min) guard in 01_build_wages.R, and re-baselined only the 48 schedule_envelope_* reference-diagnostic rows in tests/fixtures/wage_estimates.csv (44->46 states in 2024--2025, 39->46 in 2026; max_abs_diff = 0.0 across all 135 earnings_pre, 46 earnings_interim, and 299 non-envelope wage rows). The first November 26, 2026 additive amendment (history/quantity_amendment_2026_11_26.json) added stage 11_estimate_quantity.R (79 Track 1 county quantity rows across 2,921 multi-state counties and 46 states, County + Former-Region x FY FE, state-deletion CV3J t(45) inference) while keeping all 22 source inputs and all 528 existing wage and earnings rows invariant; its complete FY2026 Q4 full-FY PPML certified-hours estimate (-0.078, 95% CI [-0.598, +0.443], MDE 0.72) anchors the separate code/welfare v2 bounds grid as a one-season lower bound rather than a tightly pinned point estimate. A second November 26, 2026 additive amendment (history/mechanisms_amendment_2026_11_26.json) added stage 11b_estimate_mechanisms.R (96 mechanism-heterogeneity rows across 5 panels with 12 Holm-adjusted primary hypotheses, min p_holm = 0.939, and matched FY2024--FY2025 placebos) plus code-generated manuscript tables and figures, expanding sources/input_vintage.json to 24 cached inputs while keeping all 607 pre-existing rows invariant (703 total validated rows, 356/356 validation checks, 52 published artifacts). The current earnings window is 2025Q4/2026Q1 with complete current/prior pairs; the original full-window release gate remains distinct. R7 filers are not worksite businesses, exact wage floors remain unresolved, and covered earnings do not identify domestic-worker wage rates. Every declared fit and failed deletion is retained with state jackknife inference; 2013 shutdown work stays outside this design."
 source = "content/designs/policy-2025.md"
 review_when = "A source vintage, frozen hash, outcome, timing window, sample, treatment, normalization, weight, fixed effect, inference rule, UI/floor classification or ownership changes."
 scopes = ["code/designs/policy_2025", "scripts/run_policy_2025.sh", "outputs/reports/policy_2025.md"]
@@ -403,3 +403,27 @@ contains = 'effective_floor=NA_real_'
 [[assumptions.checks]]
 path = "code/designs/policy_2025/07_validate.R"
 contains = 'independent_wage_WLS'
+
+[[assumptions]]
+id = "BITE-001"
+risk = "critical"
+owner = "full-panel FE-PPML bite design"
+statement = "The standalone full-panel FE-PPML bite branch (code/designs/bite, scripts/run_bite.sh) remains outside scripts/run_all.sh and leaves shared C01/C02 and retained DiD untouched. It uses the balanced 3,108-county x 18-year (2008--2025) panel with canonical 2009 AEWR strictly NULL, freezes all exposures (E_p25, E_oews, all-real E_sf_log) strictly over 2008/2010, preserves 2023--2025 via predetermined 2008--2010 X_pre x Year controls, retains full-panel zeros via FE-PPML without excluding always-takers, and reports exact delete-one-cluster jackknife (CV3J) SEs alongside CRV1. Relative differential coefficients on E_c x ln(AEWR) are not aggregate AEWR elasticities, and the standalone 48-state ln(prevailing_ag_min_wage) domestic-floor margin is never translated into an AEWR elasticity."
+source = "content/designs/bite.md"
+review_when = "Frozen exposure windows/formulas, FE-PPML estimator, full-panel inclusion, predetermined controls, CV3J inference, standalone domestic-floor boundary, or runner scope changes."
+scopes = ["code/designs/bite", "scripts/run_bite.sh", "content/designs/bite.md", "outputs/reports/bite_design.md"]
+[[assumptions.checks]]
+path = "code/designs/bite/helpers.R"
+contains = 'BITE_BASELINE_YEARS <- c(2008L, 2010L)'
+[[assumptions.checks]]
+path = "code/designs/bite/helpers.R"
+contains = 'BITE_ESTIMATION_END_YEAR <- 2025L'
+[[assumptions.checks]]
+path = "code/designs/bite/01_build_bite_panel.R"
+contains = 'AEWR-001 violation: 2009 aewr / aewr_ppi must be strictly NA.'
+[[assumptions.checks]]
+path = "scripts/run_bite.sh"
+contains = 'run_step code/designs/bite/03_validate_bite.R'
+[[assumptions.checks]]
+path = "content/designs/bite.md"
+contains = 'not an aggregate AEWR elasticity'

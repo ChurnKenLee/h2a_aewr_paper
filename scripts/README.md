@@ -17,13 +17,14 @@ Devenv shell before rerunning the pipeline.
 | `run_shared_panel.sh` | C01 normalization/merge followed by C02 shared build |
 | `run_descriptives.sh` | Two retained shared figures |
 | `run_did.sh` | DiD panel, four-column results, summary table, one coefficient plot |
+| `run_bite.sh` | Standalone full-panel FE-PPML bite panel, CV3J jackknife main/diagnostic tables, event-study figure, report, provenance, and validation |
 | `run_panel_iv.sh` | Original moving-wage panel-IV construction, estimation, reports and validation through stage 09, then the stage 10--11 instrument diagnostics, all in R |
 | `run_border_discontinuity.sh` | Standalone bounded border redesign: retained v5 audit, all-member local screen, four new comparisons, dependence/size/power evidence, report and validation |
 | `run_border_data_inputs.sh` | Cached wage/Census corrections, audited allocation/calendar, geocoding preparation, affected shared/design rebuilds, denominator comparisons, public-data plan/DOL archival draft and validation |
 | `run_wage_reforms.sh` | Standalone local-data investigation of the 2009–2010 reversal and herder phase-in: source/cohort panels, response and support diagnostics, report and validation |
-| `run_policy_2025.sh` | Standalone 2025 policy shift: wage offers, interim covered earnings, complete diagnostics, migration validation and report from cached inputs |
+| `run_policy_2025.sh` | Standalone 2025 policy shift: wage offers, interim covered earnings, complete FY2026 Q4 Track 1 county quantities, five-panel mechanism heterogeneity, publication tables/figures, validation, and report from cached inputs |
 | `run_mundlak_chamberlain.sh` | Version-4 Wooldridge–Mundlak–Chamberlain continuous-dose registry: DuckDB/Polars panel, full-history and one-lag OLS, constructed estimands, HC3/cluster inference, experimental scalar CCV comparator, and validation |
-| `run_welfare.sh` | Standalone narrow certification-space producer-incidence calculation; requires a frozen, source-traced certified-hours elasticity contract |
+| `run_welfare.sh` | Standalone narrow certification-space producer-incidence envelope bounds grid (`01_narrow_welfare.py` + `02_validate_welfare.py`); fails closed on contract/hash drift |
 | `run_all.sh` | Sources, derived data, shared panel, descriptives, DiD, panel IV, Mundlak–Chamberlain |
 
 Examples:
@@ -32,6 +33,7 @@ Examples:
 DRY_RUN=1 ./scripts/run_all.sh
 ./scripts/run_shared_panel.sh
 ./scripts/run_did.sh
+./scripts/run_bite.sh
 ./scripts/run_panel_iv.sh
 ./scripts/run_border_discontinuity.sh
 ./scripts/run_border_data_inputs.sh
@@ -42,16 +44,23 @@ DRY_RUN=1 ./scripts/run_all.sh
 ```
 
 `run_border_discontinuity.sh` is an experimental design branch and remains
-outside `run_all.sh` and the manuscript workflow. `run_welfare.sh` remains
-outside `run_all.sh` until its elasticity contract is frozen.
+outside `run_all.sh` and the manuscript workflow. `run_bite.sh` is likewise a
+standalone full-panel FE-PPML bite runner (`01`, `02`, `03` under
+`code/designs/bite/`) outside `run_all.sh`; it consumes
+`data/processed/county_year_panel.parquet` directly without modifying DiD or
+shared C01/C02 stages. `run_welfare.sh` remains outside `run_all.sh`; it exports and runs two Marimo
+stages (`code/welfare/01_narrow_welfare.py` and
+`code/welfare/02_validate_welfare.py`) against the SHA-256-pinned v2
+scenario-bounds contract (`code/welfare/elasticity_contract.toml`).
 The historical wage-reform runner also remains outside `run_all.sh`. It reads
 cached H-2A source and reviewed linkage artifacts, exports four Marimo stages
 to the runner's temporary directory, and performs no source refresh.
 The 2025 policy-shift runner is likewise standalone and performs no acquisition.
-It runs stages `00,01,02,05,06,09,10`, interim checks, then `07,08,12` under
-`code/designs/policy_2025`. Publication follows validation and retains its own
-panels, result ledgers, report and provenance. See the branch README for the
-optional hash-verified migration cache and the preserved source-vintage guard.
+It runs stages `00,01,02,05,06,09,10,11,11b`, `tests/check_interim.R`, then
+`07,08,12` under `code/designs/policy_2025`. Publication follows validation and
+retains its own panels, result ledgers (703 validated rows), publication tables
+and figures, report, and provenance (52 artifacts). See the branch README for
+the optional hash-verified migration cache and the preserved source-vintage guard.
 
 Panel IV runs its stages 01--11 entirely with `Rscript --vanilla`.
 Stages03/04 construct the frame and deterministic weights; stage09 validates

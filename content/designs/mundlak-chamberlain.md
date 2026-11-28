@@ -120,7 +120,17 @@ B^0_{ct}=\int [A_{rt}-\max\{w,M_{ct}\}]_+\,dF_c^0(w),
 {% </equation> %}
 
 where $M_{ct}$ is the applicable agricultural minimum wage and $F_c^0$ is
-frozen before the analysis period. The shared panel does not contain the wage
+frozen before the analysis period. Because C01/13 deflates the ACS commuting-zone
+wage quantiles (`wage_p10` through `wage_p90`) by the 2012 farm-products PPI,
+`mcw/build.py` evaluates both $A_{rt}$ and $M_{ct}$ in the same PPI-2012 real
+units (`aewr_ppi` and `prevailing_ag_min_wage_ppi`) for both the direct frozen
+bite (`bite_f0809`, `bite_f0810`) and the frozen fraction-affected shares
+(`mc_fraction_affected_*`, feeding `exposure_log_*`). This declared unit-consistency
+fix corrects the former mixed-unit implementation that compared nominal policy
+rates against real quantiles, and rebuilding the compact registry picks up the
+unified A01 FRED minimum-wage series (`state_year_min_wage.parquet`) and dated
+agricultural minimum-wage coverage (`state_ag_minwage_coverage.csv`, `2026-11-02`)
+propagated through `county_year_panel.parquet`. The shared panel does not contain the wage
 microdistribution. The executable builder therefore uses a declared
 five-quantile point-mass approximation from p10, p25, p50, p75, and p90 and
 persists that method label. It must not be described as the exact integral.
@@ -205,8 +215,8 @@ fits and reports.
 
 The business count requires the panel's single employer-linkage contract to
 match `EMPLOYER_LINKAGE_CONTRACT` in `mcw/design.py`: worksite-business v2
-with FY2008–2026 Q3 identity evidence and review status `pending` until the
-FY2026 Q3 extension's review pairs are labeled.
+with FY2008–2026 Q4 identity evidence and review status `pending` until the
+FY2026 Q4 extension's review pairs are labeled.
 
 For comparability, the branch reports both models' average current-coordinate
 effects over the common identified target 2013–2022. The one-lag model's

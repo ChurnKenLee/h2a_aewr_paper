@@ -17,9 +17,9 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
                                               │
                                               v
                                        county_year_panel
-                         /       |        |        |        |        \
-                        v        v        v        v        v         v
-              descriptives     DiD   panel IV   MC dose   border ring   welfare
+                     /      |      |       |        |        |         \
+                    v       v      v       v        v        v          v
+          descriptives    DiD    bite  panel IV  MC dose  border ring  welfare
 ```
 
 | Branch | Owner | Principal artifact or output |
@@ -30,12 +30,13 @@ code/a01_sources ──> code/b01_derived ──> code/c01_clean
 | Shared build | [`code/c02_build`](code/c02_build/) | `data/processed/county_year_panel.parquet` |
 | Descriptives | [`code/descriptives`](code/descriptives/) | Two shared figures |
 | DiD | [`code/designs/did`](code/designs/did/) | `data/processed/did_county_year_panel.parquet` and manuscript tables |
+| Full-panel bite | [`code/designs/bite`](code/designs/bite/) | `data/processed/bite_county_year_panel.parquet`, FE-PPML bite tables/figures, CV3J diagnostics, standalone domestic-floor margin, and `outputs/reports/bite_design.md` |
 | Panel IV | [`code/designs/panel_iv`](code/designs/panel_iv/) | Original moving-wage IV, deterministic R calibration, retained estimates and diagnostics |
 | Wooldridge–Mundlak–Chamberlain | [`code/designs/mundlak_chamberlain`](code/designs/mundlak_chamberlain/) | DuckDB/Polars linear-history OLS registry, constructed estimands, and analytic inference diagnostics |
 | AEWR-border ring | [`code/designs/border_discontinuity`](code/designs/border_discontinuity/) | Standalone bounded local redesign, preserved ring benchmarks, dependence/power audit and report |
 | Historical wage reforms | [`code/designs/wage_reforms`](code/designs/wage_reforms/) | Reversal and herder wage, participation, assignment-support and linkage diagnostics |
-| 2025 policy shift | [`code/designs/policy_2025`](code/designs/policy_2025/) | Offered-wage and interim covered-earnings estimates, diagnostics and integrated report |
-| Narrow welfare | [`code/welfare`](code/welfare/) | Certification-space producer incidence from one frozen certified-hours elasticity |
+| 2025 policy shift | [`code/designs/policy_2025`](code/designs/policy_2025/) | Offered-wage, complete FY2026 Q4 Track 1 county quantity, five-panel mechanism heterogeneity, and interim covered-earnings estimates, publication tables/figures, and integrated report |
+| Narrow welfare | [`code/welfare`](code/welfare/) | Track-1-anchored certification-space producer-incidence envelope bounds grid, tables, report, and provenance manifest |
 
 The shared panel owns normalized source measures, reusable outcomes and
 controls, 2011 farm employment, current and lagged AEWR-p25 wage gaps, the
@@ -60,6 +61,7 @@ Run only a supported C-side branch:
 ./scripts/run_shared_panel.sh
 ./scripts/run_descriptives.sh
 ./scripts/run_did.sh
+./scripts/run_bite.sh
 ./scripts/run_panel_iv.sh
 ./scripts/run_border_discontinuity.sh
 ./scripts/run_wage_reforms.sh
@@ -69,8 +71,13 @@ Run only a supported C-side branch:
 ```
 
 The AEWR-border runner is a standalone bounded investigation and is not called by
-`run_all.sh` or the manuscript workflow. The welfare runner is also standalone
-and intentionally stops until its elasticity contract is frozen.
+`run_all.sh` or the manuscript workflow. The full-panel FE-PPML bite runner
+(`scripts/run_bite.sh`) is likewise standalone, reads the unified shared panel
+directly without modifying `code/designs/did/` or C01/C02, and writes
+`outputs/reports/bite_design.md` and `outputs/reports/bite_provenance.json`. The welfare runner (`scripts/run_welfare.sh`) is also standalone, evaluates the
+v2 Track-1-anchored certification-space envelope bounds grid (`01_narrow_welfare.py`
+and `02_validate_welfare.py`), and fails closed if any pinned SHA-256 hash or
+`policy_2025` source row in `code/welfare/elasticity_contract.toml` drifts.
 `./scripts/run_border_data_inputs.sh` separately reproduces the cached input
 corrections and affected consumer rebuilds, including the input-comparison
 report `outputs/reports/border_data_inputs.md`, a public-data plan and an unsent
@@ -81,9 +88,12 @@ The historical wage-reform runner is standalone and consumes cached source
 microdata; it writes `outputs/reports/wage_reforms.md` with explicit causal
 identification and data-recovery limits.
 The separate 2025 policy-shift runner consumes cached inputs and writes
-`outputs/reports/policy_2025.md`. It preserves the inspected wage and
-2025Q4–2026Q1 earnings specifications, validates migration equivalence, and
-does not run the 2013 shutdown analysis. It remains outside `run_all.sh`.
+`outputs/reports/policy_2025.md`, `outputs/tables/table_policy_2025_{wages,quantity,mechanisms,earnings}.tex`,
+and `outputs/figures/fig_policy_2025_{wages,mechanisms}.{pdf,png}`. It runs the
+inspected wage-offer, complete FY2026 Q4 Track 1 county quantity, five-panel
+mechanism-heterogeneity, and 2025Q4–2026Q1 interim earnings specifications,
+validates all 703 ledger rows, and does not run the 2013 shutdown analysis. It
+remains outside `run_all.sh`.
 The panel-IV runner executes stages 01--11 in R and retains the original
 moving-wage estimator with deterministic calibration; stages 10--11 are a
 diagnostic Kitagawa decomposition of its instrument and its sensitivity to
@@ -105,7 +115,7 @@ expected outputs.
   [`content/contracts/geographic-codes.md`](content/contracts/geographic-codes.md).
 - The common county-year baseline covers 2008--2025; each design retains its
   own declared estimation sample. The border baseline uses 2011--2025.
-- H-2A employer IDs and counts follow the FY2008--2026 Q3 (review pending)
+- H-2A employer IDs and counts follow the FY2008--2026 Q4 (review pending)
   [worksite-business linkage contract](content/contracts/employer-linkage.md).
 - Old local Parquets may remain on disk, but only the artifacts documented
   above are supported.

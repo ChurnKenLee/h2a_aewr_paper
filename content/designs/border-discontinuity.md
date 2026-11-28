@@ -7,9 +7,9 @@ scopes = ["code/designs/border_discontinuity", "scripts/run_border_discontinuity
 +++
 
 The v7 baseline extends the regional-reference panel to 2011–2025, as approved
-by the user on 2026-10-26, using the common 2008–2025 panel. FY2026 Q3
-disclosures supply later decisions on 2025 starts; this partial source vintage
-can still be revised. The registry investigates a stricter agricultural border population while
+by the user on 2026-10-26, using the common 2008–2025 panel. FY2026 Q4
+disclosures supply later decisions on 2025 starts; FY2027 decisions can
+still revise them. The registry investigates a stricter agricultural border population while
 preserving the v5 ring model families. The structural candidate is
 `ring_h1_screened_disjoint`; its designation follows locality and agricultural
 support, not the estimated coefficient or p-value. Empirical adequacy is a
@@ -348,7 +348,7 @@ contains cases decided under the prior rates, so the slope is
 intent-to-treat. The rule's national changes, its housing adjustment and other
 2025 policy changes are not represented in the simulation, and simulated power
 does not establish exogeneity. Estimation requires alignment to
-the applicable job-order cohorts. FY2026 Q3 disclosures are now parsed
+the applicable job-order cohorts. FY2026 Q4 disclosures are now parsed
 upstream, while this separate registry remains a power exercise. The generated finding is
 `outputs/reports/border_statewide_power.md`.
 
