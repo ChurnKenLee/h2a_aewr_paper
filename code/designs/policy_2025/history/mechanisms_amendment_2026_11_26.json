@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-26",
+  "authorization": [
+    "User, 2026-11-26: Approved Move 1 (FY2026 Q4 mechanism heterogeneity module on cached local inputs) and Move 4 publication artifacts (code-generated wage, earnings, and mechanism LaTeX tables and figures) while excluding UFW v. DOL (Move 2) and external data downloads (Move 3)."
+  ],
+  "timing": "After FY2026 Q4 offered-wage, Track 1 county quantity, and interim covered-earnings outcomes had been inspected. Explicitly labeled as a post-inspection mechanism audit; not a preregistration.",
+  "lineage": {
+    "previous_amendment": "history/quantity_amendment_2026_11_26.json",
+    "previous_vintage_update": "history/vintage_update_2026_11_25.json"
+  },
+  "inputs": "Adds exactly 2 cached local intermediate files to sources/input_vintage.json (22 -> 24 pinned inputs): data/intermediate/croplandcros_county_crop_type_acres.parquet (predetermined 2022-2024 CDL crop capital shares) and data/intermediate/h2a_with_fips.parquet (county location fallback for unallocated denied/withdrawn applications). All 22 previously pinned source hashes and all 3 reusable_caches remain byte-identical.",
+  "changes": {
+    "new_stage": "Added code/designs/policy_2025/11b_estimate_mechanisms.R to scripts/run_policy_2025.sh immediately after 11_estimate_quantity.R.",
+    "mechanisms_scope": "96 mechanism-heterogeneity rows (48 FY2025-vs-FY2026 policy rows + 48 matched FY2024-vs-FY2025 pre-policy placebo rows) across 5 panels on the exact 2,921-county, 46-state, 15-former-region Track 1 frame with County + Former-Region x FY FE and exact delete-one-state jackknife (CV3J) inference: Panel 1 application pipeline (requested hours/positions, filed/certified/denied-withdrawn apps, approval rate); Panel 2 incumbent capacity vs employer entry (EMPLOYER-001 worksite business 1-yr and 3-yr lookbacks + R7 filer sensitivity); Panel 3 H-2ALC labor contractors vs direct growers; Panel 4 planning lead-time (Oct-Mar vs Apr-Sep starts; pre/post-Jan-1 receipts) and predetermined 2022-2024 CDL crop capital (perennial/vegetable quartile splits and within-region continuous interactions); Panel 5 intensive contract-length and scale margins.",
+    "multiplicity": "Declares a 12-hypothesis primary FY2025-FY2026 mechanism family (in_primary_family == TRUE) adjusted jointly via Holm step-down p-values (p_holm_family).",
+    "publication_artifacts": "Generates code-derived booktabs LaTeX tables table_policy_2025_wages.tex, table_policy_2025_earnings.tex, and table_policy_2025_mechanisms.tex under outputs/tables/, plus two-panel figures fig_policy_2025_wages.{pdf,png} and fig_policy_2025_mechanisms.{pdf,png} under outputs/figures/.",
+    "reference_ledgers": "Adds tests/fixtures/mechanism_estimates.csv (96 rows). All 607 previously pinned fixture rows (347 wage, 79 Track 1 quantity, 135 pre-policy earnings, 46 interim earnings) remain completely untouched."
+  },
+  "not_changed": "Stages 00 through 11 (including 11_estimate_quantity.R), helpers.R, interim_helpers.R, tests/check_interim.R, sources/domestic_wage_exposure_frozen.csv, sources/ui_classification_review.json, and all 607 pre-existing wage, quantity, and earnings fixture rows are untouched.",
+  "verification_summary": {
+    "status": "passed",
+    "existing_wage_rows_checked": 347,
+    "existing_wage_max_abs_diff": 2.220e-16,
+    "existing_quantity_rows_checked": 79,
+    "existing_quantity_max_abs_diff": 2.132e-14,
+    "existing_earnings_pre_rows_checked": 135,
+    "existing_earnings_pre_max_abs_diff": 0.0,
+    "existing_earnings_interim_rows_checked": 46,
+    "existing_earnings_interim_max_abs_diff": 0.0,
+    "mechanism_rows_baselined": 96,
+    "primary_family_holm_hypotheses": 12,
+    "primary_family_min_p_holm": 0.939026,
+    "requested_hours_elasticity": 0.058270,
+    "requested_hours_ci95_jk": [-0.607361, 0.723901],
+    "direct_grower_hours_elasticity": -0.066273,
+    "direct_grower_hours_ci95_jk": [-0.440091, 0.307544],
+    "late_start_hours_elasticity": -0.675565,
+    "late_start_hours_ci95_jk": [-1.430662, 0.079532]
+  }
+}

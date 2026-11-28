@@ -30,6 +30,75 @@ for (name in c("wage_estimates.csv","earnings_pre_estimates.csv","earnings_inter
   }
   cat(name,": all rows reproduced; largest absolute difference",maximum,"\n")
 }
+# Validate additive Track 1 quantity ledger (79 rows, 1e-10 tolerance).
+q_old <- read_csv(file.path(CD,"tests/fixtures/quantity_estimates.csv"), show_col_types=FALSE)
+q_cur <- read_csv(file.path(out,"quantity_estimates.csv"), show_col_types=FALSE)
+check("quantity_estimates.csv_columns_and_rows", identical(names(q_old),names(q_cur)) && nrow(q_old)==nrow(q_cur) && nrow(q_cur)==contract$expected_rows$quantity)
+q_keys <- c("track","window","contrast","specification","outcome","estimator","treatment")
+cd_keys(q_cur,q_keys)
+q_old <- arrange(q_old,across(all_of(q_keys)))
+q_cur <- arrange(q_cur,across(all_of(q_keys)))
+q_max <- 0
+for (column in names(q_cur)) {
+  a <- q_cur[[column]]; b <- q_old[[column]]
+  check(paste("quantity_estimates.csv",column,"missingness",sep="_"), identical(is.na(a),is.na(b)))
+  if (is.numeric(a)) {
+    check(paste("quantity_estimates.csv",column,"finite_support",sep="_"), identical(is.finite(a),is.finite(b)))
+    difference <- abs(a[is.finite(a)]-b[is.finite(b)])
+    q_max <- max(c(q_max,difference))
+    check(paste("quantity_estimates.csv",column,"numeric_equivalence",sep="_"), all(difference<=contract$equivalence_tolerance))
+  } else check(paste("quantity_estimates.csv",column,"equivalence",sep="_"), identical(a,b))
+}
+cat("quantity_estimates.csv : all rows reproduced; largest absolute difference",q_max,"\n")
+qp <- read_parquet(file.path(out,"quantity_county_fy.parquet"))
+cd_keys(qp,c("county_fips","year"))
+check("quantity_panel_shape_and_geo", nrow(qp)==2921L*15L && is.character(qp$county_fips) && all(grepl("^[0-9]{5}$",qp$county_fips)) && is.character(qp$state_fips) && all(grepl("^[0-9]{2}$",qp$state_fips)))
+h2y <- read_parquet(path_int("h2a_data_year.parquet"), col_select=c("county_fips","year","nbr_workers_certified_fiscal_year")) %>%
+  mutate(year=as.integer(year)) %>% filter(year>=2012L, year<=2025L)
+q_par <- qp %>% filter(year<=2025L) %>% select(county_fips,year,cert_all_fy) %>%
+  left_join(h2y, by=c("county_fips","year")) %>% mutate(nbr_workers_certified_fiscal_year=coalesce(nbr_workers_certified_fiscal_year,0))
+check("quantity_fy2012_2025_producer_parity", max(abs(q_par$cert_all_fy - q_par$nbr_workers_certified_fiscal_year)) < 1e-10)
+q_head <- q_cur %>% filter(window=="full_fy", specification=="B_primary", outcome %in% c("hours","cert"), estimator=="PPML")
+q_s5 <- q_cur %>% filter(window=="full_fy", specification %in% c("S5_control_mw_general","S5_control_mw_ag"))
+check("quantity_headline_and_s5_all_46_states", nrow(q_head)==2L && all(q_head$states==46L) && all(q_head$status=="estimated") && all(is.finite(q_head$se_jackknife) & q_head$se_jackknife>0) && nrow(q_s5)==8L && all(q_s5$states==46L))
+q_indep <- fixest::fepois(hours_full_fy ~ x_us_skill_1 | county_fips + aewr_region_id^year, data=qp %>% filter(year %in% 2025L:2026L), vcov=~state_fips, notes=FALSE)
+q_h <- q_cur %>% filter(window=="full_fy", specification=="B_primary", outcome=="hours", estimator=="PPML")
+check("independent_quantity_PPML_hours", nrow(q_h)==1L && abs(unname(coef(q_indep)["x_us_skill_1"]) - q_h$estimate)<1e-10 && abs(unname(se(q_indep)["x_us_skill_1"]) - q_h$se_state_crv1)<1e-10)
+
+# Validate additive FY2026 Q4 mechanism heterogeneity ledger (96 rows, 1e-10 tolerance).
+m_old <- read_csv(file.path(CD,"tests/fixtures/mechanism_estimates.csv"), show_col_types=FALSE)
+m_cur <- read_csv(file.path(out,"mechanism_estimates.csv"), show_col_types=FALSE)
+check("mechanism_estimates.csv_columns_and_rows", identical(names(m_old),names(m_cur)) && nrow(m_old)==nrow(m_cur) && nrow(m_cur)==contract$expected_rows$mechanisms)
+m_keys <- c("track","panel","contrast","specification","outcome","estimator","term")
+cd_keys(m_cur,m_keys)
+m_old <- arrange(m_old,across(all_of(m_keys)))
+m_cur <- arrange(m_cur,across(all_of(m_keys)))
+m_max <- 0
+for (column in names(m_cur)) {
+  a <- m_cur[[column]]; b <- m_old[[column]]
+  check(paste("mechanism_estimates.csv",column,"missingness",sep="_"), identical(is.na(a),is.na(b)))
+  if (is.numeric(a)) {
+    check(paste("mechanism_estimates.csv",column,"finite_support",sep="_"), identical(is.finite(a),is.finite(b)))
+    difference <- abs(a[is.finite(a)]-b[is.finite(b)])
+    m_max <- max(c(m_max,difference))
+    check(paste("mechanism_estimates.csv",column,"numeric_equivalence",sep="_"), all(difference<=contract$equivalence_tolerance))
+  } else check(paste("mechanism_estimates.csv",column,"equivalence",sep="_"), identical(a,b))
+}
+cat("mechanism_estimates.csv : all rows reproduced; largest absolute difference",m_max,"\n")
+mp <- read_parquet(file.path(out,"mechanisms_county_fy.parquet"))
+cd_keys(mp,c("county_fips","year"))
+check("mechanisms_panel_shape_and_geo", nrow(mp)==2921L*3L && is.character(mp$county_fips) && all(grepl("^[0-9]{5}$",mp$county_fips)) && is.character(mp$state_fips) && all(grepl("^[0-9]{2}$",mp$state_fips)))
+check("mechanisms_conservation_identities",
+  max(abs((mp$incumbent_1yr_hours + mp$entrant_1yr_hours) - mp$worksite_bus_hours)) < 1e-8 &&
+  max(abs((mp$worksite_bus_hours + mp$non_wb_hours) - mp$hours_full_fy)) < 1e-8 &&
+  max(abs((mp$h2alc_hours + mp$direct_hours) - mp$hours_full_fy)) < 1e-8 &&
+  max(abs((mp$early_start_hours + mp$late_start_hours) - mp$hours_full_fy)) < 1e-8 &&
+  max(abs((mp$certified_apps + mp$denied_withdrawn_apps + mp$other_apps) - mp$filed_apps)) < 1e-8)
+m_fam <- m_cur %>% filter(in_primary_family)
+check("mechanisms_primary_holm_family", nrow(m_fam)==12L && all(m_fam$contrast=="fy2025_2026") && all(is.finite(m_fam$p_holm_family) == is.finite(m_fam$p_jackknife)) && all(m_fam$p_holm_family[is.finite(m_fam$p_holm_family)] >= m_fam$p_jackknife[is.finite(m_fam$p_holm_family)] - 1e-12))
+m_indep <- fixest::fepois(incumbent_1yr_hours ~ x_us_skill_1 | county_fips + aewr_region_id^year, data=mp %>% filter(year %in% 2025L:2026L), vcov=~state_fips, notes=FALSE)
+m_inc <- m_cur %>% filter(contrast=="fy2025_2026", specification=="wb_1yr_incumbent_hours")
+check("independent_mechanisms_PPML_incumbent_hours", nrow(m_inc)==1L && abs(unname(coef(m_indep)["x_us_skill_1"]) - m_inc$estimate)<1e-10 && abs(unname(se(m_indep)["x_us_skill_1"]) - m_inc$se_state_crv1)<1e-10)
 p <- read_parquet(file.path(out,"wage_filer_state_occupation.parquet"))
 cd_keys(p,c("tier","filer","state_fips","soc","fiscal_year"))
 check("wage_geographic_strings",is.character(p$state_fips) && all(grepl("^[0-9]{2}$",p$state_fips)))

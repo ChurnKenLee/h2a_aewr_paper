@@ -1,0 +1,48 @@
+\begin{table}[!htbp]
+\centering
+\caption{2025 Statewide AEWR Rule: Mechanism Heterogeneity Across Pipeline, Employer Entry, Contractors, Lead-Time, and Crop Capital (FY2025--FY2026)}
+\label{tab:policy_2025_mechanisms}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Mechanism / Subgroup & Estimate & JK SE & 95\% JK CI & MDE & Holm $p$ & Placebo (FY24--25) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel A: Application Pipeline \& Certification Bottlenecks}} \\
+Requested hours (all filed, PPML)$^{\dagger}$ & 0.058 & [0.330] & [-0.607, 0.724] & 0.93 & 1.000 & -0.114 (0.190) \\
+Requested positions (all filed, PPML)$^{\dagger}$ & 0.162 & [0.243] & [-0.328, 0.652] & 0.68 & 1.000 & -0.104 (0.198) \\
+Approval rate (cert./req., OLS \$/hr)$^{\dagger}$ & -0.0062 & [0.0082] & [-0.0228, 0.0104] & --- & 1.000 & 0.0089 (0.0084) \\
+Paired diff.: requested $-$ certified hours & 0.136 & [0.227] & [-0.322, 0.594] & 0.64 & --- & -0.081 (0.216) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: Incumbent Capacity vs.\ Employer Entry (Worksite Business, 1-Yr Lookback)}} \\
+Incumbent business hours (PPML)$^{\dagger}$ & -0.086 & [0.387] & [-0.866, 0.694] & 1.08 & 1.000 & 0.113 (0.230) \\
+Entrant business hours (PPML)$^{\dagger}$ & -0.213 & [2.017] & [-4.275, 3.849] & 5.65 & 1.000 & -0.788 (1.001) \\
+Paired diff.: entrant $-$ incumbent hours$^{\dagger}$ & -0.127 & [2.370] & [-4.900, 4.646] & 6.64 & 1.000 & -0.901 (1.039) \\
+Distinct worksite businesses (PPML) & 0.444 & [0.752] & [-1.070, 1.958] & 2.10 & --- & 0.123 (0.371) \\
+Sensitivity: R7 filer entrant $-$ incumbent & -2.551 & [1.537] & [-5.647, 0.544] & 4.30 & --- & 1.111 (1.079) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel C: H-2ALC Labor Contractors vs.\ Direct Growers}} \\
+H-2ALC contractor hours (PPML)$^{\dagger}$ & -0.103 & [1.148] & [-2.417, 2.210] & 3.22 & 1.000 & -0.602 (0.485) \\
+Direct-grower hours (PPML)$^{\dagger}$ & -0.066 & [0.186] & [-0.440, 0.308] & 0.52 & 1.000 & 0.064 (0.186) \\
+Paired diff.: H-2ALC $-$ direct hours$^{\dagger}$ & -0.037 & [1.070] & [-2.193, 2.119] & 3.00 & 1.000 & -0.665 (0.604) \\
+H-2ALC share of hours (OLS \$/hr) & 0.0016 & [0.0044] & [-0.0073, 0.0105] & --- & --- & 0.0029 (0.0077) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel D: Planning Lead-Time \& Predetermined 2022--2024 CDL Crop Capital}} \\
+Early starts (Oct--Mar, PPML) & 0.055 & [0.520] & [-0.992, 1.101] & 1.45 & --- & 0.097 (0.171) \\
+Late starts (Apr--Sep, PPML)$^{\dagger}$ & -0.676* & [0.375] & [-1.431, 0.080] & 1.05 & 0.939 & -0.286 (0.150) \\
+Paired diff.: late $-$ early starts$^{\dagger}$ & -0.730 & [0.820] & [-2.383, 0.922] & 2.30 & 1.000 & -0.383 (0.260) \\
+Perennial-intensive counties ($\ge p_{75}$, PPML) & -0.264 & [0.856] & [-2.005, 1.476] & 2.40 & --- & -0.055 (0.155) \\
+Annual-dominated counties ($< p_{75}$, PPML) & 0.020 & [0.257] & [-0.499, 0.540] & 0.72 & --- & -0.056 (0.237) \\
+Continuous interaction: dose $\times$ perennial SD$^{\dagger}$ & 0.012 & [0.400] & [-0.793, 0.817] & 1.12 & 1.000 & 0.059 (0.381) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel E: Intensive Contract-Length \& Scale Margins}} \\
+Implied $\ln(\text{hours} / \text{position})$ (paired JK) & -0.141 & [0.179] & [-0.503, 0.220] & 0.50 & --- & -0.012 (0.116) \\
+Implied $\ln(\text{positions} / \text{business})$ (paired JK) & -0.380 & [0.793] & [-1.977, 1.217] & 2.22 & --- & -0.143 (0.392) \\
+Mean contract weeks (continuing OLS) & -0.043 & [0.130] & [-0.304, 0.218] & 0.36 & --- & -0.014 (0.098) \\
+Mean observed weekly hours (continuing OLS) & 0.016 & [0.030] & [-0.044, 0.077] & 0.08 & --- & 0.036 (0.038) \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.4em}\footnotesize
+\textit{Notes:} All models use the Track 1 multi-state frame (2,921 counties, 46 states, 15 former AEWR regions) with County and Former-Region $\times$ FY fixed effects and exact delete-one-state jackknife (CV3J, $t(G-1)$) inference. PPML rows report statutory elasticities ($\hat{\beta}\bar{p}$); paired differences and implied intensive margins use exact paired 46-state jackknife draws; OLS rate rows report slopes per statutory dollar. The continuous CDL interaction absorbs region-specific post-period perennial slopes ($\text{Region} \times \text{Post} \times Z_c$) so identification uses within-former-region dose dispersion only. $^{\dagger}$Marks the 12 declared primary FY2025--FY2026 mechanism hypotheses jointly adjusted via Holm step-down $p$-values (column 6). Matched FY2024--FY2025 placebo estimates (JK SE in parentheses) appear in column 7. Post-inspection mechanism audit (not a preregistration); $^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$ (unadjusted JK $p$).
+\end{minipage}
+\end{table}

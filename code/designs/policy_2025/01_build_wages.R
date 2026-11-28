@@ -23,7 +23,7 @@ r <- r %>% mutate(begin=as.Date(period_begin_date),end=as.Date(period_end_date),
   hourly=toupper(trimws(wage_unit)) %in% c("HOUR","HOURLY","HR") & is.finite(wage) & wage>0 & wage<=100,
   soc=substr(trimws(soc_code),1,7),soc=ifelse(is.na(soc)|!grepl("^[0-9]{2}-[0-9]{4}$",soc),"unknown",soc)) %>%
   left_join(disc,by=c("fiscal_year","case_number"),relationship="many-to-one") %>%
-  filter(!is.na(begin),decision>=as.Date(sprintf("%d-10-01",fiscal_year-1L)),decision<=as.Date(sprintf("%d-06-30",fiscal_year))) %>%
+  filter(!is.na(begin),decision>=as.Date(sprintf("%d-10-01",fiscal_year-1L)),decision<=as.Date(sprintf("%d-09-30",fiscal_year))) %>%
   left_join(ids,by=c("fiscal_year","case_number"),relationship="many-to-one") %>%
   left_join(ident,by=c("fiscal_year","case_number"),relationship="many-to-one") %>%
   mutate(county_fips_list=ifelse(is.na(county_fips_list)|county_fips_list=="","00000",county_fips_list),nc=stringr::str_count(county_fips_list,",")+1L)
@@ -55,7 +55,9 @@ candidate<-read_parquet(path_int("aewr_occupation_skill_rates.parquet")) %>%
 mw<-read_parquet(path_int("state_real_minwages.parquet")) %>% filter(year %in% 2023:2026) %>%
   transmute(state_fips,fiscal_year=as.integer(year),ag_min=prevailing_ag_min_wage,general_min=prevailing_min_wage,ag_floor_rule)
 cd_keys(candidate,"state_fips");cd_keys(mw,c("state_fips","fiscal_year"))
-r<-r %>% left_join(candidate,by="state_fips") %>% left_join(mw,by=c("state_fips","fiscal_year")) %>%
+r<-r %>% left_join(candidate,by="state_fips") %>% left_join(mw,by=c("state_fips","fiscal_year"))
+stopifnot(!anyNA(r$ag_min), all(is.finite(r$ag_min)))
+r<-r %>%
   mutate(ref_us1=ifelse(fiscal_year==2026 & receipt_proxy_new,us_1,reference),ref_us2=ifelse(fiscal_year==2026 & receipt_proxy_new,us_2,reference),
     ref_h2a1=ifelse(fiscal_year==2026 & receipt_proxy_new,h2a_1,reference),ref_h2a2=ifelse(fiscal_year==2026 & receipt_proxy_new,h2a_2,reference),
     across(starts_with("ref_"),~pmax(.x,ag_min,7.25)),

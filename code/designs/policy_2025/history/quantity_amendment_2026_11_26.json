@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-26",
+  "authorization": [
+    "User, 2026-11-26: Approved Path 2 (complete FY2026 Q4 Track 1 county quantity lower bound) and Path 1 (envelope-theorem welfare bounds grid anchored to Path 2)."
+  ],
+  "timing": "After FY2026 Q1-Q3 Track 1 quantity estimates, FY2026 Q4 wage-offer estimates, and interim covered-earnings outcomes were inspected. Not a preregistration.",
+  "lineage": {
+    "previous_vintage_update": "history/vintage_update_2026_11_25.json",
+    "original_track1_registry": "explorations/identification/track1_registry.json",
+    "original_track1_registry_sha256": "bbffa053953873aa8a36c04a5af71c012fd15460b2cd0ff84bd378f6e65aafd8",
+    "original_track1_amendment1": "explorations/identification/track1_registry_amendment1.json",
+    "original_track1_amendment1_sha256": "433264ec85845f2ddb97c291073c19585ca9b80e2bb137aa0915fe38e29799e9"
+  },
+  "inputs": "Zero changes to sources/input_vintage.json (all 22 source input SHA-256 hashes and all 3 reusable_caches remain identical to the 2026-11-25 unified minimum-wage vintage). Stage 11 reads unified data/intermediate/state_real_minwages.parquet (never retired fred_state_minwages.parquet), restoring all 46 multi-state-region states in S5 minimum-wage controls.",
+  "changes": {
+    "new_stage": "Added code/designs/policy_2025/11_estimate_quantity.R to scripts/run_policy_2025.sh right after 10_estimate_interim.R.",
+    "headline": "Complete FY2026 Q4 (full fiscal year Oct 1-Sep 30) Track 1 FY2025-vs-FY2026 county quantity response across all 2,921 positive-2011-farm-employment counties in the 15 multi-state former AEWR regions (46 states), County + Former-Region x FY FE, exact delete-one-state jackknife (CV3J, t(45)) primary inference.",
+    "sensitivities_and_benchmarks": "Retains matched Q1-Q3 benchmark reproduction (noting the documented 2026-11-21 42-county Northeast ZIP left-padding fix), symmetric pre-2026-08-03 second-schedule cutoffs (decision & receipt + dual-schedule cohort), symmetric pre-2026-08-26 UFW v. DOL court-order cutoffs, FY2024 vs FY2025 placebos (full FY and Q1-Q3), S1-S5 sensitivities (with S5 at full 46/46 states), FY2012-FY2026 event study, and labeled post-hoc epsilon_cost conversions linked dynamically to policy_2025 R7 continuing-filer pass-through and paired 46-state county first-stage jackknife draws.",
+    "reference_ledgers": "Added tests/fixtures/quantity_estimates.csv (79 rows). Existing tests/fixtures/wage_estimates.csv (347 rows), tests/fixtures/earnings_pre_estimates.csv (135 rows), and tests/fixtures/earnings_interim_estimates.csv (46 rows) are untouched."
+  },
+  "not_changed": "Stages 00 through 10, helpers.R, interim_helpers.R, tests/check_interim.R, sources/input_vintage.json, sources/domestic_wage_exposure_frozen.csv, sources/ui_classification_review.json, and all 528 existing wage-offer and earnings coefficient rows are untouched.",
+  "verification_summary": {
+    "status": "passed",
+    "existing_wage_rows_checked": 347,
+    "existing_wage_max_abs_diff": 3.948e-15,
+    "existing_earnings_pre_rows_checked": 135,
+    "existing_earnings_pre_max_abs_diff": 0.0,
+    "existing_earnings_interim_rows_checked": 46,
+    "existing_earnings_interim_max_abs_diff": 0.0,
+    "quantity_rows_baselined": 79,
+    "full_fy_ppml_hours_elasticity": -0.077841,
+    "full_fy_ppml_hours_ci95_jk": [-0.598471, 0.442788],
+    "full_fy_ppml_hours_mde_jk": 0.723777,
+    "q1_q3_ppml_hours_elasticity": -0.197683,
+    "q1_q3_ppml_hours_ci95_jk": [-1.004390, 0.609024]
+  }
+}

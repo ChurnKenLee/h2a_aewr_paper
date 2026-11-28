@@ -1,0 +1,34 @@
+\begin{table}[!htbp]
+\centering
+\caption{2025 Statewide AEWR Rule: Covered Agricultural Weekly Earnings in QCEW (Interim 2025Q4--2026Q1)}
+\label{tab:policy_2025_earnings}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Specification / Window & Weight & Slope $\hat{\beta}$ & JK SE & 95\% JK CI & Implied \% & Counties (States) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel A: Primary Interim Crop Earnings (NAICS 111), Quarter Splits, and Lead}} \\
+Primary two-quarter interim (2025Q4--2026Q1) & Equal & 0.0165** & [0.0070] & [0.0025, 0.0306] & -1.97\% & 1,457 (47) \\
+2025Q4 alone (all eligible counties) & Equal & 0.0310* & [0.0161] & [-0.0013, 0.0634] & -3.65\% & 1,543 (47) \\
+2025Q4 alone (common two-quarter sample) & Equal & 0.0311** & [0.0151] & [0.0007, 0.0615] & -3.66\% & 1,457 (47) \\
+2026Q1 alone (all eligible counties) & Equal & -0.0026 & [0.0156] & [-0.0339, 0.0288] & +0.31\% & 1,562 (47) \\
+2026Q1 alone (common two-quarter sample) & Equal & 0.0020 & [0.0125] & [-0.0231, 0.0271] & -0.24\% & 1,457 (47) \\
+Prior-window lead (2024Q4--2025Q2) & Equal & -0.0150 & [0.0112] & [-0.0375, 0.0075] & +1.82\% & 1,421 (47) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: Sensitivities, UI-Coverage Splits, and Comparison Industries (2025Q4--2026Q1)}} \\
+Crop (NAICS 111), prior-year employment weights & Prior emp. & 0.0050 & [0.0096] & [-0.0142, 0.0243] & -0.60\% & 1,457 (47) \\
+Crop (NAICS 111), H-2A skill-I cash dose & Equal & 0.0146* & [0.0079] & [-0.0013, 0.0305] & -1.74\% & 1,457 (47) \\
+Crop (NAICS 111), commuting-zone exposure & Equal & 0.0169 & [0.0107] & [-0.0047, 0.0385] & -2.01\% & 1,457 (47) \\
+Crop (NAICS 111), omitting $S_c$ control & Equal & 0.0012 & [0.0021] & [-0.0029, 0.0054] & -0.15\% & 1,457 (47) \\
+Crop UI split: ambiguous/unclassified states & Equal & 0.0156** & [0.0069] & [0.0016, 0.0295] & -1.85\% & 1,237 (42) \\
+Crop UI split: H-2A excluded states ($G=3$) & Equal & -0.0087 & [1.0806] & [-4.6583, 4.6409] & +1.05\% & 142 (3) \\
+Crop UI split: H-2A covered states (insuff.\ $G=2$) & Equal & --- & --- & --- & --- & 78 (2) \\
+Comparison: animal production (NAICS 112) & Equal & -0.0025 & [0.0191] & [-0.0410, 0.0360] & +0.30\% & 1,216 (45) \\
+Comparison: all private industries & Equal & 0.0032 & [0.0025] & [-0.0018, 0.0082] & -0.38\% & 3,011 (47) \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.4em}\footnotesize
+\textit{Notes:} Exploratory interim evidence using cached QCEW single-file archives through 2026Q1 (2026Q2 pending verified publication). Outcome is the county mean year-over-year log change in private average weekly earnings across declared quarters, requiring positive disclosed wages and monthly employment $\ge 10$ in all required periods and $\ge 2$ eligible counties per state. Regressions estimate $\Delta \ln w_c = \beta (S_c \times \text{cut}_s) + \gamma S_c + \alpha_s + \varepsilon_c$, where $S_c$ is frozen 2022--2024 H-2A intensity (winsorized at p99) and $\text{cut}_s$ is the October 2, 2025 statutory U.S.\ skill-I cut; positive $\hat{\beta}$ indicates relative earnings declined more where intensity and statutory cuts were larger. Implied \% evaluates $\exp(\hat{\beta} \times 0.30 \times (-4)) - 1$. Primary inference is state leave-one-out jackknife ($t(G-1)$). Across the 9 matched Q4--Q1 pre-policy placebo windows (2016--2024), primary crop slopes average 0.0001 (range [-0.0090, 0.0129]). Weekly earnings combine wage rates, hours, and workforce composition and do not separately identify domestic-worker wage spillovers. $^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$ (JK $p$).
+\end{minipage}
+\end{table}

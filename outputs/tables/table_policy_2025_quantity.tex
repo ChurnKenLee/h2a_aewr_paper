@@ -1,0 +1,41 @@
+\begin{table}[!htbp]
+\centering
+\caption{2025 Statewide AEWR Rule: County H-2A Quantity Response and Lower-Bound Elasticities (Track 1, FY2025--FY2026)}
+\label{tab:policy_2025_quantity}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Specification / Outcome & Slope / $\hat{\beta}$ & JK SE & CRV1 SE & Statutory Elasticity [95\% JK CI] & MDE & States \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel A: Headline Complete FY2026 Q4 (Full Fiscal Year Oct 1--Sep 30, FY2025 vs.\ FY2026)}} \\
+PPML certified hours (welfare anchor) & -0.0051 & [0.0168] & (0.0090) & -0.08 [-0.60, 0.44] & 0.72 & 46 \\
+PPML certified hours ($\ln$ statutory rate) & -0.0620 & [0.1936] & (0.1046) & -0.06 [-0.45, 0.33] & 0.54 & 46 \\
+PPML certified positions & 0.0041 & [0.0122] & (0.0073) & 0.06 [-0.31, 0.44] & 0.52 & 46 \\
+OLS hours per 2011 farm worker & 2.9283 & [5.4708] & (2.9962) & 0.26 [-0.72, 1.24] & 1.37 & 46 \\
+OLS positions per 2011 farm worker & 0.0060 & [0.0069] & (0.0039) & 0.54 [-0.72, 1.81] & 1.76 & 46 \\
+County offered-wage first stage (\$/hr) & 0.6714*** & [0.0988] & (0.0636) & Pass-through [0.47, 0.87] & --- & 46 \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: Window Cutoffs, Benchmark Reproduction, and Pre-Policy Placebo (PPML Certified Hours)}} \\
+Matched Q1--Q3 benchmark (Oct 1--Jun 30) & -0.0129 & [0.0261] & (0.0134) & -0.20 [-1.00, 0.61] & 1.12 & 46 \\
+Symmetric pre-Aug 3 decision cutoff & -0.0109 & [0.0211] & (0.0108) & -0.17 [-0.82, 0.49] & 0.91 & 46 \\
+Symmetric pre-Aug 3 receipt cutoff & -0.0117 & [0.0209] & (0.0107) & -0.18 [-0.83, 0.47] & 0.90 & 46 \\
+Symmetric pre-Aug 26 decision cutoff (\textit{UFW}) & -0.0116 & [0.0198] & (0.0101) & -0.18 [-0.79, 0.43] & 0.85 & 46 \\
+Symmetric pre-Aug 26 receipt cutoff (\textit{UFW}) & -0.0074 & [0.0140] & (0.0073) & -0.11 [-0.55, 0.32] & 0.60 & 46 \\
+Pre-policy placebo (FY2024 vs.\ FY2025, full FY) & -0.0022 & [0.0086] & (0.0042) & -0.03 [-0.29, 0.23] & 0.36 & 46 \\
+Pre-policy placebo (FY2024 vs.\ FY2025, Q1--Q3) & -0.0053 & [0.0174] & (0.0077) & -0.08 [-0.61, 0.45] & 0.73 & 46 \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel C: Treatment \& Control Sensitivities on Complete FY2026 Q4 (PPML Certified Hours)}} \\
+S3: H-2A skill-I cash rate & -0.0056 & [0.0150] & (0.0080) & -0.08 [-0.52, 0.36] & 0.61 & 46 \\
+S3: U.S.\ skill-II rate & 0.0104 & [0.0222] & (0.0122) & 0.18 [-0.60, 0.96] & 1.08 & 46 \\
+S4: Pre-Oct 2 receipt cohort-aligned rate & -0.0041 & [0.0175] & (0.0096) & -0.06 [-0.60, 0.48] & 0.75 & 46 \\
+S4: Dual-schedule (Oct 2 + Aug 3) cohort rate & -0.0029 & [0.0173] & (0.0096) & -0.04 [-0.58, 0.49] & 0.75 & 46 \\
+S5: + General state min.\ wage (all 46 states) & -0.0040 & [0.0165] & (0.0088) & -0.06 [-0.57, 0.45] & 0.71 & 46 \\
+S5: + Applicable ag.\ min.\ wage (all 46 states) & -0.0054 & [0.0168] & (0.0090) & -0.08 [-0.60, 0.44] & 0.72 & 46 \\
+S1: Static FY2012--FY2026 panel & 0.0096 & [0.0678] & (0.0311) & 0.13 [-1.67, 1.92] & 2.50 & 46 \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.4em}\footnotesize
+\textit{Notes:} Sample spans all 2,921 counties with positive fixed-2011 BEA farm employment in the 15 multi-state former AEWR regions (46 states; CA, FL, AK, HI, and DC excluded). All models include County and Former-Region $\times$ FY fixed effects. Primary inference is exact delete-one-state jackknife (CV3J, $t(45)$); state-clustered CRV1 SEs appear in parentheses. Statutory elasticities scale linear-dollar slopes by estimation-sample mean statutory rate ($\hat{\beta}\bar{p}$ for PPML; $\hat{\beta}\bar{p}/\bar{y}$ for OLS ratios); MDE $= 2.8 \times \text{JK elasticity SE}$. Stars denote jackknife p-values ($^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$).
+\end{minipage}
+\end{table}

@@ -1,27 +1,27 @@
 {
   "design": "policy_2025_v1",
-  "generated_at": "2026-11-16 18:25:11.241655",
-  "specification_changed": false,
+  "generated_at": "2026-11-27 05:34:43.760559",
+  "specification_changed": true,
   "outcomes_previously_inspected": true,
   "inputs": {
-    "recorded_at": "2026-11-17T02:18:15.060548+00:00",
+    "recorded_at": "2026-11-27T05:24:08.439528+00:00",
     "design": "policy_2025_v1",
     "inputs": [
       {
         "path": "data/processed/county_year_panel.parquet",
-        "sha256": "bff3256f8c2e87afcd643575de8bf969a34788f5b645de30831f1ac0547345d6"
+        "sha256": "4e2e56d0884715ea0ff26b8251339c18748cc1966692a5ab0eac31171cf51b92"
       },
       {
         "path": "data/intermediate/h2a_allocated_worksites.parquet",
-        "sha256": "9bb0e71fb00800ffcec6aaab6e69420384d43adda62d9c407805efab00b694b2"
+        "sha256": "6b415382b669da35a0d58e796a7e27469121b357c3581ee3276d64abf97fc74c"
       },
       {
         "path": "data/intermediate/h2a_disclosure_records.parquet",
-        "sha256": "d351e20ddde9a742afbb72be930f8ff7bd11329296d09ec556208f7bcf36e265"
+        "sha256": "1ea7a2969e13ff62c787178f5d3bf61b6558f1919a04dc29e0d18b334b16e7dc"
       },
       {
         "path": "data/intermediate/h2a_employer_record_membership.parquet",
-        "sha256": "7642e1efc288a06c699482c4d178ef1df8e585e65ea8cb42747c9e80d94adf11"
+        "sha256": "80444ae26981e170b2768e08ecf6c7aec3ee6996b77acdb51848892509fde09c"
       },
       {
         "path": "data/intermediate/aewr_rate_schedule.parquet",
@@ -33,7 +33,7 @@
       },
       {
         "path": "data/intermediate/state_real_minwages.parquet",
-        "sha256": "c9de6b5afbafc985b5dd3445b9d98a10215a52c4f94618b1ac2a1aeff930a2d8"
+        "sha256": "14fe913b890c591218b8efab352cfc0db9e7b6d5c2fd1bc956699749cf244cde"
       },
       {
         "path": "data/intermediate/qwi_county_ag_quarterly_earnings.parquet",
@@ -94,42 +94,52 @@
       {
         "path": "data/raw/qcew_episode_2025_2026/MANIFEST.csv",
         "sha256": "dba21f3aaa766b4ca61d1f16ddfb9a0252c4f58f8b0f3419f035d5b254aa8787"
+      },
+      {
+        "path": "data/intermediate/croplandcros_county_crop_type_acres.parquet",
+        "sha256": "74c7e6dc3f0b1ff628e8493aef9046ddd3f80743e547ba5edefc69287bbb9307"
+      },
+      {
+        "path": "data/intermediate/h2a_with_fips.parquet",
+        "sha256": "1ab3ad4dfa2d57f73237e7f446ff7090e479053731e584d2b19dc449490c665b"
       }
     ],
     "reused": [
       {
         "destination": "filer/filer_cases.parquet",
-        "source": "/tmp/h2a-chapter-directions/filer/filer_cases.parquet",
-        "sha256": "caa718000917cb640ddafa0e93e2f5c30378ba87e7e0a764c7f9fd201ace5e06"
+        "source": "/home/ken/Dropbox/projects/H-2A_Paper/data/intermediate/policy_2025/filer/filer_cases.parquet",
+        "sha256": "addcf8fc066bd38edd99ed7e2048d2d1260c6390b287a514d673065411b11f76"
       },
       {
         "destination": "filer/filer_ids.parquet",
-        "source": "/tmp/h2a-chapter-directions/filer/filer_ids.parquet",
-        "sha256": "adfb4895c2d33bebb2988e18ecdb8e9ffab60d123dfd6516633f239615106cca"
+        "source": "/home/ken/Dropbox/projects/H-2A_Paper/data/intermediate/policy_2025/filer/filer_ids.parquet",
+        "sha256": "bcfcecd95fdad24a98cadb609f19080c1f9357c80aaede40527d22e7bd7bce1e"
       },
       {
         "destination": "earnings_pre.parquet",
-        "source": "/tmp/h2a-chapter-directions/earnings_pre.parquet",
+        "source": "/home/ken/Dropbox/projects/H-2A_Paper/data/processed/policy_2025/earnings_pre.parquet",
         "sha256": "94f1e5204e123301586ac6436bce06155b0991549d2f93cd1c426f8d61617ca4"
       }
     ],
     "outcomes_previously_inspected": true,
-    "migration": "Organizational migration; unchanged specifications and frozen source vintage",
+    "vintage": "FY2026 Q4 baseline (2026-11-21 update; 2026-11-25 unified minimum-wage vintage update): full-fiscal-year wage window, exposure unchanged from 2026-11-21, unified A01 FRED state minimum wages",
     "project_root": "/home/ken/Dropbox/projects/H-2A_Paper"
   },
   "source_hashes": {
-    "code/designs/policy_2025/00_prepare.py": "9ab803a7a403ae33bfd927dc3de61319d657acb75113a92c81976a8fdf5e8f4f",
-    "code/designs/policy_2025/01_build_wages.R": "08756d9353fa155e30bfbdfbe5821f2cc2f47b1946c3573e3152cc03a6f79c27",
+    "code/designs/policy_2025/00_prepare.py": "b187ab0bccf920c799d43c85c72a555192e2372d517557a5b146b266036f3424",
+    "code/designs/policy_2025/01_build_wages.R": "ed9cf4e666e60c2287dc887307cf7262e06f4a0036af414e1db592b97f43014f",
     "code/designs/policy_2025/02_estimate_wages.R": "d7f62cac45c9334674fa6aa51aecc799ce9a2316ba54cd88c797f39f4ce65fe3",
     "code/designs/policy_2025/05_extract_earnings.py": "fd9b56362ea73cc4b333deb2b893c8d3db7e0b85306a0c98b016fc02c8fa0995",
     "code/designs/policy_2025/06_estimate_earnings.R": "f2cb8ece11bcb761ef970113fce22e738db121c737af17e0e2185a8e200e2540",
-    "code/designs/policy_2025/07_validate.R": "18890a720d168f14eb8df5555922f10c3779d2eee3b4d7a5479b61e27bf16348",
-    "code/designs/policy_2025/08_report.R": "5e80cbee44851aa6a0f7a0cfc51afcc9a6bfd8265f76cf3c5763fb5d5e33bc0b",
+    "code/designs/policy_2025/07_validate.R": "dfac8968359a774657693232e9786634b5313a9a517980a591ed74aedecbdefe",
+    "code/designs/policy_2025/08_report.R": "1b28a37372dccfa065f4b70c5bdd2764850938f6c60ecbf78b75faaf3085f44d",
     "code/designs/policy_2025/09_extract_interim.py": "e168fa78ec68886140e0231b41d5d8585248bcd59b6bcc3628f367d3656e4c0e",
     "code/designs/policy_2025/10_estimate_interim.R": "86651b5533d521ef610d743ef50b3c0e35b7f063775899f148e125111bca9d95",
-    "code/designs/policy_2025/12_publish.R": "5323ed1ac505afdf8b87fcb12fdfb3ebac361ce7440591e92e543cdac942f933",
-    "code/designs/policy_2025/AGENTS.md": "5cf67e355369a553f92548021605e3db45499e73bc361a7c4cd3be0630eb7457",
-    "code/designs/policy_2025/design.json": "1c1b58e36771ffc67e664ac2a5aec04d0a5fcad6aec5eaaf7508766235ac2305",
+    "code/designs/policy_2025/11_estimate_quantity.R": "52b3c325047b2482e30fb19072957be17f4cd8c060ecfa6eed143384eb7b69cb",
+    "code/designs/policy_2025/11b_estimate_mechanisms.R": "669dc38e986ea3834cce0cb6e3938c43aece5518eb1fcd40d766c8339b0bc6d9",
+    "code/designs/policy_2025/12_publish.R": "d4789132bf492ca366b7d2876c4e85566501bb43dd5f89034ace25165e50d2ae",
+    "code/designs/policy_2025/AGENTS.md": "08310bbec321af908712185c83269bb64c321abd8fa4bfe22fed73f87bb47352",
+    "code/designs/policy_2025/design.json": "b1b107181a383f97cadacbe85377d148aee57ce13ffe30b60f8a9005c1a8ea1c",
     "code/designs/policy_2025/helpers.R": "5618f70cde9151eb9c57f099ee1a34e53860ee09eb4622dc23ccab42270f9c04",
     "code/designs/policy_2025/history/domestic_wage_registry.json": "4445932db97a3e35b3d07c2fa7583fa78de44b10a0d873f851b7ee9ca7a67621",
     "code/designs/policy_2025/history/domestic_wage_registry.sha256": "4c600a20216cc73b99119a15b98253d1cc477cb4d1da86880e71d951d135df83",
@@ -137,22 +147,28 @@
     "code/designs/policy_2025/history/interim_amendment_2026_11_14.json": "a1870e1ebd70bf98e9e423a11c8b3922bf03da61f1aa59c8a33382d7d3f7619f",
     "code/designs/policy_2025/history/interim_amendment.sha256": "edbdc4580922d6dda6f0454e24fbe9702b7aef312e378b78cb462b2a3cd42f48",
     "code/designs/policy_2025/history/measurement_amendment_2026_11_14.json": "6bd2dfdb2d67915072ca77b6095bfb980a36d85f4fab998b58490aea2abb6d8e",
+    "code/designs/policy_2025/history/mechanisms_amendment_2026_11_26.json": "469497222545b114102bd0c04985005aaaabe187c59b7d7a24835e6bff5b60a9",
+    "code/designs/policy_2025/history/quantity_amendment_2026_11_26.json": "65be51b3b6cc330e83081e5ce3d57c3da94f326b3c37e4b03d9d43c40d8a0d34",
     "code/designs/policy_2025/history/registry.json": "86702463c43fc61eb461fb0a5d1f819e5360bca2bb55d96de9785157082c08a3",
     "code/designs/policy_2025/history/registry.sha256": "8c9bc91e61e3d194f49d5ef7d9330a249849bfa63d5a7885baa37e547cf59adf",
-    "code/designs/policy_2025/inputs/01_filer_records.py": "2e139b80cb6927f983425d64160f30a178523848c24606b12fdae202ae4e44b2",
+    "code/designs/policy_2025/history/vintage_update_2026_11_21.json": "75db62b3677c51c821fb9c94beba791521e39af91df04f3c358a530ab638aa22",
+    "code/designs/policy_2025/history/vintage_update_2026_11_25.json": "49055cf06fe839f1403ac9bfc34a3576f37fecf5ff46bae9188aefc4b11725ea",
+    "code/designs/policy_2025/inputs/01_filer_records.py": "4c27e8e41eb9563223766695fc78669a3743c7c5d6c3509aaa8fe59cebbe38b5",
     "code/designs/policy_2025/inputs/02_rule_harness.py": "9d94c5a270ef489ddec390c0d93b578ce57ce18a58d06b03416b00bd14ce0bd2",
     "code/designs/policy_2025/interim_helpers.R": "ebdbeb396b9005925b6926cab6d9d6d7af3f2d3b9d2f89cf2b1ec532590a4d71",
-    "code/designs/policy_2025/README.md": "e9fe5b119193f435f24bc9edd623a795d08fa4f72d9474097aa2eb8996158d40",
-    "code/designs/policy_2025/registry.sha256": "867b27f292becd6facce17bd0f1b1d7d4cef1b0a6130a759ba555659d9914e0d",
-    "code/designs/policy_2025/sources/domestic_wage_exposure_frozen.csv": "6bd476d1bf0c4cb8d98e3072d1b7b1d6375176d18dffc62a71d6bb6e0e25eda3",
-    "code/designs/policy_2025/sources/input_vintage.json": "dfed70263093b2950a8eee79edb3b7546dbf4e766dc55fdd53e2f694c50a285d",
+    "code/designs/policy_2025/README.md": "b8174320844a9bd510b39f5dd74b4c7d88c85c4327ebee5eb8717373c54e7d8c",
+    "code/designs/policy_2025/registry.sha256": "2f770dd0a32a2eb764d198a2c3651fbce2988534d1b3a08284b836104ec98b5e",
+    "code/designs/policy_2025/sources/domestic_wage_exposure_frozen.csv": "848295a07cd1a5d21a91d115c9a1ee958d1bab7935799da6e15764b10b865669",
+    "code/designs/policy_2025/sources/input_vintage.json": "b6bba25d4b993d1d0ad5d5120ba7930916f4e867a06beb8adfc0148129b598c9",
     "code/designs/policy_2025/sources/ui_classification_review.json": "b451e57f8ad9f802e0ec18a2cea144daeb79423a94c6209ec99215a9228a3096",
     "code/designs/policy_2025/tests/check_interim.R": "0a1bd36670647db4ff2ef9e7c3e61c637d07f2d4a2052e402e5800a6ffbb59fd",
-    "code/designs/policy_2025/tests/fixtures/earnings_interim_estimates.csv": "4cb4fb4b44f1b067025bfcfb93614fc01a597eea3f2eeeffb510645c09a0e79d",
-    "code/designs/policy_2025/tests/fixtures/earnings_pre_estimates.csv": "71e17a563e37ac7892e5be3188ee83414cf5abfd724e6e1331251025a580bbef",
-    "code/designs/policy_2025/tests/fixtures/wage_estimates.csv": "18c4af5a7966ac6c5ef227320877dc44d9d98094557b0ec6aae539422571a023",
+    "code/designs/policy_2025/tests/fixtures/earnings_interim_estimates.csv": "42e1a49c410d5d08bde423f4e5d0aae2f19a61de86970abc5461fd4e45f85c74",
+    "code/designs/policy_2025/tests/fixtures/earnings_pre_estimates.csv": "6611cb1caa794e8566f87e55fde813833598edb821149f07642563e1ade55f95",
+    "code/designs/policy_2025/tests/fixtures/mechanism_estimates.csv": "43f6c84c392efca8bbc4c62ba5c049e127c1f897081d021d9f8a30d2201f1686",
+    "code/designs/policy_2025/tests/fixtures/quantity_estimates.csv": "9d69fb321eb76d03800648efba98a7619f0291475a4b8b7eb321481717427e8e",
+    "code/designs/policy_2025/tests/fixtures/wage_estimates.csv": "d1fe06fc43b94bc59e6272d0e7227ebcd0952d5545f7799028e8a18825268d30",
     "code/designs/policy_2025/tests/test_earnings.py": "c06e66594e9c08647f0c61c00832ff97f90058ea06e3afe824b93e73f3120d53",
-    "scripts/run_policy_2025.sh": "02b80e7bb9f998c0e882194ec6a38285246bfe2ac56a31a66ccb33952526600b",
+    "scripts/run_policy_2025.sh": "a73be911d96f7f718ebf21aae692cfadc37df88b7d5dde08cca2e493d78085f4",
     "scripts/pipeline_helpers.sh": "ac79bb98abfbeaeeb55f4809f7100f4d89e0051c44d5dca994e8c90dcfdbdbab",
     "code/paths.R": "7604975a937cfb31c861561f9f4afce1cd8a097fe5802f1d5bc7fc559e572fd9",
     "code/c00_shared/geography.R": "cdaf24038245bf80d8c2f0116e88a334eb653f6f71312adde5c78268f715e2d5",
@@ -167,13 +183,13 @@
   "outputs": {
     "earnings_interim_coverage.csv": {
       "path": "outputs/tables/policy_2025/earnings_interim_coverage.csv",
-      "sha256": "b5498f723ef2e040468f4ac27a23601bb874098258f454eddf4bc3b0bcbd014b",
-      "bytes": 1789
+      "sha256": "d8bee2039c8164c975cdc29a9ff4fc55320b13baf1491ed006fd24eb6e5f9045",
+      "bytes": 1783
     },
     "earnings_interim_estimates.csv": {
       "path": "outputs/tables/policy_2025/earnings_interim_estimates.csv",
-      "sha256": "4cb4fb4b44f1b067025bfcfb93614fc01a597eea3f2eeeffb510645c09a0e79d",
-      "bytes": 14142
+      "sha256": "42e1a49c410d5d08bde423f4e5d0aae2f19a61de86970abc5461fd4e45f85c74",
+      "bytes": 14144
     },
     "earnings_interim_quarter_inventory.csv": {
       "path": "outputs/tables/policy_2025/earnings_interim_quarter_inventory.csv",
@@ -187,18 +203,18 @@
     },
     "earnings_interim_state_deletions.csv": {
       "path": "outputs/tables/policy_2025/earnings_interim_state_deletions.csv",
-      "sha256": "789ef0db57490ec6bb38dc6c17e92d6bb9d22b75d9aad8529553f59b9739aa95",
-      "bytes": 259791
+      "sha256": "9edf56ae6094ff3516916e31b328d815d38c485d877de24014920d2956c0702a",
+      "bytes": 259845
     },
     "earnings_pre_coverage.csv": {
       "path": "outputs/tables/policy_2025/earnings_pre_coverage.csv",
-      "sha256": "7fddde05c6f09147884112de9c70a983bf8757804353199ff7afbdec576b75cb",
+      "sha256": "60c9da5ae46f90670102ab2333c6a0b808160d739b492c6783a142d792edf03b",
       "bytes": 2464
     },
     "earnings_pre_estimates.csv": {
       "path": "outputs/tables/policy_2025/earnings_pre_estimates.csv",
-      "sha256": "71e17a563e37ac7892e5be3188ee83414cf5abfd724e6e1331251025a580bbef",
-      "bytes": 38872
+      "sha256": "6611cb1caa794e8566f87e55fde813833598edb821149f07642563e1ade55f95",
+      "bytes": 38877
     },
     "earnings_pre_quarter_audit.csv": {
       "path": "outputs/tables/policy_2025/earnings_pre_quarter_audit.csv",
@@ -212,13 +228,53 @@
     },
     "earnings_pre_state_deletions.csv": {
       "path": "outputs/tables/policy_2025/earnings_pre_state_deletions.csv",
-      "sha256": "165027c4991cf4bc63f22827d4dc4eef848bd4dcb363f668294fa27c91cc8940",
-      "bytes": 647162
+      "sha256": "8f05535a498ce8b897e3065c4fb7863800ee7ac8e361897bf008e63711780b5d",
+      "bytes": 647295
     },
     "interim_validation.csv": {
       "path": "outputs/tables/policy_2025/interim_validation.csv",
       "sha256": "a9cbc94628e0fe06856ba20ec28114f34152451718c1e090f24a433ba060dbeb",
       "bytes": 521
+    },
+    "mechanism_descriptives.csv": {
+      "path": "outputs/tables/policy_2025/mechanism_descriptives.csv",
+      "sha256": "a9b60536fe55d84f1a28bcd0eed3cf4cc2f72b2297acfeb6d0c54683d6061a29",
+      "bytes": 2383
+    },
+    "mechanism_estimates.csv": {
+      "path": "outputs/tables/policy_2025/mechanism_estimates.csv",
+      "sha256": "236a1047ace9784a228e92c41bb276691cd18b97f7311b2aad8f9bc2a37ddbce",
+      "bytes": 48709
+    },
+    "mechanism_state_deletions.csv": {
+      "path": "outputs/tables/policy_2025/mechanism_state_deletions.csv",
+      "sha256": "a429d27c74272a63ab973f0ed8f61ea028bed0afc97395052762c1f57b91175b",
+      "bytes": 652185
+    },
+    "quantity_cost_conversion.csv": {
+      "path": "outputs/tables/policy_2025/quantity_cost_conversion.csv",
+      "sha256": "2848943e3b8cdf6618dc2cfed1714bb6d257792a325a827d41a4d8d4d25995bc",
+      "bytes": 14229
+    },
+    "quantity_cutoff_audit.csv": {
+      "path": "outputs/tables/policy_2025/quantity_cutoff_audit.csv",
+      "sha256": "a5be4e54555db7f5d95979cf77e13617eb6a143de208cdb3ad4797941d818d79",
+      "bytes": 1315
+    },
+    "quantity_estimates.csv": {
+      "path": "outputs/tables/policy_2025/quantity_estimates.csv",
+      "sha256": "dd4568251fa2de7e24f7812a110084cb32ef700dff2a81bc9a5f0548c2766d5c",
+      "bytes": 36415
+    },
+    "quantity_event_study.csv": {
+      "path": "outputs/tables/policy_2025/quantity_event_study.csv",
+      "sha256": "ccd3f77c47bf43f4e0c9808f7f7b7b3e2203a0090faa836106bf894417b36d14",
+      "bytes": 9613
+    },
+    "quantity_state_deletions.csv": {
+      "path": "outputs/tables/policy_2025/quantity_state_deletions.csv",
+      "sha256": "4049bce5db9ad0406ee11530a3264fca83c092e742459c65e525271dfdc923cf",
+      "bytes": 320303
     },
     "ui_classification.csv": {
       "path": "outputs/tables/policy_2025/ui_classification.csv",
@@ -227,8 +283,8 @@
     },
     "validation.csv": {
       "path": "outputs/tables/policy_2025/validation.csv",
-      "sha256": "4f3409c29713c95fe323d55c3956dee95fb3f777ea35e023db86816d6626e1e0",
-      "bytes": 8945
+      "sha256": "8fb0b9d54728ddb6fb6a32866a4d6348627f03ee82eb9be1b7a243b07a6d3175",
+      "bytes": 19670
     },
     "wage_allocation_check.csv": {
       "path": "outputs/tables/policy_2025/wage_allocation_check.csv",
@@ -237,53 +293,103 @@
     },
     "wage_composition_coverage.csv": {
       "path": "outputs/tables/policy_2025/wage_composition_coverage.csv",
-      "sha256": "c44112d7b15b08d3255ae3c21c392af4893dd7c8ca49966644c91e81a0b4d645",
-      "bytes": 1307
+      "sha256": "9f2a42e085c4269a99340d0604bb8d8fe4971ebb98eed6a42a87da5f2eb97c2b",
+      "bytes": 1309
     },
     "wage_distributions.csv": {
       "path": "outputs/tables/policy_2025/wage_distributions.csv",
-      "sha256": "28c162d73f6344d85e8ef6f080ec06c7a973bd62b6dd57499e5611ebd8451e91",
-      "bytes": 582
+      "sha256": "11e8120a2824deabee08e4065034f9aa86183aca0524ced4e68ec22297c135a9",
+      "bytes": 579
     },
     "wage_estimates.csv": {
       "path": "outputs/tables/policy_2025/wage_estimates.csv",
-      "sha256": "18c4af5a7966ac6c5ef227320877dc44d9d98094557b0ec6aae539422571a023",
-      "bytes": 76879
+      "sha256": "d1fe06fc43b94bc59e6272d0e7227ebcd0952d5545f7799028e8a18825268d30",
+      "bytes": 76974
     },
     "wage_exclusions.csv": {
       "path": "outputs/tables/policy_2025/wage_exclusions.csv",
-      "sha256": "6ae8206d4001d9c6b35ee50429fb06467289e07c3d73c2320f90ed971d836e6e",
+      "sha256": "b380cb1022c3d0aa7163c7f100f0606ae2947e194b028363e4811bf1100392ba",
       "bytes": 175
     },
     "wage_floor_audit.csv": {
       "path": "outputs/tables/policy_2025/wage_floor_audit.csv",
-      "sha256": "40baee39728af8cbd7d7492e3bc1d32a5e6d1841507842063e35b38504f7ae3b",
-      "bytes": 511
+      "sha256": "a2bb00b6061d0f934341682c8fc204108914c6d8cd33c330da863aa94a5f9bf2",
+      "bytes": 508
     },
     "wage_schedule_envelope_audit.csv": {
       "path": "outputs/tables/policy_2025/wage_schedule_envelope_audit.csv",
-      "sha256": "4c650ccc34b1cf1cc49afccc3de4a459659fe258b1780e69506c4b5615f8a877",
-      "bytes": 486
+      "sha256": "102ef3552be7d5291a5cb3f979608a261f19e889d3a6f47710ab80b070936535",
+      "bytes": 484
     },
     "wage_state_deletions.csv": {
       "path": "outputs/tables/policy_2025/wage_state_deletions.csv",
-      "sha256": "096dedce0b51a27981bb8ed60a55e99015c0fee1d6231928cbc32100b3990349",
-      "bytes": 1474997
+      "sha256": "6fe78c9bbce6997d7f3c496823cb0a826993a3ed201ac812bbe820e106bd333f",
+      "bytes": 1493660
     },
     "wage_state_dose.csv": {
       "path": "outputs/tables/policy_2025/wage_state_dose.csv",
       "sha256": "e2b110b3134ede02f82a476b9ce2229ae300ec729cb1d73facfa4facb941cfdb",
       "bytes": 5305
     },
+    "table_policy_2025_wages.tex": {
+      "path": "outputs/tables/table_policy_2025_wages.tex",
+      "sha256": "491394b6f9a7fa523b3a49c4b445a36d89d6831569e4efb99085127dc4571df9",
+      "bytes": 3806
+    },
+    "table_policy_2025_quantity.tex": {
+      "path": "outputs/tables/table_policy_2025_quantity.tex",
+      "sha256": "cb57347bb4fa812bc1e214ed6d817c0820c4d6f83ab587dea2201e862afa5e84",
+      "bytes": 3690
+    },
+    "table_policy_2025_mechanisms.tex": {
+      "path": "outputs/tables/table_policy_2025_mechanisms.tex",
+      "sha256": "cd6b32311390771d62d435e76bccac09aef59c3a8a5e156fc0b6c5842a0d0bd7",
+      "bytes": 4655
+    },
+    "table_policy_2025_earnings.tex": {
+      "path": "outputs/tables/table_policy_2025_earnings.tex",
+      "sha256": "2d2ed4b85097967ce17291e835a9c2a86a9ac7d35068e304d9b0a1feec9e1588",
+      "bytes": 3600
+    },
+    "fig_policy_2025_wages.pdf": {
+      "path": "outputs/figures/fig_policy_2025_wages.pdf",
+      "sha256": "c7d8541679646002d14a93d9f968ac7e251224c84e812c8ce8c788308230d8da",
+      "bytes": 10667
+    },
+    "fig_policy_2025_wages.png": {
+      "path": "outputs/figures/fig_policy_2025_wages.png",
+      "sha256": "fb0cd53c3f25ab868f11369efd5aa5a6c0dafccb22c7f25cc311c29fc2a6e2a9",
+      "bytes": 412115
+    },
+    "fig_policy_2025_mechanisms.pdf": {
+      "path": "outputs/figures/fig_policy_2025_mechanisms.pdf",
+      "sha256": "954e1e00ffa668e285b0e4fffa3f5f5f87c00e1417c26d57f22e584beedb5f4d",
+      "bytes": 7770
+    },
+    "fig_policy_2025_mechanisms.png": {
+      "path": "outputs/figures/fig_policy_2025_mechanisms.png",
+      "sha256": "973507c77b52154a8eb4a05f9b47c9299dc9c5c7fc5431a699dad713eed0b5b6",
+      "bytes": 259267
+    },
     "wage_filer_state_occupation.parquet": {
       "path": "data/processed/policy_2025/wage_filer_state_occupation.parquet",
-      "sha256": "f387c022aff0a26abb58877994e9c4017ac5c92c48687269339bb4922e66d154",
-      "bytes": 3021532
+      "sha256": "0eda26763b35b6e50c9066b69f01cea522cd35cc338b086fbe8657fcf76333ad",
+      "bytes": 3397729
     },
     "wage_certified_participation.parquet": {
       "path": "data/processed/policy_2025/wage_certified_participation.parquet",
-      "sha256": "ac05397b2cb7028349c003047edbf67bfb42abfa8d23c132eac5adf05464459e",
-      "bytes": 1011857
+      "sha256": "5c1d2a6c5a6fe1ca9e0e8afeda595387ff3b6555e4dcdb7f502021d6f528c6b6",
+      "bytes": 1071841
+    },
+    "quantity_county_fy.parquet": {
+      "path": "data/processed/policy_2025/quantity_county_fy.parquet",
+      "sha256": "a9008794780dc07fdff49cfb0908a1ce55369d9cc661827301f96ae019e2c05d",
+      "bytes": 11451039
+    },
+    "mechanisms_county_fy.parquet": {
+      "path": "data/processed/policy_2025/mechanisms_county_fy.parquet",
+      "sha256": "3a9663e9c0d8da230fc5d0a25dbe94dee9cb44d4046ea14f297b06ac50602e5c",
+      "bytes": 2226014
     },
     "earnings_pre.parquet": {
       "path": "data/processed/policy_2025/earnings_pre.parquet",
@@ -297,8 +403,8 @@
     },
     "inputs.json": {
       "path": "outputs/reports/policy_2025/inputs.json",
-      "sha256": "a3530d19198df75e78906f5c762625132dd27fcfe82b77ed644c305733fcbc2d",
-      "bytes": 4447
+      "sha256": "250611961085914551a384055e710e566d7e880800562e4c2d9713a38a8976c5",
+      "bytes": 5004
     },
     "earnings_pre_inputs.json": {
       "path": "outputs/reports/policy_2025/earnings_pre_inputs.json",
@@ -307,41 +413,43 @@
     },
     "earnings_interim_inputs.json": {
       "path": "outputs/reports/policy_2025/earnings_interim_inputs.json",
-      "sha256": "ffb9eae352ca80b7f6d5270175e02db5e3f66ad26cfacde9834224ce91333e45",
+      "sha256": "2bcd2fdf33ed7941b9ff9e7aa3c46dbae14936c30b5b091fc0362555b71494b6",
       "bytes": 1104
     },
     "validation.json": {
       "path": "outputs/reports/policy_2025/validation.json",
-      "sha256": "cb70e5dc696bd78a7ae2270d42c90e7cbd8b87ebd985809951b0c71e02286774",
-      "bytes": 215
+      "sha256": "cfa1586149bfff582a76fb9e30c0d4b5fe988d1e1343fdf6156ab595839185cf",
+      "bytes": 257
     },
     "policy_2025.md": {
       "path": "outputs/reports/policy_2025.md",
-      "sha256": "e7aef531bd275b15314d79e16af539b20e0a57391e0bf766ee02deb0dcc5cfb7",
-      "bytes": 13814
+      "sha256": "c5594bd1b0779bb8930383c3b595b55167120afc70e351c28cdf5e895e3a82e5",
+      "bytes": 23518
     },
     "policy_2025_specifications.md": {
       "path": "outputs/reports/policy_2025_specifications.md",
-      "sha256": "cc68b57917c16ffc47701dfb332281d71cdd74e21ee7fadb75d0d48244466893",
-      "bytes": 118671
+      "sha256": "00baf081ba57d8e9c180ba93f7a739594180b8aeb0fb1f9e02e86d4978cd840a",
+      "bytes": 190430
     },
     "filer/filer_cases.parquet": {
       "path": "data/intermediate/policy_2025/filer/filer_cases.parquet",
-      "sha256": "caa718000917cb640ddafa0e93e2f5c30378ba87e7e0a764c7f9fd201ace5e06",
-      "bytes": 11004611
+      "sha256": "addcf8fc066bd38edd99ed7e2048d2d1260c6390b287a514d673065411b11f76",
+      "bytes": 11175703
     },
     "filer/filer_ids.parquet": {
       "path": "data/intermediate/policy_2025/filer/filer_ids.parquet",
-      "sha256": "adfb4895c2d33bebb2988e18ecdb8e9ffab60d123dfd6516633f239615106cca",
-      "bytes": 7202306
+      "sha256": "bcfcecd95fdad24a98cadb609f19080c1f9357c80aaede40527d22e7bd7bce1e",
+      "bytes": 7324490
     }
   },
   "validation": {
     "status": "passed",
-    "checks": 164,
+    "checks": 356,
     "tolerance": 1e-10,
     "coefficient_rows": {
       "wage": 347,
+      "quantity": 79,
+      "mechanisms": 96,
       "earnings_pre": 135,
       "earnings_interim_without_QWI": 46
     },

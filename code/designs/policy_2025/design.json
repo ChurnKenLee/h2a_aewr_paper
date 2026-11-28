@@ -2,11 +2,11 @@
   "id": "policy_2025_v1",
   "migration_date": "2026-11-16",
   "authorization": "User: make the 2025 policy shift a new separate design",
-  "status": "Organizational migration after outcomes were inspected; no empirical specification change or new preregistration",
+  "status": "FY2026 Q4 baseline since 2026-11-21 (history/vintage_update_2026_11_21.json) with 2026-11-25 unified minimum-wage vintage update (history/vintage_update_2026_11_25.json): full-fiscal-year wage window and 2026-11-21 exposure unchanged; federal-floor states restored in schedule-envelope audits; outcomes were inspected beforehand; no preregistration",
   "policy_date": "2025-10-02",
   "wage": {
     "unit": "filer-state-occupation; R7 candidate filer identifiers; distinct from worksite-business identity",
-    "sample": "Hourly worksite offers in (0,100], positive certified hours, decision October 1-June 30 in each FY; same counties and multi-state former regions as Track 1. Certified hours use original pooled FY2012-25 weekly-hours imputation. Allocate existing worksite rows equally across listed counties, then aggregate to state; never count a master in addition to allocated worksites.",
+    "sample": "Hourly worksite offers in (0,100], positive certified hours, decision October 1-September 30 in each FY (October 1-June 30 before 2026-11-21); same counties and multi-state former regions as Track 1. Certified hours use original pooled FY2012-25 weekly-hours imputation. Allocate existing worksite rows equally across listed counties, then aggregate to state; never count a master in addition to allocated worksites.",
     "years": [
       2023,
       2024,
@@ -148,8 +148,43 @@
   },
   "expected_rows": {
     "wage": 347,
+    "quantity": 79,
+    "mechanisms": 96,
     "earnings_pre": 135,
     "earnings_interim_without_QWI": 46
+  },
+  "mechanisms": {
+    "amendment_date": "2026-11-26",
+    "record": "history/mechanisms_amendment_2026_11_26.json",
+    "status": "Post-inspection mechanism heterogeneity audit on cached local inputs; not a preregistration",
+    "unit": "county_by_federal_fiscal_year (FY2024-FY2026)",
+    "sample": "Exact Track 1 multi-state frame: 2,921 positive-2011-farm-employment counties across 46 states and 15 multi-state former AEWR regions",
+    "panels": [
+      "P1_pipeline: requested hours/positions, filed/certified/denied-withdrawn apps, approval rate, requested-minus-certified paired diff",
+      "P2_incumbent_entry: EMPLOYER-001 worksite-business incumbent vs entrant hours/positions/businesses (1-yr & 3-yr lookbacks) + R7 filer sensitivity",
+      "P3_h2alc_direct: H-2ALC labor contractors vs direct growers (hours, positions, share, paired diffs)",
+      "P4_leadtime_crops: Oct-Mar vs Apr-Sep starts, pre/post-Jan-1 receipts, and predetermined 2022-2024 CDL perennial/vegetable shares (quartile splits & within-region continuous interactions)",
+      "P5_intensive_margins: paired-JK implied hours/position, positions/app, positions/business, plus continuing-county OLS contract weeks and observed weekly hours"
+    ],
+    "multiplicity": "12 declared primary FY2025-FY2026 hypotheses adjusted jointly via Holm step-down p-values (p_holm_family)",
+    "inference": "Exact delete-one-state jackknife (CV3J, t(G-1)) primary; exact paired 46-state jackknife for cross-subgroup contrasts and implied elasticities"
+  },
+  "quantity": {
+    "amendment_date": "2026-11-26",
+    "record": "history/quantity_amendment_2026_11_26.json",
+    "unit": "county_by_federal_fiscal_year",
+    "sample": "2,921 positive-2011-farm-employment counties in the 15 multi-state former AEWR regions (46 states; CA, FL, AK, HI, DC excluded)",
+    "primary_contrast": "FY2025 vs FY2026 complete fiscal year (Oct 1-Sep 30), County + Former-Region x FY FE, April 1 statutory U.S. skill-I rate",
+    "welfare_anchor": "Size-weighted FE-PPML certified hours (hours_full_fy) on x_us_skill_1 (linear-dollar elasticity beta*mean_p and direct log-rate elasticity)",
+    "inference": "Exact delete-one-state jackknife (CV3J, t(45)) primary; state CRV1, former-region CRV1 (G=15), and within-former-region RI (9,999 draws, OLS) secondary",
+    "cutoffs_and_sensitivities": [
+      "matched Q1-Q3 benchmark reproduction",
+      "symmetric pre-2026-08-03 second-schedule cutoffs (decision and receipt) plus dual-schedule cohort",
+      "symmetric pre-2026-08-26 UFW v. DOL court-order cutoffs (decision and receipt)",
+      "FY2024 vs FY2025 placebos (full FY and Q1-Q3)",
+      "S1 static FY2012-FY2026 and event study; S2 state linear trends; S3 H2A skill-I and US skill-II; S4 cohort-aligned; S5 unified 46-state general and agricultural minimum-wage controls",
+      "post-hoc epsilon_cost conversions (central ratio 1.2401, range 1.20-1.36) using policy_2025 R7 pass-through and paired 46-state county first-stage jackknife"
+    ]
   },
   "equivalence_tolerance": 1e-10,
   "source_lineage": [
@@ -209,5 +244,18 @@
       "original_sha256": "b9b0532f6b823946b684334db02218011173b12acce868375072678836884fac"
     }
   ],
-  "scope": "Current wage-offer and covered crop earnings analyses; 2013 shutdown excluded; historical county decomposition and utilization/power exercises remain archived references"
+  "scope": "Current wage-offer, Track 1 county quantity response, FY2026 Q4 mechanism heterogeneity, and covered crop earnings analyses; 2013 shutdown excluded; historical county decomposition and utilization/power exercises remain archived references",
+  "vintage_update": {
+    "date": "2026-11-25",
+    "record": "history/vintage_update_2026_11_25.json",
+    "previous_record": "history/vintage_update_2026_11_21.json"
+  },
+  "quantity_amendment": {
+    "date": "2026-11-26",
+    "record": "history/quantity_amendment_2026_11_26.json"
+  },
+  "mechanisms_amendment": {
+    "date": "2026-11-26",
+    "record": "history/mechanisms_amendment_2026_11_26.json"
+  }
 }

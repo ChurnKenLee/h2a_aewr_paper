@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-25",
+  "authorization": [
+    "User, 2026-11-25 (A1): Fix both C01 shared-panel bugs (2025 wage_p*_l1 lags and 2024-2026 federal-floor minimum-wage rows), rebuild shared panel, and propagate across affected designs including policy_2025.",
+    "User, 2026-11-25 (A3): Unify onto the single A01 minimum-wage producer (code/a01_sources/07_state_minimum_wages.py) with a live credentialed FRED release 387 refresh."
+  ],
+  "timing": "After the wage-offer, pre-policy earnings and interim earnings outcomes were inspected. Not a preregistration.",
+  "previous_vintage_update": "history/vintage_update_2026_11_21.json",
+  "source_vintage": {
+    "state_minimum_wages": {
+      "producer": "code/a01_sources/07_state_minimum_wages.py -> code/c01_clean/04_state_minimum_wages.R",
+      "intermediate_input_sha256": "8237f6c4fd75f4508fd06105746a1d6bd673412ebecf74bd5380db05af9dc1ca",
+      "state_real_minwages_sha256": "14fe913b890c591218b8efab352cfc0db9e7b6d5c2fd1bc956699749cf244cde",
+      "state_real_minwages_sha256_previous": "c9de6b5afbafc985b5dd3445b9d98a10215a52c4f94618b1ac2a1aeff930a2d8",
+      "diff_summary": "3,009 x 14 balanced 51 states/DC x 1968-2026 grid; 0 value diffs on all 2,836 overlapping rows (958 in 2008-2026); +11 rows added in 2008-2026: GA (13) and WY (56) for 2024-2026 (6 rows) and AL (01), LA (22), MS (28), SC (45), TN (47) for 2026 (5 rows), all $7.25 federal_minimum."
+    },
+    "county_year_panel": {
+      "county_year_panel_sha256": "4e2e56d0884715ea0ff26b8251339c18748cc1966692a5ab0eac31171cf51b92",
+      "county_year_panel_sha256_previous": "d38323ffd318556150c064334480e6e545fb9662572099642adb3d0fcc8213b4",
+      "diff_summary": "55,944 x 180; 0 existing non-null cells altered; only 2024-2025 GA/WY minimum-wage columns (364 cells each) and 2025 ACS wage-quantile lag columns (3,108 cells each) populated. policy_2025 reads only year == 2011 (county_fips, state_fips, aewr_region_id, emp_farm_2011) and year == 2024 (state_fips, aewr_region_id), which are unchanged."
+    },
+    "h2a_and_earnings": "Unchanged from 2026-11-21 vintage: all 20 other declared source inputs, sources/domestic_wage_exposure_frozen.csv, and all 3 reusable_caches (filer_cases.parquet, filer_ids.parquet, earnings_pre.parquet) are unchanged."
+  },
+  "changes": {
+    "ag_min_guard": "01_build_wages.R adds stopifnot(!anyNA(r$ag_min), all(is.finite(r$ag_min))) immediately after joining state_real_minwages.parquet so missing state agricultural minimum wages fail fast rather than silently propagating NA through pmax(.x, ag_min, 7.25).",
+    "schedule_envelope": "Restoring ag_min = $7.25 for GA/WY (2024-2026) and AL/LA/MS/SC/TN (2026) restores those states to the 48 schedule_envelope_* specifications in wage_estimates.csv (and updates wage_schedule_envelope_audit.csv, wage_filer_state_occupation.parquet envelope columns, and those 48 rows in wage_state_deletions.csv).",
+    "reference_ledgers": "Only tests/fixtures/wage_estimates.csv is re-baselined (for the 48 schedule_envelope_* rows); tests/fixtures/earnings_pre_estimates.csv and tests/fixtures/earnings_interim_estimates.csv remain bit-for-bit unchanged."
+  },
+  "not_changed": "All primary wage-offer, fixed-composition, within-filer, selection, heterogeneity, receipt-aligned, pre-policy earnings, and interim earnings specifications, windows, exposure, weights, fixed effects, identities, doses, and inference rules are unchanged from the 2026-11-21 FY2026 Q4 baseline.",
+  "invariance_audit": {
+    "status": "passed",
+    "earnings_pre_rows_checked": 135,
+    "earnings_pre_max_abs_diff": 0.0,
+    "earnings_interim_rows_checked": 46,
+    "earnings_interim_max_abs_diff": 0.0,
+    "wage_non_envelope_rows_checked": 299,
+    "wage_non_envelope_max_abs_diff": 0.0,
+    "wage_schedule_envelope_rows_changed": 44,
+    "wage_schedule_envelope_rows_total": 48,
+    "schedule_envelope_state_counts": "Verified in Pass 1: non-FEIN tau=2024 (R7, R7_clean, relaxed) and all four tiers tau=2025 recovered 44->46 states; all four tiers tau=2026 recovered 39->46 states (44 estimated rows updated); 4 FEIN tau=2024 rows remain unchanged at insufficient_support (states=0, n=0)."
+  }
+}

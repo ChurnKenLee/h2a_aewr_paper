@@ -1,22 +1,22 @@
 {
-  "recorded_at": "2026-11-17T02:18:15.060548+00:00",
+  "recorded_at": "2026-11-27T05:24:08.439528+00:00",
   "design": "policy_2025_v1",
   "inputs": [
     {
       "path": "data/processed/county_year_panel.parquet",
-      "sha256": "bff3256f8c2e87afcd643575de8bf969a34788f5b645de30831f1ac0547345d6"
+      "sha256": "4e2e56d0884715ea0ff26b8251339c18748cc1966692a5ab0eac31171cf51b92"
     },
     {
       "path": "data/intermediate/h2a_allocated_worksites.parquet",
-      "sha256": "9bb0e71fb00800ffcec6aaab6e69420384d43adda62d9c407805efab00b694b2"
+      "sha256": "6b415382b669da35a0d58e796a7e27469121b357c3581ee3276d64abf97fc74c"
     },
     {
       "path": "data/intermediate/h2a_disclosure_records.parquet",
-      "sha256": "d351e20ddde9a742afbb72be930f8ff7bd11329296d09ec556208f7bcf36e265"
+      "sha256": "1ea7a2969e13ff62c787178f5d3bf61b6558f1919a04dc29e0d18b334b16e7dc"
     },
     {
       "path": "data/intermediate/h2a_employer_record_membership.parquet",
-      "sha256": "7642e1efc288a06c699482c4d178ef1df8e585e65ea8cb42747c9e80d94adf11"
+      "sha256": "80444ae26981e170b2768e08ecf6c7aec3ee6996b77acdb51848892509fde09c"
     },
     {
       "path": "data/intermediate/aewr_rate_schedule.parquet",
@@ -28,7 +28,7 @@
     },
     {
       "path": "data/intermediate/state_real_minwages.parquet",
-      "sha256": "c9de6b5afbafc985b5dd3445b9d98a10215a52c4f94618b1ac2a1aeff930a2d8"
+      "sha256": "14fe913b890c591218b8efab352cfc0db9e7b6d5c2fd1bc956699749cf244cde"
     },
     {
       "path": "data/intermediate/qwi_county_ag_quarterly_earnings.parquet",
@@ -89,26 +89,34 @@
     {
       "path": "data/raw/qcew_episode_2025_2026/MANIFEST.csv",
       "sha256": "dba21f3aaa766b4ca61d1f16ddfb9a0252c4f58f8b0f3419f035d5b254aa8787"
+    },
+    {
+      "path": "data/intermediate/croplandcros_county_crop_type_acres.parquet",
+      "sha256": "74c7e6dc3f0b1ff628e8493aef9046ddd3f80743e547ba5edefc69287bbb9307"
+    },
+    {
+      "path": "data/intermediate/h2a_with_fips.parquet",
+      "sha256": "1ab3ad4dfa2d57f73237e7f446ff7090e479053731e584d2b19dc449490c665b"
     }
   ],
   "reused": [
     {
       "destination": "filer/filer_cases.parquet",
-      "source": "/tmp/h2a-chapter-directions/filer/filer_cases.parquet",
-      "sha256": "caa718000917cb640ddafa0e93e2f5c30378ba87e7e0a764c7f9fd201ace5e06"
+      "source": "/home/ken/Dropbox/projects/H-2A_Paper/data/intermediate/policy_2025/filer/filer_cases.parquet",
+      "sha256": "addcf8fc066bd38edd99ed7e2048d2d1260c6390b287a514d673065411b11f76"
     },
     {
       "destination": "filer/filer_ids.parquet",
-      "source": "/tmp/h2a-chapter-directions/filer/filer_ids.parquet",
-      "sha256": "adfb4895c2d33bebb2988e18ecdb8e9ffab60d123dfd6516633f239615106cca"
+      "source": "/home/ken/Dropbox/projects/H-2A_Paper/data/intermediate/policy_2025/filer/filer_ids.parquet",
+      "sha256": "bcfcecd95fdad24a98cadb609f19080c1f9357c80aaede40527d22e7bd7bce1e"
     },
     {
       "destination": "earnings_pre.parquet",
-      "source": "/tmp/h2a-chapter-directions/earnings_pre.parquet",
+      "source": "/home/ken/Dropbox/projects/H-2A_Paper/data/processed/policy_2025/earnings_pre.parquet",
       "sha256": "94f1e5204e123301586ac6436bce06155b0991549d2f93cd1c426f8d61617ca4"
     }
   ],
   "outcomes_previously_inspected": true,
-  "migration": "Organizational migration; unchanged specifications and frozen source vintage",
+  "vintage": "FY2026 Q4 baseline (2026-11-21 update; 2026-11-25 unified minimum-wage vintage update): full-fiscal-year wage window, exposure unchanged from 2026-11-21, unified A01 FRED state minimum wages",
   "project_root": "/home/ken/Dropbox/projects/H-2A_Paper"
 }

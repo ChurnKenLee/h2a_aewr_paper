@@ -1,9 +1,11 @@
 {
   "status": "passed",
-  "checks": 164,
+  "checks": 356,
   "tolerance": 1e-10,
   "coefficient_rows": {
     "wage": 347,
+    "quantity": 79,
+    "mechanisms": 96,
     "earnings_pre": 135,
     "earnings_interim_without_QWI": 46
   },

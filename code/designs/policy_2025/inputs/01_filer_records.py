@@ -175,6 +175,9 @@ def _(RAW, pl, re):
         for path in (RAW / "h2a").glob("H*2A*.xls*")
         if "Addendum" not in path.name and "Worksite County" not in path.name
     )
+    # One workbook per fiscal year: a later release (Q4 after Q3) supersedes
+    # an earlier one that is still cached beside it.
+    raw_paths = list({fiscal_year_of(path): path for path in raw_paths}.values())
     inventory_rows = []
     agent_frames = []
     for raw_path in raw_paths:

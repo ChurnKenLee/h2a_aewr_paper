@@ -80,7 +80,7 @@ def _(ROOT, UTC, datetime, json, reused, vintage, work):
         "inputs": vintage["inputs"],
         "reused": reused,
         "outcomes_previously_inspected": True,
-        "migration": "Organizational migration; unchanged specifications and frozen source vintage",
+        "vintage": "FY2026 Q4 baseline (2026-11-21 update; 2026-11-25 unified minimum-wage vintage update): full-fiscal-year wage window, exposure unchanged from 2026-11-21, unified A01 FRED state minimum wages",
         "project_root": str(ROOT),
     }, indent=2))
     print(f"Verified {len(vintage['inputs'])} source inputs; reused {len(reused)} declared caches")

@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-21",
+  "authorization": [
+    "User, 2026-11-21: \"Update my pipeline to include the 2026 Q4 data, minimal changes please\"",
+    "User, 2026-11-21: \"update everything\"",
+    "User, 2026-11-21: \"don't care about preserving old specification for the 2025 design, treat the full q4 2026 h2a disclosure as the baseline to work with\""
+  ],
+  "timing": "After the wage-offer, pre-policy earnings and interim earnings outcomes were inspected. Not a preregistration.",
+  "source_vintage": {
+    "h2a": "FY2008-FY2026 disclosures with the FY2026 Q4 release (decisions through 2026-09-30) and its Addendum B",
+    "upstream_fixes": [
+      "02_01_h2a_match_locations.py names the county reference columns explicitly (polars 2 numbers headerless columns from column_0)",
+      "three- and four-digit ZIPs are left-padded in CT, MA, ME, NH, NJ, RI, VT, PR and VI"
+    ],
+    "earnings": "unchanged: cached QCEW 2014-2024 and the 2025/2026 quarterly files retrieved 2026-11-14"
+  },
+  "changes": {
+    "wage_window": "Decisions dated October 1 through September 30 of each fiscal year, FY2023-FY2026 (previously October 1 through June 30). Dose, fixed effects, weights, identities, outcomes and inference are unchanged.",
+    "exposure": "sources/domestic_wage_exposure_frozen.csv rebuilt from the FY2026 Q4 county panel by the unchanged explorations/episode_2025/09_domestic_wage_exposure.R. It differs in 42 counties, all in CT, ME, MA, NH, NJ, RI and VT; the 99th-percentile cap is unchanged (2.099).",
+    "filer_inputs": "inputs/01_filer_records.py reads one raw workbook per fiscal year (the latest release); filer_cases and filer_ids rebuilt.",
+    "reference_ledgers": "tests/fixtures replaced by the ledgers of this vintage; the earlier ledgers are in git history (commit 9214d80)."
+  },
+  "not_changed": "The dose and reference schedules remain those of 2025-10-02. FY2026 cases received on or after 2026-08-03 fall under the second statewide schedule and are not re-referenced. The interim earnings window, model and UI classification are unchanged.",
+  "decomposition_primary_wage": {
+    "specification": "R7 FY2025-FY2026 occupation_dw, baseline-hours weights",
+    "previous_vintage_october_june": "0.6404 [0.4469, 0.8338], n=12386",
+    "new_vintage_october_june": "0.6402 [0.4466, 0.8338], n=12389",
+    "new_vintage_full_fiscal_year": "0.6229 [0.4220, 0.8239], n=13463"
+  },
+  "earnings_check": "With the previous exposure table all 135 pre-policy and 46 interim rows reproduced exactly on the new vintage; with the rebuilt exposure the interim primary is 0.017 [0.003, 0.031] (previously 0.017 [0.002, 0.031]).",
+  "previous_outputs": "Not retained: the user said on 2026-11-21 that backups were unnecessary. The earlier reference ledgers, reports and registry are in git history (commit 9214d80)."
+}

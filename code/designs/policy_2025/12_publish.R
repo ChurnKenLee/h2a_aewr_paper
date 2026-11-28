@@ -4,7 +4,9 @@ validation <- jsonlite::read_json(file.path(out,"validation.json"))
 stopifnot(validation$status=="passed")
 destinations <- character()
 for (name in list.files(out,pattern="\\.csv$")) destinations[name] <- path_tables("policy_2025",name)
-for (name in c("wage_filer_state_occupation.parquet","wage_certified_participation.parquet","earnings_pre.parquet","earnings_interim.parquet")) destinations[name] <- path_processed("policy_2025",name)
+for (name in c("table_policy_2025_wages.tex","table_policy_2025_quantity.tex","table_policy_2025_mechanisms.tex","table_policy_2025_earnings.tex")) destinations[name] <- path_tables(name)
+for (name in c("fig_policy_2025_wages.pdf","fig_policy_2025_wages.png","fig_policy_2025_mechanisms.pdf","fig_policy_2025_mechanisms.png")) destinations[name] <- path_figures(name)
+for (name in c("wage_filer_state_occupation.parquet","wage_certified_participation.parquet","quantity_county_fy.parquet","mechanisms_county_fy.parquet","earnings_pre.parquet","earnings_interim.parquet")) destinations[name] <- path_processed("policy_2025",name)
 for (name in c("inputs.json","earnings_pre_inputs.json","earnings_interim_inputs.json","validation.json")) destinations[name] <- path_outputs("reports","policy_2025",name)
 for (name in c("policy_2025.md","policy_2025_specifications.md")) destinations[name] <- path_outputs("reports",name)
 for (name in c("filer_cases.parquet","filer_ids.parquet")) destinations[file.path("filer",name)] <- path_int("policy_2025","filer",name)
@@ -26,7 +28,7 @@ sources <- c(list.files(CD,recursive=TRUE,full.names=TRUE),path_root("scripts/ru
 sources <- sources[!grepl("/__marimo__/|/__pycache__/|/\\.",sources) & !file.info(sources)$isdir]
 hashes <- setNames(lapply(sources,function(f)digest::digest(file=f,algo="sha256")),substring(sources,nchar(path_root())+2L))
 jsonlite::write_json(list(design="policy_2025_v1",generated_at=as.character(Sys.time()),
-  specification_changed=FALSE,outcomes_previously_inspected=TRUE,
+  specification_changed=TRUE,outcomes_previously_inspected=TRUE,
   inputs=jsonlite::read_json(file.path(out,"inputs.json")),source_hashes=hashes,
   outputs=records,validation=validation),path_outputs("reports","policy_2025","provenance.json"),pretty=TRUE,auto_unbox=TRUE)
 cat("Published",length(records),"verified policy_2025 artifacts\n")

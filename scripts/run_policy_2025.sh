@@ -14,6 +14,8 @@ run_step code/designs/policy_2025/05_extract_earnings.py
 run_step code/designs/policy_2025/06_estimate_earnings.R "$POLICY2025_WORK" pre
 run_step code/designs/policy_2025/09_extract_interim.py
 run_step code/designs/policy_2025/10_estimate_interim.R
+run_step code/designs/policy_2025/11_estimate_quantity.R
+run_step code/designs/policy_2025/11b_estimate_mechanisms.R
 run_step code/designs/policy_2025/tests/check_interim.R
 run_step code/designs/policy_2025/07_validate.R
 run_step code/designs/policy_2025/08_report.R
