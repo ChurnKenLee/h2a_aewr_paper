@@ -1,0 +1,34 @@
+\begin{table}[!htbp]
+\centering
+\caption{Certification-Space Producer Incidence Bounds Under the Envelope Theorem}
+\label{tab:welfare_bounds}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\multicolumn{6}{l}{\textit{Panel A: Anticipated $+\$1$/hr AEWR Increase (Coverage-Adjusted Exposure, $\pi = 1.00$, \$M)}} \\
+Elasticity scenario & 2011--24 Avg & 2nd-Order & 2024 Real & 2024 Nom. & 2024 Nom. \\
+(Bounds grid, not point est.) & $\Delta\Pi^{PE}$ & Cushion & $\Delta\Pi^{PE}$ & $\Delta\Pi^{PE}$ & $\Delta E^c_H$ \\
+\midrule
+$\eta = 0.00$ (First-order envelope) & -209.7 & +0.00\% & -379.3 & -379.3 & 379.3 \\
+$\eta = -0.30$ (Moderate elasticity) & -207.3 & +1.13\% & -375.4 & -375.9 & 263.1 \\
+$\eta = -0.75$ (High elasticity) & -203.8 & +2.79\% & -369.6 & -370.9 & 92.7 \\
+$\eta = -1.00$ (Unit elastic benchmark) & -201.9 & +3.69\% & -366.5 & -368.2 & -0.0 \\
+$\eta = -0.60$ (Track 1 Q4 95\% CI low) & -205.0 & +2.23\% & -371.6 & -372.6 & 149.6 \\
+\midrule
+\multicolumn{6}{l}{\textit{Panel B: Exposure, Pass-Through, and Oct.\ 2, 2025 Cut Bounds (2024 Nominal Baseline, \$M)}} \\
+Exposure / counterfactual & $\eta=0.00$ & $\eta=-1.00$ & Track 1 Low & 2nd-Order & Exposed Hrs \\
+ & $\Delta\Pi^{PE}$ & $\Delta\Pi^{PE}$ & $\Delta\Pi^{PE}$ & Cushion & (Millions) \\
+\midrule
+Coverage-adjusted exposure (baseline, $\pi = 1.00$) & -379.3 & -368.2 & -372.6 & +1.76\% & 379.3 \\
+Parametric exposure $x = 0.85$ (F1 lower polar, $\pi = 1.00$) & -333.6 & -323.9 & -327.8 & +1.76\% & 333.6 \\
+Parametric exposure $x = 0.94$ (F1 upper central, $\pi = 1.00$) & -369.0 & -358.2 & -362.5 & +1.76\% & 369.0 \\
+Parametric exposure $x = 1.00$ (full hours, $\pi = 1.00$) & -392.5 & -381.1 & -385.6 & +1.76\% & 392.5 \\
+Offered-wage pass-through sensitivity ($\pi = 0.623$) & -236.2 & -231.9 & -233.6 & +1.11\% & 379.3 \\
+Oct.\ 2, 2025 statutory U.S.\ skill-I cut (2024 hrs, $\pi = 1.00$) & 1,418.2 & 1,618.0 & 1,533.1 & +8.10\% & 379.3 \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.4em}\footnotesize
+\textit{Notes:} Static partial-equilibrium envelope bounds $\Delta\Pi^{PE}=-\int X(s)\,ds$ applied to all 3,108 contiguous U.S.\ shared-panel counties under a constant-elasticity certified-hours curve $H^c(a)=H^c_0(a/a_0)^\eta$. The elasticity grid is anchored to the complete FY2026 Q4 Track 1 statutory PPML hours 95\% jackknife lower bound ($\eta = -0.60$, $G=46$ states) and is explicitly a bounds grid rather than a single point estimate. Real values use 2012 farm-products-PPI-deflated AEWR (\texttt{aewr\_ppi}); 2024 nominal values use current-dollar \texttt{aewr}. 2nd-order cushion is $100\times(\Delta\Pi^{PE}-\Delta\Pi^{PE}(0))/|\Delta\Pi^{PE}(0)| \ge 0$ (loss mitigation for wage increases; gain amplification for cuts). All monetary values are in certification space; paid-hours incidence equals $\rho$ times every reported value. Output prices, domestic wages, and corresponding-employment hours are held fixed.
+\end{minipage}
+\end{table}

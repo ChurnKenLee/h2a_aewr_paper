@@ -6,3 +6,4 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 source "$SCRIPT_DIR/pipeline_helpers.sh"
 
 run_step code/welfare/01_narrow_welfare.py
+run_step code/welfare/02_validate_welfare.py

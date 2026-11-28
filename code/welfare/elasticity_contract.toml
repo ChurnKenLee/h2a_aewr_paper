@@ -1,29 +1,56 @@
-contract_version = 1
-status = "unfrozen"
+contract_version = 2
+status = "scenario_bounds_grid"
 
-# The real-data runner intentionally stops while this contract is unfrozen.
-# Once one certified-hours elasticity is selected, replace the status above
-# with "frozen" and add the three sections illustrated below.
-#
-# [elasticity]
-# definition = "dlog_certified_hours_dlog_real_aewr"
-# estimate = -0.50
-# standard_error = 0.10
-# confidence_level = 0.95
-# inference_method = "declared_source_method"
-#
-# [source]
-# design = "declared_empirical_design"
-# artifact = "outputs/tables/declared_source_artifact.csv"
-# artifact_sha256 = "64 lowercase hexadecimal characters"
-# row_selector = "human-readable unique source-row selector"
-# target_population = "source estimand population"
-# target_weighting = "source estimand weighting"
-# target_start_year = 2013
-# target_end_year = 2022
-#
-# [application]
-# population = "all_shared_panel_county_years"
-# real_aewr_column = "aewr_ppi"
-# real_aewr_unit = "2012 farm-products-PPI-adjusted dollars per hour"
-# counterfactual_delta = 1.0
+# User-authorized v2 envelope-theorem bounds grid anchored to the complete
+# FY2026 Q4 Track 1 statutory PPML hours jackknife 95% lower bound.
+# This contract explicitly declares a bounds grid, NOT a precision-identified
+# single elasticity point estimate. The calculator fails closed if any pinned
+# SHA-256 hash disagrees with disk or if any PENDING_PATH2 placeholder remains.
+
+[authorization]
+authorized_on = "2026-11-26"
+note = "User-approved Path 1 envelope-theorem producer-incidence bounds grid anchored to Path 2 complete FY2026 Q4 Track 1 quantity lower bound."
+
+[elasticity_grid]
+definition = "dlog_certified_hours_dlog_real_aewr"
+canonical_values = [0.0, -0.3, -0.75, -1.0]
+parametric_exposure_shares = [0.85, 0.90, 0.94, 1.0]
+
+[track1_source]
+design = "policy_2025_track1_fy2026_q4_quantity"
+artifact = "outputs/tables/policy_2025/quantity_estimates.csv"
+artifact_sha256 = "dd4568251fa2de7e24f7812a110084cb32ef700dff2a81bc9a5f0548c2766d5c"
+row_selector = "window=full_fy,contrast=fy2025_2026,specification=B_primary,outcome=hours,estimator=PPML,treatment=x_us_skill_1"
+inference_method = "state_deletion_jackknife_cv3j_t45"
+point_estimate = -0.07784146756767402
+standard_error = 0.25849180014844714
+ci95_low = -0.5984706782445719
+ci95_high = 0.4427877431092239
+n_states = 46
+
+[passthrough_source]
+design = "policy_2025_fy2026_q4_offered_wages"
+artifact = "outputs/tables/policy_2025/wage_estimates.csv"
+artifact_sha256 = "d1fe06fc43b94bc59e6272d0e7227ebcd0952d5545f7799028e8a18825268d30"
+row_selector = "track=wage,specification=occupation_dw,tau=2026,tier=R7,weights=h0,term=dose"
+estimate = 0.62288738233893
+standard_error = 0.09963151091331263
+
+[application]
+population = "all_shared_panel_county_years"
+source_panel = "data/processed/county_year_panel.parquet"
+source_panel_sha256 = "4e2e56d0884715ea0ff26b8251339c18748cc1966692a5ab0eac31171cf51b92"
+real_aewr_column = "aewr_ppi"
+real_aewr_unit = "2012 farm-products-PPI-adjusted dollars per hour"
+nominal_aewr_column = "aewr"
+nominal_aewr_unit = "nominal current-year dollars per hour"
+counterfactual_delta = 1.0
+start_year = 2011
+complete_end_year = 2024
+provisional_end_year = 2025
+snapshot_year = 2024
+
+[secondary_counterfactuals]
+percent_shifts = [0.10, -0.10]
+skill_rates_artifact = "data/intermediate/aewr_occupation_skill_rates.parquet"
+skill_rates_sha256 = "c8d952ac670b4874a67cbdbd63247e2dcace491ba824e1e96f2ab4602fe3175d"
