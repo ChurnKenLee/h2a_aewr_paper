@@ -1,0 +1,131 @@
+{
+  "registry_version": "1.0.0",
+  "protocol": "markdowns/bite_rescue_power_plan.md",
+  "phase1_triage_source": "explorations/bite_power_rescue/phase1_triage.csv",
+  "locked_before_phase2_estimation": true,
+  "outcome_blind_fy2026_preserved": true,
+  "phase1_summary": {
+    "total_candidates_evaluated": 59,
+    "tier1_survivors": 0,
+    "tier2_survivors": 4,
+    "aggregate_or_2025_rule_survivors": 0,
+    "note": "Zero aggregate, effective-floor, firm-cohort, reallocation, crossover, or stacked 2025-rule candidates cleared Phase 1. Only four Tier 2 differential-bite specifications across two families (R2a post-2020 direct-grower bite and R4a 2011-2025 duration-amortization bite) advanced."
+  },
+  "multiplicity_family": {
+    "method": "holm_step_down",
+    "alpha": 0.05,
+    "n_primary_hypotheses": 4,
+    "primary_ids": [
+      "P1_R4a_h2a_duration_ry",
+      "P2_R4a_h2a_duration_sy",
+      "P3_R2a_direct_2020_2025_1b",
+      "P4_R2a_direct_2020_2025_1a"
+    ]
+  },
+  "inference_contract": {
+    "cluster_var": "aewr_region_id",
+    "G_clusters": 17,
+    "df_t": 16,
+    "variance_estimator": "exact_delete_one_cluster_jackknife_CV3J",
+    "mde_factor": "qt(0.975, 16) + qt(0.80, 16)",
+    "no_cluster_downgrade": true
+  },
+  "data_contracts": {
+    "geo_ids_as_strings": "GEO-001",
+    "aewr_2009_strictly_null": "AEWR-001",
+    "canonical_panel": "data/processed/bite_county_year_panel.parquet",
+    "canonical_worksites": "data/intermediate/h2a_allocated_worksites.parquet",
+    "canonical_disclosures": "data/intermediate/h2a_disclosure_records.parquet",
+    "canonical_cdl": "data/intermediate/croplandcros_county_crop_type_acres.parquet"
+  },
+  "primary_hypotheses": [
+    {
+      "id": "P1_R4a_h2a_duration_ry",
+      "phase1_candidate": "R4a_bite_h2a_duration_ry",
+      "family": "R4",
+      "tier": "Tier 2",
+      "estimand": "Differential H-2A certified-hours elasticity per 1-SD within-region baseline (2008-2010) contract-duration wage-share exposure E_dur (reported per 1-SD and per 2-SD high-vs-low spread)",
+      "sample": "Ever-positive 2011-2025 counties in bite_county_year_panel.parquet with finite 2008-2010 H-2A baseline duration (1,615 active counties, 24,225 county-years, 85.7% of US H-2A hours)",
+      "exposure_definition": "s_wage = (aewr_0810 * 40 * mean_weeks_0810) / (aewr_0810 * 40 * mean_weeks_0810 + 2500), standardized within aewr_region_id to mean 0, SD 1 across baseline counties (E_dur)",
+      "outcome": "man_hours_certified_start_year",
+      "regressor": "E_dur * ln_aewr",
+      "estimator": "fixest::fepois",
+      "fixed_effects": "county_fips + aewr_region_id^year",
+      "phase1_size_250_exact": 0.048,
+      "phase1_mde_2sd_exact": 0.534,
+      "matched_placebos": [
+        "2008-2010 event study on hours and positions (E_dur x year, ref=2010, joint CV3J F(3,16))"
+      ]
+    },
+    {
+      "id": "P2_R4a_h2a_duration_sy",
+      "phase1_candidate": "R4a_bite_h2a_duration_sy",
+      "family": "R4",
+      "tier": "Tier 2",
+      "estimand": "Within-state-year differential H-2A certified-hours elasticity per 1-SD baseline contract-duration wage-share exposure E_dur (eliminating all state-year shocks)",
+      "sample": "Same 1,615 baseline-H2A active counties, 2011-2025 (24,225 county-years)",
+      "exposure_definition": "Same frozen 2008-2010 E_dur (F=$2,500)",
+      "outcome": "man_hours_certified_start_year",
+      "regressor": "E_dur * ln_aewr",
+      "estimator": "fixest::fepois",
+      "fixed_effects": "county_fips + state_fips^year",
+      "phase1_size_250_exact": 0.048,
+      "phase1_mde_2sd_exact": 0.523,
+      "matched_placebos": [
+        "2008-2010 event study under County + State x Year FE (hours and positions, joint CV3J F(3,16))"
+      ]
+    },
+    {
+      "id": "P3_R2a_direct_2020_2025_1b",
+      "phase1_candidate": "R2a_bite_direct_2020_2025_1b",
+      "family": "R2",
+      "tier": "Tier 2",
+      "estimand": "Post-Addendum-B (2020-2025) direct-grower differential H-2A certified-hours elasticity per 1-SD within-region frozen ACS p25 wage-gap exposure E_p25 (reported per 1-SD and 2-SD spread)",
+      "sample": "Counties with positive direct-grower (h2a_labor_contractor == 'N') start-year hours in 2020-2025 (2,913 counties, 17,478 county-years, 65.9% of US H-2A hours)",
+      "exposure_definition": "Canonical frozen 2008-2010 E_p25 from bite_county_year_panel.parquet",
+      "outcome": "direct_hours_sy (start-year certified hours excluding H-2ALCs)",
+      "regressor": "E_p25 * ln_aewr",
+      "estimator": "fixest::fepois",
+      "fixed_effects": "county_fips + aewr_region_id^year",
+      "phase1_size_250_exact": 0.048,
+      "phase1_mde_2sd_exact": 0.486,
+      "matched_placebos": [
+        "2013-2019 pre-2020 direct-grower event study (E_p25 x year, ref=2019, joint CV3J F(6,16))",
+        "2013-2019 direct-grower 1b-PPML slope on E_p25 * ln_aewr"
+      ],
+      "flagged_phase1_caution": "E_p25 correlates with baseline rurality (ln_pop_2010 r=-0.295, farm_emp_share_0810 r=+0.174); mandatory + X_pre x Year FE referee test required."
+    },
+    {
+      "id": "P4_R2a_direct_2020_2025_1a",
+      "phase1_candidate": "R2a_bite_direct_2020_2025_1a",
+      "family": "R2",
+      "tier": "Tier 2",
+      "estimand": "Post-Addendum-B (2020-2025) direct-grower differential H-2A certified-hours elasticity per 1-SD E_p25 absorbing all E_p25 x Year trends (1a-PPML cross-region real-AEWR variation only)",
+      "sample": "Same 2,913 direct-grower active counties, 2020-2025 (17,478 county-years)",
+      "exposure_definition": "Canonical frozen 2008-2010 E_p25 from bite_county_year_panel.parquet",
+      "outcome": "direct_hours_sy",
+      "regressor": "E_p25 * ln_aewr + i(year, E_p25, ref = 2020)",
+      "estimator": "fixest::fepois",
+      "fixed_effects": "county_fips + aewr_region_id^year",
+      "phase1_size_250_exact": 0.044,
+      "phase1_mde_1sd_exact": 0.839,
+      "matched_placebos": [
+        "2013-2019 direct-grower 1a-PPML (+ E_p25 x Year FE) slope on E_p25 * ln_aewr"
+      ],
+      "flagged_phase1_caution": "Low effective clusters (G_eff = 7.29); mandatory 17-region LOO influence audit."
+    }
+  ],
+  "adversarial_referee_battery": [
+    "R4a structural eps_cost translation: raw s_wage_0810 * ln_aewr under C+RY and C+SY (tests whether 2-SD differential MDE translates to structural cost-share elasticity MDE)",
+    "R4a 1a-PPML (+ E_dur x Year FE) variance-retention and trend-reliance check",
+    "R4a fixed-cost sensitivity F in {1500, 2500, 4000} and linear mean_weeks_0810 standardization",
+    "R4a margin decomposition: certified positions vs hours and paired CV3J implied duration (theta_H - theta_N) to detect baseline-duration mean reversion",
+    "R4a direct-grower restriction (2013-2025 and 2020-2025) and E_p25 benchmark on the identical 1,615 baseline-H2A county sample",
+    "R2a strict pre-Oct-2-2025 regime check: drop calendar start-year 2025 (2020-2024 only) AND test fiscal-year (FY2020-FY2025) vs start-year attribution to detect Oct-Dec 2025 policy spillover",
+    "R2a decomposition: Direct-Grower 2020-2025 vs All Employers 2020-2025 vs H-2ALC Only 2020-2025 vs Direct-Grower 2013-2025, plus County + State x Year FE",
+    "Both families: WPU01 PPI decoupling (+ E x ln(ppi_2012)) and nominal ln(aewr) sensitivity",
+    "Both families: Predetermined controls (+ X_pre x Year FE for ln_pop_2010, farm_emp_share_0810, ln_emp_farm_0810; and + CDL_0810 x Year FE)",
+    "Both families: Certified positions and paired CV3J implied duration (theta_H - theta_N)",
+    "Both families: Drop top 1% baseline H-2A counties and complete 17-region leave-one-region-out (LOO) influence audit"
+  ]
+}

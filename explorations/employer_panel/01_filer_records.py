@@ -162,7 +162,7 @@ def _(RAW, pl, re):
         "housing_address": r"^HOUSING_ADDRESS_LOCATION$",
         "worksite_address": r"^WORKSITE_ADDRESS$",
         "worksite_zip": r"^(WORKSITE_POSTAL_CODE|WORKSITE_ZIP)$",
-        "naics": r"^NAICS_CODE$",
+        "naics": r"^NAICS?_CODE$",
     }
 
     def fiscal_year_of(path):
@@ -170,11 +170,13 @@ def _(RAW, pl, re):
         value = int(match.group(1))
         return value if value > 100 else 2000 + value
 
-    raw_paths = sorted(
-        path
-        for path in (RAW / "h2a").glob("H*2A*.xls*")
-        if "Addendum" not in path.name and "Worksite County" not in path.name
-    )
+    # One workbook per fiscal year. When a year has two quarterly releases
+    # (FY2026 Q3 and Q4), the later file name wins, as in the producer.
+    latest_by_year = {}
+    for path in sorted((RAW / "h2a").glob("H*2A*.xls*")):
+        if "Addendum" not in path.name and "Worksite County" not in path.name:
+            latest_by_year[fiscal_year_of(path)] = path
+    raw_paths = [latest_by_year[year] for year in sorted(latest_by_year)]
     inventory_rows = []
     agent_frames = []
     for raw_path in raw_paths:
