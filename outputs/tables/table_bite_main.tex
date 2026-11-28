@@ -1,0 +1,44 @@
+\begin{table}[!htbp]
+\centering
+\caption{Full-Panel FE-PPML Bite Estimates of AEWR Responsiveness (2011--2025)}
+\label{tab:bite_main}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+ & (1) & (2) & (3) & (4) & (5) & (6) \\
+ & Primary & State $\times$ Yr & $+X_{\text{pre}} \times$ Yr & OEWS & Shortfall & 1a-PPML \\
+ & $E_{p25}$ & $E_{p25}$ & $E_{p25}$ & $E_{\text{oews}}$ & $E_{\text{sf}}$ & $+E_{p25} \times$ Yr \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel A: Certified H-2A Hours (FE-PPML)}} \\
+$E_c \times \ln(\text{AEWR}_{rt})$ & 0.003 & -0.045 & 0.029 & 0.041 & 0.008 & -0.214 \\
+\quad (Region CRV1 SE) & (0.129) & (0.149) & (0.122) & (0.133) & (0.120) & (0.580) \\
+\quad [Region CV3J SE] & [0.135] & [0.158] & [0.130] & [0.134] & [0.124] & [0.752] \\
+\quad MDE ($2.8 \times \text{CV3J}$) & 0.379 & 0.442 & 0.364 & 0.374 & 0.346 & 2.106 \\
+\quad Region LOO [min, max] & [-0.06, 0.09] & [-0.10, 0.05] & [-0.03, 0.12] & [-0.04, 0.14] & [-0.06, 0.07] & [-0.58, 0.37] \\
+\quad Observations (Counties) & 44,805 (2,987) & 44,805 (2,987) & 44,535 (2,969) & 44,220 (2,948) & 44,805 (2,987) & 44,805 (2,987) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: Certified H-2A Positions (FE-PPML)}} \\
+$E_c \times \ln(\text{AEWR}_{rt})$ & -0.010 & -0.047 & -0.001 & 0.105 & -0.009 & -0.073 \\
+\quad (Region CRV1 SE) & (0.113) & (0.142) & (0.104) & (0.157) & (0.117) & (0.550) \\
+\quad [Region CV3J SE] & [0.119] & [0.148] & [0.110] & [0.162] & [0.122] & [0.724] \\
+\quad MDE ($2.8 \times \text{CV3J}$) & 0.333 & 0.416 & 0.309 & 0.453 & 0.341 & 2.026 \\
+\quad Region LOO [min, max] & [-0.06, 0.06] & [-0.10, 0.03] & [-0.03, 0.07] & [0.03, 0.21] & [-0.10, 0.04] & [-0.31, 0.54] \\
+\quad Observations (Counties) & 44,805 (2,987) & 44,805 (2,987) & 44,535 (2,969) & 44,220 (2,948) & 44,805 (2,987) & 44,805 (2,987) \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel C: Primary Extensive Margin and Implied Duration (Col. 1 FE)}} \\
+$\mathbf{1}[\text{Positions} \ge 5]$ (LPM) & -0.024 & \multicolumn{5}{l}{CRV1 (0.031), CV3J [0.032], MDE 0.089, LOO [-0.04, -0.00], $N=$ 46,620 (3,108)} \\
+Implied $\ln(\text{Hours/Pos.})$ ($\hat{\theta}_H - \hat{\theta}_N$) & 0.013 & \multicolumn{5}{l}{CRV1 (---), CV3J [0.052], MDE 0.144, LOO [-0.02, 0.04]} \\
+\midrule
+County FE & Yes & Yes & Yes & Yes & Yes & Yes \\
+Region $\times$ Year FE & Yes & --- & Yes & Yes & Yes & Yes \\
+State $\times$ Year FE & No & Yes & No & No & No & No \\
+Predetermined $X_{\text{pre}} \times$ Year & No & No & Yes & No & No & No \\
+$E_{p25} \times$ Year FE & No & No & No & No & No & Yes \\
+AEWR Region Clusters ($G$) & 17 & 17 & 17 & 17 & 17 & 17 \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.4em}\footnotesize
+\textit{Notes:} Sample covers 2011--2025 contiguous U.S.\ counties (2009 excluded because statutory AEWR is missing; 2025 start-year H-2A counts are provisional pending FY2027 decisions). Exposures $E_c$ are frozen 2008/2010 averages standardized to mean 0, SD 1 within each of the 17 AEWR regions. Coefficients report the differential log-point (semi-elasticity) response per $+1$ within-region SD of baseline exposure per unit increase in $\ln(\text{AEWR}_{rt})$ — not an aggregate elasticity. Parentheses show region-clustered CRV1 SEs; brackets show exact delete-one-region jackknife (CV3J) SEs with stars from CV3J $t(G-1)$ p-values ($^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$). Col.\ 3 interacts predetermined 2008--2010 covariates ($\ln\text{Pop}_{2010}$, farm employment share, $\ln(1+\text{EmpFarm})$) with year indicators, preserving 2023--2025. Col.\ 6 absorbs $E_{p25} \times$ Year FE, retaining 2.6\% unweighted (3.4\% PPML-hours-weighted) of the Col.\ 1 residualized regressor variance.
+\end{minipage}
+\end{table}

@@ -1,0 +1,179 @@
+{
+  "design": "bite_full_panel_ppml_v1",
+  "generated_at_utc": "2026-11-26T10:25:55Z",
+  "inputs": {
+    "county_year_panel_parquet": {
+      "path": "data/processed/county_year_panel.parquet",
+      "sha256": "4e2e56d0884715ea0ff26b8251339c18748cc1966692a5ab0eac31171cf51b92"
+    },
+    "bite_county_year_panel_parquet": {
+      "path": "data/processed/bite_county_year_panel.parquet",
+      "sha256": "0f00e855dc3222a62c1441a5d2cda96d7725de53c92cbe32d6d908a04dc64040"
+    }
+  },
+  "panel_counts": {
+    "full_rows": 55944,
+    "full_counties": 3108,
+    "full_years": [2008, 2025],
+    "estimation_years": [2011, 2025],
+    "aewr_regions": 17,
+    "states": 48
+  },
+  "variance_decomposition": {
+    "share_1a_of_1b_unweighted": 0.0261,
+    "share_1a_of_1b_ppml_hours_weighted": 0.0344,
+    "share_within_sy_unweighted": 0.8606,
+    "share_within_sy_ppml_hours_weighted": 0.8631
+  },
+  "cluster_concentration": {
+    "g_eff_fisher_hours": 13.3562,
+    "ca_fisher_share_hours": 0.1207,
+    "g_eff_fisher_workers": 12.2526,
+    "ca_fisher_share_workers": 0.1311
+  },
+  "key_estimates": {
+    "primary_1b_hours": {
+      "estimate": 0.0026,
+      "se_crv1": 0.1286,
+      "se_cv3j": 0.1353,
+      "p_cv3j": 0.9849,
+      "mde_cv3j": 0.3788,
+      "loo_min": -0.0586,
+      "loo_max": 0.0908,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 17
+    },
+    "primary_1b_workers": {
+      "estimate": -0.0105,
+      "se_crv1": 0.1133,
+      "se_cv3j": 0.1189,
+      "p_cv3j": 0.931,
+      "mde_cv3j": 0.3329,
+      "loo_min": -0.0591,
+      "loo_max": 0.0592,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 17
+    },
+    "primary_any_ge5": {
+      "estimate": -0.0243,
+      "se_crv1": 0.031,
+      "se_cv3j": 0.0316,
+      "p_cv3j": 0.454,
+      "mde_cv3j": 0.0885,
+      "loo_min": -0.0391,
+      "loo_max": -0.0036,
+      "n_obs": 46620,
+      "n_counties": 3108,
+      "n_clusters": 17
+    },
+    "primary_implied_hours_per_pos": {
+      "estimate": 0.0131,
+      "se_crv1": "NA",
+      "se_cv3j": 0.0516,
+      "p_cv3j": 0.8034,
+      "mde_cv3j": 0.1444,
+      "loo_min": -0.0173,
+      "loo_max": 0.0425,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 17
+    },
+    "state_year_hours": {
+      "estimate": -0.0446,
+      "se_crv1": 0.1493,
+      "se_cv3j": 0.1579,
+      "p_cv3j": 0.7811,
+      "mde_cv3j": 0.4422,
+      "loo_min": -0.1009,
+      "loo_max": 0.0527,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 17
+    },
+    "xpre_hours": {
+      "estimate": 0.0291,
+      "se_crv1": 0.1218,
+      "se_cv3j": 0.1299,
+      "p_cv3j": 0.8259,
+      "mde_cv3j": 0.3638,
+      "loo_min": -0.0283,
+      "loo_max": 0.1154,
+      "n_obs": 44535,
+      "n_counties": 2969,
+      "n_clusters": 17
+    },
+    "oews_hours": {
+      "estimate": 0.0411,
+      "se_crv1": 0.1327,
+      "se_cv3j": 0.1336,
+      "p_cv3j": 0.7624,
+      "mde_cv3j": 0.3741,
+      "loo_min": -0.0373,
+      "loo_max": 0.1381,
+      "n_obs": 44220,
+      "n_counties": 2948,
+      "n_clusters": 17
+    },
+    "sf_log_hours": {
+      "estimate": 0.0081,
+      "se_crv1": 0.1198,
+      "se_cv3j": 0.1237,
+      "p_cv3j": 0.9485,
+      "mde_cv3j": 0.3465,
+      "loo_min": -0.0641,
+      "loo_max": 0.073,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 17
+    },
+    "spec1a_hours": {
+      "estimate": -0.2143,
+      "se_crv1": 0.5797,
+      "se_cv3j": 0.7522,
+      "p_cv3j": 0.7794,
+      "mde_cv3j": 2.1061,
+      "loo_min": -0.5815,
+      "loo_max": 0.3694,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 17
+    },
+    "domestic_floor_hours": {
+      "estimate": 0.3764,
+      "se_crv1": 0.2276,
+      "se_cv3j": 0.3736,
+      "p_cv3j": 0.3189,
+      "mde_cv3j": 1.0462,
+      "loo_min": 0.1495,
+      "loo_max": 0.4828,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 48
+    },
+    "domestic_floor_workers": {
+      "estimate": 0.3134,
+      "se_crv1": 0.1416,
+      "se_cv3j": 0.2123,
+      "p_cv3j": 0.1465,
+      "mde_cv3j": 0.5944,
+      "loo_min": 0.219,
+      "loo_max": 0.3956,
+      "n_obs": 44805,
+      "n_counties": 2987,
+      "n_clusters": 48
+    }
+  },
+  "outputs_sha256": {
+    "outputs/tables/bite/bite_main_estimates.csv": "561d2bdcde8eb0e28c7f7c0a38a7fe9abd79dde19ec3c7952e6c223217507284",
+    "outputs/tables/bite/bite_diagnostics.csv": "b3d00365af0939f64ad6592eb34cb43b0afd47dd52062aa211bb3172c6bd8d99",
+    "outputs/tables/bite/bite_event_study.csv": "9a93d0f56baf99fd3dab9001bf9010a577d2a3bc8f2e7f147d6b85218c2211a1",
+    "outputs/tables/bite/bite_loo_regions.csv": "8569478fcbace3260581690e231a0f4e61180748e16b566bcf3ddc4b695f3c2a",
+    "outputs/tables/table_bite_main.tex": "6f2f5186becef097caea9a289476d91f14ef23dd2ab554beba12feb2282dc557",
+    "outputs/tables/table_bite_diagnostics.tex": "343c0af9538c56fb819eb0c55d03269df479c474ac1747237009f0c8fc3d21af",
+    "outputs/figures/fig_bite_event_study.pdf": "21498822fca9a7a56a951fdea2606b47da1f556690af3d728e9c0082f79cc578",
+    "outputs/figures/fig_bite_event_study.png": "eeb11643431429ef2a507a56384231b45ecee384dab4e0a450940b108468f0a5",
+    "outputs/reports/bite_design.md": "8dd65a4cd7121701fb1c9bdc59a5c8b89ece2bedc9c961a80cc64897b19cce28"
+  }
+}

@@ -1,0 +1,44 @@
+\begin{table}[!htbp]
+\centering
+\caption{Bite Design Diagnostics, Farm Outcomes, and Standalone Domestic-Floor Margin}
+\label{tab:bite_diagnostics}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Specification / Outcome & Estimate & CRV1 SE & CV3J SE & MDE & Obs. & Clusters \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel A: Quartile SPT Monotonicity (Certified Hours, vs.\ Q1, 2011--2025)}} \\
+Q2($E_{p25}$) $\times \ln(\text{AEWR})$ & 0.227 & (0.289) & [0.319] & 0.893 & 44,805 & 17 \\
+Q3($E_{p25}$) $\times \ln(\text{AEWR})$ & -0.317 & (0.386) & [0.433] & 1.213 & 44,805 & 17 \\
+Q4($E_{p25}$) $\times \ln(\text{AEWR})$ & 0.094 & (0.442) & [0.496] & 1.387 & 44,805 & 17 \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel B: WPU01 Farm-Price Decoupling \& Concentration (2011--2025)}} \\
+Hours: $E_{p25} \times \ln(\text{AEWR})$ (with PPI control) & 0.037 & (0.175) & [0.183] & 0.514 & 44,805 & 17 \\
+Hours: $E_{p25} \times \ln(\text{WPU01 PPI})$ & -0.048 & (0.098) & [0.102] & 0.285 & 44,805 & 17 \\
+Hours: drop top 1\% H-2A counties & 0.161 & (0.121) & [0.125] & 0.349 & 44,325 & 17 \\
+Positions: drop top 1\% H-2A counties & 0.100 & (0.118) & [0.122] & 0.341 & 44,325 & 17 \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel C: Addendum-B Extensive-Margin \& Employer-Linkage Checks}} \\
+$\mathbf{1}[\text{Positions} > 0]$ (LPM, 2011--2025) & 0.040* & (0.020) & [0.020] & 0.057 & 46,620 & 17 \\
+$\mathbf{1}[\text{Positions} > 0]$ (LPM, 2011--2019) & 0.019 & (0.059) & [0.060] & 0.168 & 27,972 & 17 \\
+$\mathbf{1}[\text{Positions} \ge 5]$ (LPM, 2011--2025) & -0.024 & (0.031) & [0.032] & 0.089 & 46,620 & 17 \\
+$\mathbf{1}[\text{Positions} \ge 5]$ (LPM, 2011--2019) & -0.052 & (0.051) & [0.051] & 0.144 & 27,972 & 17 \\
+Balanced worksite employers (PPML, 2011--2019) & 0.346 & (0.255) & [0.269] & 0.752 & 22,392 & 17 \\
+Balanced worksite employers (PPML, 2020--2025) & 0.083 & (0.150) & [0.160] & 0.449 & 17,784 & 17 \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel D: Agricultural Outcomes ($E_{p25} \times \ln(\text{AEWR})$, County + Region $\times$ Year FE)}} \\
+Fisher output price index (real, OLS, 2011--2024) & -5.680 & (4.353) & [4.280] & 11.985 & 43,359 & 17 \\
+Farm labor share of prod.\ exp.\ (OLS, 2011--2022) & 0.004 & (0.003) & [0.003] & 0.009 & 36,492 & 17 \\
+BEA farm employment (PPML, 2011--2022) & 0.001 & (0.015) & [0.015] & 0.041 & 36,492 & 17 \\
+BEA farm employment (OLS, 2011--2022) & 7.538 & (14.459) & [13.995] & 39.187 & 36,948 & 17 \\
+\midrule
+\multicolumn{7}{l}{\textit{Panel E: Standalone Domestic-Floor Margin ($\ln(\text{Prevailing Ag Min Wage})$, State Clusters, 2011--2025)}} \\
+Certified H-2A hours (PPML, all 48 states) & 0.376 & (0.228) & [0.374] & 1.046 & 44,805 & 48 \\
+Certified H-2A positions (PPML, all 48 states) & 0.313 & (0.142) & [0.212] & 0.594 & 44,805 & 48 \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.4em}\footnotesize
+\textit{Notes:} All models include County and Region $\times$ Year fixed effects. Panels A--D cluster at the AEWR region level ($G=17$); Panel E clusters at the state level ($G=48$ states retained in the panel; 46 multi-state-region states provide within-region variation because CA and FL are single-state AEWR regions) and reports the standalone reduced-form response to the statutory domestic agricultural minimum-wage floor (never translated into an AEWR elasticity). Stars reflect CV3J $t(G-1)$ p-values ($^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$); MDE $= 2.8 \times \text{CV3J SE}$.
+\end{minipage}
+\end{table}
