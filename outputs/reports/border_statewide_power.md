@@ -14,28 +14,28 @@ Units: certified positions per fixed-2011 farm worker per nominal $1/hour (0.01 
 
 | spec_id | treatment_label | scenario_id | counties | pairs | states | median_post_pair_gap | effective_pair_leverage_count | maximum_pair_leverage_share | signed_incidence_rank | pre_mean_outcome | pre_sd_outcome |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 |  322 |   22 |   34 | 0.705 | 5.69 | 0.279 |   21 | 0.115 | 0.204 |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 |  322 |   22 |   34 | 0.765 | 6.88 | 0.261 |   21 | 0.115 | 0.204 |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  322 |   22 |   34 | 0.945 | 7.97 | 0.244 |   21 | 0.115 | 0.204 |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  322 |   22 |   34 | 0.94 | 8.66 | 0.235 |   21 | 0.115 | 0.204 |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 |  322 |   22 |   34 | 1.19 |  8.7 | 0.258 |   21 | 0.115 | 0.204 |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  322 |   22 |   34 | 1.09 | 10.4 | 0.155 |   21 | 0.115 | 0.204 |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 |  322 |   22 |   34 | 0.705 | 5.69 | 0.279 |   21 | 0.116 | 0.204 |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 |  322 |   22 |   34 | 0.765 | 6.88 | 0.261 |   21 | 0.116 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  322 |   22 |   34 | 0.945 | 7.97 | 0.244 |   21 | 0.116 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  322 |   22 |   34 | 0.94 | 8.66 | 0.235 |   21 | 0.116 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 |  322 |   22 |   34 | 1.19 |  8.7 | 0.258 |   21 | 0.116 | 0.204 |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  322 |   22 |   34 | 1.09 | 10.4 | 0.155 |   21 | 0.116 | 0.204 |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 |  708 |   69 |   40 | 1.16 | 27.2 | 0.0842 |   39 | 0.0886 | 0.185 |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  708 |   69 |   40 | 1.16 | 28.6 | 0.0728 |   39 | 0.0886 | 0.185 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  544 |   37 |   46 | 1.12 | 12.2 | 0.169 |   31 | 0.103 | 0.192 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  544 |   37 |   46 | 1.11 | 13.1 | 0.14 |   31 | 0.103 | 0.192 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  544 |   37 |   46 | 1.12 | 12.2 | 0.169 |   31 | 0.103 | 0.196 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  544 |   37 |   46 | 1.11 | 13.1 | 0.14 |   31 | 0.103 | 0.196 |
 
 ### Primary specification: power at the declared threshold
 
 | scenario_id | dgp_id | inference_method | effect | rejection_rate | size_gate_pass |
 | --- | --- | --- | --- | --- | --- |
-| post_fy2026 | county_serial | pair_CRV1 | 0.01 | 0.463 | FALSE |
+| post_fy2026 | county_serial | pair_CRV1 | 0.01 | 0.465 | FALSE |
 | post_fy2026 | county_serial | pair_CRV1 | -0.01 | 0.476 | FALSE |
 | post_fy2026 | county_serial | pair_CV3J | 0.01 | 0.402 | FALSE |
-| post_fy2026 | county_serial | pair_CV3J | -0.01 | 0.413 | FALSE |
-| post_fy2026 | county_serial | pair_region_CRV1 | 0.01 | 0.477 | FALSE |
-| post_fy2026 | county_serial | pair_region_CRV1 | -0.01 | 0.488 | FALSE |
-| post_fy2026 | county_serial | shared_endpoint_dyadic | 0.01 | 0.533 | FALSE |
+| post_fy2026 | county_serial | pair_CV3J | -0.01 | 0.414 | FALSE |
+| post_fy2026 | county_serial | pair_region_CRV1 | 0.01 | 0.478 | FALSE |
+| post_fy2026 | county_serial | pair_region_CRV1 | -0.01 | 0.489 | FALSE |
+| post_fy2026 | county_serial | shared_endpoint_dyadic | 0.01 | 0.534 | FALSE |
 | post_fy2026 | county_serial | shared_endpoint_dyadic | -0.01 | 0.542 | FALSE |
 | post_fy2026 | shared_region_serial | pair_CRV1 | 0.01 | 0.159 | FALSE |
 | post_fy2026 | shared_region_serial | pair_CRV1 | -0.01 | 0.18 | FALSE |
@@ -61,17 +61,17 @@ Units: certified positions per fixed-2011 farm worker per nominal $1/hour (0.01 
 | post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.01 | 0.13 | FALSE |
 | post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.01 | 0.141 | FALSE |
 | post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.01 | 0.155 | FALSE |
-| post_fy2026_fy2027 | county_serial | pair_CRV1 | 0.01 | 0.578 | FALSE |
+| post_fy2026_fy2027 | county_serial | pair_CRV1 | 0.01 | 0.579 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CRV1 | -0.01 | 0.605 | FALSE |
-| post_fy2026_fy2027 | county_serial | pair_CV3J | 0.01 | 0.526 | TRUE |
+| post_fy2026_fy2027 | county_serial | pair_CV3J | 0.01 | 0.527 | TRUE |
 | post_fy2026_fy2027 | county_serial | pair_CV3J | -0.01 | 0.544 | TRUE |
-| post_fy2026_fy2027 | county_serial | pair_region_CRV1 | 0.01 | 0.588 | FALSE |
+| post_fy2026_fy2027 | county_serial | pair_region_CRV1 | 0.01 | 0.589 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_region_CRV1 | -0.01 | 0.615 | FALSE |
 | post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | 0.01 | 0.65 | FALSE |
-| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | -0.01 | 0.659 | FALSE |
+| post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic | -0.01 | 0.66 | FALSE |
 | post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | 0.01 | 0.206 | FALSE |
 | post_fy2026_fy2027 | shared_region_serial | pair_CRV1 | -0.01 | 0.23 | FALSE |
-| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | 0.01 | 0.169 | FALSE |
+| post_fy2026_fy2027 | shared_region_serial | pair_CV3J | 0.01 | 0.17 | FALSE |
 | post_fy2026_fy2027 | shared_region_serial | pair_CV3J | -0.01 |  0.2 | FALSE |
 | post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | 0.01 | 0.195 | FALSE |
 | post_fy2026_fy2027 | shared_region_serial | pair_region_CRV1 | -0.01 | 0.228 | FALSE |
@@ -173,10 +173,10 @@ Units: certified positions per fixed-2011 farm worker per nominal $1/hour (0.01 
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.331 | FALSE | unavailable | 0.12 | FALSE |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.43 | FALSE | unavailable | 0.195 | FALSE |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.419 | FALSE | unavailable | 0.183 | FALSE |
-| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.394 | FALSE | unavailable | 0.152 | FALSE |
+| statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.395 | FALSE | unavailable | 0.152 | FALSE |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.37 | FALSE | unavailable | 0.109 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.149 | FALSE | unavailable | 0.116 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.01 | 0.113 | FALSE | unavailable | 0.0831 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.01 | 0.112 | FALSE | unavailable | 0.0831 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.153 | FALSE | unavailable | 0.117 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.178 | FALSE | unavailable | 0.142 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.01 | 0.118 | FALSE | unavailable | 0.117 | FALSE |
@@ -185,7 +185,7 @@ Units: certified positions per fixed-2011 farm worker per nominal $1/hour (0.01 
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.144 | FALSE | unavailable | 0.134 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.142 | FALSE | unavailable | 0.129 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.116 | FALSE | unavailable | 0.101 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.147 | FALSE | unavailable | 0.124 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.148 | FALSE | unavailable | 0.124 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.191 | FALSE | unavailable | 0.14 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.01 | 0.114 | FALSE | unavailable | 0.105 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0921 | FALSE | unavailable | 0.0841 | FALSE |
@@ -223,14 +223,14 @@ Units: certified positions per fixed-2011 farm worker per nominal $1/hour (0.01 
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.01 | 0.0791 | FALSE | unavailable | 0.0821 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.01 | 0.102 | FALSE | unavailable | 0.0941 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.01 | 0.12 | FALSE | unavailable | 0.111 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.172 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.15 | FALSE | unavailable | 0.0931 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.167 | FALSE | unavailable | 0.101 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.177 | FALSE | unavailable | 0.0961 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.195 | FALSE | unavailable | 0.106 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.174 | FALSE | unavailable | 0.0931 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.196 | FALSE | unavailable | 0.0981 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 | 0.212 | FALSE | unavailable | 0.0871 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.01 | 0.159 | FALSE | unavailable | 0.109 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.01 | 0.135 | FALSE | unavailable | 0.0931 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.01 | 0.158 | FALSE | unavailable | 0.101 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.01 | 0.169 | FALSE | unavailable | 0.0961 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.01 | 0.181 | FALSE | unavailable | 0.106 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.01 | 0.161 | FALSE | unavailable | 0.0931 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.01 | 0.177 | FALSE | unavailable | 0.0981 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.01 |  0.2 | FALSE | unavailable | 0.0871 | FALSE |
 
 Conditional precision passes for 0 of 64 specification/inference combinations.
 
@@ -250,8 +250,8 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 |  275 |   22 |   34 | 1.09 | 9.88 | 0.168 |   21 |   14 | 1.42 |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026 |  578 |   65 |   40 | 1.12 |   25 | 0.0786 |   38 | 14.2 | 1.48 |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  578 |   65 |   40 | 1.07 | 26.4 | 0.0908 |   38 | 14.2 | 1.48 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  421 |   35 |   45 | 1.02 | 11.5 | 0.168 |   30 | 14.1 | 1.43 |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  421 |   35 |   45 | 1.08 | 12.1 | 0.15 |   30 | 14.1 | 1.43 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 |  421 |   35 |   45 | 1.02 | 11.5 | 0.168 |   30 | 14.1 | 1.42 |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 |  421 |   35 |   45 | 1.08 | 12.1 | 0.15 |   30 | 14.1 | 1.42 |
 
 ### Primary specification: power at the declared threshold
 
@@ -265,30 +265,30 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026 | county_serial | pair_region_CRV1 | -0.25 |    1 | FALSE |
 | post_fy2026 | county_serial | shared_endpoint_dyadic | 0.25 |    1 | FALSE |
 | post_fy2026 | county_serial | shared_endpoint_dyadic | -0.25 |    1 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CRV1 | 0.25 | 0.95 | FALSE |
-| post_fy2026 | shared_region_serial | pair_CRV1 | -0.25 | 0.941 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CRV1 | 0.25 | 0.949 | FALSE |
+| post_fy2026 | shared_region_serial | pair_CRV1 | -0.25 | 0.94 | FALSE |
 | post_fy2026 | shared_region_serial | pair_CV3J | 0.25 | 0.929 | FALSE |
 | post_fy2026 | shared_region_serial | pair_CV3J | -0.25 | 0.929 | FALSE |
-| post_fy2026 | shared_region_serial | pair_region_CRV1 | 0.25 | 0.944 | FALSE |
+| post_fy2026 | shared_region_serial | pair_region_CRV1 | 0.25 | 0.942 | FALSE |
 | post_fy2026 | shared_region_serial | pair_region_CRV1 | -0.25 | 0.94 | FALSE |
 | post_fy2026 | shared_region_serial | shared_endpoint_dyadic | 0.25 | 0.937 | FALSE |
 | post_fy2026 | shared_region_serial | shared_endpoint_dyadic | -0.25 | 0.933 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | 0.25 | 0.907 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | 0.25 | 0.906 | FALSE |
 | post_fy2026 | shared_region_and_pair_serial | pair_CRV1 | -0.25 | 0.902 | FALSE |
 | post_fy2026 | shared_region_and_pair_serial | pair_CV3J | 0.25 | 0.875 | FALSE |
 | post_fy2026 | shared_region_and_pair_serial | pair_CV3J | -0.25 | 0.867 | FALSE |
 | post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | 0.25 | 0.906 | FALSE |
 | post_fy2026 | shared_region_and_pair_serial | pair_region_CRV1 | -0.25 | 0.898 | FALSE |
-| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.907 | FALSE |
+| post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.906 | FALSE |
 | post_fy2026 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.25 | 0.903 | FALSE |
 | post_fy2026 | spatial_region_serial | pair_CRV1 | 0.25 | 0.837 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CRV1 | -0.25 | 0.838 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CRV1 | -0.25 | 0.836 | FALSE |
 | post_fy2026 | spatial_region_serial | pair_CV3J | 0.25 | 0.799 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_CV3J | -0.25 | 0.788 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.839 | FALSE |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.834 | FALSE |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.843 | FALSE |
-| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.846 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_CV3J | -0.25 | 0.787 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.838 | FALSE |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.833 | FALSE |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.842 | FALSE |
+| post_fy2026 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.843 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CRV1 | 0.25 |    1 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CRV1 | -0.25 |    1 | FALSE |
 | post_fy2026_fy2027 | county_serial | pair_CV3J | 0.25 |    1 | FALSE |
@@ -314,13 +314,13 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | 0.25 | 0.97 | FALSE |
 | post_fy2026_fy2027 | shared_region_and_pair_serial | shared_endpoint_dyadic | -0.25 | 0.97 | FALSE |
 | post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | 0.25 | 0.927 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | -0.25 | 0.93 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | 0.25 | 0.91 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | -0.25 | 0.915 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 | -0.25 | 0.929 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | 0.25 | 0.909 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J | -0.25 | 0.914 | FALSE |
 | post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | 0.25 | 0.925 | FALSE |
 | post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 | -0.25 | 0.931 | FALSE |
 | post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | 0.25 | 0.935 | FALSE |
-| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.937 | FALSE |
+| post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic | -0.25 | 0.936 | FALSE |
 
 ### Primary specification: size and minimum detectable effects
 
@@ -342,7 +342,7 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026 | shared_region_serial | pair_region_CRV1 |    1 | 0.185 | unavailable | 0.105 | 0.126 |
 | post_fy2026 | shared_region_serial | shared_endpoint_dyadic |   -1 |  0.2 | unavailable | 0.121 | 0.143 |
 | post_fy2026 | shared_region_serial | shared_endpoint_dyadic |    1 | 0.19 | unavailable | 0.121 | 0.143 |
-| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.21 | unavailable | 0.0851 | 0.104 |
+| post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |   -1 | 0.215 | unavailable | 0.0851 | 0.104 |
 | post_fy2026 | shared_region_and_pair_serial | pair_CRV1 |    1 | 0.205 | unavailable | 0.0851 | 0.104 |
 | post_fy2026 | shared_region_and_pair_serial | pair_CV3J |   -1 | 0.225 | unavailable | 0.0631 | 0.0799 |
 | post_fy2026 | shared_region_and_pair_serial | pair_CV3J |    1 | 0.22 | unavailable | 0.0631 | 0.0799 |
@@ -354,7 +354,7 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026 | spatial_region_serial | pair_CRV1 |    1 | 0.235 | unavailable | 0.0841 | 0.103 |
 | post_fy2026 | spatial_region_serial | pair_CV3J |   -1 | 0.255 | unavailable | 0.0671 | 0.0843 |
 | post_fy2026 | spatial_region_serial | pair_CV3J |    1 | 0.255 | unavailable | 0.0671 | 0.0843 |
-| post_fy2026 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.24 | unavailable | 0.0861 | 0.105 |
+| post_fy2026 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.245 | unavailable | 0.0861 | 0.105 |
 | post_fy2026 | spatial_region_serial | pair_region_CRV1 |    1 | 0.235 | unavailable | 0.0861 | 0.105 |
 | post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.235 | unavailable | 0.123 | 0.145 |
 | post_fy2026 | spatial_region_serial | shared_endpoint_dyadic |    1 | 0.235 | unavailable | 0.123 | 0.145 |
@@ -366,7 +366,7 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026_fy2027 | county_serial | pair_region_CRV1 |    1 | 0.07 | unavailable | 0.0861 | 0.105 |
 | post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |   -1 | 0.065 | unavailable | 0.137 | 0.16 |
 | post_fy2026_fy2027 | county_serial | shared_endpoint_dyadic |    1 | 0.065 | unavailable | 0.137 | 0.16 |
-| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |   -1 | 0.155 | unavailable | 0.11 | 0.131 |
+| post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |   -1 | 0.16 | unavailable | 0.11 | 0.131 |
 | post_fy2026_fy2027 | shared_region_serial | pair_CRV1 |    1 | 0.16 | unavailable | 0.11 | 0.131 |
 | post_fy2026_fy2027 | shared_region_serial | pair_CV3J |   -1 | 0.165 | unavailable | 0.0961 | 0.116 |
 | post_fy2026_fy2027 | shared_region_serial | pair_CV3J |    1 | 0.17 | unavailable | 0.0961 | 0.116 |
@@ -385,7 +385,7 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |   -1 | 0.195 | unavailable | 0.0871 | 0.106 |
 | post_fy2026_fy2027 | spatial_region_serial | pair_CRV1 |    1 |  0.2 | unavailable | 0.0871 | 0.106 |
 | post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |   -1 | 0.21 | unavailable | 0.0711 | 0.0887 |
-| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |    1 | 0.21 | unavailable | 0.0711 | 0.0887 |
+| post_fy2026_fy2027 | spatial_region_serial | pair_CV3J |    1 | 0.215 | unavailable | 0.0711 | 0.0887 |
 | post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |   -1 | 0.195 | unavailable | 0.0861 | 0.105 |
 | post_fy2026_fy2027 | spatial_region_serial | pair_region_CRV1 |    1 |  0.2 | unavailable | 0.0861 | 0.105 |
 | post_fy2026_fy2027 | spatial_region_serial | shared_endpoint_dyadic |   -1 | 0.195 | unavailable | 0.129 | 0.151 |
@@ -403,65 +403,65 @@ Units: dollars of hours-weighted hourly offered wage per statutory dollar (pass-
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.979 | FALSE | unavailable | 0.183 | FALSE |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.979 | FALSE | unavailable | 0.154 | FALSE |
 | statewide_h0_screened_all_borders | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.963 | FALSE | unavailable | 0.119 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.811 | FALSE | unavailable | 0.14 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.25 | 0.736 | FALSE | unavailable | 0.104 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.809 | FALSE | unavailable | 0.14 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_CV3J | 0.25 | 0.735 | FALSE | unavailable | 0.104 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.813 | FALSE | unavailable | 0.141 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.821 | FALSE | unavailable | 0.175 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.736 | FALSE | unavailable | 0.163 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.735 | FALSE | unavailable | 0.163 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.632 | FALSE | unavailable | 0.116 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.746 | FALSE | unavailable | 0.167 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.769 | FALSE | unavailable | 0.188 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.912 | FALSE | unavailable | 0.121 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.911 | FALSE | unavailable | 0.121 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.868 | FALSE | unavailable | 0.0931 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.909 | FALSE | unavailable | 0.116 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.916 | FALSE | unavailable | 0.163 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.815 | FALSE | unavailable | 0.149 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.731 | FALSE | unavailable | 0.122 | FALSE |
 | statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.814 | FALSE | unavailable | 0.148 | FALSE |
-| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.847 | FALSE | unavailable | 0.18 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.837 | FALSE | unavailable | 0.102 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.788 | FALSE | unavailable | 0.0821 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.834 | FALSE | unavailable | 0.105 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.843 | FALSE | unavailable | 0.123 | FALSE |
+| statewide_h0_screened_within_region | h2a_skill_1_cash_rate_after_housing_adjustment | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.846 | FALSE | unavailable | 0.18 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.836 | FALSE | unavailable | 0.102 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.787 | FALSE | unavailable | 0.0821 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.833 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.842 | FALSE | unavailable | 0.123 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.751 | FALSE | unavailable | 0.138 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.688 | FALSE | unavailable | 0.106 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.759 | FALSE | unavailable | 0.134 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.775 | FALSE | unavailable | 0.151 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.927 | FALSE | unavailable | 0.11 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.91 | FALSE | unavailable | 0.0961 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.909 | FALSE | unavailable | 0.0961 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.925 | FALSE | unavailable | 0.106 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.935 | FALSE | unavailable | 0.129 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.845 | FALSE | unavailable | 0.126 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.78 | FALSE | unavailable | 0.0971 | FALSE |
-| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.85 | FALSE | unavailable | 0.125 | FALSE |
+| statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.849 | FALSE | unavailable | 0.125 | FALSE |
 | statewide_h0_screened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.873 | FALSE | unavailable | 0.153 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.694 | FALSE | unavailable | 0.138 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CV3J | 0.25 | 0.617 | FALSE | unavailable | 0.115 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.693 | FALSE | unavailable | 0.138 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_CV3J | 0.25 | 0.616 | FALSE | unavailable | 0.115 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.693 | FALSE | unavailable | 0.138 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.706 | FALSE | unavailable | 0.15 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.543 | FALSE | unavailable | 0.121 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CRV1 | 0.25 | 0.542 | FALSE | unavailable | 0.121 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_CV3J | 0.25 | 0.459 | FALSE | unavailable | 0.0931 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | pair_region_CRV1 | 0.25 | 0.54 | FALSE | unavailable | 0.119 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.558 | FALSE | unavailable | 0.128 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.805 | FALSE | unavailable | 0.106 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.804 | FALSE | unavailable | 0.106 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.767 | FALSE | unavailable | 0.0831 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.804 | FALSE | unavailable | 0.105 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.814 | FALSE | unavailable | 0.111 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.803 | FALSE | unavailable | 0.105 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.813 | FALSE | unavailable | 0.111 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CRV1 | 0.25 | 0.615 | FALSE | unavailable | 0.116 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_CV3J | 0.25 | 0.564 | FALSE | unavailable | 0.0911 | FALSE |
 | statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | pair_region_CRV1 | 0.25 | 0.616 | FALSE | unavailable | 0.109 | FALSE |
-| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.645 | FALSE | unavailable | 0.118 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.953 | FALSE | unavailable | 0.108 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.945 | FALSE | unavailable | 0.0961 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.956 | FALSE | unavailable | 0.103 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.958 | FALSE | unavailable | 0.107 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.99 | FALSE | unavailable | 0.102 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.985 | FALSE | unavailable | 0.0861 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.989 | FALSE | unavailable | 0.0951 | FALSE |
-| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.989 | FALSE | unavailable | 0.0861 | FALSE |
+| statewide_h0_screened_within_region | us_skill_2 | post_fy2026_fy2027 | sensitivity | shared_endpoint_dyadic | 0.25 | 0.644 | FALSE | unavailable | 0.118 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CRV1 | 0.25 | 0.96 | FALSE | unavailable | 0.108 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_CV3J | 0.25 | 0.952 | FALSE | unavailable | 0.0961 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | pair_region_CRV1 | 0.25 | 0.962 | FALSE | unavailable | 0.103 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026 | primary | shared_endpoint_dyadic | 0.25 | 0.97 | FALSE | unavailable | 0.107 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CRV1 | 0.25 | 0.992 | FALSE | unavailable | 0.102 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_CV3J | 0.25 | 0.99 | FALSE | unavailable | 0.0861 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | pair_region_CRV1 | 0.25 | 0.994 | FALSE | unavailable | 0.0951 | FALSE |
+| statewide_h0_unscreened_within_region | us_skill_1_total_compensation_floor | post_fy2026_fy2027 | primary | shared_endpoint_dyadic | 0.25 | 0.991 | FALSE | unavailable | 0.0861 | FALSE |
 
 Conditional precision passes for 0 of 64 specification/inference combinations.
 
 ## Limits
 
-Simulated size and power are conditional on assumed error processes; they do not establish that state AEWR gaps are exogenous. The rule also changed rates nationally, added a state housing adjustment and coincided with other 2025 policy changes; state-specific concurrent shocks would bias the design and are not represented here. Skill-level assignment is an employer choice, so the primary treatment is an intent-to-treat statutory floor. FY2026 includes cases decided under prior rates. The wage outcome requires post-period offers in the same counties. Estimation requires aligning the FY 2026 Q3 disclosures, now available upstream, to the applicable job-order cohorts.
+Simulated size and power are conditional on assumed error processes; they do not establish that state AEWR gaps are exogenous. The rule also changed rates nationally, added a state housing adjustment and coincided with other 2025 policy changes; state-specific concurrent shocks would bias the design and are not represented here. Skill-level assignment is an employer choice, so the primary treatment is an intent-to-treat statutory floor. FY2026 includes cases decided under prior rates. The wage outcome requires post-period offers in the same counties. Estimation requires aligning the FY 2026 Q4 disclosures, now available upstream, to the applicable job-order cohorts.

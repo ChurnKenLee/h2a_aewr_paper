@@ -52,4 +52,4 @@
   calibration years and scenarios were frozen before any post-policy outcome
   was parsed; stage 13 must fail if a post-policy fiscal year is present and
   must not use post-period residuals for scale. Estimation is a later stage
-  with its own cohort alignment; FY2026 Q3 is now parsed upstream. Keep failed gates.
+  with its own cohort alignment; FY2026 Q4 is now parsed upstream. Keep failed gates.

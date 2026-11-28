@@ -1,4 +1,4 @@
-# Purpose: Link role-classified H-2A worksite businesses using FY2008--2026 Q3 evidence.
+# Purpose: Link role-classified H-2A worksite businesses using FY2008--2026 Q4 evidence.
 # Inputs: h2a_with_fips.parquet, h2a_addendum_b_with_fips.parquet, and manual labels.
 # Outputs: canonical v2 crosswalk plus membership, edge, cluster, vintage, and review audits.
 
@@ -29,7 +29,7 @@ def _():
     )
     from h2a.paths import INTERMEDIATE, RAW
 
-    # The FY2026 Q3 extension is published before the new review pairs are labeled.
+    # The FY2026 Q4 extension is published before the new review pairs are labeled.
     # While True, an incomplete label file stamps review status "pending"
     # instead of stopping. Set False to require a complete manual review.
     ALLOW_PENDING_REVIEW = True
@@ -58,7 +58,7 @@ def _(mo):
     mo.md(r"""
     # H-2A worksite-business linkage v2
 
-    This producer uses FY2008--2026 Q3 identity evidence to create three nested,
+    This producer uses FY2008--2026 Q4 identity evidence to create three nested,
     deterministic worksite-business partitions. Application outcomes, worker
     counts, wages, hours, and downstream design fields never enter matching.
 

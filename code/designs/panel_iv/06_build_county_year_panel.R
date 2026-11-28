@@ -42,7 +42,7 @@ if (
     )
 ) {
   stop(
-    "Panel IV requires the declared FY2008--2026 Q3 worksite-business v2 linkage.",
+    "Panel IV requires the declared FY2008--2026 Q4 worksite-business v2 linkage.",
     call. = FALSE
   )
 }

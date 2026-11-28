@@ -24,7 +24,7 @@ a design sample. They reconcile certifications to the owning B01 aggregate.
 
 Employer counts are positive-certified linked worksite-business counts under
 the balanced and sensitivity v2 partitions. The producer validates the one
-FY2008--2026 Q3 linkage contract (review `complete` or `pending`) and fills its provenance across
+FY2008--2026 Q4 linkage contract (review `complete` or `pending`) and fills its provenance across
 zero-use county-years.
 The QCEW crop, animal, and all-sector source totals and disclosure flags pass
 through unchanged. The producer validates disclosed/non-disclosed semantics

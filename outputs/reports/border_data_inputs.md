@@ -14,7 +14,7 @@ The existing DiD complete-case rule now excludes 2010 because its lagged statuto
 
 ## Worksite allocation and timing
 
-The new producer writes 13,347,960 worksite–county–month rows. It uses inclusive requested site intervals where valid, labels case-date fallback, retains missing weekly hours and equally splits only explicitly ambiguous county lists. It neither replaces site intervals with case-modal dates nor claims actual visa entries or employment. 2 cases fail case-total reconciliation and are quarantined from the new calendar; the [case audit](../tables/border_data_input_unreconciled_cases.csv) retains them.
+The new producer writes 13,825,377 worksite–county–month rows. It uses inclusive requested site intervals where valid, labels case-date fallback, retains missing weekly hours and equally splits only explicitly ambiguous county lists. It neither replaces site intervals with case-modal dates nor claims actual visa entries or employment. 2 cases fail case-total reconciliation and are quarantined from the new calendar; the [case audit](../tables/border_data_input_unreconciled_cases.csv) retains them.
 
 | fiscal_year | allocated_rows | rows_with_valid_site_dates | site_intervals_different_from_case | rows_without_valid_interval |
 | --- | --- | --- | --- | --- |
@@ -24,7 +24,7 @@ The new producer writes 13,347,960 worksite–county–month rows. It uses inclu
 | 2023 | 197997 | 177641 | 22587 | 0 |
 | 2024 | 235834 | 213523 | 23853 | 1 |
 | 2025 | 254319 | 224800 | 23328 | 0 |
-| 2026 | 203350 | 180643 | 20116 | 2 |
+| 2026 | 261577 | 235331 | 26382 | 2 |
 
 The outcome is allocated certification position-days. Requested staffing weights are not observed certified staffing by site, and a crew can rotate among sequential worksites. Hours use reported or case-inherited weekly schedules without mean imputation. County-year artifacts distinguish observed site dates, fallback dates, ambiguous counties, imputed staffing and weekly-hours coverage. The historical case-date certification benchmark remains separate. FLS references are matched by interval overlap, with uncovered days retained. The capacity-weighted nominal reference is a timing diagnostic using outcome-dependent weights, not a predetermined treatment or instrument; none of the denominator regressions uses it. It does not establish the binding job wage.
 
@@ -34,14 +34,14 @@ Four fixed denominators use the same screened geography, 2011--2025 annual real 
 
 | sample | denominator | n_counties | n_pairs | estimate_per_1000_denominator_units | pair_CV3J_SE_per_1000 | dyadic_SE_per_1000 |
 | --- | --- | --- | --- | --- | --- | --- |
-| native | farm_jobs_2011 | 807 | 25 | 0.385543 | 4.98109 | 5.24453 |
-| native | farm_jobs_2008_2010 | 807 | 25 | 0.119235 | 5.22938 | 5.63093 |
-| native | hired_farm_jobs_2008_2010 | 807 | 25 | 15.1081 | 32.2474 | 19.8287 |
-| native | census_hired_workers_2007 | 804 | 25 | 19.3951 | 22.2292 | 13.3695 |
-| common_all_denominators | farm_jobs_2011 | 804 | 25 | 0.400845 | 4.99635 | 5.27821 |
-| common_all_denominators | farm_jobs_2008_2010 | 804 | 25 | 0.133205 | 5.24552 | 5.665 |
-| common_all_denominators | hired_farm_jobs_2008_2010 | 804 | 25 | 15.3588 | 32.3523 | 20.0252 |
-| common_all_denominators | census_hired_workers_2007 | 804 | 25 | 19.3951 | 22.2292 | 13.3695 |
+| native | farm_jobs_2011 | 807 | 25 | 0.388266 | 4.98164 | 5.24564 |
+| native | farm_jobs_2008_2010 | 807 | 25 | 0.121855 | 5.22991 | 5.63204 |
+| native | hired_farm_jobs_2008_2010 | 807 | 25 | 15.2141 | 32.2513 | 19.8685 |
+| native | census_hired_workers_2007 | 804 | 25 | 19.4004 | 22.2289 | 13.3695 |
+| common_all_denominators | farm_jobs_2011 | 804 | 25 | 0.403576 | 4.9969 | 5.27934 |
+| common_all_denominators | farm_jobs_2008_2010 | 804 | 25 | 0.135832 | 5.24606 | 5.66611 |
+| common_all_denominators | hired_farm_jobs_2008_2010 | 804 | 25 | 15.4651 | 32.3561 | 20.0659 |
+| common_all_denominators | census_hired_workers_2007 | 804 | 25 | 19.4004 | 22.2289 | 13.3695 |
 
 The common-sample rows hold counties and observations fixed across denominators. Changing the denominator changes units and can change the implicit weighting of heterogeneous effects; smaller numerical standard errors are not proof of more information. None of these ratios is a share of uniquely identified people.
 
@@ -65,16 +65,16 @@ Common-sample power uses the existing four declared serial/shared-region/spatial
 | AEWR annual reference | 1990 | 2025 | 1764 | 1715 |
 | BEA total farm jobs | 2001 | 2022 | 68442 | 68400 |
 | Census hired-worker reports | 1997 | 2022 | 18426 | 15175 |
-| H2A allocated fiscal worksite/county records | 2008 | 2026 | 1960821 | 1960821 |
+| H2A allocated fiscal worksite/county records | 2008 | 2026 | 2039139 | 2039139 |
 | QCEW 111/112 quarterly covered jobs | 2000 | 2024 | 530984 | 299704 |
 
-The source/year/AEWR-region coverage CSV retains reporting cells and observed numeric cells. QCEW measures covered jobs and excludes proprietors and some agricultural workers; suppression is not zero. The common shared baseline is 2008--2025, with policy comparisons over 2011--2025. Missing later-year BEA controls remain missing, and pre-2008 H-2A outcomes are not fabricated. The partial FY2026 Q3 source vintage may still revise 2025 starts.
+The source/year/AEWR-region coverage CSV retains reporting cells and observed numeric cells. QCEW measures covered jobs and excludes proprietors and some agricultural workers; suppression is not zero. The common shared baseline is 2008--2025, with policy comparisons over 2011--2025. Missing later-year BEA controls remain missing, and pre-2008 H-2A outcomes are not fabricated. FY2027 decisions may still revise 2025 starts; the FY2026 Q4 source vintage is a complete fiscal year.
 
 The sourced policy ledger contains 11 dated entries, including the enjoined 2009 suspension, 2010 return to FLS, 2021 timing, occupational changes and injunction exceptions. All carry an explicit absence of an exogeneity assumption. Routine FLS/OEWS wage updates reflect economic conditions; methodology changes also alter other program rules; occupation and injunction eligibility need job/entity information. The ledger does not identify a clean differential wage innovation by itself. Annual state minimum-wage references cannot resolve every agricultural exemption or local/contractual floor.
 
 ## Spatial inputs and external dependencies
 
-The geocoding producer extracted 1,092,469 public worksite records and 282,192 distinct normalized addresses. 252,821 are requestable in 26 bounded Census batches. Actual matched coordinates: 0. This run prepared requests and read caches without live acquisition. Pending coordinates stay null. Main disclosure worksite streets are extracted separately from employer mailing addresses, with unresolved case/worksite linkage flagged. Addendum B record IDs align with the B01 allocation IDs when those rows are retained.
+The geocoding producer extracted 1,336,232 public worksite records and 323,437 distinct normalized addresses. 289,375 are requestable in 29 bounded Census batches. Actual matched coordinates: 0. This run prepared requests and read caches without live acquisition. Pending coordinates stay null. Main disclosure worksite streets are extracted separately from employer mailing addresses, with unresolved case/worksite linkage flagged. Addendum B record IDs align with the B01 allocation IDs when those rows are retained.
 
 Nonparticipant farm records would be needed to estimate a farm-level probability of applying or adopting H-2A: application files cannot enumerate farms that never apply. That is a different estimand from certifications per county farm job. The current county denominators already come from public BEA and Census totals, so this is not a missing input for the implemented analysis. Restricted NASS access and custom tabulations are not pursued.
 

@@ -34,7 +34,7 @@
     "denominator_source": "data/processed/county_year_panel.parquet",
     "missing_numerator": "zero_for_counties_with_positive_fixed_denominator",
     "units": "certified_positions_per_fixed_2011_farm_worker",
-    "post_period_requirement": "FY2026 Q3 disclosures are parsed upstream; estimation still requires job-order cohort alignment. This registry never reads post outcomes."
+    "post_period_requirement": "FY2026 Q4 disclosures are parsed upstream; estimation still requires job-order cohort alignment. This registry never reads post outcomes."
   },
   "geography": {
     "unit": "county",

@@ -102,15 +102,15 @@ def _():
             "fiscal_year", "case_number", "period_begin_date", "decision_date",
         ])
         if int(source.fiscal_year.max()) != 2026:
-            raise ValueError("Review the declared FY2026 Q3 source vintage before publication")
+            raise ValueError("Review the declared FY2026 Q4 source vintage before publication")
         source["start_year"] = pd.to_datetime(source.period_begin_date, errors="coerce").dt.year
         newest = source[source.fiscal_year == source.fiscal_year.max()]
         latest_starts = newest[newest.start_year == last]
         input_paths = [panel_path, aggregate_path, allocation_path, source_path,
                        RAW / "fred" / "WPU01.csv"]
         input_paths.extend([
-            RAW / "h2a" / "H-2A_Disclosure_Data_FY2026_Q3.xlsx",
-            RAW / "h2a" / "H-2A_Addendum_B_Employment_FY2026_Q3.xlsx",
+            RAW / "h2a" / "H-2A_Disclosure_Data_FY2026_Q4.xlsx",
+            RAW / "h2a" / "H-2A_Addendum_B_Employment_FY2026_Q4.xlsx",
         ])
         fingerprints = {}
         for path in input_paths:
@@ -119,13 +119,13 @@ def _():
         report = {
             "status": "passed", "calendar": [first, last],
             "rows": len(panel), "counties": panel.county_fips.nunique(),
-            "source_vintage": "FY2008-FY2025 plus partial FY2026 Q3",
+            "source_vintage": "FY2008-FY2026 Q4",
             "latest_fiscal_year": int(newest.fiscal_year.max()),
             "latest_decision_date": str(pd.to_datetime(newest.decision_date).max().date()),
             "latest_fiscal_year_cases_starting_in_panel_end_year": latest_starts.case_number.nunique(),
             "employer_linkage": panel[[c for c in panel if c.startswith("employer_linkage_")]].drop_duplicates().to_dict("records"),
             "notes": [
-                "FY2026 Q3 is a partial fiscal-year release; later decisions may revise 2025 starts.",
+                "FY2026 Q4 completes the fiscal year; FY2027 decisions may still revise 2025 starts.",
                 "Occupation groups describe recorded SOCs, not legal wage-floor assignment; cases can span groups.",
                 "Job-order submission dates are not available here to classify the October 2025 rule cohort.",
                 "Missing later-year controls and other outcomes remain missing; coverage does not select any design sample.",

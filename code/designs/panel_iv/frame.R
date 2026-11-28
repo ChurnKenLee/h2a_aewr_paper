@@ -1,5 +1,8 @@
 # Original rolling Census/QCEW/QWI/BEA prior. These functions preserve the
 # implemented forward-growth path, including the historical benchmark fills.
+# The pipe is used here and by 03_build_fls_frame.R, which attach no package.
+`%>%` <- dplyr::`%>%`
+
 IV_BENCHMARK_YEARS <- c(2007L, 2012L, 2017L, 2022L)
 IV_FRAME_YEARS <- 2007:2023
 

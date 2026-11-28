@@ -16,7 +16,7 @@ The branch artifact is:
 data/intermediate/county_year_merged.parquet
 ```
 
-The H-2A normalizer requires one FY2008--2026 Q3 `worksite_business` v2
+The H-2A normalizer requires one FY2008--2026 Q4 `worksite_business` v2
 linkage contract (review status `complete` or `pending`) and passes its unit, version, vintage, review status, and
 review-report hash through to the merge.
 
@@ -70,3 +70,13 @@ missing canonical 2009 wages propagate into their one- and two-year lags.
 The CAINC5N and OEWS normalizers validate the years published in their sources within the
 shared calendar, rather than requiring every shared year to be available.
 Both current sources end in 2024, leaving their 2025 values missing.
+
+`04_state_minimum_wages.R` consumes the unified `state_year_min_wage.parquet`
+from `code/a01_sources/07_state_minimum_wages.py` (51 states/DC × annual
+federal-series years) together with `code/a01_sources/state_ag_minwage_coverage.csv`,
+and stops if any non-federal-floor state lacks an observed `state_min_wage` from
+2008 onward. `13_merge_county_panel.R` computes consecutive-year lags (`lag(year) == year - 1L`)
+for both `state_real_minwages.parquet` and `acs_czone_wage_quantiles.parquet`
+(completing the ACS calendar through `SHARED_PANEL_END_YEAR` before lagging so
+both `2007 -> 2008` and `2024 -> 2025` lags are populated without carrying forward
+2025 levels).

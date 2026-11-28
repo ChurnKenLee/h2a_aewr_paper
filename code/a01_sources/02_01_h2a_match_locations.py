@@ -136,14 +136,9 @@ def _(census_code_path, pl, place_suffix_pattern):
             census_code_path / "national_county.txt",
             has_header=False,
             infer_schema=False,
-        )
-        .rename(
-            {
-                "column_1": "state",
-                "column_2": "statefp",
-                "column_3": "countyfp",
-                "column_4": "county",
-            }
+            # Name fields explicitly: default headerless names differ across
+            # polars versions (column_1 vs column_0) and a shift is silent.
+            new_columns=["state", "statefp", "countyfp", "county", "classfp"],
         )
         .with_columns(
             (pl.col("statefp") + pl.col("countyfp")).alias("fips"),
@@ -490,8 +485,8 @@ def _():
         2024: "H-2A_Disclosure_Data_FY2024_Q4.xlsx",
         2025: "H-2A_Disclosure_Data_FY2025_Q4.xlsx",
         # Decisions in FY2026 include employment starts in calendar 2025.
-        # Q3 is a partial fiscal vintage, not a complete 2026 outcome year.
-        2026: "H-2A_Disclosure_Data_FY2026_Q3.xlsx",
+        # Q4 completes the fiscal year, not a complete 2026 outcome year.
+        2026: "H-2A_Disclosure_Data_FY2026_Q4.xlsx",
     }
 
     # Names of H-2A program Addendum B files from the DOL-OFLC
@@ -503,7 +498,7 @@ def _():
         2024: "H-2A_Addendum_B_Employment_Record_FY2024_Q4.xlsx",
         # DOL shortened the FY2025 Addendum B file name
         2025: "H-2A_Addendum_B_Employ_FY2025_Q4.xlsx",
-        2026: "H-2A_Addendum_B_Employment_FY2026_Q3.xlsx",
+        2026: "H-2A_Addendum_B_Employment_FY2026_Q4.xlsx",
     }
     return add_b_filenames_dict, h2a_filenames_dict
 
@@ -677,7 +672,7 @@ def _(s_map):
     add_b_cols_dict[2024] = add_b_cols_dict[2020]
     # FY2025 adds the worksite county, which pre-2025 Addendum B files lack
     add_b_cols_dict[2025] = add_b_cols_dict[2020] + ["PLACE_OF_EMPLOYMENT_COUNTY"]
-    # The FY2026 Q3 release omits the county column again.
+    # The FY2026 release omits the county column again.
     add_b_cols_dict[2026] = add_b_cols_dict[2020]
 
     for _y, _cols in add_b_cols_dict.items():
@@ -1041,12 +1036,28 @@ def _(pl):
 @app.cell
 def _(pl):
     # Cleans ZIP codes, mostly by removing trailing 4 digits for ZIP+4 codes
-    def clean_zip(df, zip_col):
+    # States and territories whose ZIP codes begin with zero
+    LEADING_ZERO_ZIP_STATES = ["CT", "MA", "ME", "NH", "NJ", "RI", "VT", "PR", "VI"]
+
+    def clean_zip(df, zip_col, state_col):
         zip5 = df.with_columns(
             pl.col(zip_col)
             .str.replace_all(".", "", literal=True)
             .str.split("-")
             .list.get(0)
+            .alias(zip_col)
+        )
+        # Several releases store ZIPs as numbers and drop leading zeros;
+        # restore them so the ZIP match applies. Only where ZIPs begin with
+        # zero: elsewhere a short ZIP is a truncated one and padding would
+        # point it at a Northeastern county.
+        zip5 = zip5.with_columns(
+            pl.when(
+                pl.col(zip_col).str.contains(r"^[0-9]{3,4}$")
+                & pl.col(state_col).is_in(LEADING_ZERO_ZIP_STATES)
+            )
+            .then(pl.col(zip_col).str.pad_start(5, "0"))
+            .otherwise(pl.col(zip_col))
             .alias(zip_col)
         )
         return zip5
@@ -1169,7 +1180,7 @@ def _(
         )
         df = clean_city_explode(df, "xcity")
         df = clean_county_explode(df, "xcounty", "xstate")
-        df = clean_zip(df, "xzip")
+        df = clean_zip(df, "xzip", "xstate")
 
         # 1. Match via addfips
         df = add_fips_using_addfips(df, "county_list", "xstate", "fips_from_addfips")

@@ -15,8 +15,9 @@ For calendar coordinate ``h`` in 2011--2022, the public mapping
 ``mc_aewr_log_change_h``
     ``100 * (log(real AEWR[r,h]) - log(real AEWR[r,h-1]))``;
 ``mc_bite_f0809_h`` and ``mc_bite_f0810_h``
-    frozen-distribution dollar shortfalls at the nominal AEWR and the
-    contemporaneous non-AEWR agricultural wage floor;
+    frozen-distribution real dollar shortfalls at the PPI-deflated AEWR
+    (``aewr_ppi``) and contemporaneous real non-AEWR agricultural wage floor
+    (``prevailing_ag_min_wage_ppi``);
 ``mc_exposure_log_f0809_h`` and ``mc_exposure_log_f0810_h``
     the corresponding pre-period mean fraction affected times
     ``mc_aewr_log_level_h``.
@@ -202,7 +203,7 @@ REQUIRED_SOURCE_COLUMNS = (
     "year",
     "aewr",
     "aewr_ppi",
-    "prevailing_ag_min_wage",
+    "prevailing_ag_min_wage_ppi",
     *QUANTILE_COLUMNS,
     "emp_farm",
     *BASELINE_VARIABLE_SOURCES.values(),
@@ -562,8 +563,8 @@ def _add_standardized_baselines(county_paths: pl.DataFrame) -> pl.DataFrame:
 
 
 def _bite_expression(tag: str, year: int) -> pl.Expr:
-    aewr = pl.col(f"__nominal_aewr_{year}")
-    floor = pl.col(f"__ag_floor_{year}")
+    aewr = pl.col(f"__real_aewr_{year}")
+    floor = pl.col(f"__real_ag_floor_{year}")
     quantiles = [pl.col(f"mc_frozen_{column}_{tag}") for column in QUANTILE_COLUMNS]
     complete = (
         aewr.is_not_null()
@@ -588,8 +589,8 @@ def _bite_expression(tag: str, year: int) -> pl.Expr:
 def _baseline_fraction_affected(frame: pl.DataFrame, tag: str) -> pl.DataFrame:
     """Return a pre-period mean binding share with no special post-2010 year."""
 
-    aewr = pl.col("aewr").cast(pl.Float64, strict=True)
-    floor = pl.col("prevailing_ag_min_wage").cast(pl.Float64, strict=True)
+    aewr = pl.col("aewr_ppi").cast(pl.Float64, strict=True)
+    floor = pl.col("prevailing_ag_min_wage_ppi").cast(pl.Float64, strict=True)
     quantiles = [
         pl.col(column).cast(pl.Float64, strict=True) for column in QUANTILE_COLUMNS
     ]
@@ -645,10 +646,10 @@ def _wide_county_paths(
     for year in history_years:
         year_floor = frame.filter(pl.col("year") == year).select(
             "county_fips",
-            pl.col("aewr").cast(pl.Float64).alias(f"__nominal_aewr_{year}"),
-            pl.col("prevailing_ag_min_wage")
+            pl.col("aewr_ppi").cast(pl.Float64).alias(f"__real_aewr_{year}"),
+            pl.col("prevailing_ag_min_wage_ppi")
             .cast(pl.Float64)
-            .alias(f"__ag_floor_{year}"),
+            .alias(f"__real_ag_floor_{year}"),
         )
         county_paths = county_paths.join(year_floor, on="county_fips", how="left")
         expressions: list[pl.Expr] = []

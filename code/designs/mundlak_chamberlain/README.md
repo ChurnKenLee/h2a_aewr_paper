@@ -76,7 +76,17 @@ It is not extended to arbitrary multivariate gradients without a justified
 cross-outcome assignment kernel.
 
 The frozen-distribution bite uses a declared five-quantile approximation to
-the unavailable county wage microdistribution. The 2008–09 window is the
+the unavailable county wage microdistribution. Both the direct bite coordinates
+(`mc_bite_f0809_*`, `mc_bite_f0810_*`) and the frozen fraction-affected shares
+(`mc_fraction_affected_f0809`, `mc_fraction_affected_f0810`, feeding
+`mc_exposure_log_*`) compare PPI-2012 real AEWR (`aewr_ppi`) and real
+applicable agricultural minimum wages (`prevailing_ag_min_wage_ppi`) against
+the PPI-2012 real ACS commuting-zone wage quantiles (`wage_p10`–`wage_p90`).
+This fixes the former mixed-unit mismatch that compared nominal policy floors
+against real quantiles, and rebuilding picks up the unified A01 FRED
+minimum-wage series (`state_year_min_wage.parquet`) and dated agricultural
+minimum-wage coverage (`state_ag_minwage_coverage.csv`) from the shared panel.
+The 2008–09 window is the
 candidate definition and 2008–10 is a sensitivity. Both retain support-count
 metadata for quantiles separately from wage-based averages. The corrected
 source retains Rhode Island's 2009 outcome/quantile rows but leaves statutory
@@ -110,7 +120,7 @@ and retained diagnostics are documented in the grounded
 
 ## Shared-baseline refresh through 2025
 
-The common panel now reaches 2025 and carries FY2008--2026 Q3 linkage
+The common panel now reaches 2025 and carries FY2008--2026 Q4 linkage
 provenance. This branch retains its declared 2012--2022 outcome window.
 Version 4.1.0 excludes requested positions and their derived per-worker rate
 from the baseline outcome registry, as authorized by the user. The builder no

@@ -6,16 +6,16 @@
     "code/designs/wage_reforms/policy_sources.json": "45c39d0d16f1b082035f4ad3bb625b793e0620783234218a655bcf29bbb71bb1",
     "code/designs/wage_reforms/analysis.py": "997b008ac82ad13c2e10a0c0d8bcf58f6047743077d11b5ae78f07417d863257",
     "code/designs/wage_reforms/report.py": "700ddf0909c631c9c8b255b9b5914084e2ccd1a8c3b595cdf469198cc64da26b",
-    "outputs/reports/wage_reforms_build_manifest.json": "78aa0f0e781efdb932adf0597c05ca7e30822cda96f660fd47919c1b3aa700a4",
+    "outputs/reports/wage_reforms_build_manifest.json": "3431dc61b2193a829c70b0adcf712d5ccec29445d4524f6d541e34630f2a0530",
     "outputs/tables/wage_reforms/candidate_ddd_support.csv": "21bf040d471a6c3fbf047f5f8dd534497f4bb04e69cc05111e4e812b5ec7ef7f",
-    "outputs/tables/wage_reforms/cohort_responses.csv": "0ddd4fd84fa8cd3eaee04fbb7384ad63a437399cfd175714b81858fb05e77d3c",
-    "outputs/tables/wage_reforms/cohort_state_deletions.csv": "2c095fc6abfb86fa3d86b835e0d2a8148f6b3bcfcd20d2da6f73d8af1a368b91",
-    "outputs/tables/wage_reforms/cohort_trajectories.csv": "d41a9e96e21765f10e63c394474ed4fd3a28c61d4d59f4e92950f80d20184e73",
+    "outputs/tables/wage_reforms/cohort_responses.csv": "7213c916ccad1c283dc98529e9852dd303c2bdef2d3acb6fa5f955171766e6b7",
+    "outputs/tables/wage_reforms/cohort_state_deletions.csv": "f4335e8fd26e97d397ce5fedf1bb63ff8b2e7ea55a865260c530d9d05c049bc4",
+    "outputs/tables/wage_reforms/cohort_trajectories.csv": "a45d41a76b715de0210fe494e20a47d713cdb7d05860cb5c83acdf0b2ff413ba",
     "outputs/tables/wage_reforms/coverage.csv": "1a54a45ee3a60ac895a877ed90c4473ac8d849b1a1fa86860c50c1379547891c",
-    "outputs/tables/wage_reforms/herder_business_geography.csv": "3f789f03b9ecb62c559b52c71b6fd60431c479d5f5c72e91bafa4eb870ca1e1b",
+    "outputs/tables/wage_reforms/herder_business_geography.csv": "f292062c44d1cd9fda315316f2315162faeafc99d67f8cdba0ab51811b5c86dc",
     "outputs/tables/wage_reforms/herder_geography_support.csv": "170f7742cbbc8b715641c4d593af74657eb12e9b244f844963763ff5767a1619",
     "outputs/tables/wage_reforms/herder_wage_distribution.csv": "2e045f68bb5a955ad591967b5df547de30820a837acefbf61f35e0c04d30ad52",
-    "outputs/tables/wage_reforms/linkage_retention_audit.csv": "e24d9cf82d2a82d1e2fac65bccde131eb99056c0df891bb0696c47998a5996eb",
+    "outputs/tables/wage_reforms/linkage_retention_audit.csv": "63eefcf1fb7607419c3a53a52a51289e4cb4fad200c3499e728251451b207bcd",
     "outputs/tables/wage_reforms/local_wage_responses.csv": "0ea642eb0536267290a0bb5960ef8ce0d6bd2c9e074a22c8d7c393ba678e3ade",
     "outputs/tables/wage_reforms/monthly_title_support.csv": "f8960a5044dcf0743624a5db0b3547db7caceec9cd2b64a3f16804a6f8cab3b0",
     "outputs/tables/wage_reforms/wage_quality.csv": "ab54f198c966b629b90389d038774b0598b028289f6ff079354df84b826c72cd",
@@ -27,9 +27,9 @@
   },
   "outputs": {
     "outputs/reports/wage_reforms.md": "d15e41da3eea6b25715570f8a7006eeb254a26e813083aa1b22bea6a6ebffcd5",
-    "outputs/figures/wage_reforms/reversal_cutoffs.png": "83aa97e0235fa1c97970ab6aedd4eaaa690885dd17b2401c2fc7319951ff04eb",
-    "outputs/figures/wage_reforms/reversal_cutoffs.pdf": "f225b6eedffaacecb456b7f1331825feb4ea9455dc8ed92cc71f324483006b08",
-    "outputs/figures/wage_reforms/herder_phase_in.png": "555eed6005035df966135c09213546604399ca6b723cd802114c739fd0e0a79c",
-    "outputs/figures/wage_reforms/herder_phase_in.pdf": "e9a0d0db7c669ba51fafd04744b797c82a7d0d6d5f11fd441169f6248058cfb1"
+    "outputs/figures/wage_reforms/reversal_cutoffs.png": "5930389c67b4ad1ed701e19192c67f54d7c9dcf81fef981231f762a6ce298bf4",
+    "outputs/figures/wage_reforms/reversal_cutoffs.pdf": "eacc810d00da3f7eae239a50e6c031465a3a71b9b06f94794d59c61f5e192072",
+    "outputs/figures/wage_reforms/herder_phase_in.png": "f2ef2097f9ab1372443a8d6aaab96e857119f40be3d044e403235cb77d385b6b",
+    "outputs/figures/wage_reforms/herder_phase_in.pdf": "f8c7f51876aeec12babaa11f30a58aebc42ae744260b313673f5fa86d3ea97ca"
   }
 }

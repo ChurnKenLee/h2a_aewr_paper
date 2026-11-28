@@ -4,7 +4,7 @@
     "approved_on": "2026-10-26",
     "role": "new baseline using the common shared panel through 2025",
     "previous_policy_end_year": 2022,
-    "source_vintage": "FY2008-FY2025 complete disclosures plus FY2026 Q3",
+    "source_vintage": "FY2008-FY2026 complete disclosures (FY2026 Q4 release)",
     "unchanged": "regional FLS-reference AEWR, outcome, fixed 2011 denominator, baseline features, geography, weights, fixed effects, inference and simulation resource guards"
   },
   "feature_start_year": 2008,
@@ -290,7 +290,7 @@
       "gap_panel": "Algebraically equivalent gap changes audit; no claim of new policy assignments.",
       "bite": "No observed prepolicy agricultural hourly wage distribution; nonfarm proxy changes estimand and exclusion assumptions, not selected.",
       "finer_units": "County adjacency/aggregates cannot identify pointwise spatial RD; worksite-distance panel and valid policy innovations needed.",
-      "extra_years": "User-approved baseline extends through 2025 using the shared 2008-2025 panel and regional FLS reference AEWR. FY2026 Q3 disclosures supplement calendar-2025 starts; the last source fiscal year is partial. Occupation and late-2025 filing-cohort coverage are diagnostics, not new outcome restrictions."
+      "extra_years": "User-approved baseline extends through 2025 using the shared 2008-2025 panel and regional FLS reference AEWR. FY2026 Q4 disclosures supplement calendar-2025 starts; the last source fiscal year is complete. Occupation and late-2025 filing-cohort coverage are diagnostics, not new outcome restrictions."
     },
     "preanalysis_wage_audit": {
       "excluded_years": [

@@ -39,18 +39,24 @@ state_minimum_wages <- read_parquet(
   mutate(
     across(
       -year,
-      lag,
+      \(value) if_else(
+        !is.na(lag(year)) & lag(year) == year - 1L,
+        lag(value),
+        value[NA_integer_]
+      ),
       .names = "{.col}_l1"
     )
   ) %>%
   ungroup()
 
-ppi <- read_parquet(path_int("ppi_2012.parquet"))
+ppi <- read_parquet(path_int("ppi_2012.parquet")) %>%
+  mutate(year = as.integer(year))
 wage_quantiles <- read_parquet(
   path_int("acs_czone_wage_quantiles.parquet")
 ) %>%
-  rename(year = YEAR) %>%
-  filter(year >= 2005) %>%
+  mutate(year = as.integer(YEAR)) %>%
+  select(-YEAR) %>%
+  filter(year >= 2005L) %>%
   left_join(ppi, by = "year", relationship = "many-to-one") %>%
   mutate(
     across(
@@ -59,12 +65,20 @@ wage_quantiles <- read_parquet(
     )
   ) %>%
   select(-ppi_2012) %>%
+  tidyr::complete(
+    tidyr::nesting(county_fips, cz_id),
+    year = seq.int(min(year), max(c(year, SHARED_PANEL_END_YEAR)))
+  ) %>%
   arrange(county_fips, year) %>%
   group_by(county_fips) %>%
   mutate(
     across(
-      starts_with("wage_p"),
-      lag,
+      c(wage_p10, wage_p25, wage_p50, wage_p75, wage_p90),
+      \(value) if_else(
+        !is.na(lag(year)) & lag(year) == year - 1L,
+        lag(value),
+        NA_real_
+      ),
       .names = "{.col}_l1"
     )
   ) %>%

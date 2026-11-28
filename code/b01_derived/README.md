@@ -44,9 +44,9 @@ the remaining family and substep numbers are unchanged.
 ## Dependencies
 
 - `01` consumes the final A02 H-2A location outputs and the reviewed A02 v2
-  worksite-business membership artifact (FY2008--2026 Q3, review pending).
-  The FY2026 release is partial; start-year 2025 totals can be revised by later
-  decisions. Rebuild both `01` and `01b` after refreshing these source records. The employer columns keep their
+  worksite-business membership artifact (FY2008--2026 Q4, review pending).
+  The FY2026 release is the complete fiscal year; start-year 2025 totals can still be
+  revised by FY2027 decisions. Rebuild both `01` and `01b` after refreshing these source records. The employer columns keep their
   historical names but now count positive-certified linked worksite businesses;
   all non-employer allocation formulas are unchanged. Extending the source
   vintage can revise historical imputed hours (pooled mean) and business counts

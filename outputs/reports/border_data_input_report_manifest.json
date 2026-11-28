@@ -4,15 +4,15 @@
   "nonpublic_nass_required": false,
   "external_gap_scope": "historical wage and finer spatial extensions; current county comparisons use public inputs",
   "files": {
-    "code/designs/border_discontinuity/data_input_report.py": "130f6096b8cc6f432900d839ae8cfa2752e4b9e21b9cd3528209c335cc03e317",
+    "code/designs/border_discontinuity/data_input_report.py": "d52c863980e1b70571d1f162bd1a704d3cfb7c83f1de13903d9075c90585391b",
     "code/designs/border_discontinuity/data_input_design.json": "d08550dcca177fda878689e77a3e91b52d1928f3c8586daee704913d2f24228e",
-    "data/processed/border_data_input_county_year.parquet": "271268aef6f2efbe71275d11cb05d59f3c479ab7e7368ae659440d57ca3a944d",
-    "data/intermediate/aewr.parquet": "929c5ca4c3333e4590f8817b82b5ff35819b2c8702e5671fa20cbfd98792c383",
-    "data/intermediate/aewr_source_manifest.json": "488805482c08e992fa7a3eb281e0adc581dfe58bb11e5131b2e8a48ab4200f81",
-    "data/intermediate/h2a_worksite_exposure_manifest.json": "c551ee000615089bb172db4ab0d9ccbabaae72d36661eb9388a2fccc80306e8f",
-    "data/intermediate/h2a_worksite_geocode_manifest.json": "33f1ec3611c7b8e478eeee8e8bd76276b566f28ac894cbc84bb4905eba147a1a",
-    "outputs/tables/border_data_input_estimates.csv": "49c7c4db98ad32871f0125757a4773198fbdc27d8d7a30140739e76ba802184b",
-    "outputs/tables/border_data_input_power.csv": "4e98f8625dd48a3fea88662549a868f196902aa5e90b57a47c549cf5097f630e",
-    "outputs/tables/border_data_input_source_coverage.csv": "d4283fa61bf5253ccff7e46567b9e3d71973a728200b6ef8353d05c366b85bc7"
+    "data/processed/border_data_input_county_year.parquet": "8c965bd265595e1f486b6b85d16c15dfbe590eef735305c9b6ec40be34ff6ac1",
+    "data/intermediate/aewr.parquet": "eef1f9d78e598887c39841887e925eaf26b7625e90aedf47d42c19b7b386c8c6",
+    "data/intermediate/aewr_source_manifest.json": "52baa8581ab97837128ff14c888040b6c884682c04f7ee56d057c853b060cbfe",
+    "data/intermediate/h2a_worksite_exposure_manifest.json": "0a6d5af9a6da26636e405064be9345d7da435eb05f1a89bde1ab80758c58ec1f",
+    "data/intermediate/h2a_worksite_geocode_manifest.json": "b0209c01d536738016d6a77a9bcb87dbde9a9dc3cc0ce0d0444f1aaf274e2176",
+    "outputs/tables/border_data_input_estimates.csv": "40624fa3ddeae8e52d7efc19320f467f38b35abe4ac536abcff91ddbb810a838",
+    "outputs/tables/border_data_input_power.csv": "6b6305db393c29b96389bd0ea57cac3432cbdf96ea86330d22c4c5f816194ceb",
+    "outputs/tables/border_data_input_source_coverage.csv": "5b8c54328a92cdc2617246455804045d371d36da9d53a9d38cf4f76527f292ae"
   }
 }

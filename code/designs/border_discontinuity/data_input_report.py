@@ -26,8 +26,9 @@ def markdown_table(frame: pl.DataFrame) -> list[str]:
 
 
 def source_coverage() -> pl.DataFrame:
+    # us 4.x already lists DC among states and territories; keep one row per abbreviation.
     states = pl.DataFrame([{"state_abbrev": s.abbr, "state_fips": normalize_geo_code(s.fips, "state_fips")}
-                           for s in [*us.STATES_AND_TERRITORIES, us.states.DC]])
+                           for s in [*us.STATES_AND_TERRITORIES, us.states.DC]]).unique("state_abbrev")
     regions = pl.read_csv(RAW / "aewr/aewr_regions.csv", schema_overrides={"aewr_region_num": pl.String}).with_columns(
         geo_expr("aewr_region_num", "aewr_region_id")).join(states, on="state_abbrev", validate="1:1")
     records = []
@@ -151,7 +152,7 @@ def build_report():
         *markdown_table(size.sort(["model_id", "inference_method"])), "",
         "## Historical and policy coverage", "",
         *markdown_table(history), "",
-        "The source/year/AEWR-region coverage CSV retains reporting cells and observed numeric cells. QCEW measures covered jobs and excludes proprietors and some agricultural workers; suppression is not zero. The common shared baseline is 2008--2025, with policy comparisons over 2011--2025. Missing later-year BEA controls remain missing, and pre-2008 H-2A outcomes are not fabricated. The partial FY2026 Q3 source vintage may still revise 2025 starts.", "",
+        "The source/year/AEWR-region coverage CSV retains reporting cells and observed numeric cells. QCEW measures covered jobs and excludes proprietors and some agricultural workers; suppression is not zero. The common shared baseline is 2008--2025, with policy comparisons over 2011--2025. Missing later-year BEA controls remain missing, and pre-2008 H-2A outcomes are not fabricated. FY2027 decisions may still revise 2025 starts; the FY2026 Q4 source vintage is a complete fiscal year.", "",
         f"The sourced policy ledger contains {events.height} dated entries, including the enjoined 2009 suspension, 2010 return to FLS, 2021 timing, occupational changes and injunction exceptions. All carry an explicit absence of an exogeneity assumption. Routine FLS/OEWS wage updates reflect economic conditions; methodology changes also alter other program rules; occupation and injunction eligibility need job/entity information. The ledger does not identify a clean differential wage innovation by itself. Annual state minimum-wage references cannot resolve every agricultural exemption or local/contractual floor.", "",
         "## Spatial inputs and external dependencies", "",
         f"The geocoding producer extracted {geo['location_records']:,} public worksite records and {geo['unique_addresses']:,} distinct normalized addresses. {geo['requestable_addresses']:,} are requestable in {geo['expected_requests']} bounded Census batches. Actual matched coordinates: {geo['matched_addresses']:,}. {acquisition_status} Pending coordinates stay null. Main disclosure worksite streets are extracted separately from employer mailing addresses, with unresolved case/worksite linkage flagged. Addendum B record IDs align with the B01 allocation IDs when those rows are retained.", "",

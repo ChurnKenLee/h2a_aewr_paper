@@ -51,9 +51,10 @@ def _synthetic_panel() -> pl.DataFrame:
                     "cz_id": cz,
                     "aewr_region_id": region,
                     "year": year,
-                    "aewr": base_aewr * growth,
+                    "aewr": base_aewr * growth * 1.25,
                     "aewr_ppi": base_aewr * growth,
-                    "prevailing_ag_min_wage": 7.0,
+                    "prevailing_ag_min_wage": 7.0 * 1.25,
+                    "prevailing_ag_min_wage_ppi": 7.0,
                     "wage_p10": 5.0 + wage_shift + county_wage_offset,
                     "wage_p25": 6.0 + wage_shift + county_wage_offset,
                     "wage_p50": 8.0 + wage_shift + county_wage_offset,
@@ -248,6 +249,36 @@ class BuildPanelTests(unittest.TestCase):
             PanelBuildError, "AEWR must be unique within region-year"
         ):
             self._build(source)
+
+    def test_bite_and_fraction_affected_use_real_ppi_units_not_nominal(self) -> None:
+        from polars.testing import assert_frame_equal
+
+        baseline = _synthetic_panel()
+        perturbed_nominal = baseline.with_columns(
+            (pl.col("aewr") * 1.6).alias("aewr"),
+            (pl.col("prevailing_ag_min_wage") * 1.9).alias("prevailing_ag_min_wage"),
+        )
+        panel_base = self._build(baseline)
+        panel_perturbed = self._build(perturbed_nominal)
+        checked_columns = [
+            "county_fips",
+            "year",
+            *FRACTION_AFFECTED_COLUMNS.values(),
+            *(
+                treatment_coordinate_column(family, year)
+                for family in (
+                    "bite_f0809",
+                    "bite_f0810",
+                    "exposure_log_f0809",
+                    "exposure_log_f0810",
+                )
+                for year in (2011, 2012, 2013)
+            ),
+        ]
+        assert_frame_equal(
+            panel_perturbed.select(checked_columns),
+            panel_base.select(checked_columns),
+        )
 
     def test_coordinate_helper_rejects_unknown_family(self) -> None:
         with self.assertRaisesRegex(PanelBuildError, "unknown treatment family"):

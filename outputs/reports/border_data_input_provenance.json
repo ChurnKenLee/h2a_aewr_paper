@@ -6,10 +6,10 @@
     "code/designs/border_discontinuity/09_compare_data_inputs.R": "c5e4fa511e48f26b867018fb5714099be61bfa97ce48504cce6a55e112e5a63c",
     "code/designs/border_discontinuity/redesign.R": "a33c8f7eaeb3d183536ce780819db193a174c86c30dd270783a74023018722d0",
     "code/designs/border_discontinuity/power.R": "b31858c824517fd0bc17517dc9d73c91c73f996903dd11f1ca19df952591dbc0",
-    "data/processed/border_discontinuity_panel.parquet": "bdb054add085b768b7f4bdd779484d29cdc6b5c75be40228cc24612acf80dc8f",
-    "data/processed/county_year_panel.parquet": "fc63817bcf0b9a1777575817bb55a807d2156623606cf7d2e9e2f3365a84c7c7",
+    "data/processed/border_discontinuity_panel.parquet": "08110344de8c542a5cf10c019f8f893dcec1e538957b80158c8d2c1af2f1d9d3",
+    "data/processed/county_year_panel.parquet": "4e2e56d0884715ea0ff26b8251339c18748cc1966692a5ab0eac31171cf51b92",
     "data/intermediate/bea_caemp25n_data_year.parquet": "3e8bf5221d4192cd5bbf617a2e80748dea0ab2e7c200ef09e2b4ebea50a6f494",
     "data/intermediate/census_ag_hired_worker_duration_county.parquet": "11f059baf2bb260554cad16689ff44afe84f9e1fb30e32f7be8ebad7b7046159",
-    "data/intermediate/h2a_worksite_county_year_exposure.parquet": "91a795df110ca6573104ec88f95cca955c753d1f5953c94dfec9b30667ea81f4"
+    "data/intermediate/h2a_worksite_county_year_exposure.parquet": "381303f7a47527b9b5a3e60a525c06b08135d189aacbb42fb9bd23151f1a55a4"
   }
 }

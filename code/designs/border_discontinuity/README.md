@@ -72,7 +72,7 @@ normalizers, path helpers, source producers and common inputs remain upstream.
 Stages 12--13 implement the separately registered statewide-AEWR design
 (`statewide_design.json`); they reuse `geography.py` and `power.R` and read
 no post-policy outcome. The diagnostic business margin remains reviewed balanced v2 worksite-business
-counts, with FY2008--2026 Q3 identity evidence and pending-review provenance.
+counts, with FY2008--2026 Q4 identity evidence and pending-review provenance.
 
 ## Principal artifacts
 
@@ -106,8 +106,8 @@ The upstream correction makes canonical 2009 wages null. Stage04 alone uses
 Stage07 uses canonical wages, 2008/2010 wage diagnostics and all three outcome
 years for FE-only noise calibration. The user-approved baseline now uses 2011--2025; treatment, denominator,
 frozen geography, weights, fixed effects and inference remain unchanged.
-The common upstream panel covers 2008--2025. FY2026 Q3 is a partial release,
-so later decisions may revise 2025 starts. Historical model-family labels
+The common upstream panel covers 2008--2025. FY2026 Q4 completes that fiscal year;
+FY2027 decisions may still revise 2025 starts. Historical model-family labels
 remain identifiers; retained estimates are regenerated for the new window.
 
 Stage09 owns `data/intermediate/border_data_input_denominators.parquet`, the

@@ -535,7 +535,7 @@ report <- c(
     "the primary treatment is an intent-to-treat statutory floor. FY2026 includes",
     "cases decided under prior rates. The wage outcome requires post-period offers",
     "in the same counties. Estimation requires aligning the FY",
-    "2026 Q3 disclosures, now available upstream, to the applicable job-order cohorts."
+    "2026 Q4 disclosures, now available upstream, to the applicable job-order cohorts."
   )
 )
 report_path <- here::here("outputs", "reports", "border_statewide_power.md")
