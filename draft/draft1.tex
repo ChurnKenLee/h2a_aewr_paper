@@ -1,3 +1,26 @@
+% ==============================================================================
+% PROVENANCE & AUTHORSHIP NOTICE
+% ==============================================================================
+% Author metadata:          \author and \affil (originally from commit 2a012bf).
+% Code-generated artifacts: All \input{../outputs/tables/*.tex} tables and
+%                           \includegraphics{../outputs/figures/*} figures are
+%                           deterministic code outputs (NOT LLM prose), marked
+%                           with "% === [CODE-GENERATED ARTIFACT] ===".
+% LLM-written draft text:   ALL prose, title, abstract, section headings,
+%                           equation exposition, and figure captions currently
+%                           in this file were drafted by an LLM (commit 849607d)
+%                           as a placeholder scaffold and are marked for full
+%                           hand-rewriting. Every LLM-written block is wrapped
+%                           in explicit source comments AND \begin{llmdraft}
+%                           (or \llmcaption / \llminline) so it renders in
+%                           slate blue with red [LLM-WRITTEN START/END] tags in
+%                           draft1.pdf.
+% Earlier human baseline:   Run `git show 59a4e7e:draft/draft1.tex` to inspect
+%                           the last pre-LLM human-written manuscript text
+%                           (H-2A background, hiring process, AEWR rules, data
+%                           sources, and bulleted model notes).
+% ==============================================================================
+
 \documentclass[11pt]{article}
 \usepackage[margin=0.95in]{geometry}
 \usepackage{setspace}
@@ -20,6 +43,27 @@
 \emergencystretch=1.5em
 
 \definecolor{webbrown}{rgb}{.55,0,0}
+\definecolor{llmtag}{rgb}{0.72,0.12,0.12}
+\definecolor{llmprose}{rgb}{0.15,0.28,0.48}
+\definecolor{llmboxbg}{rgb}{0.99,0.96,0.94}
+\definecolor{llmboxborder}{rgb}{0.72,0.12,0.12}
+
+\newenvironment{llmdraft}[1]{%
+  \par\medskip\noindent
+  {\footnotesize\bfseries\ttfamily\color{llmtag}[LLM-WRITTEN START: #1]}%
+  \par\begingroup\color{llmprose}%
+}{%
+  \par\endgroup\noindent
+  {\footnotesize\bfseries\ttfamily\color{llmtag}[LLM-WRITTEN END]}%
+  \par\medskip
+}
+\newcommand{\llmcaption}[1]{%
+  \caption{{\footnotesize\bfseries\ttfamily\color{llmtag}[LLM-WRITTEN CAPTION]} {\color{llmprose}#1}}%
+}
+\newcommand{\llminline}[2]{%
+  {\footnotesize\bfseries\ttfamily\color{llmtag}[LLM-WRITTEN #1:]} {\color{llmprose}#2}%
+}
+
 \hypersetup{
   colorlinks=true,
   anchorcolor=webbrown,
@@ -29,8 +73,10 @@
   urlcolor=webbrown
 }
 
-\title{Wage Floors, Short-Run Labor Demand, and Producer Incidence in the U.S.\ H-2A Program}
+% === [LLM-WRITTEN: Title] ===
+\title{\llminline{TITLE}{Wage Floors, Short-Run Labor Demand, and Producer Incidence in the U.S.\ H-2A Program}}
 
+% === [AUTHOR METADATA (originally from commit 2a012bf)] ===
 \author[1]{David J.\ Bier}
 \author[2]{Philip Hoxie}
 \author[2]{Churn Ken Lee}
@@ -46,6 +92,25 @@
 \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{max width=\textwidth}}
 \AfterEndEnvironment{tabular}{\end{adjustbox}}
 
+% === [PROVENANCE BANNER FOR HAND-WRITING PASS] ===
+\noindent\fcolorbox{llmboxborder}{llmboxbg}{%
+  \parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}{%
+    \footnotesize\textbf{\color{llmtag}MANUSCRIPT PROVENANCE NOTICE:}
+    All title text, abstract, section headings, prose paragraphs, equation
+    exposition, and figure captions rendered in {\color{llmprose}slate blue}
+    between {\ttfamily\color{llmtag}[LLM-WRITTEN START]} and
+    {\ttfamily\color{llmtag}[LLM-WRITTEN END]} tags were drafted by an LLM
+    (commit \texttt{849607d}) as a numerical/structural placeholder and are
+    marked for full hand-rewriting. Only the author metadata and the embedded
+    code-generated tables and figures (rendered in black ink outside
+    \texttt{llmdraft} blocks) are non-LLM elements. The last pre-LLM
+    human-written manuscript draft is preserved in git at commit
+    \texttt{59a4e7e}.%
+  }%
+}\par\medskip
+
+% === [LLM-WRITTEN START: Abstract] ===
+\begin{llmdraft}{Abstract}
 \begin{abstract}
 The H-2A temporary agricultural guest-worker program requires employers to pay
 at least the statutory Adverse Effect Wage Rate (AEWR), which binds on roughly
@@ -77,7 +142,11 @@ static 2024 quasi-rent by $\$1.42$B to $\$1.53$B, scaled linearly by the
 realized paid-hours ratio $\rho$. A companion power audit of 2011--2025 county
 panels explains why pre-reform designs cannot pin down moderate elasticities.
 \end{abstract}
+\end{llmdraft}
+% === [LLM-WRITTEN END: Abstract] ===
 
+% === [LLM-WRITTEN START: Section 1 — Introduction] ===
+\begin{llmdraft}{Section 1: Introduction}
 \section{Introduction}
 \label{sec:introduction}
 
@@ -204,15 +273,20 @@ effective cluster concentration ($G_{\text{eff}} = 13.4$ regions), and sample
 or exclusion restrictions limit pre-reform inference---explaining why the
 46-state 2025 reform is uniquely informative for short-run H-2A responsiveness
 and producer incidence.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 1 — Introduction] ===
 
+% === [CODE-GENERATED ARTIFACT: fig_line_ts_h2a_workers_certified.png (caption LLM-written)] ===
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.78\textwidth]{../outputs/figures/fig_line_ts_h2a_workers_certified.png}
-  \caption{Annual H-2A certified positions in the contiguous United States, 2008--2022.}
+  \llmcaption{Annual H-2A certified positions in the contiguous United States, 2008--2022.}
   \label{fig:ts_h2a_workers_certified}
 \end{figure}
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 2 — Institutional Background and Conceptual Framework] ===
+\begin{llmdraft}{Section 2: Institutional Background and Conceptual Framework}
 \section{Institutional Background and Conceptual Framework}
 \label{sec:background}
 
@@ -346,8 +420,12 @@ hours), and is proportional to $|\eta| \cdot |\Delta_{\text{eff}}/a_0| / 2$.
 Consequently, once an empirical design establishes a credible lower bound on
 $\eta$ (ruling out strongly elastic responses), producer incidence is tightly
 pinned down even when $\eta$ itself is not estimated to two decimal places.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 2 — Institutional Background and Conceptual Framework] ===
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 3 — Data and Empirical Strategy] ===
+\begin{llmdraft}{Section 3: Data and Empirical Strategy}
 \section{Data and Empirical Strategy}
 \label{sec:data}
 
@@ -446,8 +524,12 @@ that the November 2026 FY2026 Q4 baseline, Track 1 quantity module, and
 five-panel mechanism audit were implemented after earlier FY2026 wage and
 Q1--Q3 outcomes had been inspected; they are documented via dated amendments
 rather than claimed as fresh preregistrations.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 3 — Data and Empirical Strategy] ===
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 4.1 — Wage Pass-Through (Intro)] ===
+\begin{llmdraft}{Section 4.1: Wage Pass-Through (Intro)}
 \section{Wage Pass-Through and Covered Crop Earnings}
 \label{sec:wages}
 
@@ -463,11 +545,14 @@ Holding each filer--state cell's occupation shares fixed at FY2025 levels
 yields $\$0.620$ ($[0.418, 0.822]$ across 12,540 continuing filer--states,
 covering 95.9\% of baseline hours), confirming that occupational mix shifts do
 not drive the wage decline.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 4.1 — Wage Pass-Through (Intro)] ===
 
+% === [CODE-GENERATED ARTIFACT: fig_policy_2025_wages.pdf (caption LLM-written)] ===
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.95\textwidth]{../outputs/figures/fig_policy_2025_wages.pdf}
-  \caption{Offered-wage pass-through under the October 2, 2025 statewide AEWR
+  \llmcaption{Offered-wage pass-through under the October 2, 2025 statewide AEWR
     rule. Panel A shows the former-region-residualized relationship between
     state statutory cuts and continuing-filer offered-wage changes (FY2025--FY2026).
     Panel B compares FY2025--FY2026 pass-through across linkage tiers against
@@ -476,8 +561,11 @@ not drive the wage decline.
   \label{fig:policy_2025_wages}
 \end{figure}
 
+% === [CODE-GENERATED ARTIFACT: table_policy_2025_wages.tex] ===
 \input{../outputs/tables/table_policy_2025_wages.tex}
 
+% === [LLM-WRITTEN START: Section 4.1–4.2 — Wage Discussion & Earnings Intro] ===
+\begin{llmdraft}{Section 4.1--4.2: Wage Discussion and Interim Earnings Intro}
 Three additional checks in Table~\ref{tab:policy_2025_wages} sharpen the causal
 interpretation. First, restricting to multi-state filers and absorbing filer
 fixed effects (equivalent to filer-by-year fixed effects in two-period levels)
@@ -515,9 +603,14 @@ regressions of mean year-over-year log changes in private crop-production
 H-2A intensity $S_c$ interacted with the October 2, 2025 state statutory cut,
 controlling for $S_c$ and state fixed effects (1,457 eligible counties across
 47 states; 2026Q2 remains pending verified publication).
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 4.1–4.2 — Wage Discussion & Earnings Intro] ===
 
+% === [CODE-GENERATED ARTIFACT: table_policy_2025_earnings.tex] ===
 \input{../outputs/tables/table_policy_2025_earnings.tex}
 
+% === [LLM-WRITTEN START: Section 4.2 — Interim Earnings Discussion] ===
+\begin{llmdraft}{Section 4.2: Exploratory Interim Covered Crop Earnings Discussion}
 In the primary equal-weighted specification (Panel A, row 1), the interaction
 slope is $+0.0165$ (CV3J SE $0.0070$, 95\% CI $[0.0025, 0.0306]$): because
 $\text{cut}_s < 0$, a positive slope indicates relative earnings declined more
@@ -542,8 +635,12 @@ earnings combine hourly wage rates, weekly hours, and workforce composition,
 and incomplete state UI coverage classification (42 of 47 states are
 ambiguous; H-2A covered states have only $G=2$ states) prevents separating
 mechanical H-2A payroll changes from domestic-worker spillovers.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 4.2 — Interim Earnings Discussion] ===
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 5.1 — Quantity Bounds (Intro)] ===
+\begin{llmdraft}{Section 5.1: County Quantity Bounds (Intro)}
 \section{Short-Run Quantity Response and Mechanisms}
 \label{sec:quantity}
 
@@ -554,9 +651,14 @@ we test whether certified H-2A labor utilization expanded in response to lower
 statutory wage floors during FY2026. Table~\ref{tab:policy_2025_quantity}
 reports Track 1 estimates across all 2,921 positive-farm-employment counties in
 the 15 multi-state former AEWR regions (46 states).
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 5.1 — Quantity Bounds (Intro)] ===
 
+% === [CODE-GENERATED ARTIFACT: table_policy_2025_quantity.tex] ===
 \input{../outputs/tables/table_policy_2025_quantity.tex}
 
+% === [LLM-WRITTEN START: Section 5.1–5.2 — Quantity Discussion & Mechanisms Intro] ===
+\begin{llmdraft}{Section 5.1--5.2: Quantity Bounds Discussion and Mechanism Audit Intro}
 Panel A delivers our headline behavioral result. On the complete FY2026 Q4
 disclosure (full fiscal year October 1--September 30), the primary
 size-weighted FE-PPML regression of county certified hours on the statutory
@@ -605,19 +707,25 @@ versus new-employer entry, labor contractors versus direct growers, planning
 lead-time and crop capital, and intensive contract margins---evaluated on the
 identical 2,921-county, 46-state frame with exact FY2024--FY2025 placebos and
 Holm step-down multiplicity adjustment across 12 declared primary hypotheses.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 5.1–5.2 — Quantity Discussion & Mechanisms Intro] ===
 
+% === [CODE-GENERATED ARTIFACT: fig_policy_2025_mechanisms.pdf (caption LLM-written)] ===
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.95\textwidth]{../outputs/figures/fig_policy_2025_mechanisms.pdf}
-  \caption{Mechanism heterogeneity across application pipelines, employer
+  \llmcaption{Mechanism heterogeneity across application pipelines, employer
     incumbency, labor contractors versus direct growers, planning lead-time,
     predetermined crop capital, and intensive contract margins (FY2025--FY2026
     versus matched FY2024--FY2025 placebos, with 95\% state-jackknife CIs).}
   \label{fig:policy_2025_mechanisms}
 \end{figure}
 
+% === [CODE-GENERATED ARTIFACT: table_policy_2025_mechanisms.tex] ===
 \input{../outputs/tables/table_policy_2025_mechanisms.tex}
 
+% === [LLM-WRITTEN START: Section 5.2 — Mechanism Audit Discussion] ===
+\begin{llmdraft}{Section 5.2: Five-Panel Mechanism Audit Discussion}
 Across all 12 primary mechanism hypotheses, no estimate is statistically
 significant after Holm multiplicity control ($\min p_{\text{Holm}} = 0.939$).
 Even so, the five panels provide concrete, falsifiable discipline on competing
@@ -688,8 +796,12 @@ explanations of short-run inelasticity:
     MDE $0.36$), and the observed non-imputed weekly-hours elasticity is
     tightly bounded at $+0.016$ (95\% CI $-0.044$ to $+0.077$, MDE $0.08$).
 \end{enumerate}
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 5.2 — Mechanism Audit Discussion] ===
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 6 — Producer Incidence Bounds (Intro)] ===
+\begin{llmdraft}{Section 6: Producer Incidence Bounds (Intro)}
 \section{Producer Incidence Bounds Under the Envelope Theorem}
 \label{sec:welfare}
 
@@ -702,9 +814,14 @@ estimate is a known structural parameter, we evaluate a transparent bounds grid
 $\eta \in \{0.00, -0.30, -0.75, -1.00\}$ anchored directly to the verified
 Track 1 Q4 jackknife 95\% lower bound ($\eta = -0.5985 \approx -0.60$) across
 all 3,108 contiguous U.S.\ counties in the shared panel.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 6 — Producer Incidence Bounds (Intro)] ===
 
+% === [CODE-GENERATED ARTIFACT: table_welfare_bounds.tex] ===
 \input{../outputs/tables/table_welfare_bounds.tex}
 
+% === [LLM-WRITTEN START: Section 6 — Producer Incidence Bounds (Discussion)] ===
+\begin{llmdraft}{Section 6: Producer Incidence Bounds (Discussion)}
 Table~\ref{tab:welfare_bounds} summarizes the exact certification-space
 envelope bounds (with all 26 provenance and analytic identities verified in
 \texttt{code/welfare/}). Panel A evaluates an anticipated $+\$1.00$/hr AEWR increase
@@ -755,8 +872,12 @@ producer incidence equals $\rho$ times every reported monetary value. Our
 calculation intentionally excludes H-2A foreign worker outside-option surplus,
 domestic corresponding-worker transfers, administrative compliance costs, and
 multi-year crop-mix or mechanization adjustments.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 6 — Producer Incidence Bounds (Discussion)] ===
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 7 — Pre-2025 County-Panel Power Ceiling] ===
+\begin{llmdraft}{Section 7: Pre-2025 County-Panel Power Ceiling}
 \section{Why Pre-2025 County Panels Cannot Pin Down Moderate Elasticities}
 \label{sec:pre2025_power}
 
@@ -829,8 +950,12 @@ Taken together, these four pre-2025 audits show that no amount of county-level
 refinement can manufacture independent regional policy assignments out of 17
 FLS regions. Breaking the 17-region ceiling required the 46-state within-region
 statutory shock of October 2, 2025.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 7 — Pre-2025 County-Panel Power Ceiling] ===
 
 \FloatBarrier
+% === [LLM-WRITTEN START: Section 8 — Conclusion] ===
+\begin{llmdraft}{Section 8: Conclusion}
 \section{Conclusion}
 \label{sec:conclusion}
 
@@ -862,12 +987,17 @@ Whether the suggestive gradient observed in late-season April--September starts
 compounds into larger multi-year adjustments as growers expand housing, alter
 crop mixes, or re-enter the program remains a central question for FY2027 and
 beyond.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Section 8 — Conclusion] ===
 
+% === [BIBLIOGRAPHY: see provenance markers inside draft/h2a_paper.bib] ===
 \bibliographystyle{plainnat}
 \bibliography{h2a_paper}
 
 \clearpage
 \appendix
+% === [LLM-WRITTEN START: Appendix A — Pre-2025 County-Panel Power Audit] ===
+\begin{llmdraft}{Appendix A: Pre-2025 County-Panel Power Audit}
 \section{Pre-2025 County-Panel Power Audit}
 \label{app:pre2025_audit}
 
@@ -877,20 +1007,26 @@ full-panel FE-PPML bite audit (\texttt{code/designs/bite}, 2011--2025, 3,108 cou
 (\texttt{code/designs/panel\_iv}, 2011--2023) discussed in
 Section~\ref{sec:pre2025_power}. Legacy difference-in-differences tables that
 excluded always-taker counties are retired from the manuscript.
+\end{llmdraft}
+% === [LLM-WRITTEN END: Appendix A — Pre-2025 County-Panel Power Audit] ===
 
+% === [CODE-GENERATED ARTIFACT: fig_bite_event_study.pdf (caption LLM-written)] ===
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.92\textwidth]{../outputs/figures/fig_bite_event_study.pdf}
-  \caption{Full-panel FE-PPML bite event study (2008--2025, reference year
+  \llmcaption{Full-panel FE-PPML bite event study (2008--2025, reference year
     2011; canonical 2009 AEWR omitted as missing; 95\% AEWR-region CV3J
     jackknife confidence intervals).}
   \label{fig:bite_event_study}
 \end{figure}
 
+% === [CODE-GENERATED ARTIFACT: table_bite_main.tex] ===
 \input{../outputs/tables/table_bite_main.tex}
 
+% === [CODE-GENERATED ARTIFACT: table_bite_diagnostics.tex] ===
 \input{../outputs/tables/table_bite_diagnostics.tex}
 
+% === [CODE-GENERATED ARTIFACT: table_iv_h2a_adjustment_margins.tex] ===
 \input{../outputs/tables/table_iv_h2a_adjustment_margins.tex}
 
 \end{document}

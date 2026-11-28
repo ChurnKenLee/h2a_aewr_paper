@@ -22,3 +22,9 @@
   cannot be removed merely for narrative smoothness.
 - A changed description of sample, treatment, inference, or result requires a
   corresponding executable and canonical-design review.
+- Authorship provenance: the author intends to write the entire manuscript by
+  hand. All LLM-drafted placeholder prose, headings, title, abstract, equation
+  exposition, and figure captions in `draft/draft1.tex` are explicitly
+  delimited by `llmdraft` / `\llmcaption` / `\llminline` (and source comments)
+  and BibTeX provenance headers in `draft/h2a_paper.bib`. Never remove those
+  markers from LLM-generated text or insert unmarked LLM prose into `draft/`.
